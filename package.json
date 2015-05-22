@@ -1,0 +1,21 @@
+{
+  "name": "math-expressions",
+  "description": "Mathematical expressions involving transcendental functions",
+  "version": "0.0.1",
+  "author": "Jim Fowler <fowler@math.osu.edu>",
+  "scripts": {
+    "test": "",
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kisonecat/math-expressions"
+  },
+  "private": false,
+  "dependencies": {
+    "underscore": "1.6.0",
+  },
+  "devDependencies": {
+    "jasmine": "*"
+  },
+  "license": "GPL"
+}
