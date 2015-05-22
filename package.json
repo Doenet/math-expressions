@@ -2,9 +2,13 @@
   "name": "math-expressions",
   "description": "Mathematical expressions involving transcendental functions",
   "version": "0.0.1",
-  "author": "Jim Fowler <fowler@math.osu.edu>",
+  "author": {
+    "name": "Jim Fowler",
+    "email": "kisonecat@gmail.com",
+    "url": "http://kisonecat.com/"
+  },
   "scripts": {
-    "test": "",
+    "test": ""
   },
   "repository": {
     "type": "git",
@@ -12,10 +16,10 @@
   },
   "private": false,
   "dependencies": {
-    "underscore": "1.6.0",
+    "underscore": "1.6.0"
   },
   "devDependencies": {
     "jasmine": "*"
   },
-  "license": "GPL"
+  "license": "GPL-3.0"
 }
