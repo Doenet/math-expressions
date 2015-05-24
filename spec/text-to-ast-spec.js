@@ -2,8 +2,8 @@ var astToText = require('../lib/parser').ast.to.text;
 var textToAst = require('../lib/parser').text.to.ast;
 var _ = require('underscore');
 
-// The remaining bug is that expressions aren't sufficiently greedy
-// which causes things like |x| |y| |z| to parse incorrectly.
+// BADBAD: The remaining bug is that expressions aren't sufficiently
+// greedy which causes things like |x| |y| |z| to parse incorrectly.
 
 describe("text to ast", function() {
     var trees = {
