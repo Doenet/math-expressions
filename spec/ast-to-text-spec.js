@@ -18,8 +18,12 @@ describe("ast to text", function() {
     });
 
     it("product of positive and negative number", function() {     
-        expect(astToText(['*',3,-4]).replace(/ /g,'')).toEqual('3*(-4)');
+        expect(astToText(['*',3,-4]).replace(/ /g,'')).toEqual('3(-4)');
     });
+
+    it("product of positive numbers", function() {     
+        expect(astToText(['*',3,4]).replace(/ /g,'')).toEqual('3*4');
+    });    
 
     it("sin^2 (3x)", function() {     
         expect(astToText(['^',['sin',['*',3,'x']],2]).replace(/ /g,'')).toEqual('sin^2(3x)');

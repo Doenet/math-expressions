@@ -2,10 +2,27 @@ var astToText = require('../lib/parser').ast.to.text;
 var textToAst = require('../lib/parser').text.to.ast;
 var _ = require('underscore');
 
-describe("ast to text", function() {
-    it('|4|', function() {    
-	expect(textToAst('|4|')).toEqual(['abs',4]);
-    });
+// The remaining bug is that expressions aren't sufficiently greedy
+// which causes things like |x| |y| |z| to parse incorrectly.
+
+describe("text to ast", function() {
+    var trees = {
+	'1+x+3': ['+',1,'x',3],
+	'1-x-3': ['-',1,'x',3],	
+	'x^2': ['^', 'x', 2],
+	'-x^2': ['~',['^', 'x', 2]],
+	'x*y*z': ['*','x','y','z'],
+	'x*y*z*w': ['*','x','y','z','w'],
+	'(x*y)*(z*w)': ['*','x','y','z','w'],		
+	'|x|': ['abs','x'],
+	'|sin|x||': ['abs', ['sin', ['abs', 'x']]],	
+    };
+
+    _.each( _.keys(trees), function(string) {
+	it(string, function() {
+	    expect(textToAst(string)).toEqual(trees[string]);
+	});	
+    });    
     
     var inputs = [
 	'3+4',
@@ -47,8 +64,18 @@ describe("ast to text", function() {
 	'sin(3x)',
 	'sin^2(3x)',
 	'sin^2 x + cos^2 x',
+	'sin^2 x / cos^2 x',
+	'sin^3 (x+y+z)',
+	'sqrt(x+y+z)',
+	'sqrt(sqrt x)',
+	'sqrt(1/(x+y))',
+	'log(-x^2)',
 	'|3|',
+	'sin |x|',
 	'3+(-4)',
+	'|sin|x||',
+	'|sin||x|||',
+	'||x|+|y|+|z||',
     ];
 
     _.each( inputs, function(input) {

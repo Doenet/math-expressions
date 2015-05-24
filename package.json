@@ -9,6 +9,7 @@
   },
   "scripts": {
       "test": "./node_modules/.bin/jasmine",
+      "install": "./node_modules/.bin/jison lib/text.jison -o lib/lexers/text.js && ./node_modules/.bin/jison lib/latex.jison -o lib/lexers/latex.js",
       "lint": "./node_modules/.bin/jshint lib/*.js spec/*.js"
   },
   "repository": {
