@@ -8,7 +8,8 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "test": ""
+      "test": "./node_modules/.bin/jasmine",
+      "lint": "./node_modules/.bin/jshint lib/*.js spec/*.js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +20,11 @@
     "underscore": "1.6.0"
   },
   "devDependencies": {
-    "jasmine": "*"
+      "jasmine": "*",
+      "jshint": "*",
+      "jison": "*"      
   },
   "license": "GPL-3.0"
 }
+
+
