@@ -109,6 +109,7 @@
 "asin"                  return 'ARCSIN'
 "acos"                  return 'ARCCOS'
 "atan"                  return 'ARCTAN'
+"gamma"                 return 'GAMMA'
 "acsc"                  return 'ARCCSC'
 "asec"                  return 'ARCSEC'
 "acot"                  return 'ARCCOT'
