@@ -252,7 +252,21 @@ describe("expression", function() {
 	});	
     });    
 
+    var derivatives = {
+	"x^2": "2x",
+	"x^3": "3x^2",
+	"sin x": "cos x",
+	"cos x": "-sin x",
+	"sin^2 x": "2 sin x cos x",
+    };
 
+    _.each( _.keys(derivatives), function(lhs) {
+	var rhs = derivatives[lhs];
+	it("(d/dx) " + lhs + " == " + rhs, function() {
+	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs))).toBeTruthy();
+	});	
+    });        
+    
     var dontMatchDerivatives = {
         'exp(x)': 'exp(x)',
         '2*x': 'x^3/3',
