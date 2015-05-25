@@ -169,17 +169,19 @@ describe("complex number", function() {
 	expect((new C(4,0)).gamma()).toBeWithinEpsilon( new C(6,0) );
     });
 
-    /*
-    it("sin(gamma(0.5)^2) = 0", function() {
-	expect((new C(-0.5,0)).gamma().power( new C(2,0) ).sin()).toBeWithinEpsilon( new C(0,0) );
-    });                        
-    */
+    it("sin(gamma(0.5) * gamma(0.5)) = 0", function() {
+	expect((new C(0.5,0)).gamma().multiply( (new C(0.5,0)).gamma() ).sin()).toBeWithinEpsilon( new C(0,0) );
+    });
+
+    it("cos(gamma(2.5) * gamma(3.5) * (32/90)) = 0", function() {
+	expect((new C(2.5,0)).gamma().multiply( (new C(3.5,0)).gamma()).multiply( (new C(32.0/90.0,0)) ).cos()).toBeWithinEpsilon( new C(0,0) );
+    });                            
     
     it("gamma(-0.5) approx -3.54490770181103", function() {
 	expect((new C(-0.5,0)).gamma()).toBeWithinEpsilon( new C(-3.544907701811030,0) );
     });
 
     it("gamma(i) approx -0.154949828301811 - 0.498015668118356i", function() {
-	expect((new C(-0.5,0)).gamma()).toBeWithinEpsilon( new C(-0.154949828301811, -0.498015668118356) );
+	expect((new C(0,1)).gamma()).toBeWithinEpsilon( new C(-0.154949828301811, -0.498015668118356) );
     });                        
 });
