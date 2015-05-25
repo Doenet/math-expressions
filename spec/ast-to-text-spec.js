@@ -11,7 +11,15 @@ describe("ast to text", function() {
 
     it("nested sum", function() {     
         expect(astToText(['+',3,['+',4,'x']]).replace(/ /g,'')).toEqual('3+(4+x)');
-    });        
+    });
+
+    it("factorial", function() {     
+        expect(astToText(['factorial',3]).replace(/ /g,'')).toEqual('3!');
+    });
+
+    it("factorial", function() {     
+        expect(astToText(['factorial',['+','x','1']]).replace(/ /g,'')).toEqual('(x+1)!');
+    });                
 
     it("sum of positive and negative number", function() {     
         expect(astToText(['+',3,-4]).replace(/ /g,'')).toEqual('3+(-4)');

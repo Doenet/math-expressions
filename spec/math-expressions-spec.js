@@ -1,164 +1,303 @@
+/*
+ * test code for math expressions
+ *
+ * Copyright 2014-2015 by Jim Fowler <kisonecat@gmail.com>
+ * 
+ * Some portions adopted from Stack (http://stack.bham.ac.uk/)
+ * which is licensed under GPL v3+
+ * and (C) 2012 University of Birmingham
+ *
+ * This file is part of a math-expressions library
+ * 
+ * Some open source application is free software: you can redistribute
+ * it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either
+ * version 3 of the License, or at your option any later version.
+ * 
+ * Some open source application is distributed in the hope that it
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ * 
+ */
+
 var Expression = require('../lib/math-expressions');
+var _ = require('underscore');
 
-describe("complex number", function() {
-    beforeEach(function () {
-        jasmine.addMatchers({
-            toBeWithinEpsilon: function () {
-                return {
-                    compare: function (actual, expected) {
-                        return {
-                            pass: actual.subtract(expected).modulus() < 0.0001
-                        };
-                    }
-                };
-            },
-	    toBeWithinRealEpsilon: function () {
-                return {
-                    compare: function (actual, expected) {
-                        return {
-                            pass: (actual - expected) < 0.0001
-                        };
-                    }
-                };
-            }
-        });
-    });
+describe("expression", function() {
+
+    var equivalences = {
+	"3+2": "5",
+	"X": "x", // case sensitivity
+	"1/sqrt(4)": "1/2",
+	"4^(-1/2)": "1/2",
+	"0.5": "1/2", // 'Mix of floats and rational numbers'
+	"x^(1/2)": "sqrt(x)",
+	"abs(x)": "sqrt(x^2)",
+	"1/sqrt(x)": "sqrt(1/x)",
+	"x-1": "(x^2-1)/(x+1)",
+	"a^b * a^c": "a^(b+c)",
+	'2+2*sqrt(3+x)': '2+sqrt(12+4*x)',
+        '1/n-1/(n+1)': '1/(n*(n+1))',
+        '0.5*x^2+3*x-1': 'x^2/2+3*x-1',
+        'cos(x)': 'cos(-x)',
+        'cos(x)^2+sin(x)^2': '1',
+        '2*cos(x)^2-1': 'cos(2*x)',
+        '2*cos(2*x)+x+1': '-sin(x)^2+3*cos(x)^2+x',
+        '(2*sec(2*t)^2-2)/2': '-(sin(4*t)^2-2*sin(4*t)+cos(4*t)^2-1)*(sin(4*t)^2+2*sin(4*t)+cos(4*t)^2-1)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)^2',
+        '1+cosec(3*x)': '1+csc(3*x)',
+        '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)': '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)',
+	'log(a^2*b)': '2*log(a)+log(b)',
+	'sqrt(12)': '2*sqrt(3)',
+        'sqrt(11+6*sqrt(2))': '3+sqrt(2)',
+        '(19601-13860*sqrt(2))^(7/4)': '(5*sqrt(2)-7)^7',
+        'sqrt(2*log(26)+4-2*log(2))': 'sqrt(2*log(13)+4)',
+        '1+2*x': 'x*2+1',
+        '(x+y)+z': 'z+x+y',
+        '(x+5)*x': 'x*(5+x)',
+        'x*x': 'x^2',
+        '(1-x)^2': '(x-1)^2',
+        'x*(x+5)': '5*x+x^2',
+        '1+x+x': '2*x+1',
+        '2^2': '4',
+        'a^2/b^3': 'a^2*b^(-3)',
+        'x^(1/2)': 'sqrt(x)',
+        'x-1': '(x^2-1)/(x+1)',
+        'x+x': '2*x',
+        'x+x^2': 'x^2+x',
+        '(x-1)^2': 'x^2-2*x+1',
+        '(x-1)^(-2)': '1/(x^2-2*x+1)',
+        '1/n-1/(n+1)': '1/(n*(n+1))',
+        'cos(x)': 'cos(-x)',
+        'cos(x)^2+sin(x)^2': '1',
+        '2*cos(x)^2-1': 'cos(2*x)',
+	'(1/2)/(3/4)': '2/3',
+        '1/n': '1/n',
+        'a+1/2': '(2*a+1)/2',
+        '1/n +2/(n+1)': '(3*n+1)/(n*(n+1))',
+        '2*(1/n)': '2/n',
+        '2/n': '2/n',
+        '(x-1)/(x^2-1)': '1/(x+1)',
+        '(x-2)/4/(2/x^2)': '(x-2)*x^2/8',
+        '1/(1-1/x)': 'x/(x-1)',
+        '(sqrt(108)+10)^(1/3)-(sqrt(108)-10)^(1/3)': '2',
+	'(sqrt(2+sqrt(2))+sqrt(2-sqrt(2)))/(2*sqrt(2))': 'sqrt(sqrt(2)+2)/2',
+	'x^2+1': 'x^2+1',
+	'X^2+1': 'x^2+1',
+	'(-1)^n*cos(x)^n': '(-cos(x))^n',
+	'log(abs((x^2-9)))': 'log(abs(x-3))+log(abs(x+3))',
+	'log(exp(x))': 'x',
+	'exp(log(x))': 'x',
+        '(x-1)^2': 'x^2-2*x+1',
+        '(x-1)*(x^2+x+1)': 'x^3-1',
+        '(x-1)^(-2)': '1/(x^2-2*x+1)',
+        '2/4': '1/2',
+        '3^2': '8',
+        '3^2': '9',
+        'sqrt(3)': '3^(1/2)',
+        '2*sqrt(2)': 'sqrt(8)',
+        '2*2^(1/2)': 'sqrt(8)',
+        '4^(1/2)': '2',
+        'sqrt(3)/3': '(1/3)^(1/2)',
+        'sqrt(2)/4': '1/sqrt(8)',
+        '1/3^(1/2)': '(1/3)^(1/2)',
+        '1/sqrt(2)': '2^(1/2)/2',
+        'a^2/b^3': 'a^2*b^(-3)',
+        '-1+2': '2-1',
+        '-1*2+3*4': '3*4-1*2',
+        '-1*2+3*4': '3*4-1*2',
+        '(-1*2)+3*4': '10',
+        'x*(-y)': '-x*y',
+        'x*(-y)': '-(x*y)',
+        '(-x)*(-x)': 'x*x',
+        '(-x)*(-x)': 'x^2',
+        '1/2': '3/6',
+        '1/(1+2*x)': '1/(2*x+1)',
+        '2/(4+2*x)': '1/(x+2)',
+        '(a*b)/c': 'a*(b/c)',
+        '(-x)/y': '-(x/y)',
+        'x/(-y)': '-(x/y)',
+        '-1/(1-x)': '1/(x-1)',
+        '1/2*1/x': '1/(2*x)',
+        '2': '2',
+        '1/3': '1/3',
+        '3*x^2': '3*x^2',
+        '4*x^2': '4*x^2',
+        '2*(x-1)': '2*x-2',
+        '2*x-2': '2*x-2',
+        '2*(x+1)': '2*x+2',	
+        '2*(x+0.5)': '2*x+1',
+        't*(2*x+1)': 't*(2*x+1)',
+        't*x+t': 't*(x+1)',
+        '2*x*(x-3)': '2*x^2-6*x',
+        '2*(x^2-3*x)': '2*x*(x-3)',
+        'x*(2*x-6)': '2*x*(x-3)',
+        '(x+2)*(x+3)': '(x+2)*(x+3)',
+        '(x+2)*(2*x+6)': '2*(x+2)*(x+3)',
+        '(z*x+z)*(2*x+6)': '2*z*(x+1)*(x+3)',
+        '(x+t)*(x-t)': 'x^2-t^2',
+        't^2-1': '(t-1)*(t+1)',
+        '(2-x)*(3-x)': '(x-2)*(x-3)',
+        '(1-x)^2': '(x-1)^2',
+        '-(1-x)^2': '-(x-1)^2',
+        '4*(1-x/2)^2': '(x-2)^2',
+        '(x-1)*(x^2+x+1)': 'x^3-1',
+        'x^3-x+1': 'x^3-x+1',
+        '7*x^3-7*x+7': '7*(x^3-x+1)',
+        '(1-x)*(2-x)*(3-x)': '-x^3+6*x^2-11*x+6',
+        '(2-x)*(2-x)*(3-x)': '-x^3+7*x^2-16*x+12',
+        '(2-x)^2*(3-x)': '-x^3+7*x^2-16*x+12',
+        '(x^2-4*x+4)*(3-x)': '-x^3+7*x^2-16*x+12',
+        '(x^2-3*x+2)*(3-x)': '-x^3+6*x^2-11*x+6',
+        '3*y^3-6*y^2-24*y': '3*(y-4)*y*(y+2)',
+        '3*(y^3-2*y^2-8*y)': '3*(y-4)*y*(y+2)',
+        '3*y*(y^2-2*y-8)': '3*(y-4)*y*(y+2)',
+        '3*(y^2-4*y)*(y+2)': '3*(y-4)*y*(y+2)',
+        '(y-4)*y*(3*y+6)': '3*(y-4)*y*(y+2)',
+	'24*(x-1/4)': '24*x-6',
+	'(x-sqrt(2))*(x+sqrt(2))': 'x^2-2',
+        '1/(n+1)-1/n': '1/(n+1)-1/n',
+        '1/(n+1)+1/(1-n)': '1/(n+1)-1/(n-1)',
+        '1/(2*(n-1))-1/(2*(n+1))': '1/((n-1)*(n+1))',
+        '1/(x-1)-(x+1)/(x^2+1)': '2/((x-1)*(x^2+1))',
+        '1/(2*x-2)-(x+1)/(2*(x^2+1))': '1/((x-1)*(x^2+1))',
+        '3/(x+1) + 3/(x+2)': '3*(2*x+3)/((x+1)*(x+2))',
+        '3*(1/(x+1) + 1/(x+2))': '3*(2*x+3)/((x+1)*(x+2))',	
+        '3*x*(1/(x+1) + 2/(x+2))': '-12/(x+2)-3/(x+1)+9',
+        '2*x+1/(x+1)+1/(x-1)': '2*x^3/(x^2-1)',
+        '(2*x+1)/(x^2+1)-2/(x-1)': '(2*x+1)/(x^2+1)-2/(x-1)',
+        '-1/((s+1)^2) - 2/(s+2) + 2/(s+1)': 's/((s+1)^2*(s+2))',
+        '(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4': '(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4',
+        '-5/(16*x)+53/(16*(x-4))+43/(4*(x-4)^2)': '(3*x^2-5)/((x-4)^2*x)',
+	'-1/(16*(x+5))+19/(4*(x+5)^2)+1/(16*(x+1))': '(5*x+6)/((x+1)*(x+5)^2)',
+        '-5/(16*x)+1/(2*(x-1))-1/(8*(x-1)^2)': '(3*x^2-5)/((4*x-4)^2*x)',
+        '(3*x^2-5)/((x-4)^2*x)': '(3*x^2-5)/((x-4)^2*x)',
+        '125/(34*(5*x-2))+5/(51*(x+3))-5/(6*x)': '5/(x*(x+3)*(5*x-2))',	
+        '10/(x+3) - 2/(x+2) + x -2': '(x^3 + 3*x^2 + 4*x +2)/((x+2)*(x+3))',
+	'(cos(t)-sqrt(2))^2': 'cos(t)^2-2*sqrt(2)*cos(t)+2',
+	'(n+1)*n!': '(n+1)!',
+	'n/n!': '1/(n-1)!',
 	
-    it("finds real part", function() {     
-        expect((new C(16,23)).real_part()).toEqual(16);
-    });
+	/*
+        '1/(2*(x-1))+x/(2*(x^2+1))': '1/((x-1)*(x^2+1))', 0, 'x': ''),
+        '1/(2*(n+1))-1/(2*(n-1))': '1/((n-1)*(n+1))', 0, 'n': ''),	
+        '(3*x+3)*(1/(x+1) + 2/(x+2))': '9-6/(x+2)', 0, 'x': ''),
+        'n/(2*n-1)-(n+1)/(2*n+1)': '1/(4*n-2)-1/(4*n+2)', 0, 'n': ''),
 
-    it("finds the imaginary part", function() {     
-        expect((new C(16,23)).imaginary_part()).toEqual(23);
-    });    
+        's/(s+2) - 1/(s+1)': 's/((s+1)*(s+2)*(s+3))', 0, 's': 'Too few parts in the partial fraction'),
+        '1/(x+1) + 1/(x+2)': '2/(x+1) + 1/(x+2)', 0, 'x': 'Addition and Subtraction errors'),
+        '1/(n*(n+1))+1/n': '2/n-1/(n+1)', 0, 'n': ''),
+        '-4/(16*x)+53/(16*(x-4))+43/(4*(x-4)^2)': '(3*x^2-5)/((x-4)^2*x)', 0, 'x': ''),
+        '(5*x+6)/((x+1)*(x+5)^2)': '(5*x+6)/((x+1)*(x+5)^2)', 0, 'x': ''),
+        '5/(x*(x+3)*(5*x-2))': '5/(x*(x+3)*(5*x-2))', 0, 'x': ''),
+        '(3*x^2-5)/((4*x-4)^2*x)': '(3*x^2-5)/((4*x-4)^2*x)', 0, 'x': ''),
+        '-4/(16*x)+1/(2*(x-1))-1/(8*(x-1)^2)': '(3*x^2-5)/((4*x-4)^2*x)', 0, 'x': ''),
+	*/
+    };
+
     
-    it("adds", function() {
-        expect((new C(1,2)).add( (new C(3,5)) )).toBeWithinEpsilon( new C(4,7) );
+    _.each( _.keys(equivalences), function(lhs) {
+	var rhs = equivalences[lhs];
+	it(lhs + " == " + rhs, function() {
+	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeTruthy();
+	});	
     });
 
-    it("adds without constructor", function() {
-        expect((new C(1,2)).add(3,5)).toBeWithinEpsilon( new C(4,7) );
-    });
+    var nonequivalences = {
+	"0.33": "1/3",
+	"x": "sqrt(x^2)",
+	"sqrt((x-3)*(x-5))": "sqrt(x-3)*sqrt(x-5)",
+	'(19601-13861*sqrt(2))^(7/4)': '(5*sqrt(2)-7)^7',
+        '(19601-13861*sqrt(2))^(7/4)': '(5*sqrt(2)-7)^7',
+        '1+x': '2*x+1',
+	'1/m': '1/n',
+	'2/(n+1)': '1/(n+1)',
+	'(2*n+1)/(n+2)': '1/n',
+        '(2*n)/(n*(n+2))': '(2*n)/(n*(n+3))',
+        '(2*log(2*x)+x)/(2*x)': '(log(2*x)+2)/(2*sqrt(x))',
+	'2/(x+1)-1/(x+2)': 's/((s+1)*(s+2))',
+	'1/(n-1)-1/n^2': '1/((n+1)*n)',
+	'1/(n-1)-1/n': '1/(n-1)+1/n',
+	'1/(x+1) + 1/(x+2)': '1/(x+1) + 2/(x+2)',
+	'1/(x+1) + 1/(x+2)': '1/(x+3) + 1/(x+2)',
+	'1/(x+1)-1/x': '1/(x-1)+1/x',
+        '2*x+2': '2*x-2',
+        '2*(x+1)': '2*x-2',
+	'1': '(x-1)^2+1',
+	'(t-1)^2+1': '(x-1)^2+1',
+	
+	
+    };
 
-    it("subtracts", function() {
-        expect((new C(1,2)).subtract( (new C(3,5)) )).toBeWithinEpsilon( new C(-2,-3) );
+    _.each( _.keys(nonequivalences), function(lhs) {
+	var rhs = nonequivalences[lhs];
+	it(lhs + " == " + rhs, function() {
+	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
+	});	
     });    
 
-    it("multiplies", function() {
-	expect((new C(1,2)).multiply( (new C(3,5)) )).toBeWithinEpsilon( new C(-7,11) );
+    var matchDerivatives = {
+        'x^3/3+c': 'x^3/3+c',
+        'x^2/2-2*x+2+c': '(x-2)^2/2+k', 
+        'exp(x)+c': 'exp(x)',
+        'ln(x)+c': 'ln(x)+c', 
+        'ln(k*x)': 'ln(x)+c',
+        'ln(abs(x))+c': 'ln(abs(x))+c', 
+        'ln(k*abs(x))': 'ln(abs(x))+c', 
+        'ln(abs(k*x))': 'ln(abs(x))+c', 
+        'ln(abs(x))+c': 'ln(k*abs(x))',
+        'ln(k*abs(x))': 'ln(k*abs(x))', 
+	'c-(log(2)-log(x))^2/2': '-1/2*log(2/x)^2',
+        '2*sin(x)*cos(x)+k': 'sin(2*x)+c',
+        '-2*cos(3*x)/3-3*cos(2*x)/2+c': '-2*cos(3*x)/3-3*cos(2*x)/2+c',
+	'(tan(2*x)-2*x)/2+c': '-(x*sin(4*x)^2-sin(4*x)+x*cos(4*x)^2+2*x*cos(4*x)+x)/(sin(4*x)^2+cos(4*x)^2+2*cos(4*x)+1)',
+        'tan(x)-x+c': 'tan(x)-x',
+	'2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c': '2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c',
+	'x^3/3+c': 'x^3/3',
+        'x^3/3+c+1': 'x^3/3',
+        'x^3/3+3*c': 'x^3/3',
+	'x^3/3-c': 'x^3/3',
+	'x^2/2-2*x+2+c': '(x-2)^2/2',
+        '(x-1)^5/5+c': '(x-1)^5/5',
+        'cos(2*x)/2+1+c': 'cos(2*x)/2',
+    };
+
+    _.each( _.keys(matchDerivatives), function(lhs) {
+	var rhs = matchDerivatives[lhs];
+	it(lhs + " == " + rhs, function() {
+	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
+	});	
     });    
 
-    it("divides", function() {
-	expect((new C(1,2)).divide( (new C(3,5)) ))
-	    .toBeWithinEpsilon( new C(0.382352941176471,0.0294117647058824) );
-    });
 
-    it("((3+4i)/(1+2i))*(2+4i) = 6+8i", function() {
-	expect((new C(3,4)).divide(new C(1,2)).multiply(new C(2,4))).toBeWithinEpsilon( new C(6,8) );
-    });    
-
-    it("computes modulus", function() {
-	expect((new C(3,4)).modulus()).toEqual(5);
-    });
-
-    it("computes arguments", function() {
-	expect((new C(3,4)).argument()).toBeWithinRealEpsilon(4.06888787159141);
-    });       
-
-    it("negates", function() {
-	expect((new C(1,2)).negate()).toBeWithinEpsilon( new C(-1,-2) );
-    });    
-
-    it("conjugates", function() {
-	expect((new C(1,2)).conjugate()).toBeWithinEpsilon( new C(1,-2) );
-    });
-
-    it("exp", function() {
-	expect((new C(1,2)).exp()).toBeWithinEpsilon( new C(-1.13120438375681,2.47172667200482) );
-    });
-
-    it("log", function() {
-	expect((new C(1,2)).log()).toBeWithinEpsilon( new C(0.804718956217050,1.10714871779409) );
-    });
-
-    it("cosine", function() {
-	expect((new C(1,2)).cos()).toBeWithinEpsilon( new C(2.03272300701967,-3.0518977991518) );
-    });
-
-    it("power", function() {
-	expect((new C(1,2)).power( new C(3,4) )).toBeWithinEpsilon( new C(0.129009594074467,0.0339240929051701) );
-    });
-
-    it("i^2 == -1", function() {
-	expect((new C(0,1)).power( new C(2,0) )).toBeWithinEpsilon( new C(-1,0) );
-    });    
-
-    it("square roots", function() {
-	expect((new C(1,2)).sqrt()).toBeWithinEpsilon( new C(1.27201964951407,0.786151377757423) );
-    });
-
-    it("reciprocals", function() {
-	expect((new C(1,2)).reciprocal()).toBeWithinEpsilon( new C(0.2,-0.4) );
-    });
-
-    it("tangent", function() {
-	expect((new C(1,2)).tan()).toBeWithinEpsilon( new C(0.0338128260798967, 1.01479361614663) );
-    });
-
-    it("secant", function() {
-	expect((new C(1,2)).sec()).toBeWithinEpsilon( new C(0.151176298265577, 0.226973675393722) );
-    });
-
-    it("cosecant", function() {
-	expect((new C(1,2)).csc()).toBeWithinEpsilon( new C(0.228375065599687, -0.141363021612408) );
-    });
-
-    it("cotangent", function() {
-	expect((new C(1,2)).cot()).toBeWithinEpsilon( new C(0.0327977555337526, -0.984329226458191) );
-    });                                    
-
-    it("arcsin", function() {
-	expect((new C(1,2)).arcsin()).toBeWithinEpsilon( new C(0.427078586392476, 1.52857091948100) );
-    });
-
-    it("arccos", function() {
-	expect((new C(1,2)).arccos()).toBeWithinEpsilon( new C(1.14371774040242, -1.52857091948100) );
-    });
-
-    it("arctan", function() {
-	expect((new C(1,2)).arctan()).toBeWithinEpsilon( new C(1.33897252229449, 0.402359478108525) );
-    });
-
-    it("sin(arcsin(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).arcsin().sin()).toBeWithinEpsilon( new C(1,2) );
-    });
-
-    it("arcsin(sin(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).sin().arcsin()).toBeWithinEpsilon( new C(1,2) );
-    });    
-
-    it("cos(arccos(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).arccos().cos()).toBeWithinEpsilon( new C(1,2) );
-    });
-
-    it("arccos(cos(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).cos().arccos()).toBeWithinEpsilon( new C(1,2) );
-    });
-
-    it("tan(arctan(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).arctan().tan()).toBeWithinEpsilon( new C(1,2) );
-    });
-
-    it("arctan(tan(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).tan().arctan()).toBeWithinEpsilon( new C(1,2) );
-    });        
-
-    it("exp(log(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).log().exp()).toBeWithinEpsilon( new C(1,2) );
-    });
-
-    it("log(exp(1+2i)) = 1+2i", function() {
-	expect((new C(1,2)).exp().log()).toBeWithinEpsilon( new C(1,2) );
-    });        
+    var dontMatchDerivatives = {
+        'exp(x)': 'exp(x)',
+        '2*x': 'x^3/3',
+        '2*x+c': 'x^3/3',
+        'ln(x)': 'ln(x)',
+        'ln(x)': 'ln(abs(x))+c',
+        'ln(x)+c': 'ln(abs(x))+c',
+        'ln(abs(x))': 'ln(abs(x))+c',
+        'ln(k*x)': 'ln(abs(x))+c',
+        'ln(x)': 'ln(k*abs(x))',
+        'ln(x)+c': 'ln(k*abs(x))',
+        'ln(abs(x))': 'ln(k*abs(x))',
+        'ln(k*x)': 'ln(k*abs(x))',
+        'ln(x)+ln(a)': 'ln(k*abs(x+a))',
+        'log(x)^2-2*log(c)*log(x)+k': 'ln(c/x)^2',
+        'log(x)^2-2*log(c)*log(x)+k': 'ln(abs(c/x))^2',
+	
+	'2*sin(x)*cos(x)': 'sin(2*x)+c',
+        '-2*cos(3*x)/3-3*cos(2*x)/2': '-2*cos(3*x)/3-3*cos(2*x)/2+c',
+        '-2*cos(3*x)/3-3*cos(2*x)/2+1': '-2*cos(3*x)/3-3*cos(2*x)/2+c',
+	'(tan(2*t)-2*t)/2': '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)',
+	'(tan(2*t)-2*t)/2+1': '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)',
+    };    
+       
+    var matchForm = {
+	'x^2+y/z': 'a^2+c/b',
+	'x^2+y': 'a^2+b',
+	'x^2+1': 'x^3+1',
+    };
     
 });

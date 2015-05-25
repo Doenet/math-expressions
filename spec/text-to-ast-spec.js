@@ -15,6 +15,7 @@ describe("text to ast", function() {
 	'x*y*z*w': ['*','x','y','z','w'],
 	'(x*y)*(z*w)': ['*','x','y','z','w'],		
 	'|x|': ['abs','x'],
+	'x!': ['factorial','x'],	
 	'|sin|x||': ['abs', ['sin', ['abs', 'x']]],	
     };
 
@@ -76,6 +77,10 @@ describe("text to ast", function() {
 	'|sin|x||',
 	'|sin||x|||',
 	'||x|+|y|+|z||',
+	'x!',
+	'n!',
+	'(n+1)!',
+	'(n-1)!',
     ];
 
     _.each( inputs, function(input) {
