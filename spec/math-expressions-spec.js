@@ -28,7 +28,6 @@ describe("expression", function() {
 
     var equivalences = {
 	"3+2": "5",
-	"X": "x", // case sensitivity
 	"1/sqrt(4)": "1/2",
 	"4^(-1/2)": "1/2",
 	"0.5": "1/2", // 'Mix of floats and rational numbers'
@@ -83,7 +82,6 @@ describe("expression", function() {
         '(sqrt(108)+10)^(1/3)-(sqrt(108)-10)^(1/3)': '2',
 	'(sqrt(2+sqrt(2))+sqrt(2-sqrt(2)))/(2*sqrt(2))': 'sqrt(sqrt(2)+2)/2',
 	'x^2+1': 'x^2+1',
-	'X^2+1': 'x^2+1',
 	'(-1)^n*cos(x)^n': '(-cos(x))^n',
 	'log(abs((x^2-9)))': 'log(abs(x-3))+log(abs(x+3))',
 	'log(exp(x))': 'x',
@@ -177,25 +175,9 @@ describe("expression", function() {
 	'(cos(t)-sqrt(2))^2': 'cos(t)^2-2*sqrt(2)*cos(t)+2',
 	'(n+1)*n!': '(n+1)!',
 	'n/n!': '1/(n-1)!',
-	
-	/*
-        '1/(2*(x-1))+x/(2*(x^2+1))': '1/((x-1)*(x^2+1))', 0, 'x': ''),
-        '1/(2*(n+1))-1/(2*(n-1))': '1/((n-1)*(n+1))', 0, 'n': ''),	
-        '(3*x+3)*(1/(x+1) + 2/(x+2))': '9-6/(x+2)', 0, 'x': ''),
-        'n/(2*n-1)-(n+1)/(2*n+1)': '1/(4*n-2)-1/(4*n+2)', 0, 'n': ''),
-
-        's/(s+2) - 1/(s+1)': 's/((s+1)*(s+2)*(s+3))', 0, 's': 'Too few parts in the partial fraction'),
-        '1/(x+1) + 1/(x+2)': '2/(x+1) + 1/(x+2)', 0, 'x': 'Addition and Subtraction errors'),
-        '1/(n*(n+1))+1/n': '2/n-1/(n+1)', 0, 'n': ''),
-        '-4/(16*x)+53/(16*(x-4))+43/(4*(x-4)^2)': '(3*x^2-5)/((x-4)^2*x)', 0, 'x': ''),
-        '(5*x+6)/((x+1)*(x+5)^2)': '(5*x+6)/((x+1)*(x+5)^2)', 0, 'x': ''),
-        '5/(x*(x+3)*(5*x-2))': '5/(x*(x+3)*(5*x-2))', 0, 'x': ''),
-        '(3*x^2-5)/((4*x-4)^2*x)': '(3*x^2-5)/((4*x-4)^2*x)', 0, 'x': ''),
-        '-4/(16*x)+1/(2*(x-1))-1/(8*(x-1)^2)': '(3*x^2-5)/((4*x-4)^2*x)', 0, 'x': ''),
-	*/
+	'(n!)^2': 'n! * n!',
     };
 
-    
     _.each( _.keys(equivalences), function(lhs) {
 	var rhs = equivalences[lhs];
 	it(lhs + " == " + rhs, function() {
@@ -225,8 +207,9 @@ describe("expression", function() {
         '2*(x+1)': '2*x-2',
 	'1': '(x-1)^2+1',
 	'(t-1)^2+1': '(x-1)^2+1',
-	
-	
+	'X^2+1': 'x^2+1',	
+	"X": "x", // The system SHOULD be case sensitive, to distinguish say r and R
+	'n!*n!': '(2n)!',
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
