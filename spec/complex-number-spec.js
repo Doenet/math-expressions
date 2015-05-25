@@ -108,6 +108,14 @@ describe("complex number", function() {
 	expect((new C(1,2)).power( new C(3,4) )).toBeWithinEpsilon( new C(0.129009594074467,0.0339240929051701) );
     });
 
+    it("(-1)^2 == 1", function() {
+	expect((new C(-1,0)).power( new C(2,0) )).toBeWithinEpsilon( new C(1,0) );
+    });
+
+    it("(-1)^i == exp(-pi)", function() {
+	expect((new C(-1,0)).power( new C(0,1) )).toBeWithinEpsilon( new C(0.0432139182637723,0) );
+    });
+
     it("i^2 == -1", function() {
 	expect((new C(0,1)).power( new C(2,0) )).toBeWithinEpsilon( new C(-1,0) );
     });    

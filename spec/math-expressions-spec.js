@@ -176,6 +176,7 @@ describe("expression", function() {
 	'(n+1)*n!': '(n+1)!',
 	'n/n!': '1/(n-1)!',
 	'(n!)^2': 'n! * n!',
+	'(-1)^n * (-1)^n': '1',	
     };
 
     _.each( _.keys(equivalences), function(lhs) {

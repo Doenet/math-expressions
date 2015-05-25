@@ -15,12 +15,13 @@ describe("text to ast", function() {
 	'x*y*z*w': ['*','x','y','z','w'],
 	'(x*y)*(z*w)': ['*','x','y','z','w'],		
 	'|x|': ['abs','x'],
+	'xyzw': ['*','x', 'y', 'z', 'w'],
 	'x!': ['factorial','x'],	
 	'|sin|x||': ['abs', ['sin', ['abs', 'x']]],	
     };
 
     _.each( _.keys(trees), function(string) {
-	it(string, function() {
+	it("parses" + string, function() {
 	    expect(textToAst(string)).toEqual(trees[string]);
 	});	
     });    
