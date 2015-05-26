@@ -26,9 +26,25 @@ describe("number theory", function() {
         expect(NumberTheory.gcd(34,51)).toEqual(17);
     });
 
+    it("gcd(-34,51) == 17", function() {     
+        expect(NumberTheory.gcd(-34,51)).toEqual(17);
+    });
+
+    it("gcd(-34,-51) == 17", function() {     
+        expect(NumberTheory.gcd(-34,-51)).toEqual(17);
+    });
+
+    it("gcd(34,-51) == 17", function() {     
+        expect(NumberTheory.gcd(34,-51)).toEqual(17);
+    });            
+
     it("(1/7) * 7 = 1 mod 13", function() {
         expect((NumberTheory.inverseMod(7,13) * 7) % 13).toEqual(1);
     });
+
+    it("(1/-7) * 7 = 1 mod 13", function() {
+        expect((NumberTheory.inverseMod(-7,13) * 7) % 13).toEqual(12);
+    });    
 
     it("factor(38675) = [5,5,7,13,17]", function() {
         expect(NumberTheory.factor(38675).sort()).toEqual([5,5,7,13,17].sort());
@@ -64,6 +80,10 @@ describe("number theory", function() {
     _.each( [467, 479, 487, 491, 499, 503, 509, 521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601], function(a) {
 	_.each( [1229, 1231, 1237, 1249, 1259, 1277, 1279, 1283, 1289, 1291, 1297, 1301, 1303, 1307, 1319, 1321, 1327, 1361, 1367, 1373],
 		function( p ) {
+		    it(a.toString() + " * " + p.toString() + " is not prime", function() {
+			expect(NumberTheory.isPrime(a*p)).not.toBeTruthy();
+		    });
+		    
 		    it("(" + a.toString() + " on " + p.toString() + ") = (-1)**((" + p.toString() + "-1)/2)", function() {
 			expect((NumberTheory.jacobiSymbol(a,p) + p) % p).toEqual(NumberTheory.powerMod(a, (p-1)/2, p));
 		    });
@@ -82,7 +102,9 @@ describe("number theory", function() {
 		it("quadraticNonresidue(" + p.toString() + ") is really a nonresidue", function () {
 		    expect(NumberTheory.jacobiSymbol(NumberTheory.quadraticNonresidue(p),p)).toEqual(-1);
 		});
-	    });
 
-    
+		it(p.toString() + " is prime", function () {
+		    expect(NumberTheory.isPrime(p)).toBeTruthy();
+		});
+	    });
 });
