@@ -33,6 +33,10 @@ describe("number theory", function() {
 	_.each( ps[exponent], function(k) {
 	    var p = Math.pow(2,exponent) - k;
 
+	    it("p = 2^" + exponent + "-" + k + " is probably prime", function() {		
+		expect(NumberTheory.isProbablyPrime(p)).toBeTruthy();
+	    });
+
 	    it("p = 2^" + exponent + "-" + k + "; (p-1)**(p-2) == 2 modulo p", function() {
 		expect(NumberTheory.multiplyMod(p - 1, p - 2, p)).toEqual(2);
 	    });
@@ -150,6 +154,10 @@ describe("number theory", function() {
 		    it(a.toString() + " * " + p.toString() + " is not prime", function() {
 			expect(NumberTheory.isPrime(a*p)).not.toBeTruthy();
 		    });
+
+		    it(a.toString() + " * " + p.toString() + " is not (probably) prime", function() {
+			expect(NumberTheory.isProbablyPrime(a*p)).not.toBeTruthy();
+		    });		    
 		    
 		    it("(" + a.toString() + " on " + p.toString() + ") = (-1)**((" + p.toString() + "-1)/2)", function() {
 			expect((NumberTheory.jacobiSymbol(a,p) + p) % p).toEqual(NumberTheory.powerMod(a, (p-1)/2, p));
@@ -173,6 +181,10 @@ describe("number theory", function() {
 		it(p.toString() + " is prime", function () {
 		    expect(NumberTheory.isPrime(p)).toBeTruthy();
 		});
+
+		it(p.toString() + " is probably prime", function () {
+		    expect(NumberTheory.isProbablyPrime(p)).toBeTruthy();
+		});		
 	    });
 
     ////////////////////////////////////////////////////////////////
