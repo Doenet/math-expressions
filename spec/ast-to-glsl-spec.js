@@ -9,9 +9,9 @@ describe("ast to GLSL", function() {
     var csin = Math.sin;
     var ccos = Math.cos;
     var ctan = Math.tan;
-    var ccsc = function(x) { return 1/Math.sin(x) };
-    var csec = function(x) { return 1/Math.cos(x) };
-    var ccot = function(x) { return 1/Math.tan(x) };    
+    var ccsc = function(x) { return 1/Math.sin(x); };
+    var csec = function(x) { return 1/Math.cos(x); };
+    var ccot = function(x) { return 1/Math.tan(x); };    
     var carcsin = Math.asin;
     var carccos = Math.acos;
     var carctan = Math.atan;

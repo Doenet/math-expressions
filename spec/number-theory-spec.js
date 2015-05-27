@@ -22,6 +22,8 @@ var _ = require('underscore');
 
 describe("number theory", function() {
 
+    // BADBAD: Missing test for random primitive roots
+    
     // for k in ps[52], 2^52 - k is prime
     var ps = {
 	51: [129, 139, 165, 231, 237, 247, 355, 391, 397, 439],
@@ -141,7 +143,16 @@ describe("number theory", function() {
 		expect(NumberTheory.powerMod(root, i, p)).not.toEqual(1);
 	    
             expect(NumberTheory.powerMod(root, p - 1, p)).toEqual(1);
-	});                    
+	});
+
+	it("random primitive root mod " + p.toString() + " is primitive", function() {
+	    var root = NumberTheory.randomPrimitiveRoot(p);
+
+	    for( var i=1; i < p - 1; i++ )
+		expect(NumberTheory.powerMod(root, i, p)).not.toEqual(1);
+	    
+            expect(NumberTheory.powerMod(root, p - 1, p)).toEqual(1);
+	});                    	
     });
 
     it("jacobiSymbol(2,112272535095293) == -1", function() {
