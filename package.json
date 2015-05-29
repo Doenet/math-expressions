@@ -9,7 +9,7 @@
   },
   "scripts": {
       "test": "jasmine",
-      "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js",
+      "postinstall": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js",
       "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
