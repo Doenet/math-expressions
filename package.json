@@ -16,6 +16,7 @@
     "type": "git",
     "url": "https://github.com/kisonecat/math-expressions"
   },
+  "main" : "./lib/math-expressions.js",
   "private": false,
   "dependencies": {
     "underscore": "1.6.0"
