@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Mathematical expressions involving transcendental functions",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
@@ -9,7 +9,7 @@
   },
   "scripts": {
       "test": "jasmine",
-      "postinstall": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js",
+      "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
       "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
