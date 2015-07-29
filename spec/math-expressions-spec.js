@@ -177,6 +177,32 @@ describe("expression", function() {
 	'n/n!': '1/(n-1)!',
 	'(n!)^2': 'n! * n!',
 	'(-1)^n * (-1)^n': '1',	
+	'abs((-x)^(1/3))': '(abs(-x))^(1/3)',
+	'abs(x)' : '(x^4)^(1/4)',
+	'abs(x)' : 'sqrt(sqrt(x^4))',
+	'arcsin(x)' : 'arcsin(x)',
+	'arccos(x)' : 'arccos(x)',
+	'arctan(x)' : 'arctan(x)',
+	'arcsec(x)' : 'arcsec(x)',
+	'arccsc(x)' : 'arccsc(x)',
+	'arccot(x)' : 'arccot(x)',
+	'arcsinh(x)' : 'arcsinh(x)',
+	'arccosh(x)' : 'arccosh(x)',
+	'arctanh(x)' : 'arctanh(x)',
+	'arcsech(x)' : 'arcsech(x)',
+	'arccsch(x)' : 'arccsch(x)',
+	'arccoth(x)' : 'arccoth(x)',
+	'log(x^2*y/z)' : 'log(x^2*y) - log(z)',
+	'log(x^2*y/z)' : 'log(x^2) + log(y) - log(z)',
+	'log(x^2*y/z)' : '2*log(x) + log(y) - log(z)',
+	'log(x^2*y/exp(1))' : '2*log(x) + log(y) - 1',
+	'log(sqrt(x^2 + 9) + x) - log(3)' : '(asinh(x/3))',
+	'sin(x + y)' : 'sin(x)*cos(y) + cos(x)*sin(y)',
+	'cos(x + y)' : 'cos(x)*cos(y) - sin(x)*sin(y)',
+	'log(x)/8' : '0.125*log(x)',
+	'log(x)/8' : '(1/8)*log(x)',
+	'(1/8)*log(x)' : '0.125*log(x)',
+	'1' : '1',
     };
 
     _.each( _.keys(equivalences), function(lhs) {
@@ -211,6 +237,11 @@ describe("expression", function() {
 	'X^2+1': 'x^2+1',	
 	"X": "x", // The system SHOULD be case sensitive, to distinguish say r and R
 	'n!*n!': '(2n)!',
+	'sin(2*pi*x)' : '0',
+	'cos((pi*x))' : '(-1)^(x)',
+	'sin(x)' : 'x - x^3/6 + x^5/120',
+		'exp(x^2)' : 'exp(x^2 + 1)',
+		'1000*exp(x/log(2))' : '1000*exp(x/log(3))',
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
