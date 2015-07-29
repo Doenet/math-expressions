@@ -204,6 +204,9 @@ describe("expression", function() {
 	'(1/8)*log(x)' : '0.125*log(x)',
 	'1' : '1',
 	'sqrt(10000 - x)' : 'sqrt(10000 - x)',
+			'x*log(y)' : 'log(y^x)',
+		'exp(x^y)' : 'exp(x^y)',
+		'(exp(x))^y' : 'exp(x*y)',
     };
 
     _.each( _.keys(equivalences), function(lhs) {
@@ -248,10 +251,6 @@ describe("expression", function() {
 		'sqrt(x^2)' : 'x',
 		'x' : 'sqrt(x^2)',
 		'abs(x)' : 'x',
-		'x*log(y)' : 'log(y^x)',
-		'exp(x^y)' : 'exp(x^y)',
-		'(exp(x))^y' : 'exp(x*y)',
-		
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
