@@ -203,6 +203,7 @@ describe("expression", function() {
 	'log(x)/8' : '(1/8)*log(x)',
 	'(1/8)*log(x)' : '0.125*log(x)',
 	'1' : '1',
+	'sqrt(10000 - x)' : 'sqrt(10000 - x)',
     };
 
     _.each( _.keys(equivalences), function(lhs) {
@@ -247,6 +248,10 @@ describe("expression", function() {
 		'sqrt(x^2)' : 'x',
 		'x' : 'sqrt(x^2)',
 		'abs(x)' : 'x',
+		'x*log(y)' : 'log(y^x)',
+		'exp(x^y)' : 'exp(x^y)',
+		'(exp(x))^y' : 'exp(x*y)',
+		
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
@@ -280,6 +285,7 @@ describe("expression", function() {
 	'x^2/2-2*x+2+c': '(x-2)^2/2',
         '(x-1)^5/5+c': '(x-1)^5/5',
         'cos(2*x)/2+1+c': 'cos(2*x)/2',
+		'exp(x^y)' : 'exp(x^y + 1)',
     };
 
     _.each( _.keys(matchDerivatives), function(lhs) {
