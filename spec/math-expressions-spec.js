@@ -243,6 +243,10 @@ describe("expression", function() {
 		'exp(x^2)' : 'exp(x^2 + 1)',
 		'1000*exp(x/log(2))' : '1000*exp(x/log(3))',
 		'x' : 'y',
+		'x + 2*y' : 'y + 2*x',
+		'sqrt(x^2)' : 'x',
+		'x' : 'sqrt(x^2)',
+		'abs(x)' : 'x',
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
