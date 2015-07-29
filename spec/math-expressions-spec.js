@@ -242,6 +242,7 @@ describe("expression", function() {
 	'sin(x)' : 'x - x^3/6 + x^5/120',
 		'exp(x^2)' : 'exp(x^2 + 1)',
 		'1000*exp(x/log(2))' : '1000*exp(x/log(3))',
+		'x' : 'y',
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
