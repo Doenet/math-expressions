@@ -11,7 +11,7 @@ var Expression = require('math-expressions');
 
 var f = Expression.fromText("sin^2 (x^3)");
 
-console.log(f.toLatex());
+console.log(f.tex());
 
 var g = Expression.fromText("sin^2 x + cos^2 x");
 var h = Expression.fromText("1");
