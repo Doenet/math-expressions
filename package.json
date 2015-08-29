@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Mathematical expressions involving transcendental functions",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
@@ -21,12 +21,21 @@
   "dependencies": {
     "underscore": "1.6.0"
   },
-  "devDependencies": {
-      "jasmine": "*",
-      "jshint": "*",
-      "jison": "*"      
-  },
-  "license": "GPL-3.0"
+    "devDependencies": {
+	"jasmine": "*",
+	"jshint": "*",
+	"jison": "*"      
+    },
+    
+    "licenses": [
+	{
+	    "type": "Apache-2.0",
+	    "url": "http://www.apache.org/licenses/LICENSE-2.0"},
+	{
+	    "type": "GPL-3.0",
+	    "url": "http://www.apache.org/licenses/LICENSE-2.0"
+	},
+    ]
 }
 
 
