@@ -22,7 +22,7 @@
 %lex
 %%
 
-\s+                   /* skip whitespace */
+(\s+|"\\,")                   /* skip whitespace */
 [0-9]+("."[0-9]+)?  return 'NUMBER'
 "*"                     return '*'
 "/"                     return '/'
@@ -36,8 +36,9 @@
 "\\right]"              return ']'
 "["                     return '['
 "]"                     return ']'
-"\\left|"               return 'LEFT_ABS'
-"\\right|"              return 'RIGHT_ABS'
+"\\left|"               return '|'
+"\\right|"              return '|'
+"|"			return '|'
 ")"                     return ')'
 "{"                     return '{'
 "}"                     return '}'
@@ -63,6 +64,9 @@
 "\\arcsin"              return 'ARCSIN'
 "\\arccos"              return 'ARCCOS'
 "\\arctan"              return 'ARCTAN'
+"\\arcsec"              return 'ARCSEC'
+"\\arccsc"              return 'ARCCSC'
+"\\arccot"              return 'ARCCOT'
 "\\asin"                return 'ARCSIN'
 "\\acos"                return 'ARCCOS'
 "\\atan"                return 'ARCTAN'
@@ -71,6 +75,7 @@
 "\\exp"                 return 'EXP'
 "\\sqrt"                return 'SQRT'
 [A-Za-z]                return 'VAR'
+
 <<EOF>>                 return 'EOF'
 .                       return 'INVALID'
 
