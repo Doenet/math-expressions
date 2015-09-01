@@ -24,6 +24,7 @@
 
 (\s+|"\\,")                   /* skip whitespace */
 [0-9]+("."[0-9]+)?  return 'NUMBER'
+[,.][0-9]+		return 'NUMBER'
 "*"                     return '*'
 "/"                     return '/'
 "-"                     return '-'
@@ -60,6 +61,7 @@
 "\\cot"                 return 'COT'
 
 "\\pi"                  return 'PI'
+"\\theta"               return 'THETA'
 
 "\\arcsin"              return 'ARCSIN'
 "\\arccos"              return 'ARCCOS'

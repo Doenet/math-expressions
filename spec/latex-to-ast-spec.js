@@ -25,6 +25,8 @@ describe("latex to ast", function() {
 	'-2',
 	'x^{2}',
 	'\\sin x',
+	'\\theta',	
+	'\\theta^{2}',
 	'\\sin 3',
 	'\\cos x',
 	'\\cos 3',

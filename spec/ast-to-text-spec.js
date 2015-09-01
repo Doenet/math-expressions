@@ -39,5 +39,9 @@ describe("ast to text", function() {
 
     it("arcsec(3x)", function() {     
         expect(astToText(['arcsec',['*',3,'x']]).replace(/ /g,'')).toEqual('arcsec(3x)');
-    });        
+    });
+
+    it("theta", function() {     
+        expect(astToText(['+', 1, 'theta']).replace(/ /g,'')).toEqual('1+theta');
+    });            
 });
