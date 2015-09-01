@@ -28,6 +28,7 @@ describe("expression", function() {
 
     var equivalences = {
 	"3+2": "5",
+	"x*log(3)": "log(3^x)",	
 	"1/sqrt(4)": "1/2",
 	"4^(-1/2)": "1/2",
 	"0.5": "1/2", // 'Mix of floats and rational numbers'
