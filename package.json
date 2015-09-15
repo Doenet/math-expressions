@@ -1,42 +1,44 @@
 {
-  "name": "math-expressions",
-  "description": "Mathematical expressions involving transcendental functions",
-  "version": "0.0.4",
-  "author": {
-    "name": "Jim Fowler",
-    "email": "kisonecat@gmail.com",
-    "url": "http://kisonecat.com/"
-  },
-  "scripts": {
-      "test": "jasmine",
-      "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
-      "lint": "jshint lib/*.js spec/*.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kisonecat/math-expressions"
-  },
-  "main" : "./lib/math-expressions.js",
-  "private": false,
-  "dependencies": {
-    "underscore": "1.6.0"
-  },
-    "devDependencies": {
-	"jasmine": "*",
-	"jshint": "*",
-	"jison": "*"      
+    "name": "math-expressions",
+    "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
+    "version": "1.0.0",
+    
+    "author": {
+	"name": "Jim Fowler",
+	"email": "kisonecat@gmail.com",
+	"url": "http://kisonecat.com/"
     },
     
-    "licenses": [
-	{
-	    "type": "Apache-2.0",
-	    "url": "http://www.apache.org/licenses/LICENSE-2.0"
-	},
-	{
-	    "type": "GPL-3.0",
-	    "url": "http://www.apache.org/licenses/LICENSE-2.0"
-	}
-    ]
+    "scripts": {
+	"test": "jasmine",
+	"install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
+	"lint": "jshint lib/*.js spec/*.js"
+    },
+    
+    "repository": {
+	"type": "git",
+	"url": "https://github.com/kisonecat/math-expressions"
+    },
+    
+    "main" : "./lib/math-expressions.js",
+    "private": false,
+    
+    "dependencies": {
+    },
+    
+    "devDependencies": {
+	"jasmine": "*",
+	"underscore": "*",	
+	"jshint": "*",
+	"grunt": "*",
+	"grunt-urequire": "*",	
+	"grunt-cli": "*",		
+	"jison": "*",
+	"urequire": "*",
+	"urequire-cli": "*"		
+    },
+    
+    "license": "(GPL-3.0 OR Apache-2.0)"
 }
 
 
