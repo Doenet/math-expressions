@@ -20,7 +20,7 @@
 	"url": "https://github.com/kisonecat/math-expressions"
     },
     
-    "main" : "./lib/math-expressions.js",
+    "main" : "./build/math-expressions.js",
     "private": false,
     
     "dependencies": {
