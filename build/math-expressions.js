@@ -4431,6 +4431,9 @@ StraightLineProgram.prototype = {
   tex: function () {
     return astToLatex(this.syntax_tree);
   },
+  toLatex: function () {
+    return this.tex();
+  },
   toString: function () {
     return astToText(this.syntax_tree);
   },
