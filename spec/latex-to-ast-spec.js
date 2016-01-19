@@ -5,6 +5,7 @@ var _ = require('underscore');
 
 describe("latex to ast", function() {
     var trees = {
+	'\\frac{1}{2} x': ['*',['/',1,2],'x'],	
 	'1+x+3': ['+',1,'x',3],
 	'1-x-3': ['-',1,'x',3],	
 	'x^2': ['^', 'x', 2],

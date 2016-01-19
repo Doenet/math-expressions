@@ -28,6 +28,7 @@ describe("expression", function() {
 
     var equivalences = {
 	"3+2": "5",
+	"(1/3)g^3": "(g^3)/(3)",
 	"x*log(3)": "log(3^x)",	
 	"1/sqrt(4)": "1/2",
 	"4^(-1/2)": "1/2",
