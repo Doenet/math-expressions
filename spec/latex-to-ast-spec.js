@@ -58,6 +58,7 @@ describe("latex to ast", function() {
 	'\\frac{1}{\\sqrt{3}}',	
 	'\\frac{1}{\\sqrt{-x}}',
 	'\\sin\\left(3\\,x\\right)',
+	'\\sin\\left (3\\,x\\right )',  // this really gets written...	
 	'\\sin^{2}\\left(3\\,x\\right)',
 	'\\sin^{2}x+\\cos^{2}x',
 	'\\frac{\\sin^{2}x}{\\cos^{2}x}',
