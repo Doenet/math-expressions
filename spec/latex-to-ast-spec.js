@@ -63,6 +63,7 @@ describe("latex to ast", function() {
 	'\\sin^{2}x+\\cos^{2}x',
 	'\\frac{\\sin^{2}x}{\\cos^{2}x}',
 	'\\sin^{3}\\left(x+y\\right)',
+	'\\sin^{3}\\left  (x+y\\right  )',	
 	'\\sqrt{x+y}',
 	'\\sqrt{\\sqrt{x}}',
 	'\\sqrt{\\frac{1}{x+y}}',
