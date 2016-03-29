@@ -43,5 +43,9 @@ describe("ast to text", function() {
 
     it("theta", function() {     
         expect(astToText(['+', 1, 'theta']).replace(/ /g,'')).toEqual('1+theta');
-    });            
+    });
+
+    it("factorial", function() {     
+        expect(astToText(['factorial', 17]).replace(/ /g,'')).toEqual('17!');
+    });                
 });

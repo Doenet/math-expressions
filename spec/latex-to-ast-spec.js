@@ -22,6 +22,10 @@ describe("latex to ast", function() {
     
     var inputs = [
 	'3+4',
+	'x!',
+	'17!',
+	'(x+1)!',
+	'(x^2+1)!',	
 	'\\frac{1}{2}',
 	'-2',
 	'x^{2}',

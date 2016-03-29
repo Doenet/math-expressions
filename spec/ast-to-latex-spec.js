@@ -14,6 +14,8 @@ describe("ast to latex", function() {
 	'ln |x|': '\\ln \\left|x\\right|',
 	'sin^2 (3x)': '\\sin^{2} \\left(3 \\, x\\right)',
 	'sin x': '\\sin x',
+	'x!': 'x!',
+	'17!': '17!',
 	'sqrt(-x)': '\\sqrt{-x}',
 	'x^y z': 'x^{y} \\, z',
 	'2^(2^x)': '2^{2^{x}}',
