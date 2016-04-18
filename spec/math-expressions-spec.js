@@ -220,6 +220,7 @@ describe("expression", function() {
 
     var nonequivalences = {
 	"0.33": "1/3",
+	"x/2-sin(2x)/4-(cos(x))^3/3": "x/2+sin(2x)/4-(cos(x))^3/3",
 	"x": "sqrt(x^2)",
 	"sqrt((x-3)*(x-5))": "sqrt(x-3)*sqrt(x-5)",
 	'(19601-13861*sqrt(2))^(7/4)': '(5*sqrt(2)-7)^7',
