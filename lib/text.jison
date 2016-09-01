@@ -155,6 +155,13 @@
 "omega"			return 'omega'
 "Omega"			return 'Omega'
 
+"oo"			return 'infinity'
+"OO"			return 'infinity'
+[Ii][Nn][Ff][Tt][Yy]	return 'infinity'
+"inf"			return 'infinity'
+"infinity"		return 'infinity'
+"Infinity"		return 'infinity'
+
 "!"			return '!'
 
 [A-Za-z]                return 'VAR'

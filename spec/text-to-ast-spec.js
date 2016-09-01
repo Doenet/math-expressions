@@ -91,6 +91,7 @@ describe("text to ast", function() {
 	'n!',
 	'(n+1)!',
 	'(n-1)!',
+	'infinity',
     ];
 
     _.each( inputs, function(input) {

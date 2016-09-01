@@ -96,6 +96,8 @@
 "\\omega"		return 'omega'
 "\\Omega"		return 'Omega'
 
+"\\infty"		return 'infinity'
+
 "\\arcsin"              return 'ARCSIN'
 "\\arccos"              return 'ARCCOS'
 "\\arctan"              return 'ARCTAN'

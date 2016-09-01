@@ -25,6 +25,7 @@ describe("ast to latex", function() {
 	'gamma(z)': '\\Gamma \\left(z\\right)',
 	'gamma(pi z)': '\\Gamma \\left(\\pi \\, z\\right)',		
 	'1/(x^2 + x + 1)': '\\frac{1}{x^{2} + x + 1}',
+	'oo': '\\infty',	
     };
 
     _.each( _.keys(texts), function(text) {
