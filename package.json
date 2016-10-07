@@ -1,7 +1,7 @@
 {
     "name": "math-expressions",
     "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-    "version": "1.1.0",
+    "version": "1.3.0",
     
     "author": {
 	"name": "Jim Fowler",
@@ -24,11 +24,12 @@
     "private": false,
     
     "dependencies": {
+	"number-theory": "*",
+	"underscore": "*"	
     },
     
     "devDependencies": {
 	"jasmine": "*",
-	"underscore": "*",	
 	"jshint": "*",
 	"grunt": "*",
 	"grunt-urequire": "*",	
