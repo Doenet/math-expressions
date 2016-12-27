@@ -30,7 +30,7 @@ module.exports = function(grunt) {
 			    "node_modules/underscore/underscore-min.js": "underscore"
 			},
 			imports: {
-			    debug: "lib/debug",
+			    "lib/debug": "lib/debug",
 			    underscore: "node_modules/underscore/underscore-min.js"			    
 			},
 			rootExports: {
