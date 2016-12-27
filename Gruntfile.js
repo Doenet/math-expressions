@@ -20,12 +20,14 @@ module.exports = function(grunt) {
 			"lib/debug",
 			"node_modules/xml-parser/index.js",
 			"node_modules/number-theory/index.js",						
-			"node_modules/number-theory/lib/**",			
+			"node_modules/number-theory/lib/**",
+			"node_modules/underscore/underscore-min.js",									
 		    ],
 		    dependencies: {
 			replace: {
 			    "lib/debug": "debug",
-			    "node_modules/number-theory/index.js": "number-theory"
+			    "node_modules/number-theory/index.js": "number-theory",
+			    "node_modules/underscore/underscore-min.js": "underscore"			    
 			},
 			imports: {
 			    debug: "debug"
