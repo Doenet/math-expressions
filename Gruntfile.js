@@ -29,9 +29,6 @@ module.exports = function(grunt) {
 			    "node_modules/number-theory/index.js": "number-theory",
 			    "node_modules/underscore/underscore-min.js": "underscore"
 			},
-			imports: {
-			    underscore: "node_modules/underscore/underscore-min.js"			    
-			},
 			rootExports: {
 			    "math-expressions": "MathExpression"
 			}

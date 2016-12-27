@@ -16,7 +16,7 @@ var __isAMD = !!(typeof define === 'function' && define.amd),
       __throwExcluded = function(dep, descr) {
         throw new Error("uRequire: combined template 'lib', trying to access unbound / excluded `" + descr + "` dependency `" + dep + "` on browser");
       };
-var bundleFactory = function(node_modules/underscore/underscore-min.js) {
+var bundleFactory = function() {
 /**
  * @license almond 0.3.3 Copyright jQuery Foundation and other contributors.
  * Released under MIT license, http://github.com/requirejs/almond/LICENSE
@@ -7283,12 +7283,12 @@ return module.exports;
 
 };
 if (__isAMD) {
-  return define(['underscore'], bundleFactory);
+  return define(bundleFactory);
 } else {
     if (__isNode) {
-        return module.exports = bundleFactory(require('underscore'));
+        return module.exports = bundleFactory();
     } else {
-        return bundleFactory((typeof node_modules/underscore/underscore-min.js !== 'undefined') ? node_modules/underscore/underscore-min.js : __throwMissing('underscore', 'node_modules/underscore/underscore-min.js'));
+        return bundleFactory();
     }
 }
 }).call(this, (typeof exports === 'object' || typeof window === 'undefined' ? global : window),
