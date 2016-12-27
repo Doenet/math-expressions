@@ -7279,8 +7279,6 @@ exports.fromAst = function (ast) {
 return module.exports;
 
 });
-
-    var lib/debug = require('lib/debug');
     return require('lib/math-expressions');
 
 };
