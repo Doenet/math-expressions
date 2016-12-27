@@ -457,7 +457,7 @@ define("almond", function(){});
 define('lib/debug',['require', 'exports', 'module'], function (require, exports, module) {
   
 
-exports = function (name) {
+module.exports = function (name) {
   return function (message) {
     console.log(name + ": ", message);
   };
