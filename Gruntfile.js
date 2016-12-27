@@ -9,19 +9,33 @@ module.exports = function(grunt) {
 	    },
 
 	    lib: {
-		main: 'math-expressions',		
-		path: 'lib',
+		main: 'lib/math-expressions',		
+		path: '.',
 		dstPath: 'build/math-expressions.js',
 		template: 'combined',
 
 		bundle: {
+		    filez: [
+			"lib/**",
+			"lib/debug",
+			"node_modules/xml-parser/index.js",
+			"node_modules/number-theory/index.js",						
+			"node_modules/number-theory/lib/**",			
+		    ],
 		    dependencies: {
+			replace: {
+			    "lib/debug": "debug",
+			    "node_modules/number-theory/index.js": "number-theory"
+			},
+			imports: {
+			    debug: "debug"
+			},
 			rootExports: {
 			    "math-expressions": "MathExpression"
 			}
 		    }
 		}
-	    },
+	    }
 	}
     });
 

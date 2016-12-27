@@ -16,7 +16,7 @@ var __isAMD = !!(typeof define === 'function' && define.amd),
       __throwExcluded = function(dep, descr) {
         throw new Error("uRequire: combined template 'lib', trying to access unbound / excluded `" + descr + "` dependency `" + dep + "` on browser");
       };
-var bundleFactory = function() {
+var bundleFactory = function(_, debug) {
 /**
  * @license almond 0.3.3 Copyright jQuery Foundation and other contributors.
  * Released under MIT license, http://github.com/requirejs/almond/LICENSE
@@ -454,7 +454,156 @@ var requirejs, require, define;
 
 define("almond", function(){});
 
-define('lexers/latex',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/debug',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+exports = function (name) {
+  return function (message) {
+    console.log(name + ": ", message);
+  };
+};
+
+return module.exports;
+
+});
+define('node_modules/xml-parser/index',['require', 'exports', 'module', '../../lib/debug'], function (require, exports, module) {
+  
+
+var debug = require("../../lib/debug")("xml-parser");
+module.exports = parse;
+function parse(xml) {
+  xml = xml.trim();
+  xml = xml.replace(/<!--[\s\S]*?-->/g, "");
+  return document();
+  function document() {
+    return {
+      declaration: declaration(),
+      root: tag()
+    };
+  }
+  function declaration() {
+    var m = match(/^<\?xml\s*/);
+    if (!m)
+      return;
+    var node = { attributes: {} };
+    while (!(eos() || is("?>"))) {
+      var attr = attribute();
+      if (!attr)
+        return node;
+      node.attributes[attr.name] = attr.value;
+    }
+    match(/\?>\s*/);
+    return node;
+  }
+  function tag() {
+    debug("tag %j", xml);
+    var m = match(/^<([\w-:.]+)\s*/);
+    if (!m)
+      return;
+    var node = {
+        name: m[1],
+        attributes: {},
+        children: []
+      };
+    while (!(eos() || is(">") || is("?>") || is("/>"))) {
+      var attr = attribute();
+      if (!attr)
+        return node;
+      node.attributes[attr.name] = attr.value;
+    }
+    if (match(/^\s*\/>\s*/)) {
+      return node;
+    }
+    match(/\??>\s*/);
+    node.content = content();
+    var child;
+    while (child = tag()) {
+      node.children.push(child);
+    }
+    match(/^<\/[\w-:.]+>\s*/);
+    return node;
+  }
+  function content() {
+    debug("content %j", xml);
+    var m = match(/^([^<]*)/);
+    if (m)
+      return m[1];
+    return "";
+  }
+  function attribute() {
+    debug("attribute %j", xml);
+    var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
+    if (!m)
+      return;
+    return {
+      name: m[1],
+      value: strip(m[2])
+    };
+  }
+  function strip(val) {
+    return val.replace(/^['"]|['"]$/g, "");
+  }
+  function match(re) {
+    var m = xml.match(re);
+    if (!m)
+      return;
+    xml = xml.slice(m[0].length);
+    return m;
+  }
+  function eos() {
+    return 0 == xml.length;
+  }
+  function is(prefix) {
+    return 0 == xml.indexOf(prefix);
+  }
+}
+
+return module.exports;
+
+});
+define('lib/mml-to-latex',['require', 'exports', 'module', '../node_modules/xml-parser/index'], function (require, exports, module) {
+  
+
+var parseString = require("../node_modules/xml-parser/index");
+function parse(mml) {
+  if (mml.name == "mi") {
+    if (mml.content.length > 1) {
+      return "\\" + mml.content;
+    } else {
+      return mml.content;
+    }
+  } else if (mml.name == "mn") {
+    return mml.content;
+  } else if (mml.name == "msup") {
+    return parse(mml.children[0]) + "^" + parse(mml.children[1]);
+  } else if (mml.name == "mroot") {
+    return "\\sqrt[" + parse(mml.children[1]) + "]{" + parse(mml.children[1]) + "}";
+  } else if (mml.name == "mfrac") {
+    return "\\frac{" + parse(mml.children[0]) + "}{" + parse(mml.children[1]) + "}";
+  } else if (mml.name == "msqrt") {
+    return "\\sqrt{" + mml.children.map(parse).join("") + "}";
+  } else if (mml.name == "mo") {
+    if (mml.content == "&#x2061;") {
+      return " ";
+    } else {
+      return mml.content;
+    }
+  } else if (mml.name == "mrow" && mml.attributes.class == "MJX-TeXAtom-ORD") {
+    return mml.children.map(parse).join("");
+  } else if (mml.name == "math" || mml.name == "mrow") {
+    return "(" + mml.children.map(parse).join("") + ")";
+  }
+}
+exports.mmlToLatex = function (xml) {
+  var result = parse(parseString(xml).root);
+  console.log(result);
+  return result;
+};
+
+return module.exports;
+
+});
+define('lib/lexers/latex',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var latex = function () {
@@ -519,7 +668,7 @@ var latex = function () {
               this.message = msg;
               this.hash = hash;
             }
-            _parseError.prototype = new Error();
+            _parseError.prototype = Error;
             throw new _parseError(str, hash);
           }
         },
@@ -1432,7 +1581,7 @@ if (typeof require !== "undefined" && typeof exports !== "undefined") {
 return module.exports;
 
 });
-define('latex-to-ast',['require', 'exports', 'module', './lexers/latex'], function (require, exports, module) {
+define('lib/latex-to-ast',['require', 'exports', 'module', './lexers/latex'], function (require, exports, module) {
   
 
 var Parser = require("./lexers/latex").Parser;
@@ -1756,7 +1905,7 @@ exports.latexToAst = parse;
 return module.exports;
 
 });
-define('lexers/text',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/lexers/text',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var text = function () {
@@ -1821,7 +1970,7 @@ var text = function () {
               this.message = msg;
               this.hash = hash;
             }
-            _parseError.prototype = new Error();
+            _parseError.prototype = Error;
             throw new _parseError(str, hash);
           }
         },
@@ -2984,7 +3133,7 @@ if (typeof require !== "undefined" && typeof exports !== "undefined") {
 return module.exports;
 
 });
-define('text-to-ast',['require', 'exports', 'module', './lexers/text'], function (require, exports, module) {
+define('lib/text-to-ast',['require', 'exports', 'module', './lexers/text'], function (require, exports, module) {
   
 
 var Parser = require("./lexers/text").Parser;
@@ -3255,7 +3404,7 @@ exports.textToAst = parse;
 return module.exports;
 
 });
-define('ast-to-text',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/ast-to-text',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var operators = {
@@ -3500,7 +3649,7 @@ exports.astToText = astToText;
 return module.exports;
 
 });
-define('ast-to-latex',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/ast-to-latex',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var operators = {
@@ -3742,7 +3891,7 @@ exports.astToLatex = astToText;
 return module.exports;
 
 });
-define('ast-to-glsl',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/ast-to-glsl',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var glslOperators = {
@@ -3874,7 +4023,7 @@ exports.astToGlsl = astToGlsl;
 return module.exports;
 
 });
-define('ast-to-function',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/ast-to-function',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 var math_functions = {
@@ -4006,7 +4155,7 @@ exports.astToFunction = astToFunction;
 return module.exports;
 
 });
-define('complex-number',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/complex-number',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 function ComplexNumber(real, imaginary) {
@@ -4167,7 +4316,7 @@ exports.ComplexNumber = ComplexNumber;
 return module.exports;
 
 });
-define('ast-to-complex-function',['require', 'exports', 'module', './complex-number'], function (require, exports, module) {
+define('lib/ast-to-complex-function',['require', 'exports', 'module', './complex-number'], function (require, exports, module) {
   
 
 var ComplexNumber = require("./complex-number").ComplexNumber;
@@ -4304,70 +4453,224 @@ exports.astToComplexFunction = astToComplexFunction;
 return module.exports;
 
 });
-define('number-theory',['require', 'exports', 'module'], function (require, exports, module) {
+define('node_modules/number-theory/lib/sieve',['require', 'exports', 'module'], function (require, exports, module) {
   
 
-function memoize(f) {
-  var cache = {};
-  return function (x) {
-    if (x in cache)
-      return cache[x];
-    else {
-      cache[x] = f(x);
-      return cache[x];
-    }
-  };
-}
-function uniquify(array) {
-  return array.filter(function (v, i) {
-    return array.indexOf(v) === i;
-  });
-}
-function multiplyMod(a, b, m) {
-  if (a < 94906265 && b < 94906265)
-    return a * b % m;
-  var d = 0;
-  var mp2 = m / 2;
-  if (a >= m)
-    a %= m;
-  if (b >= m)
-    b %= m;
-  for (var i = 0; i < 53; i++) {
-    d = d >= mp2 ? 2 * d - m : 2 * d;
-    if (a >= 4503599627370496) {
-      d += b;
-      a = a - 4503599627370495;
-    }
-    if (d > m)
-      d -= m;
-    a *= 2;
+"use strict";
+module.exports = function sieve(n) {
+  var numbers = new Array(n);
+  for (var i = 0; i < n; i++) {
+    numbers[i] = true;
   }
-  return d;
-}
-exports.multiplyMod = multiplyMod;
-function gcd(a, b) {
-  if (a < 0)
+  for (var i = 2; i < Math.sqrt(n); i++) {
+    for (var j = i * i; j < n; j += i) {
+      numbers[j] = false;
+    }
+  }
+  var primes = [];
+  for (var i = 2; i < n; i++) {
+    if (numbers[i]) {
+      primes.push(i);
+    }
+  }
+  return primes;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/factor',['require', 'exports', 'module', './sieve'], function (require, exports, module) {
+  
+
+"use strict";
+var sieve = require("./sieve");
+var primes = sieve(100000);
+module.exports = function factor(n) {
+  if (!primes || primes[primes.length - 1] < n) {
+    primes = sieve(n);
+  }
+  var factors = [];
+  for (var k = 0; k < primes.length && n > 1; k++) {
+    var p = primes[k];
+    if (n % p === 0) {
+      var factor = {
+          prime: p,
+          power: 0
+        };
+      while (n % p === 0) {
+        factor.power++;
+        n /= p;
+      }
+      factors.push(factor);
+    }
+  }
+  if (n > 1) {
+    factors.push({
+      prime: n,
+      power: 1
+    });
+  }
+  return factors;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/inc_mixed',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function incMixed(tuple, bases) {
+  var result = tuple.map(function (value) {
+      return value;
+    });
+  result[0]++;
+  for (var k = 0; k < tuple.length; k++) {
+    if (result[k] <= bases[k]) {
+      break;
+    } else if (k !== tuple.length - 1) {
+      result[k] = 0;
+      result[k + 1]++;
+    } else {
+      result[k] = 0;
+    }
+  }
+  return result;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/divisors',['require', 'exports', 'module', './factor', './inc_mixed'], function (require, exports, module) {
+  
+
+"use strict";
+var factor = require("./factor");
+var incMixed = require("./inc_mixed");
+module.exports = function divisors(n) {
+  var factors = factor(n);
+  var powers = factors.map(function (factor) {
+      return 0;
+    });
+  var maxPowers = factors.map(function (factor) {
+      return factor.power;
+    });
+  var divisors = [1];
+  while (true) {
+    powers = incMixed(powers, maxPowers);
+    var d = powers.map(function (m, i) {
+        return Math.pow(factors[i].prime, m);
+      }).reduce(function (memo, curr) {
+        return memo * curr;
+      }, 1);
+    if (d === 1)
+      break;
+    divisors.push(d);
+  }
+  divisors.sort(function (a, b) {
+    return parseInt(a) - parseInt(b);
+  });
+  return divisors;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/prime_factors',['require', 'exports', 'module', './factor'], function (require, exports, module) {
+  
+
+"use strict";
+var factor = require("./factor");
+module.exports = function primeFactors(n) {
+  return factor(n).map(function (f) {
+    return f.prime;
+  });
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/euler_phi',['require', 'exports', 'module', './prime_factors'], function (require, exports, module) {
+  
+
+"use strict";
+var primeFactors = require("./prime_factors");
+module.exports = function eulerPhi(n) {
+  var product = function (list) {
+    return list.reduce(function (memo, number) {
+      return memo * number;
+    }, 1);
+  };
+  var factors = primeFactors(n);
+  var N = product(factors.map(function (p) {
+      return p - 1;
+    }));
+  var D = product(factors);
+  return n * N / D;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/gcd',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function gcd(a, b) {
+  if (a < 0) {
     a = -a;
-  if (b < 0)
+  }
+  if (b < 0) {
     b = -b;
-  if (b > a) {
-    var temp = a;
-    a = b;
-    b = temp;
   }
   while (true) {
-    if (b === 0)
+    if (b === 0) {
       return a;
+    }
     a %= b;
-    if (a === 0)
+    if (a === 0) {
       return b;
+    }
     b %= a;
   }
-}
-exports.gcd = gcd;
-function inverseMod(a, n) {
-  if (a < 0)
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/find_divisor',['require', 'exports', 'module', './gcd'], function (require, exports, module) {
+  
+
+"use strict";
+var gcd = require("./gcd");
+module.exports = function findDivisor(x) {
+  var numsteps = 2 * Math.floor(Math.sqrt(Math.sqrt(x)));
+  var slow = 2;
+  var fast = slow;
+  var thegcd;
+  for (var i = 1; i < numsteps; i++) {
+    slow = (slow * slow + 1) % x;
+    fast = (fast * fast + 1) % x;
+    fast = (fast * fast + 1) % x;
+    thegcd = gcd(fast - slow, x);
+    if (thegcd != 1) {
+      return thegcd;
+    }
+  }
+  return 1;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/inverse_mod',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function inverseMod(a, n) {
+  if (a < 0) {
     a = a % n + n;
+  }
   var t = 0;
   var newt = 1;
   var r = n;
@@ -4381,146 +4684,339 @@ function inverseMod(a, n) {
     r = newr;
     newr = oldr - quotient * newr;
   }
-  if (r > 1)
+  if (r > 1) {
     return NaN;
-  if (t < 0)
-    t = t + n;
-  return t;
-}
-exports.inverseMod = inverseMod;
-var findFactor = memoize(function (x) {
-    var numsteps = 2 * Math.floor(Math.sqrt(Math.sqrt(x))), slow = 2, fast = slow, i, thegcd;
-    for (i = 1; i < numsteps; i++) {
-      slow = (slow * slow + 1) % x;
-      fast = (fast * fast + 1) % x;
-      fast = (fast * fast + 1) % x;
-      if ((thegcd = gcd(fast - slow, x)) != 1) {
-        return thegcd;
-      }
+  }
+  ;
+  return t > 0 ? t : t + n;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_abundant',['require', 'exports', 'module', './divisors'], function (require, exports, module) {
+  
+
+"use strict";
+var divisors = require("./divisors");
+module.exports = function isAbundant(n) {
+  if (n === 1) {
+    return false;
+  }
+  var divisorsOfNumber = divisors(n);
+  divisorsOfNumber.pop();
+  var sumOfDivisors = divisorsOfNumber.reduce(function (a, b) {
+      return a + b;
+    });
+  return n < sumOfDivisors;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_deficient',['require', 'exports', 'module', './divisors'], function (require, exports, module) {
+  
+
+"use strict";
+var divisors = require("./divisors");
+module.exports = function isDeficient(n) {
+  if (n === 1) {
+    return true;
+  }
+  ;
+  var divisorsOfNumber = divisors(n);
+  divisorsOfNumber.pop();
+  var sumOfDivisors = divisorsOfNumber.reduce(function (a, b) {
+      return a + b;
+    });
+  return n > sumOfDivisors;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_heptagonal',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isHeptagonal(n) {
+  return (Math.sqrt(40 * n + 9) + 3) / 10 % 1 === 0;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_hexagonal',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isHexagonal(n) {
+  return (Math.sqrt(8 * n + 1) + 1) / 4 % 1 === 0;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_octagonal',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isOctagonal(n) {
+  return (Math.sqrt(3 * n + 1) + 1) / 3 % 1 == 0;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_pentagonal',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isPentagonal(n) {
+  return (Math.sqrt(24 * n + 1) + 1) / 6 % 1 === 0;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_perfect',['require', 'exports', 'module', './divisors'], function (require, exports, module) {
+  
+
+"use strict";
+var divisors = require("./divisors");
+module.exports = function isPerfect(n) {
+  if (n === 1) {
+    return false;
+  }
+  var divisorsOfNumber = divisors(n);
+  divisorsOfNumber.pop();
+  var sumOfDivisors = divisorsOfNumber.reduce(function (a, b) {
+      return a + b;
+    });
+  return n === sumOfDivisors;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_prime',['require', 'exports', 'module', './factor'], function (require, exports, module) {
+  
+
+"use strict";
+var factor = require("./factor");
+module.exports = function isPrime(p) {
+  var factors = factor(p);
+  if (factors.length != 1) {
+    return false;
+  }
+  return factors[0].power === 1;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/multiply_mod',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function multiplyMod(a, b, m) {
+  if (a < 94906265 && b < 94906265) {
+    return a * b % m;
+  }
+  var d = 0;
+  var mp2 = m / 2;
+  if (a >= m)
+    a %= m;
+  if (b >= m)
+    b %= m;
+  for (var i = 0; i < 53; i++) {
+    d = d >= mp2 ? 2 * d - m : 2 * d;
+    if (a >= 4503599627370496) {
+      d += b;
+      a = a - 4503599627370495;
     }
-    return 1;
-  });
-exports.findFactor = findFactor;
-var factor = memoize(function (x) {
-    if (x < 0)
-      return factor(-x);
-    if (x <= 1)
-      return [];
-    var i;
-    var bound = Math.floor(Math.sqrt(x));
-    i = findFactor(x);
-    if (i > 1 && i < x)
-      return factor(i).concat(factor(x / i));
-    for (i = 2; i <= bound; i++) {
-      if (x % i === 0) {
-        return factor(i).concat(factor(x / i));
-      }
+    if (d > m) {
+      d -= m;
     }
-    return [x];
-  });
-exports.factor = factor;
-var isPrime = memoize(function (p) {
-    return factor(p).length == 1;
-  });
-exports.isPrime = isPrime;
-var isProbablyPrime = function (n) {
-  var epsilon = 1e-7;
+    a *= 2;
+  }
+  return d;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/power_mod',['require', 'exports', 'module', './multiply_mod', './inverse_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var multiplyMod = require("./multiply_mod");
+var inverseMod = require("./inverse_mod");
+module.exports = function powerMod(base, exponent, mod) {
+  if (exponent < 0) {
+    return inverseMod(powerMod(base, -exponent, mod), mod);
+  }
+  var result = 1;
+  base = base % mod;
+  while (exponent > 0) {
+    if (exponent % 2 == 1) {
+      result = multiplyMod(result, base, mod);
+      exponent -= 1;
+    }
+    exponent /= 2;
+    base = multiplyMod(base, base, mod);
+  }
+  return result;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/miller',['require', 'exports', 'module', './multiply_mod', './power_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var multiplyMod = require("./multiply_mod");
+var powerMod = require("./power_mod");
+module.exports = function miller(n) {
+  if (n < 2)
+    return false;
+  if (n == 2 || n == 3)
+    return true;
+  if (!(n & 1) || n % 3 == 0)
+    return false;
   var d = n - 1;
   var s = 0;
   while (d % 2 === 0) {
     d = d / 2;
     s = s + 1;
   }
-  while (epsilon < 1) {
-    var a = Math.floor(Math.random() * (n - 3)) + 2;
-    var witness = a;
-    a = powerMod(a, d, n);
-    if (a != 1) {
-      var possiblyPrime = false;
-      for (var i = 0; i < s; i++) {
-        if (a == n - 1) {
-          possiblyPrime = true;
-          break;
-        }
-        a = multiplyMod(a, a, n);
-      }
-      if (!possiblyPrime) {
+  var witnesses;
+  if (n < 1373653) {
+    witnesses = [
+      2,
+      3
+    ];
+  } else if (n < 9080191) {
+    witnesses = [
+      31,
+      73
+    ];
+  } else if (n < 4759123141) {
+    witnesses = [
+      2,
+      7,
+      61
+    ];
+  } else if (n < 1122004669633) {
+    witnesses = [
+      2,
+      13,
+      23,
+      1662803
+    ];
+  } else if (n < 2152302898747) {
+    witnesses = [
+      2,
+      3,
+      5,
+      7,
+      11
+    ];
+  } else if (n < 3474749660383) {
+    witnesses = [
+      2,
+      3,
+      5,
+      7,
+      11,
+      13
+    ];
+  } else {
+    witnesses = [
+      2,
+      3,
+      5,
+      7,
+      11,
+      13,
+      17
+    ];
+  }
+  for (var i = 0; i < witnesses.length; i++) {
+    var a = witnesses[i];
+    var x = powerMod(a, d, n);
+    var y = 0;
+    var q = s;
+    while (q > 0) {
+      y = multiplyMod(x, x, n);
+      if (y === 1 && x !== 1 && x !== n - 1) {
         return false;
       }
+      x = y;
+      --q;
     }
-    epsilon *= 2;
+    if (y !== 1) {
+      return false;
+    }
   }
   return true;
 };
-exports.isProbablyPrime = isProbablyPrime;
-function powerMod(x, n, m) {
-  if (n < 0) {
-    return inverseMod(powerMod(x, -n, m), m);
-  }
-  var result = 1;
-  while (n !== 0) {
-    if (n % 2 == 1) {
-      result = multiplyMod(result, x, m);
-      n -= 1;
-    }
-    x = multiplyMod(x, x, m);
-    n /= 2;
-  }
-  return result;
-}
-exports.powerMod = powerMod;
-var eulerPhi = memoize(function (x) {
-    var product = function (xs) {
-      return xs.reduce(function (memo, num) {
-        return memo * num;
-      }, 1);
-    };
-    var factors = uniquify(factor(x));
-    return x * product(factors.map(function (p) {
-      return p - 1;
-    })) / product(factors);
-  });
-exports.eulerPhi = eulerPhi;
-var primitiveRoot = memoize(function (modulus) {
-    var phi_m = eulerPhi(modulus);
-    var factors = uniquify(factor(phi_m));
-    for (var x = 2; x < modulus; x++)
-      if (factors.every(function (p) {
-          return powerMod(x, phi_m / p, modulus) != 1;
-        }))
-        return x;
-    return NaN;
-  });
-exports.primitiveRoot = primitiveRoot;
-var randomPrimitiveRoot = function (modulus) {
-  var g = primitiveRoot(modulus);
-  var eulerPhiModulus = eulerPhi(modulus);
-  for (var trials = 0; trials < 100; trials++) {
-    var i = Math.floor(Math.random() * eulerPhiModulus);
-    if (gcd(i, eulerPhiModulus) == 1)
-      return powerMod(g, i, modulus);
-  }
-  return g;
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_square',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isSquare(n) {
+  return Math.sqrt(n) % 1 === 0;
 };
-exports.randomPrimitiveRoot = randomPrimitiveRoot;
-var jacobiSymbol = function (a, b) {
-  if (b % 2 === 0)
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/is_triangular',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function isTriangular(n) {
+  return Math.sqrt(8 * n + 1) % 1 === 0;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/jacobi_symbol',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+"use strict";
+module.exports = function jacobiSymbol(a, b) {
+  if (b % 2 === 0) {
     return NaN;
-  if (b < 0)
+  }
+  ;
+  if (b < 0) {
     return NaN;
-  if (a < 0)
+  }
+  ;
+  if (a < 0) {
     a = a % b + b;
+  }
   var flips = 0;
   while (true) {
     a = a % b;
-    if (a === 0)
+    if (a === 0) {
       return 0;
+    }
     while (a % 2 === 0) {
       flips ^= (b % 8 * (b % 8) - 1) / 8;
       a /= 2;
     }
-    if (a == 1)
+    if (a == 1) {
       return flips & 1 ? -1 : 1;
+    }
     flips ^= (a % 4 - 1) * (b % 4 - 1) / 4;
     var temp = a;
     a = b;
@@ -4528,25 +5024,140 @@ var jacobiSymbol = function (a, b) {
   }
   return NaN;
 };
-exports.jacobiSymbol = jacobiSymbol;
-var quadraticNonresidue = memoize(function (p) {
-    for (var x = 2; x < p; x++) {
-      if (jacobiSymbol(x, p) == -1)
-        return x;
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/log_mod',['require', 'exports', 'module', './power_mod', './multiply_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var powerMod = require("./power_mod");
+var multiplyMod = require("./multiply_mod");
+var babyStepGiantStepTables = {};
+module.exports = function logMod(x, g, modulus) {
+  x = (x % modulus + modulus) % modulus;
+  var m = Math.ceil(Math.sqrt(modulus));
+  var hash = {};
+  if (babyStepGiantStepTables[modulus] === undefined) {
+    babyStepGiantStepTables[modulus] = {};
+  }
+  if (babyStepGiantStepTables[modulus][g] === undefined) {
+    babyStepGiantStepTables[modulus][g] = {};
+    hash = babyStepGiantStepTables[modulus][g];
+    for (var j = 0; j < m; j++) {
+      hash[powerMod(g, j, modulus)] = j;
     }
-  });
-exports.quadraticNonresidue = quadraticNonresidue;
-var squareRootModPrime = function (n, p) {
-  if (jacobiSymbol(n, p) != 1)
+  } else {
+    hash = babyStepGiantStepTables[modulus][g];
+  }
+  var generatorInverseM = powerMod(g, -m, modulus);
+  var location = x;
+  for (var i = 0; i < m; i++) {
+    if (hash[location] !== undefined) {
+      return (multiplyMod(i, m, modulus) + hash[location]) % modulus;
+    } else {
+      location = multiplyMod(location, generatorInverseM, modulus);
+    }
+  }
+  return NaN;
+};
+
+return module.exports;
+
+});
+define('underscore',[],function () {
+  if (__isNode) {
+  return __nodeRequire('underscore');
+} else {
+    return (typeof _ !== 'undefined') ? _ : __throwMissing('underscore', '_')
+}
+});
+define('node_modules/number-theory/lib/primitive_root',['require', 'exports', 'module', 'underscore', './euler_phi', './prime_factors', './power_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var _ = require("underscore");
+var eulerPhi = require("./euler_phi");
+var primeFactors = require("./prime_factors");
+var powerMod = require("./power_mod");
+module.exports = function primitiveRoot(modulus) {
+  var phi_m = eulerPhi(modulus);
+  var factors = primeFactors(phi_m);
+  for (var x = 2; x < modulus; x++) {
+    var check = _.every(factors, function (p) {
+        return powerMod(x, phi_m / p, modulus) != 1;
+      });
+    if (check) {
+      return x;
+    }
+  }
+  return NaN;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/quadratic_nonresidue',['require', 'exports', 'module', './jacobi_symbol'], function (require, exports, module) {
+  
+
+"use strict";
+var jacobiSymbol = require("./jacobi_symbol");
+module.exports = function quadraticNonresidue(p) {
+  for (var x = 2; x < p; x++) {
+    if (jacobiSymbol(x, p) == -1) {
+      return x;
+    }
+  }
+  return NaN;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/random_primitive_root',['require', 'exports', 'module', './primitive_root', './euler_phi', './gcd', './power_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var primitiveRoot = require("./primitive_root");
+var eulerPhi = require("./euler_phi");
+var gcd = require("./gcd");
+var powerMod = require("./power_mod");
+module.exports = function randomPrimitiveRoot(modulus) {
+  var g = primitiveRoot(modulus);
+  var eulerPhiModulus = eulerPhi(modulus);
+  for (var trials = 0; trials < 100; trials++) {
+    var i = Math.floor(Math.random() * eulerPhiModulus);
+    if (gcd(i, eulerPhiModulus) == 1) {
+      return powerMod(g, i, modulus);
+    }
+  }
+  return g;
+};
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/square_root_mod_prime',['require', 'exports', 'module', './jacobi_symbol', './power_mod', './quadratic_nonresidue'], function (require, exports, module) {
+  
+
+"use strict";
+var jacobiSymbol = require("./jacobi_symbol");
+var powerMod = require("./power_mod");
+var quadraticNonresidue = require("./quadratic_nonresidue");
+module.exports = function squareRootModPrime(n, p) {
+  if (jacobiSymbol(n, p) != 1) {
     return NaN;
+  }
   var Q = p - 1;
   var S = 0;
   while (Q % 2 === 0) {
     Q /= 2;
     S++;
   }
-  if (p % 4 == 3)
+  if (p % 4 == 3) {
     return powerMod(n, (p + 1) / 4, p);
+  }
   var z = quadraticNonresidue(p);
   var c = powerMod(z, Q, p);
   var R = powerMod(n, (Q + 1) / 2, p);
@@ -4575,68 +5186,104 @@ var squareRootModPrime = function (n, p) {
   }
   return NaN;
 };
-exports.squareRootModPrime = squareRootModPrime;
-var squareRootMod = function (n, modulus) {
+
+return module.exports;
+
+});
+define('node_modules/number-theory/lib/square_root_mod',['require', 'exports', 'module', 'underscore', './factor', './square_root_mod_prime', './jacobi_symbol', './inverse_mod', './multiply_mod'], function (require, exports, module) {
+  
+
+"use strict";
+var _ = require("underscore");
+var factor = require("./factor");
+var squareRootModPrime = require("./square_root_mod_prime");
+var jacobiSymbol = require("./jacobi_symbol");
+var inverseMod = require("./inverse_mod");
+var multiplyMod = require("./multiply_mod");
+module.exports = function squareRootMod(n, modulus) {
   var m = 1;
   var results = [0];
-  factor(modulus).forEach(function (p) {
+  factor(modulus).forEach(function (f) {
+    var p = f.prime;
+    var exponent = f.power;
     var s = squareRootModPrime(n, p);
-    if (gcd(m, p) == 1) {
-      var combined = [];
-      results.forEach(function (r) {
-        combined.unshift(r * p * inverseMod(p, m) + s * m * inverseMod(m, p));
-        combined.unshift(r * p * inverseMod(p, m) - s * m * inverseMod(m, p));
-      });
-      results = uniquify(combined);
-    } else {
-      results = results.map(function (r) {
-        return r + -((r * r - n) / m) * inverseMod(2 * r, p) % p * m;
-      });
+    var combined = [];
+    if (jacobiSymbol(n, p) != 1) {
+      return [];
     }
+    results.forEach(function (r) {
+      combined.unshift(r * p * inverseMod(p, m) + s * m * inverseMod(m, p));
+      combined.unshift(r * p * inverseMod(p, m) - s * m * inverseMod(m, p));
+    });
+    combined.sort();
+    results = _.unique(combined);
     m = m * p;
+    var soFar = 1;
+    exponent--;
+    while (exponent > 0) {
+      var q = Math.pow(p, Math.min(soFar, exponent));
+      exponent -= Math.min(soFar, exponent);
+      results = results.map(function (r) {
+        var A = -((r * r - n) / m);
+        var B = inverseMod(2 * r, q);
+        return r + m * multiplyMod(A, B, q);
+      });
+      m = m * q;
+    }
   });
   return results.map(function (r) {
     return (r % modulus + modulus) % modulus;
   });
 };
-exports.squareRootMod = squareRootMod;
-var babyStepGiantStepTables = {};
-function discreteLog(x, generator, modulus) {
-  x = (x % modulus + modulus) % modulus;
-  var m = Math.ceil(Math.sqrt(modulus));
-  var hash = {};
-  if (babyStepGiantStepTables[modulus] === undefined) {
-    babyStepGiantStepTables[modulus] = {};
-  }
-  if (babyStepGiantStepTables[modulus][generator] === undefined) {
-    babyStepGiantStepTables[modulus][generator] = {};
-    hash = babyStepGiantStepTables[modulus][generator];
-    for (var j = 0; j < m; j++) {
-      hash[powerMod(generator, j, modulus)] = j;
-    }
-  } else {
-    hash = babyStepGiantStepTables[modulus][generator];
-  }
-  var generatorInverseM = powerMod(generator, -m, modulus);
-  var gamma = x;
-  for (var i = 0; i < m; i++) {
-    if (hash[gamma] !== undefined) {
-      return (multiplyMod(i, m, modulus) + hash[gamma]) % modulus;
-    } else {
-      gamma = multiplyMod(gamma, generatorInverseM, modulus);
-    }
-  }
-  return NaN;
-}
-exports.discreteLog = discreteLog;
 
 return module.exports;
 
 });
-define('z-mod-n',['require', 'exports', 'module', './number-theory'], function (require, exports, module) {
+define('node_modules/number-theory/index',['require', 'exports', 'module', './lib/divisors', './lib/euler_phi', './lib/factor', './lib/find_divisor', './lib/gcd', './lib/inc_mixed', './lib/inverse_mod', './lib/is_abundant', './lib/is_deficient', './lib/is_heptagonal', './lib/is_hexagonal', './lib/is_octagonal', './lib/is_pentagonal', './lib/is_perfect', './lib/is_prime', './lib/miller', './lib/is_square', './lib/is_triangular', './lib/jacobi_symbol', './lib/log_mod', './lib/multiply_mod', './lib/power_mod', './lib/prime_factors', './lib/primitive_root', './lib/quadratic_nonresidue', './lib/random_primitive_root', './lib/sieve', './lib/square_root_mod', './lib/square_root_mod_prime'], function (require, exports, module) {
   
 
-var numberTheory = require("./number-theory");
+"use strict";
+module.exports = {
+  divisors: require("./lib/divisors"),
+  eulerPhi: require("./lib/euler_phi"),
+  factor: require("./lib/factor"),
+  findDivisor: require("./lib/find_divisor"),
+  gcd: require("./lib/gcd"),
+  incMixed: require("./lib/inc_mixed"),
+  inverseMod: require("./lib/inverse_mod"),
+  isAbundant: require("./lib/is_abundant"),
+  isDeficient: require("./lib/is_deficient"),
+  isHeptagonal: require("./lib/is_heptagonal"),
+  isHexagonal: require("./lib/is_hexagonal"),
+  isOctagonal: require("./lib/is_octagonal"),
+  isPentagonal: require("./lib/is_pentagonal"),
+  isPerfect: require("./lib/is_perfect"),
+  isPrime: require("./lib/is_prime"),
+  isProbablyPrime: require("./lib/miller"),
+  isSquare: require("./lib/is_square"),
+  isTriangular: require("./lib/is_triangular"),
+  jacobiSymbol: require("./lib/jacobi_symbol"),
+  logMod: require("./lib/log_mod"),
+  miller: require("./lib/miller"),
+  multiplyMod: require("./lib/multiply_mod"),
+  powerMod: require("./lib/power_mod"),
+  primeFactors: require("./lib/prime_factors"),
+  primitiveRoot: require("./lib/primitive_root"),
+  quadraticNonresidue: require("./lib/quadratic_nonresidue"),
+  randomPrimitiveRoot: require("./lib/random_primitive_root"),
+  sieve: require("./lib/sieve"),
+  squareRootMod: require("./lib/square_root_mod"),
+  squareRootModPrime: require("./lib/square_root_mod_prime"),
+  totient: require("./lib/euler_phi")
+};
+
+return module.exports;
+
+});
+define('lib/z-mod-n',['require', 'exports', 'module', '../node_modules/number-theory/index'], function (require, exports, module) {
+  
+
+var numberTheory = require("../node_modules/number-theory/index");
 var PRIME = 10739999;
 function flatten(array) {
   return array.reduce(function (a, b) {
@@ -4744,10 +5391,10 @@ console.log(x.divide(y).multiply(y).toString());
 return module.exports;
 
 });
-define('ast-to-finite-field',['require', 'exports', 'module', './number-theory', './z-mod-n'], function (require, exports, module) {
+define('lib/ast-to-finite-field',['require', 'exports', 'module', '../node_modules/number-theory/index', './z-mod-n'], function (require, exports, module) {
   
 
-var numberTheory = require("./number-theory");
+var numberTheory = require("../node_modules/number-theory/index");
 var ZmodN = require("./z-mod-n");
 var PRIME = 10739999;
 var levelFunctions = {
@@ -4920,10 +5567,11 @@ exports.astToSignature = astToSignature;
 return module.exports;
 
 });
-define('parser',['require', 'exports', 'module', './latex-to-ast', './text-to-ast', './ast-to-text', './ast-to-latex', './ast-to-glsl', './ast-to-function', './ast-to-complex-function', './ast-to-finite-field'], function (require, exports, module) {
+define('lib/parser',['require', 'exports', 'module', './mml-to-latex', './latex-to-ast', './text-to-ast', './ast-to-text', './ast-to-latex', './ast-to-glsl', './ast-to-function', './ast-to-complex-function', './ast-to-finite-field'], function (require, exports, module) {
   
 
 kinds = [
+  "mml",
   "text",
   "latex",
   "ast",
@@ -4932,6 +5580,7 @@ kinds = [
   "complexFunction"
 ];
 converters = {
+  mml: { to: { latex: require("./mml-to-latex").mmlToLatex } },
   latex: { to: { ast: require("./latex-to-ast").latexToAst } },
   text: { to: { ast: require("./text-to-ast").textToAst } },
   ast: {
@@ -4972,7 +5621,7 @@ kinds.forEach(function (a) {
 return module.exports;
 
 });
-define('expression/printing',['require', 'exports', 'module', '../parser'], function (require, exports, module) {
+define('lib/expression/printing',['require', 'exports', 'module', '../parser'], function (require, exports, module) {
   
 
 var parser = require("../parser");
@@ -4987,7 +5636,7 @@ exports.toString = function () {
 return module.exports;
 
 });
-define('expression/differentiation',['require', 'exports', 'module', '../parser', '../math-expressions'], function (require, exports, module) {
+define('lib/expression/differentiation',['require', 'exports', 'module', '../parser', '../math-expressions'], function (require, exports, module) {
   
 
 var parser = require("../parser");
@@ -5427,7 +6076,7 @@ exports.derivativeStory = exports.derivative_story;
 return module.exports;
 
 });
-define('expression/integration',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/expression/integration',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 exports.integrateNumerically = function (x, a, b) {
@@ -5445,7 +6094,7 @@ exports.integrateNumerically = function (x, a, b) {
 return module.exports;
 
 });
-define('expression/variables',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/expression/variables',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 function leaves(tree) {
@@ -5480,7 +6129,7 @@ exports.variables = function () {
 return module.exports;
 
 });
-define('expression/equality/complex',['require', 'exports', 'module', '../../complex-number'], function (require, exports, module) {
+define('lib/expression/equality/complex',['require', 'exports', 'module', '../../complex-number'], function (require, exports, module) {
   
 
 var ComplexNumber = require("../../complex-number").ComplexNumber;
@@ -5607,7 +6256,7 @@ exports.equals = function (other) {
 return module.exports;
 
 });
-define('expression/equality',['require', 'exports', 'module', './equality/complex'], function (require, exports, module) {
+define('lib/expression/equality',['require', 'exports', 'module', './equality/complex'], function (require, exports, module) {
   
 
 exports.equalsViaComplex = require("./equality/complex").equals;
@@ -5618,7 +6267,7 @@ exports.equals = function (other) {
 return module.exports;
 
 });
-define('expression/evaluation',['require', 'exports', 'module', '../math-expressions', '../parser'], function (require, exports, module) {
+define('lib/expression/evaluation',['require', 'exports', 'module', '../math-expressions', '../parser'], function (require, exports, module) {
   
 
 var Expression = require("../math-expressions");
@@ -5664,7 +6313,7 @@ exports.substitute = function (bindings) {
 return module.exports;
 
 });
-define('expression/simplify',['require', 'exports', 'module'], function (require, exports, module) {
+define('lib/expression/simplify',['require', 'exports', 'module'], function (require, exports, module) {
   
 
 function substitute_ast(tree, bindings) {
@@ -5872,8 +6521,7 @@ exports.simplify = function () {
 return module.exports;
 
 });
-define('math-expressions',['require', 'exports', 'module', './parser', './expression/printing', './expression/differentiation', './expression/integration', './expression/variables', './expression/equality', './expression/evaluation', './expression/simplify'], function (require, exports, module) {
-  var __umodule__ = (function (require, exports, module) {
+define('lib/math-expressions',['require', 'exports', 'module', './parser', './expression/printing', './expression/differentiation', './expression/integration', './expression/variables', './expression/equality', './expression/evaluation', './expression/simplify'], function (require, exports, module) {
   
 
 var parser = require("./parser");
@@ -5901,12 +6549,17 @@ function parseLatex(string) {
   return new Expression(parser.latex.to.ast(string));
 }
 ;
+function parseMml(string) {
+  return new Expression(parser.mml.to.ast(string));
+}
+;
 exports.fromText = parseText;
 exports.parse = parseText;
 exports.fromLaTeX = parseLatex;
 exports.fromLatex = parseLatex;
 exports.fromTeX = parseLatex;
 exports.fromTex = parseLatex;
+exports.fromMml = parseMml;
 exports.parse_tex = parseLatex;
 exports.fromAst = function (ast) {
   return new Expression(ast);
@@ -5914,26 +6567,17 @@ exports.fromAst = function (ast) {
 
 return module.exports;
 
-}).call(this, require, exports, module);
-var __old__math_expression0 = window['MathExpression'];
-if (!__isAMD && !__isNode) {window['MathExpression'] = __umodule__;
-
-__umodule__.noConflict = function () {
-  window['MathExpression'] = __old__math_expression0;
-return __umodule__;
-};
-}return __umodule__;
 });
-    return require('math-expressions');
+    return require('lib/math-expressions');
 
 };
 if (__isAMD) {
-  return define(bundleFactory);
+  return define(['underscore', 'debug'], bundleFactory);
 } else {
     if (__isNode) {
-        return module.exports = bundleFactory();
+        return module.exports = bundleFactory(require('underscore'), require('debug'));
     } else {
-        return bundleFactory();
+        return bundleFactory((typeof _ !== 'undefined') ? _ : __throwMissing('underscore', '_'), (typeof debug !== 'undefined') ? debug : __throwMissing('debug', 'debug'));
     }
 }
 }).call(this, (typeof exports === 'object' || typeof window === 'undefined' ? global : window),
