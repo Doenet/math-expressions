@@ -247,13 +247,14 @@ describe("expression", function() {
 	'sin(2*pi*x)' : '0',
 	'cos((pi*x))' : '(-1)^(x)',
 	'sin(x)' : 'x - x^3/6 + x^5/120',
-		'exp(x^2)' : 'exp(x^2 + 1)',
-		'1000*exp(x/log(2))' : '1000*exp(x/log(3))',
-		'x' : 'y',
-		'x + 2*y' : 'y + 2*x',
-		'sqrt(x^2)' : 'x',
-		'x' : 'sqrt(x^2)',
-		'abs(x)' : 'x',
+	'exp(x^2)' : 'exp(x^2 + 1)',
+	'1000*exp(x/log(2))' : '1000*exp(x/log(3))',
+	'x' : 'y',
+	'x + 2*y' : 'y + 2*x',
+	'sqrt(x^2)' : 'x',
+	'x' : 'sqrt(x^2)',
+	'abs(x)' : 'x',
+	'-2t sin(t^2)/t^2 + 3t^2 sin(t^3)/t^3': '-2 sin(t^2)/t + 3 sin(t^3)/t'
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {

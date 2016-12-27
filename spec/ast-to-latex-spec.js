@@ -23,7 +23,7 @@ describe("ast to latex", function() {
 	'x^(2y) z': 'x^{2 \\, y} \\, z',
 	'n!': 'n!',
 	'gamma(z)': '\\Gamma \\left(z\\right)',
-	'gamma(pi z)': '\\Gamma \\left(\\pi \\, z\\right)',		
+	'gamma(pi z)': '\\Gamma \\left(\\pi \\, z\\right)',
 	'1/(x^2 + x + 1)': '\\frac{1}{x^{2} + x + 1}',
 	'oo': '\\infty',	
     };

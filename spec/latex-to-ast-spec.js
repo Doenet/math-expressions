@@ -2,7 +2,6 @@ var astToLatex = require('../lib/parser').ast.to.latex;
 var latexToAst = require('../lib/parser').latex.to.ast;
 var _ = require('underscore');
 
-
 describe("latex to ast", function() {
     var trees = {
 	'\\frac{1}{2} x': ['*',['/',1,2],'x'],	
@@ -79,9 +78,17 @@ describe("latex to ast", function() {
 	'||x|+|y|+|z||',
     ];
 
+    function clean(text) {
+	return text
+	    .replace(/\\left/g,'')
+	    .replace(/\\right/g,'')
+	    .replace(/\\ln/g,'\\log')
+	    .replace(/ /g,'');
+    }
+
     _.each( inputs, function(input) {
 	it(input, function() {
-	    expect(astToLatex(latexToAst(input)).replace(/ /g,'')).toEqual(input.replace(/ /g,''));
+	    expect(clean(astToLatex(latexToAst(input)))).toEqual(clean(input));
 	});	
     });
     /*
