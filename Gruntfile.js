@@ -30,7 +30,7 @@ module.exports = function(grunt) {
 			    "node_modules/underscore/underscore-min.js": "underscore"
 			},
 			rootExports: {
-			    "math-expressions": "MathExpression"
+			    "lib/math-expressions": "MathExpression"
 			}
 		    }
 		}

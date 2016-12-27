@@ -6085,19 +6085,7 @@ var ZmodN = function () {
     };
     return ZmodN;
   }();
-var one = new ZmodN([1], 17);
-console.log(one.toString());
-var two = one.add(one);
-console.log(two.toString());
-var three = two.add(one);
-console.log(three.toString());
-console.log(numberTheory.multiplyMod(3, 3, 17));
-console.log(two.add(two).sqrt().sqrt().toString());
 module.exports = ZmodN;
-var x = new ZmodN([40], 68);
-var y = new ZmodN([20], 68);
-console.log(x.divide(y).toString());
-console.log(x.divide(y).multiply(y).toString());
 
 return module.exports;
 
@@ -7233,6 +7221,7 @@ return module.exports;
 
 });
 define('lib/math-expressions',['require', 'exports', 'module', './parser', './expression/printing', './expression/differentiation', './expression/integration', './expression/variables', './expression/equality', './expression/evaluation', './expression/simplify'], function (require, exports, module) {
+  var __umodule__ = (function (require, exports, module) {
   
 
 var parser = require("./parser");
@@ -7278,6 +7267,15 @@ exports.fromAst = function (ast) {
 
 return module.exports;
 
+}).call(this, require, exports, module);
+var __old__math_expression0 = window['MathExpression'];
+if (!__isAMD && !__isNode) {window['MathExpression'] = __umodule__;
+
+__umodule__.noConflict = function () {
+  window['MathExpression'] = __old__math_expression0;
+return __umodule__;
+};
+}return __umodule__;
 });
     return require('lib/math-expressions');
 
