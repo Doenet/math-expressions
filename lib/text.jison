@@ -113,7 +113,7 @@
 [Aa][Cc][Oo][Tt]        return 'ARCCOT'
 [Ll][Oo][Gg]            return 'LOG'
 [Ll][Gg]                return 'LOG'
-[Ll][Nn]                return 'LOG'
+[Ll][Nn]                return 'LN'
 [Ee][Xx][Pp]            return 'EXP'
 [Ss][Qq][Rr][Tt]        return 'SQRT'
 [Aa][Bb][Ss]            return 'ABS'

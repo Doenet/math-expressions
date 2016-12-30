@@ -108,7 +108,7 @@
 "\\acos"                return 'ARCCOS'
 "\\atan"                return 'ARCTAN'
 "\\log"                 return 'LOG'
-"\\ln"                  return 'LOG'
+"\\ln"                  return 'LN'
 "\\exp"                 return 'EXP'
 "\\sqrt"                return 'SQRT'
 "!"			return '!'
