@@ -16,7 +16,7 @@ var __isAMD = !!(typeof define === 'function' && define.amd),
       __throwExcluded = function(dep, descr) {
         throw new Error("uRequire: combined template 'lib', trying to access unbound / excluded `" + descr + "` dependency `" + dep + "` on browser");
       };
-var bundleFactory = function() {
+var bundleFactory = function(parseString) {
 /**
  * @license almond 0.3.3 Copyright jQuery Foundation and other contributors.
  * Released under MIT license, http://github.com/requirejs/almond/LICENSE
@@ -454,117 +454,17 @@ var requirejs, require, define;
 
 define("almond", function(){});
 
-define('lib/debug',['require', 'exports', 'module'], function (require, exports, module) {
-  
-
-module.exports = function (name) {
-  return function (message) {
-    console.log(name + ": ", message);
-  };
-};
-
-return module.exports;
-
-});
-define('node_modules/xml-parser/index',['require', 'exports', 'module', '../../lib/debug'], function (require, exports, module) {
-  
-
-var debug = require("../../lib/debug")("xml-parser");
-module.exports = parse;
-function parse(xml) {
-  xml = xml.trim();
-  xml = xml.replace(/<!--[\s\S]*?-->/g, "");
-  return document();
-  function document() {
-    return {
-      declaration: declaration(),
-      root: tag()
-    };
-  }
-  function declaration() {
-    var m = match(/^<\?xml\s*/);
-    if (!m)
-      return;
-    var node = { attributes: {} };
-    while (!(eos() || is("?>"))) {
-      var attr = attribute();
-      if (!attr)
-        return node;
-      node.attributes[attr.name] = attr.value;
-    }
-    match(/\?>\s*/);
-    return node;
-  }
-  function tag() {
-    debug("tag %j", xml);
-    var m = match(/^<([\w-:.]+)\s*/);
-    if (!m)
-      return;
-    var node = {
-        name: m[1],
-        attributes: {},
-        children: []
-      };
-    while (!(eos() || is(">") || is("?>") || is("/>"))) {
-      var attr = attribute();
-      if (!attr)
-        return node;
-      node.attributes[attr.name] = attr.value;
-    }
-    if (match(/^\s*\/>\s*/)) {
-      return node;
-    }
-    match(/\??>\s*/);
-    node.content = content();
-    var child;
-    while (child = tag()) {
-      node.children.push(child);
-    }
-    match(/^<\/[\w-:.]+>\s*/);
-    return node;
-  }
-  function content() {
-    debug("content %j", xml);
-    var m = match(/^([^<]*)/);
-    if (m)
-      return m[1];
-    return "";
-  }
-  function attribute() {
-    debug("attribute %j", xml);
-    var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
-    if (!m)
-      return;
-    return {
-      name: m[1],
-      value: strip(m[2])
-    };
-  }
-  function strip(val) {
-    return val.replace(/^['"]|['"]$/g, "");
-  }
-  function match(re) {
-    var m = xml.match(re);
-    if (!m)
-      return;
-    xml = xml.slice(m[0].length);
-    return m;
-  }
-  function eos() {
-    return 0 == xml.length;
-  }
-  function is(prefix) {
-    return 0 == xml.indexOf(prefix);
-  }
+define('xml-parser',[],function () {
+  if (__isNode) {
+  return __nodeRequire('xml-parser');
+} else {
+    return (typeof parseString !== 'undefined') ? parseString : __throwMissing('xml-parser', 'parseString')
 }
-
-return module.exports;
-
 });
-define('lib/mml-to-latex',['require', 'exports', 'module', '../node_modules/xml-parser/index'], function (require, exports, module) {
+define('lib/mml-to-latex',['require', 'exports', 'module', 'xml-parser'], function (require, exports, module) {
   
 
-var parseString = require("../node_modules/xml-parser/index");
+var parseString = require("xml-parser");
 function parse(mml) {
   if (mml.name == "mi") {
     if (mml.content.length > 1) {
@@ -596,7 +496,7 @@ function parse(mml) {
 }
 exports.mmlToLatex = function (xml) {
   var result = parse(parseString(xml).root);
-  console.log(result);
+  console.log("parsed =", JSON.stringify(result));
   return result;
 };
 
@@ -1102,258 +1002,393 @@ var latex = function () {
                 return "-";
                 break;
               case 6:
-                return "+";
+                return "-";
                 break;
               case 7:
-                return "^";
+                return "-";
                 break;
               case 8:
-                return "(";
+                return "-";
                 break;
               case 9:
-                return "(";
+                return "-";
                 break;
               case 10:
-                return ")";
+                return "-";
                 break;
               case 11:
-                return "[";
+                return "-";
                 break;
               case 12:
-                return "]";
+                return "-";
                 break;
               case 13:
-                return "[";
+                return "-";
                 break;
               case 14:
-                return "]";
+                return "-";
                 break;
               case 15:
-                return "|";
+                return "-";
                 break;
               case 16:
-                return "|";
+                return "-";
                 break;
               case 17:
-                return "|";
+                return "-";
                 break;
               case 18:
-                return ")";
+                return "-";
                 break;
               case 19:
-                return "{";
+                return "-";
                 break;
               case 20:
-                return "}";
+                return "-";
                 break;
               case 21:
-                return "*";
+                return "-";
                 break;
               case 22:
-                return "FRAC";
+                return "-";
                 break;
               case 23:
-                return "SIN";
+                return "-";
                 break;
               case 24:
-                return "COS";
+                return "-";
                 break;
               case 25:
-                return "TAN";
+                return "-";
                 break;
               case 26:
-                return "CSC";
+                return "-";
                 break;
               case 27:
-                return "SEC";
+                return "-";
                 break;
               case 28:
-                return "COT";
+                return "-";
                 break;
               case 29:
-                return "SIN";
+                return "-";
                 break;
               case 30:
-                return "COS";
+                return "-";
                 break;
               case 31:
-                return "TAN";
+                return "-";
                 break;
               case 32:
-                return "CSC";
+                return "-";
                 break;
               case 33:
-                return "SEC";
+                return "-";
                 break;
               case 34:
-                return "COT";
+                return "-";
                 break;
               case 35:
-                return "pi";
+                return "-";
                 break;
               case 36:
-                return "theta";
+                return "-";
                 break;
               case 37:
-                return "theta";
+                return "-";
                 break;
               case 38:
-                return "Theta";
+                return "-";
                 break;
               case 39:
-                return "alpha";
+                return "-";
                 break;
               case 40:
-                return "nu";
+                return "-";
                 break;
               case 41:
-                return "beta";
+                return "-";
                 break;
               case 42:
-                return "xi";
+                return "-";
                 break;
               case 43:
-                return "Xi";
+                return "-";
                 break;
               case 44:
-                return "gamma";
+                return "-";
                 break;
               case 45:
-                return "Gamma";
+                return "-";
                 break;
               case 46:
-                return "delta";
+                return "-";
                 break;
               case 47:
-                return "Delta";
+                return "-";
                 break;
               case 48:
-                return "Pi";
+                return "-";
                 break;
               case 49:
-                return "epsilon";
+                return "-";
                 break;
               case 50:
-                return "epsilon";
+                return "-";
                 break;
               case 51:
-                return "rho";
+                return "+";
                 break;
               case 52:
-                return "rho";
+                return "^";
                 break;
               case 53:
-                return "zeta";
+                return "(";
                 break;
               case 54:
-                return "sigma";
+                return "(";
                 break;
               case 55:
-                return "Sigma";
+                return ")";
                 break;
               case 56:
-                return "eta";
+                return "[";
                 break;
               case 57:
-                return "tau";
+                return "]";
                 break;
               case 58:
-                return "upsilon";
+                return "[";
                 break;
               case 59:
-                return "Upsilon";
+                return "]";
                 break;
               case 60:
-                return "iota";
+                return "|";
                 break;
               case 61:
-                return "phi";
+                return "|";
                 break;
               case 62:
-                return "phi";
+                return "|";
                 break;
               case 63:
-                return "Phi";
+                return ")";
                 break;
               case 64:
-                return "kappa";
+                return "{";
                 break;
               case 65:
-                return "chi";
+                return "}";
                 break;
               case 66:
-                return "lambda";
+                return "*";
                 break;
               case 67:
-                return "Lambda";
+                return "FRAC";
                 break;
               case 68:
-                return "psi";
+                return "SIN";
                 break;
               case 69:
-                return "Psi";
+                return "COS";
                 break;
               case 70:
-                return "omega";
+                return "TAN";
                 break;
               case 71:
-                return "Omega";
+                return "CSC";
                 break;
               case 72:
-                return "infinity";
+                return "SEC";
                 break;
               case 73:
-                return "ARCSIN";
+                return "COT";
                 break;
               case 74:
-                return "ARCCOS";
+                return "SIN";
                 break;
               case 75:
-                return "ARCTAN";
+                return "COS";
                 break;
               case 76:
-                return "ARCSEC";
+                return "TAN";
                 break;
               case 77:
-                return "ARCCSC";
+                return "CSC";
                 break;
               case 78:
-                return "ARCCOT";
+                return "SEC";
                 break;
               case 79:
-                return "ARCSIN";
+                return "COT";
                 break;
               case 80:
-                return "ARCCOS";
+                return "pi";
                 break;
               case 81:
-                return "ARCTAN";
+                return "theta";
                 break;
               case 82:
-                return "LOG";
+                return "theta";
                 break;
               case 83:
-                return "LOG";
+                return "Theta";
                 break;
               case 84:
-                return "EXP";
+                return "alpha";
                 break;
               case 85:
-                return "SQRT";
+                return "nu";
                 break;
               case 86:
-                return "!";
+                return "beta";
                 break;
               case 87:
-                return "VAR";
+                return "xi";
                 break;
               case 88:
-                return 4;
+                return "Xi";
                 break;
               case 89:
-                return 4;
+                return "gamma";
                 break;
               case 90:
+                return "Gamma";
+                break;
+              case 91:
+                return "delta";
+                break;
+              case 92:
+                return "Delta";
+                break;
+              case 93:
+                return "Pi";
+                break;
+              case 94:
+                return "epsilon";
+                break;
+              case 95:
+                return "epsilon";
+                break;
+              case 96:
+                return "rho";
+                break;
+              case 97:
+                return "rho";
+                break;
+              case 98:
+                return "zeta";
+                break;
+              case 99:
+                return "sigma";
+                break;
+              case 100:
+                return "Sigma";
+                break;
+              case 101:
+                return "eta";
+                break;
+              case 102:
+                return "tau";
+                break;
+              case 103:
+                return "upsilon";
+                break;
+              case 104:
+                return "Upsilon";
+                break;
+              case 105:
+                return "iota";
+                break;
+              case 106:
+                return "phi";
+                break;
+              case 107:
+                return "phi";
+                break;
+              case 108:
+                return "Phi";
+                break;
+              case 109:
+                return "kappa";
+                break;
+              case 110:
+                return "chi";
+                break;
+              case 111:
+                return "lambda";
+                break;
+              case 112:
+                return "Lambda";
+                break;
+              case 113:
+                return "psi";
+                break;
+              case 114:
+                return "Psi";
+                break;
+              case 115:
+                return "omega";
+                break;
+              case 116:
+                return "Omega";
+                break;
+              case 117:
+                return "infinity";
+                break;
+              case 118:
+                return "ARCSIN";
+                break;
+              case 119:
+                return "ARCCOS";
+                break;
+              case 120:
+                return "ARCTAN";
+                break;
+              case 121:
+                return "ARCSEC";
+                break;
+              case 122:
+                return "ARCCSC";
+                break;
+              case 123:
+                return "ARCCOT";
+                break;
+              case 124:
+                return "ARCSIN";
+                break;
+              case 125:
+                return "ARCCOS";
+                break;
+              case 126:
+                return "ARCTAN";
+                break;
+              case 127:
+                return "LOG";
+                break;
+              case 128:
+                return "LN";
+                break;
+              case 129:
+                return "EXP";
+                break;
+              case 130:
+                return "SQRT";
+                break;
+              case 131:
+                return "!";
+                break;
+              case 132:
+                return "VAR";
+                break;
+              case 133:
+                return 4;
+                break;
+              case 134:
+                return 4;
+                break;
+              case 135:
                 return "INVALID";
                 break;
               }
@@ -1365,6 +1400,51 @@ var latex = function () {
               /^(?:\*)/,
               /^(?:\/)/,
               /^(?:-)/,
+              /^(?:-)/,
+              /^(?:\u002D)/,
+              /^(?:\u007E)/,
+              /^(?:\u00AD)/,
+              /^(?:\u058A)/,
+              /^(?:\u05BE)/,
+              /^(?:\u1400)/,
+              /^(?:\u1806)/,
+              /^(?:\u2010)/,
+              /^(?:\u2011)/,
+              /^(?:\u2012)/,
+              /^(?:\u2013)/,
+              /^(?:\u2014)/,
+              /^(?:\u2015)/,
+              /^(?:\u207B)/,
+              /^(?:\u208B)/,
+              /^(?:\u2212)/,
+              /^(?:\u2E17)/,
+              /^(?:\u2E3A)/,
+              /^(?:\u2E3B)/,
+              /^(?:\u301C)/,
+              /^(?:\u3030)/,
+              /^(?:\u30A0)/,
+              /^(?:\uFE31)/,
+              /^(?:\uFE32)/,
+              /^(?:\uFE58)/,
+              /^(?:\uFE63)/,
+              /^(?:\uFF0D)/,
+              /^(?:\u002D)/,
+              /^(?:\u007E)/,
+              /^(?:\u00AD)/,
+              /^(?:\u058A)/,
+              /^(?:\u1806)/,
+              /^(?:\u2010)/,
+              /^(?:\u2011)/,
+              /^(?:\u2012)/,
+              /^(?:\u2013)/,
+              /^(?:\u2014)/,
+              /^(?:\u2015)/,
+              /^(?:\u2053)/,
+              /^(?:\u207B)/,
+              /^(?:\u208B)/,
+              /^(?:\u2212)/,
+              /^(?:\u301C)/,
+              /^(?:\u3030)/,
               /^(?:\+)/,
               /^(?:\^)/,
               /^(?:\()/,
@@ -1544,7 +1624,52 @@ var latex = function () {
                   87,
                   88,
                   89,
-                  90
+                  90,
+                  91,
+                  92,
+                  93,
+                  94,
+                  95,
+                  96,
+                  97,
+                  98,
+                  99,
+                  100,
+                  101,
+                  102,
+                  103,
+                  104,
+                  105,
+                  106,
+                  107,
+                  108,
+                  109,
+                  110,
+                  111,
+                  112,
+                  113,
+                  114,
+                  115,
+                  116,
+                  117,
+                  118,
+                  119,
+                  120,
+                  121,
+                  122,
+                  123,
+                  124,
+                  125,
+                  126,
+                  127,
+                  128,
+                  129,
+                  130,
+                  131,
+                  132,
+                  133,
+                  134,
+                  135
                 ],
                 "inclusive": true
               }
@@ -2662,7 +2787,7 @@ var text = function () {
                 return "LOG";
                 break;
               case 92:
-                return "LOG";
+                return "LN";
                 break;
               case 93:
                 return "EXP";
@@ -3463,7 +3588,7 @@ var operators = {
       return "cot " + operands[0];
     },
     "log": function (operands) {
-      return "ln " + operands[0];
+      return "log " + operands[0];
     },
     "exp": function (operands) {
       return "exp " + operands[0];
@@ -3708,7 +3833,7 @@ var operators = {
       return "\\cot " + operands[0];
     },
     "log": function (operands) {
-      return "\\ln " + operands[0];
+      return "\\log " + operands[0];
     },
     "exp": function (operands) {
       return "e^{" + operands[0] + "}";
@@ -4104,6 +4229,9 @@ var math_functions = {
     "log": function (operands) {
       return Math.log(operands[0]);
     },
+    "ln": function (operands) {
+      return Math.log(operands[0]);
+    },
     "exp": function (operands) {
       return Math.exp(operands[0]);
     },
@@ -4396,6 +4524,9 @@ var complex_math_functions = {
       return operands[0].power(new ComplexNumber(0.5, 0));
     },
     "log": function (operands) {
+      return operands[0].log();
+    },
+    "ln": function (operands) {
       return operands[0].log();
     },
     "exp": function (operands) {
@@ -6354,6 +6485,7 @@ var derivatives = {
     "csc": textToAst("-(csc x)*(cot x)"),
     "sqrt": textToAst("1/(2*sqrt(x))"),
     "log": textToAst("1/x"),
+    "ln": textToAst("1/x"),
     "arcsin": textToAst("1/sqrt(1 - x^2)"),
     "arccos": textToAst("-1/sqrt(1 - x^2)"),
     "arctan": textToAst("1/(1 + x^2)"),
@@ -6955,12 +7087,83 @@ exports.equals = function (other) {
 return module.exports;
 
 });
-define('lib/expression/equality',['require', 'exports', 'module', './equality/complex'], function (require, exports, module) {
+define('lib/expression/equality/syntax',['require', 'exports', 'module', '../../../node_modules/underscore/underscore-min'], function (require, exports, module) {
+  
+
+var _ = require("../../../node_modules/underscore/underscore-min");
+function anyPermutation(permutation, callback) {
+  var length = permutation.length, c = Array(length).fill(0), i = 1;
+  if (callback(permutation))
+    return true;
+  while (i < length) {
+    if (c[i] < i) {
+      var k = i % 2 ? c[i] : 0, p = permutation[i];
+      permutation[i] = permutation[k];
+      permutation[k] = p;
+      ++c[i];
+      i = 1;
+      if (callback(permutation))
+        return true;
+    } else {
+      c[i] = 0;
+      ++i;
+    }
+  }
+  return false;
+}
+function compareTree(left, right) {
+  if (typeof left === "number" || typeof right === "number") {
+    if (typeof right !== "number" || typeof right !== "number") {
+      return false;
+    }
+    return left === right;
+  }
+  if (typeof left === "string" || typeof right === "string") {
+    if (typeof right !== "string" || typeof right !== "string") {
+      return false;
+    }
+    return left === right;
+  }
+  var leftOperator = left[0];
+  var leftOperands = left.slice(1);
+  var rightOperator = right[0];
+  var rightOperands = right.slice(1);
+  if (leftOperator != rightOperator)
+    return false;
+  var operator = leftOperator;
+  if (leftOperands.length != rightOperands.length)
+    return false;
+  if (operator === "+" || operator === "*") {
+    return anyPermutation(leftOperands, function (permutedOperands) {
+      return _.every(_.zip(permutedOperands, rightOperands), function (pair) {
+        return compareTree(pair[0], pair[1]);
+      });
+    });
+  }
+  return _.every(_.zip(leftOperands, rightOperands), function (pair) {
+    return compareTree(pair[0], pair[1]);
+  });
+}
+exports.equals = function (other) {
+  return compareTree(this.tree, other.tree);
+};
+
+return module.exports;
+
+});
+define('lib/expression/equality',['require', 'exports', 'module', './equality/complex', './equality/syntax'], function (require, exports, module) {
   
 
 exports.equalsViaComplex = require("./equality/complex").equals;
+exports.equalsViaSyntax = require("./equality/syntax").equals;
 exports.equals = function (other) {
-  return this.equalsViaComplex(other);
+  if (this.equalsViaSyntax(other)) {
+    return true;
+  } else if (this.equalsViaComplex(other)) {
+    return true;
+  } else {
+    return false;
+  }
 };
 
 return module.exports;
@@ -7281,12 +7484,12 @@ return __umodule__;
 
 };
 if (__isAMD) {
-  return define(bundleFactory);
+  return define(['xml-parser'], bundleFactory);
 } else {
     if (__isNode) {
-        return module.exports = bundleFactory();
+        return module.exports = bundleFactory(require('xml-parser'));
     } else {
-        return bundleFactory();
+        return bundleFactory((typeof parseString !== 'undefined') ? parseString : __throwMissing('xml-parser', 'parseString'));
     }
 }
 }).call(this, (typeof exports === 'object' || typeof window === 'undefined' ? global : window),
