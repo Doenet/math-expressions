@@ -73,6 +73,8 @@
 "\u2212"                return '-'
 "\u301C"                return '-'
 "\u3030"                return '-'
+"&#x2212;"              return '-'
+"&minus;"               return '-'
 "+"                     return '+'
 "^"                     return '^'
 "("                     return '('
