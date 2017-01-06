@@ -35,6 +35,7 @@ describe("expression", function() {
 	"(x^5 + 5*x^4 + 20*x^3 + 60*x^2 + 120*x + 120)/120": "1/120*x^5 + 1/24*x^4 + 1/6*x^3 + 1/2*x^2 + x + 1",
 	"(x^9 - 72*x^7 + 3024*x^5 - 60480*x^3 + 362880*x)/362880": "1/362880*x^9 - 1/5040*x^7 + 1/120*x^5 - 1/6*x^3 + x",
 	"e^(e^x)": "e^(e^x)",
+	"1 + x + x^2/2+ x^3/3! + x^4/4!+ x^5/5! + x^6/6!+x^7/7!": "1 + x + x^2/2+ x^3/6 + x^4/24 + x^5/120 + x^6/720 +x^7/5040",
 	"1/sqrt(4)": "1/2",
 	"4^(-1/2)": "1/2",
 	"0.5": "1/2", // 'Mix of floats and rational numbers'
@@ -264,7 +265,7 @@ describe("expression", function() {
 
     _.each( _.keys(nonequivalences), function(lhs) {
 	var rhs = nonequivalences[lhs];
-	it(lhs + " == " + rhs, function() {
+	it(lhs + " != " + rhs, function() {
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
 	});	
     });    

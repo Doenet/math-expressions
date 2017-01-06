@@ -465,6 +465,206 @@ define('lib/mml-to-latex',['require', 'exports', 'module', 'xml-parser'], functi
   
 
 var parseString = require("xml-parser");
+var entities = {
+    "&‌#913;": "\\Alpha",
+    "&‌Alpha;": "\\Alpha",
+    "&‌#x0391": "\\Alpha",
+    "\\u0391": "\\Alpha",
+    "&‌#914;": "\\Beta",
+    "&‌Beta;": "\\Beta",
+    "&‌#x0392": "\\Beta",
+    "\\u0392": "\\Beta",
+    "&‌#915;": "\\Gamma",
+    "&‌Gamma;": "\\Gamma",
+    "&‌#x0393": "\\Gamma",
+    "\\u0393": "\\Gamma",
+    "&‌#916;": "\\Delta",
+    "&‌Delta;": "\\Delta",
+    "&‌#x0394": "\\Delta",
+    "\\u0394": "\\Delta",
+    "&‌#917;": "\\Epsilon",
+    "&‌Epsilon;": "\\Epsilon",
+    "&‌#x0395": "\\Epsilon",
+    "\\u0395": "\\Epsilon",
+    "&‌#918;": "\\Zeta",
+    "&‌Zeta;": "\\Zeta",
+    "&‌#x0396": "\\Zeta",
+    "\\u0396": "\\Zeta",
+    "&‌#919;": "\\Eta",
+    "&‌Eta;": "\\Eta",
+    "&‌#x0397": "\\Eta",
+    "\\u0397": "\\Eta",
+    "&‌#920;": "\\Theta",
+    "&‌Theta;": "\\Theta",
+    "&‌#x0398": "\\Theta",
+    "\\u0398": "\\Theta",
+    "&‌#921;": "\\Iota",
+    "&‌Iota;": "\\Iota",
+    "&‌#x0399": "\\Iota",
+    "\\u0399": "\\Iota",
+    "&‌#922;": "\\Kappa",
+    "&‌Kappa;": "\\Kappa",
+    "&‌#x039A": "\\Kappa",
+    "\\u039A": "\\Kappa",
+    "&‌#923;": "\\Lambda",
+    "&‌Lambda;": "\\Lambda",
+    "&‌#x039B": "\\Lambda",
+    "\\u039B": "\\Lambda",
+    "&‌#924;": "\\Mu",
+    "&‌Mu;": "\\Mu",
+    "&‌#x039C": "\\Mu",
+    "\\u039C": "\\Mu",
+    "&‌#925;": "\\Nu",
+    "&‌Nu;": "\\Nu",
+    "&‌#x039D": "\\Nu",
+    "\\u039D": "\\Nu",
+    "&‌#926;": "\\Xi",
+    "&‌Xi;": "\\Xi",
+    "&‌#x039E": "\\Xi",
+    "\\u039E": "\\Xi",
+    "&‌#927;": "\\Omicron",
+    "&‌Omicron;": "\\Omicron",
+    "&‌#x039F": "\\Omicron",
+    "\\u039F": "\\Omicron",
+    "&‌#928;": "\\Pi",
+    "&‌Pi;": "\\Pi",
+    "&‌#x03A0": "\\Pi",
+    "\\u03A0": "\\Pi",
+    "&‌#929;": "\\Rho",
+    "&‌Rho;": "\\Rho",
+    "&‌#x03A1": "\\Rho",
+    "\\u03A1": "\\Rho",
+    "&‌#931;": "\\Sigma",
+    "&‌Sigma;": "\\Sigma",
+    "&‌#x03A3": "\\Sigma",
+    "\\u03A3": "\\Sigma",
+    "&‌#932;": "\\Tau",
+    "&‌Tau;": "\\Tau",
+    "&‌#x03A4": "\\Tau",
+    "\\u03A4": "\\Tau",
+    "&‌#933;": "\\Upsilon",
+    "&‌Upsilon;": "\\Upsilon",
+    "&‌#x03A5": "\\Upsilon",
+    "\\u03A5": "\\Upsilon",
+    "&‌#934;": "\\Phi",
+    "&‌Phi;": "\\Phi",
+    "&‌#x03A6": "\\Phi",
+    "\\u03A6": "\\Phi",
+    "&‌#935;": "\\Chi",
+    "&‌Chi;": "\\Chi",
+    "&‌#x03A7": "\\Chi",
+    "\\u03A7": "\\Chi",
+    "&‌#936;": "\\Psi",
+    "&‌Psi;": "\\Psi",
+    "&‌#x03A8": "\\Psi",
+    "\\u03A8": "\\Psi",
+    "&‌#937;": "\\Omega",
+    "&‌Omega;": "\\Omega",
+    "&‌#x03A9": "\\Omega",
+    "\\u03A9": "\\Omega",
+    "&‌#945;": "\\alpha",
+    "&‌alpha;": "\\alpha",
+    "&‌#x03B1": "\\alpha",
+    "\\u03B1": "\\alpha",
+    "&‌#946;": "\\beta",
+    "&‌beta;": "\\beta",
+    "&‌#x03B2": "\\beta",
+    "\\u03B2": "\\beta",
+    "&‌#947;": "\\gamma",
+    "&‌gamma;": "\\gamma",
+    "&‌#x03B3": "\\gamma",
+    "\\u03B3": "\\gamma",
+    "&‌#948;": "\\delta",
+    "&‌delta;": "\\delta",
+    "&‌#x03B4": "\\delta",
+    "\\u03B4": "\\delta",
+    "&‌#949;": "\\epsilon",
+    "&‌epsilon;": "\\epsilon",
+    "&‌#x03B5": "\\epsilon",
+    "\\u03B5": "\\epsilon",
+    "&‌#950;": "\\zeta",
+    "&‌zeta;": "\\zeta",
+    "&‌#x03B6": "\\zeta",
+    "\\u03B6": "\\zeta",
+    "&‌#951;": "\\eta",
+    "&‌eta;": "\\eta",
+    "&‌#x03B7": "\\eta",
+    "\\u03B7": "\\eta",
+    "&‌#952;": "\\theta",
+    "&‌theta;": "\\theta",
+    "&‌#x03B8": "\\theta",
+    "\\u03B8": "\\theta",
+    "&‌#953;": "\\iota",
+    "&‌iota;": "\\iota",
+    "&‌#x03B9": "\\iota",
+    "\\u03B9": "\\iota",
+    "&‌#954;": "\\kappa",
+    "&‌kappa;": "\\kappa",
+    "&‌#x03BA": "\\kappa",
+    "\\u03BA": "\\kappa",
+    "&‌#955;": "\\lam(b)da",
+    "&‌lambda;": "\\lam(b)da",
+    "&‌#x03BB": "\\lam(b)da",
+    "\\u03BB": "\\lam(b)da",
+    "&‌#956;": "\\mu",
+    "&‌mu;": "\\mu",
+    "&‌#x03BC": "\\mu",
+    "\\u03BC": "\\mu",
+    "&‌#957;": "\\nu",
+    "&‌nu;": "\\nu",
+    "&‌#x03BD": "\\nu",
+    "\\u03BD": "\\nu",
+    "&‌#958;": "\\xi",
+    "&‌xi;": "\\xi",
+    "&‌#x03BE": "\\xi",
+    "\\u03BE": "\\xi",
+    "&‌#959;": "\\omicron",
+    "&‌omicron;": "\\omicron",
+    "&‌#x03BF": "\\omicron",
+    "\\u03BF": "\\omicron",
+    "&‌#960;": "\\pi",
+    "&‌pi;": "\\pi",
+    "&‌#x03C0": "\\pi",
+    "\\u03C0": "\\pi",
+    "&‌#961;": "\\rho",
+    "&‌rho;": "\\rho",
+    "&‌#x03C1": "\\rho",
+    "\\u03C1": "\\rho",
+    "&‌#962;": "\\sigma",
+    "": "\\sigma",
+    "&‌#x03C2": "\\sigma",
+    "\\u03C2": "\\sigma",
+    "&‌#963;": "\\sigma",
+    "&‌sigma;": "\\sigma",
+    "&‌#x03C3": "\\sigma",
+    "\\u03C3": "\\sigma",
+    "&‌#964;": "\\tau",
+    "&‌tau;": "\\tau",
+    "&‌#x03C4": "\\tau",
+    "\\u03C4": "\\tau",
+    "&‌#965;": "\\upsilon",
+    "&‌upsilon;": "\\upsilon",
+    "&‌#x03C5": "\\upsilon",
+    "\\u03C5": "\\upsilon",
+    "&‌#966;": "\\phi",
+    "&‌phi;": "\\phi",
+    "&‌#x03C6": "\\phi",
+    "\\u03C6": "\\phi",
+    "&‌#967;": "\\chi",
+    "&‌chi;": "\\chi",
+    "&‌#x03C7": "\\chi",
+    "\\u03C7": "\\chi",
+    "&‌#968;": "\\psi",
+    "&‌psi;": "\\psi",
+    "&‌#x03C8": "\\psi",
+    "\\u03C8": "\\psi",
+    "&‌#969;": "\\omega",
+    "&‌omega;": "\\omega",
+    "&‌#x03C9": "\\omega",
+    "\\u03C9": "\\omega",
+    "&#x2212;": "-",
+    "&minus;": "-"
+  };
 function parse(mml) {
   if (mml.name == "mi") {
     if (mml.content.length > 1) {
@@ -483,7 +683,9 @@ function parse(mml) {
   } else if (mml.name == "msqrt") {
     return "\\sqrt{" + mml.children.map(parse).join("") + "}";
   } else if (mml.name == "mo") {
-    if (mml.content == "&#x2061;") {
+    if (entities[mml.content]) {
+      return entities[mml.content];
+    } else if (mml.content == "&#x2061;") {
       return " ";
     } else {
       return mml.content;
@@ -1005,396 +1207,258 @@ var latex = function () {
                 return "-";
                 break;
               case 7:
-                return "-";
-                break;
-              case 8:
-                return "-";
-                break;
-              case 9:
-                return "-";
-                break;
-              case 10:
-                return "-";
-                break;
-              case 11:
-                return "-";
-                break;
-              case 12:
-                return "-";
-                break;
-              case 13:
-                return "-";
-                break;
-              case 14:
-                return "-";
-                break;
-              case 15:
-                return "-";
-                break;
-              case 16:
-                return "-";
-                break;
-              case 17:
-                return "-";
-                break;
-              case 18:
-                return "-";
-                break;
-              case 19:
-                return "-";
-                break;
-              case 20:
-                return "-";
-                break;
-              case 21:
-                return "-";
-                break;
-              case 22:
-                return "-";
-                break;
-              case 23:
-                return "-";
-                break;
-              case 24:
-                return "-";
-                break;
-              case 25:
-                return "-";
-                break;
-              case 26:
-                return "-";
-                break;
-              case 27:
-                return "-";
-                break;
-              case 28:
-                return "-";
-                break;
-              case 29:
-                return "-";
-                break;
-              case 30:
-                return "-";
-                break;
-              case 31:
-                return "-";
-                break;
-              case 32:
-                return "-";
-                break;
-              case 33:
-                return "-";
-                break;
-              case 34:
-                return "-";
-                break;
-              case 35:
-                return "-";
-                break;
-              case 36:
-                return "-";
-                break;
-              case 37:
-                return "-";
-                break;
-              case 38:
-                return "-";
-                break;
-              case 39:
-                return "-";
-                break;
-              case 40:
-                return "-";
-                break;
-              case 41:
-                return "-";
-                break;
-              case 42:
-                return "-";
-                break;
-              case 43:
-                return "-";
-                break;
-              case 44:
-                return "-";
-                break;
-              case 45:
-                return "-";
-                break;
-              case 46:
-                return "-";
-                break;
-              case 47:
-                return "-";
-                break;
-              case 48:
-                return "-";
-                break;
-              case 49:
-                return "-";
-                break;
-              case 50:
-                return "-";
-                break;
-              case 51:
-                return "-";
-                break;
-              case 52:
-                return "-";
-                break;
-              case 53:
                 return "+";
                 break;
-              case 54:
+              case 8:
                 return "^";
                 break;
-              case 55:
+              case 9:
                 return "(";
                 break;
-              case 56:
+              case 10:
                 return "(";
                 break;
-              case 57:
+              case 11:
                 return ")";
                 break;
-              case 58:
+              case 12:
                 return "[";
                 break;
-              case 59:
+              case 13:
                 return "]";
                 break;
-              case 60:
+              case 14:
                 return "[";
                 break;
-              case 61:
+              case 15:
                 return "]";
                 break;
-              case 62:
+              case 16:
                 return "|";
                 break;
-              case 63:
+              case 17:
                 return "|";
                 break;
-              case 64:
+              case 18:
                 return "|";
                 break;
-              case 65:
+              case 19:
                 return ")";
                 break;
-              case 66:
+              case 20:
                 return "{";
                 break;
-              case 67:
+              case 21:
                 return "}";
                 break;
-              case 68:
+              case 22:
                 return "*";
                 break;
-              case 69:
+              case 23:
                 return "FRAC";
                 break;
-              case 70:
+              case 24:
                 return "SIN";
                 break;
-              case 71:
+              case 25:
                 return "COS";
                 break;
-              case 72:
+              case 26:
                 return "TAN";
                 break;
-              case 73:
+              case 27:
                 return "CSC";
                 break;
-              case 74:
+              case 28:
                 return "SEC";
                 break;
-              case 75:
+              case 29:
                 return "COT";
                 break;
-              case 76:
+              case 30:
                 return "SIN";
                 break;
-              case 77:
+              case 31:
                 return "COS";
                 break;
-              case 78:
+              case 32:
                 return "TAN";
                 break;
-              case 79:
+              case 33:
                 return "CSC";
                 break;
-              case 80:
+              case 34:
                 return "SEC";
                 break;
-              case 81:
+              case 35:
                 return "COT";
                 break;
-              case 82:
+              case 36:
                 return "pi";
                 break;
-              case 83:
+              case 37:
                 return "theta";
                 break;
-              case 84:
+              case 38:
                 return "theta";
                 break;
-              case 85:
+              case 39:
                 return "Theta";
                 break;
-              case 86:
+              case 40:
                 return "alpha";
                 break;
-              case 87:
+              case 41:
                 return "nu";
                 break;
-              case 88:
+              case 42:
                 return "beta";
                 break;
-              case 89:
+              case 43:
                 return "xi";
                 break;
-              case 90:
+              case 44:
                 return "Xi";
                 break;
-              case 91:
+              case 45:
                 return "gamma";
                 break;
-              case 92:
+              case 46:
                 return "Gamma";
                 break;
-              case 93:
+              case 47:
                 return "delta";
                 break;
-              case 94:
+              case 48:
                 return "Delta";
                 break;
-              case 95:
+              case 49:
                 return "Pi";
                 break;
-              case 96:
+              case 50:
                 return "epsilon";
                 break;
-              case 97:
+              case 51:
                 return "epsilon";
                 break;
-              case 98:
+              case 52:
                 return "rho";
                 break;
-              case 99:
+              case 53:
                 return "rho";
                 break;
-              case 100:
+              case 54:
                 return "zeta";
                 break;
-              case 101:
+              case 55:
                 return "sigma";
                 break;
-              case 102:
+              case 56:
                 return "Sigma";
                 break;
-              case 103:
+              case 57:
                 return "eta";
                 break;
-              case 104:
+              case 58:
                 return "tau";
                 break;
-              case 105:
+              case 59:
                 return "upsilon";
                 break;
-              case 106:
+              case 60:
                 return "Upsilon";
                 break;
-              case 107:
+              case 61:
                 return "iota";
                 break;
-              case 108:
+              case 62:
                 return "phi";
                 break;
-              case 109:
+              case 63:
                 return "phi";
                 break;
-              case 110:
+              case 64:
                 return "Phi";
                 break;
-              case 111:
+              case 65:
                 return "kappa";
                 break;
-              case 112:
+              case 66:
                 return "chi";
                 break;
-              case 113:
+              case 67:
                 return "lambda";
                 break;
-              case 114:
+              case 68:
                 return "Lambda";
                 break;
-              case 115:
+              case 69:
                 return "psi";
                 break;
-              case 116:
+              case 70:
                 return "Psi";
                 break;
-              case 117:
+              case 71:
                 return "omega";
                 break;
-              case 118:
+              case 72:
                 return "Omega";
                 break;
-              case 119:
+              case 73:
                 return "infinity";
                 break;
-              case 120:
+              case 74:
                 return "ARCSIN";
                 break;
-              case 121:
+              case 75:
                 return "ARCCOS";
                 break;
-              case 122:
+              case 76:
                 return "ARCTAN";
                 break;
-              case 123:
+              case 77:
                 return "ARCSEC";
                 break;
-              case 124:
+              case 78:
                 return "ARCCSC";
                 break;
-              case 125:
+              case 79:
                 return "ARCCOT";
                 break;
-              case 126:
+              case 80:
                 return "ARCSIN";
                 break;
-              case 127:
+              case 81:
                 return "ARCCOS";
                 break;
-              case 128:
+              case 82:
                 return "ARCTAN";
                 break;
-              case 129:
+              case 83:
                 return "LOG";
                 break;
-              case 130:
+              case 84:
                 return "LN";
                 break;
-              case 131:
+              case 85:
                 return "EXP";
                 break;
-              case 132:
+              case 86:
                 return "SQRT";
                 break;
-              case 133:
+              case 87:
                 return "!";
                 break;
-              case 134:
+              case 88:
                 return "VAR";
                 break;
-              case 135:
+              case 89:
                 return 4;
                 break;
-              case 136:
+              case 90:
                 return 4;
                 break;
-              case 137:
+              case 91:
                 return "INVALID";
                 break;
               }
@@ -1407,52 +1471,6 @@ var latex = function () {
               /^(?:\/)/,
               /^(?:-)/,
               /^(?:-)/,
-              /^(?:\u002D)/,
-              /^(?:\u007E)/,
-              /^(?:\u00AD)/,
-              /^(?:\u058A)/,
-              /^(?:\u05BE)/,
-              /^(?:\u1400)/,
-              /^(?:\u1806)/,
-              /^(?:\u2010)/,
-              /^(?:\u2011)/,
-              /^(?:\u2012)/,
-              /^(?:\u2013)/,
-              /^(?:\u2014)/,
-              /^(?:\u2015)/,
-              /^(?:\u207B)/,
-              /^(?:\u208B)/,
-              /^(?:\u2212)/,
-              /^(?:\u2E17)/,
-              /^(?:\u2E3A)/,
-              /^(?:\u2E3B)/,
-              /^(?:\u301C)/,
-              /^(?:\u3030)/,
-              /^(?:\u30A0)/,
-              /^(?:\uFE31)/,
-              /^(?:\uFE32)/,
-              /^(?:\uFE58)/,
-              /^(?:\uFE63)/,
-              /^(?:\uFF0D)/,
-              /^(?:\u002D)/,
-              /^(?:\u007E)/,
-              /^(?:\u00AD)/,
-              /^(?:\u058A)/,
-              /^(?:\u1806)/,
-              /^(?:\u2010)/,
-              /^(?:\u2011)/,
-              /^(?:\u2012)/,
-              /^(?:\u2013)/,
-              /^(?:\u2014)/,
-              /^(?:\u2015)/,
-              /^(?:\u2053)/,
-              /^(?:\u207B)/,
-              /^(?:\u208B)/,
-              /^(?:\u2212)/,
-              /^(?:\u301C)/,
-              /^(?:\u3030)/,
-              /^(?:&#x2212;)/,
-              /^(?:&minus;)/,
               /^(?:\+)/,
               /^(?:\^)/,
               /^(?:\()/,
@@ -1633,53 +1651,7 @@ var latex = function () {
                   88,
                   89,
                   90,
-                  91,
-                  92,
-                  93,
-                  94,
-                  95,
-                  96,
-                  97,
-                  98,
-                  99,
-                  100,
-                  101,
-                  102,
-                  103,
-                  104,
-                  105,
-                  106,
-                  107,
-                  108,
-                  109,
-                  110,
-                  111,
-                  112,
-                  113,
-                  114,
-                  115,
-                  116,
-                  117,
-                  118,
-                  119,
-                  120,
-                  121,
-                  122,
-                  123,
-                  124,
-                  125,
-                  126,
-                  127,
-                  128,
-                  129,
-                  130,
-                  131,
-                  132,
-                  133,
-                  134,
-                  135,
-                  136,
-                  137
+                  91
                 ],
                 "inclusive": true
               }

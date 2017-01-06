@@ -10,7 +10,7 @@ describe("latex to ast", function() {
 	'x^2': ['^', 'x', 2],
 	'-x^2': ['~',['^', 'x', 2]],
 	'|x|': ['abs','x'],
-	'|sin|x||': ['abs', ['sin', ['abs', 'x']]],	
+	'|\\sin|x||': ['abs', ['sin', ['abs', 'x']]],	
     };
 
     _.each( _.keys(trees), function(string) {

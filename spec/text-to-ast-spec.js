@@ -8,6 +8,10 @@ var _ = require('underscore');
 describe("text to ast", function() {
     var trees = {
 	'1+x+3': ['+',1,'x',3],
+	"1 + + x": ['+',1,'x'],
+	"1 + - x": ['+',1,['~','x']],
+	"1 - - x": ['-',1,['~','x']],	
+	"1 + + x/2": ['+',1,['/','x',2]],
 	'1-x-3': ['-',1,'x',3],	
 	'x^2': ['^', 'x', 2],
 	'-x^2': ['~',['^', 'x', 2]],
@@ -25,7 +29,7 @@ describe("text to ast", function() {
     };
 
     _.each( _.keys(trees), function(string) {
-	it("parses" + string, function() {
+	it("parses " + string, function() {
 	    expect(textToAst(string)).toEqual(trees[string]);
 	});	
     });    
