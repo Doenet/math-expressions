@@ -667,6 +667,9 @@ var entities = {
   };
 function parse(mml) {
   if (mml.name == "mi") {
+    if (entities[mml.content]) {
+      return entities[mml.content];
+    }
     if (mml.content.length > 1) {
       return "\\" + mml.content;
     } else {
