@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "1.5.14",
+  "version": "1.5.16",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",

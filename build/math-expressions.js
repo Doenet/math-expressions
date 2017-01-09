@@ -663,7 +663,10 @@ var entities = {
     "&#x03C9;": "\\omega",
     "\\u03C9;": "\\omega",
     "&#x2212;": "-",
-    "&minus;": "-"
+    "&minus;": "-",
+    "&#x221E;": "\\infty",
+    "&#8734;": "\\infty",
+    "&infin;": "\\infty"
   };
 function parse(mml) {
   if (mml.name == "mi") {
@@ -1789,7 +1792,7 @@ function isFunctionSymbol(symbol) {
       "ARCCSC",
       "ARCSEC",
       "LOG",
-      "LOG",
+      "LN",
       "EXP",
       "SQRT",
       "ABS"
