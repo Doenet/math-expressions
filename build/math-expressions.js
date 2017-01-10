@@ -666,7 +666,13 @@ var entities = {
     "&minus;": "-",
     "&#x221E;": "\\infty",
     "&#8734;": "\\infty",
-    "&infin;": "\\infty"
+    "&infin;": "\\infty",
+    "&sdot;": "\\cdot",
+    "&#x22C5;": "\\cdot",
+    "&#8901;": "\\cdot",
+    "&times;": "\\times",
+    "&#x00D7;": "\\times",
+    "&#215;": "\\times"
   };
 function parse(mml) {
   if (mml.name == "mi") {
@@ -1261,210 +1267,213 @@ var latex = function () {
                 return "*";
                 break;
               case 23:
-                return "FRAC";
+                return "*";
                 break;
               case 24:
-                return "SIN";
+                return "FRAC";
                 break;
               case 25:
-                return "COS";
-                break;
-              case 26:
-                return "TAN";
-                break;
-              case 27:
-                return "CSC";
-                break;
-              case 28:
-                return "SEC";
-                break;
-              case 29:
-                return "COT";
-                break;
-              case 30:
                 return "SIN";
                 break;
-              case 31:
+              case 26:
                 return "COS";
                 break;
-              case 32:
+              case 27:
                 return "TAN";
                 break;
-              case 33:
+              case 28:
                 return "CSC";
                 break;
-              case 34:
+              case 29:
                 return "SEC";
                 break;
-              case 35:
+              case 30:
                 return "COT";
                 break;
+              case 31:
+                return "SIN";
+                break;
+              case 32:
+                return "COS";
+                break;
+              case 33:
+                return "TAN";
+                break;
+              case 34:
+                return "CSC";
+                break;
+              case 35:
+                return "SEC";
+                break;
               case 36:
-                return "pi";
+                return "COT";
                 break;
               case 37:
-                return "theta";
+                return "pi";
                 break;
               case 38:
                 return "theta";
                 break;
               case 39:
-                return "Theta";
+                return "theta";
                 break;
               case 40:
-                return "alpha";
+                return "Theta";
                 break;
               case 41:
-                return "nu";
+                return "alpha";
                 break;
               case 42:
-                return "beta";
+                return "nu";
                 break;
               case 43:
-                return "xi";
+                return "beta";
                 break;
               case 44:
-                return "Xi";
+                return "xi";
                 break;
               case 45:
-                return "gamma";
+                return "Xi";
                 break;
               case 46:
-                return "Gamma";
+                return "gamma";
                 break;
               case 47:
-                return "delta";
+                return "Gamma";
                 break;
               case 48:
-                return "Delta";
+                return "delta";
                 break;
               case 49:
-                return "Pi";
+                return "Delta";
                 break;
               case 50:
-                return "epsilon";
+                return "Pi";
                 break;
               case 51:
                 return "epsilon";
                 break;
               case 52:
-                return "rho";
+                return "epsilon";
                 break;
               case 53:
                 return "rho";
                 break;
               case 54:
-                return "zeta";
+                return "rho";
                 break;
               case 55:
-                return "sigma";
+                return "zeta";
                 break;
               case 56:
-                return "Sigma";
+                return "sigma";
                 break;
               case 57:
-                return "eta";
+                return "Sigma";
                 break;
               case 58:
-                return "tau";
+                return "eta";
                 break;
               case 59:
-                return "upsilon";
+                return "tau";
                 break;
               case 60:
-                return "Upsilon";
+                return "upsilon";
                 break;
               case 61:
-                return "iota";
+                return "Upsilon";
                 break;
               case 62:
-                return "phi";
+                return "iota";
                 break;
               case 63:
                 return "phi";
                 break;
               case 64:
-                return "Phi";
+                return "phi";
                 break;
               case 65:
-                return "kappa";
+                return "Phi";
                 break;
               case 66:
-                return "chi";
+                return "kappa";
                 break;
               case 67:
-                return "lambda";
+                return "chi";
                 break;
               case 68:
-                return "Lambda";
+                return "lambda";
                 break;
               case 69:
-                return "psi";
+                return "Lambda";
                 break;
               case 70:
-                return "Psi";
+                return "psi";
                 break;
               case 71:
-                return "omega";
+                return "Psi";
                 break;
               case 72:
-                return "Omega";
+                return "omega";
                 break;
               case 73:
-                return "infinity";
+                return "Omega";
                 break;
               case 74:
-                return "ARCSIN";
+                return "infinity";
                 break;
               case 75:
-                return "ARCCOS";
-                break;
-              case 76:
-                return "ARCTAN";
-                break;
-              case 77:
-                return "ARCSEC";
-                break;
-              case 78:
-                return "ARCCSC";
-                break;
-              case 79:
-                return "ARCCOT";
-                break;
-              case 80:
                 return "ARCSIN";
                 break;
-              case 81:
+              case 76:
                 return "ARCCOS";
                 break;
-              case 82:
+              case 77:
                 return "ARCTAN";
                 break;
+              case 78:
+                return "ARCSEC";
+                break;
+              case 79:
+                return "ARCCSC";
+                break;
+              case 80:
+                return "ARCCOT";
+                break;
+              case 81:
+                return "ARCSIN";
+                break;
+              case 82:
+                return "ARCCOS";
+                break;
               case 83:
-                return "LOG";
+                return "ARCTAN";
                 break;
               case 84:
-                return "LN";
+                return "LOG";
                 break;
               case 85:
-                return "EXP";
+                return "LN";
                 break;
               case 86:
-                return "SQRT";
+                return "EXP";
                 break;
               case 87:
-                return "!";
+                return "SQRT";
                 break;
               case 88:
-                return "VAR";
+                return "!";
                 break;
               case 89:
-                return 4;
+                return "VAR";
                 break;
               case 90:
                 return 4;
                 break;
               case 91:
+                return 4;
+                break;
+              case 92:
                 return "INVALID";
                 break;
               }
@@ -1493,6 +1502,7 @@ var latex = function () {
               /^(?:\{)/,
               /^(?:\})/,
               /^(?:\\cdot\b)/,
+              /^(?:\\times\b)/,
               /^(?:\\frac\b)/,
               /^(?:\\sin\b)/,
               /^(?:\\cos\b)/,
@@ -1657,7 +1667,8 @@ var latex = function () {
                   88,
                   89,
                   90,
-                  91
+                  91,
+                  92
                 ],
                 "inclusive": true
               }

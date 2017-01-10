@@ -45,6 +45,7 @@
 "{"                     return '{'
 "}"                     return '}'
 "\\cdot"                return '*'
+"\\times"               return '*'
 "\\frac"                return 'FRAC'
 "\\sin"                 return 'SIN'
 "\\cos"                 return 'COS'
