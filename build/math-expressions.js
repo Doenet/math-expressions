@@ -705,7 +705,7 @@ function parse(mml) {
   } else if (mml.name == "mrow" && mml.attributes.class == "MJX-TeXAtom-ORD") {
     return mml.children.map(parse).join("");
   } else if (mml.name == "math" || mml.name == "mrow") {
-    return "(" + mml.children.map(parse).join("") + ")";
+    return "(" + mml.children.map(parse).join(" ") + ")";
   }
 }
 exports.mmlToLatex = function (xml) {
@@ -7168,6 +7168,50 @@ exports.equals = function (other) {
 return module.exports;
 
 });
+define('lib/expression/sign-error',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+exports.equalUpToSign = function (correct) {
+  var expression = this;
+  var root = expression.tree;
+  var stack = [[root]];
+  var pointer = 0;
+  var tree;
+  var i;
+  expression.tree = [
+    "~",
+    root
+  ];
+  var equals = expression.equals(correct);
+  expression.tree = root;
+  if (equals)
+    return true;
+  while (tree = stack[pointer++]) {
+    tree = tree[0];
+    if (typeof tree === "number") {
+      continue;
+    }
+    if (typeof tree === "string") {
+      continue;
+    }
+    for (i = 1; i < tree.length; i++) {
+      stack.push([tree[i]]);
+      tree[i] = [
+        "~",
+        tree[i]
+      ];
+      equals = expression.equals(correct);
+      tree[i] = tree[i][1];
+      if (equals)
+        return true;
+    }
+  }
+  return false;
+};
+
+return module.exports;
+
+});
 define('lib/expression/evaluation',['require', 'exports', 'module', '../math-expressions', '../parser'], function (require, exports, module) {
   
 
@@ -7422,7 +7466,7 @@ exports.simplify = function () {
 return module.exports;
 
 });
-define('lib/math-expressions',['require', 'exports', 'module', './parser', './expression/printing', './expression/differentiation', './expression/integration', './expression/variables', './expression/equality', './expression/evaluation', './expression/simplify'], function (require, exports, module) {
+define('lib/math-expressions',['require', 'exports', 'module', './parser', './expression/printing', './expression/differentiation', './expression/integration', './expression/variables', './expression/equality', './expression/sign-error', './expression/evaluation', './expression/simplify'], function (require, exports, module) {
   var __umodule__ = (function (require, exports, module) {
   
 
@@ -7442,7 +7486,7 @@ function extend(object) {
   });
   return object;
 }
-extend(Expression.prototype, require("./expression/printing"), require("./expression/differentiation"), require("./expression/integration"), require("./expression/variables"), require("./expression/equality"), require("./expression/evaluation"), require("./expression/simplify"));
+extend(Expression.prototype, require("./expression/printing"), require("./expression/differentiation"), require("./expression/integration"), require("./expression/variables"), require("./expression/equality"), require("./expression/sign-error"), require("./expression/evaluation"), require("./expression/simplify"));
 function parseText(string) {
   return new Expression(parser.text.to.ast(string));
 }
