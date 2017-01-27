@@ -27,6 +27,7 @@ module.exports = function(grunt) {
 			replace: {
 			    "lib/debug": "debug",
 			    "node_modules/number-theory/index.js": "number-theory",
+			    "node_modules/xml-parser/index.js": "xml-parser",
 			    "node_modules/underscore/underscore-min.js": "underscore"
 			},
 			rootExports: {

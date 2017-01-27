@@ -16,7 +16,7 @@ var __isAMD = !!(typeof define === 'function' && define.amd),
       __throwExcluded = function(dep, descr) {
         throw new Error("uRequire: combined template 'lib', trying to access unbound / excluded `" + descr + "` dependency `" + dep + "` on browser");
       };
-var bundleFactory = function(parseString) {
+var bundleFactory = function() {
 /**
  * @license almond 0.3.3 Copyright jQuery Foundation and other contributors.
  * Released under MIT license, http://github.com/requirejs/almond/LICENSE
@@ -454,17 +454,117 @@ var requirejs, require, define;
 
 define("almond", function(){});
 
-define('xml-parser',[],function () {
-  if (__isNode) {
-  return __nodeRequire('xml-parser');
-} else {
-    return (typeof parseString !== 'undefined') ? parseString : __throwMissing('xml-parser', 'parseString')
-}
-});
-define('lib/mml-to-latex',['require', 'exports', 'module', 'xml-parser'], function (require, exports, module) {
+define('lib/debug',['require', 'exports', 'module'], function (require, exports, module) {
   
 
-var parseString = require("xml-parser");
+module.exports = function (name) {
+  return function (message) {
+    console.log(name + ": ", message);
+  };
+};
+
+return module.exports;
+
+});
+define('node_modules/xml-parser/index',['require', 'exports', 'module', '../../lib/debug'], function (require, exports, module) {
+  
+
+var debug = require("../../lib/debug")("xml-parser");
+module.exports = parse;
+function parse(xml) {
+  xml = xml.trim();
+  xml = xml.replace(/<!--[\s\S]*?-->/g, "");
+  return document();
+  function document() {
+    return {
+      declaration: declaration(),
+      root: tag()
+    };
+  }
+  function declaration() {
+    var m = match(/^<\?xml\s*/);
+    if (!m)
+      return;
+    var node = { attributes: {} };
+    while (!(eos() || is("?>"))) {
+      var attr = attribute();
+      if (!attr)
+        return node;
+      node.attributes[attr.name] = attr.value;
+    }
+    match(/\?>\s*/);
+    return node;
+  }
+  function tag() {
+    debug("tag %j", xml);
+    var m = match(/^<([\w-:.]+)\s*/);
+    if (!m)
+      return;
+    var node = {
+        name: m[1],
+        attributes: {},
+        children: []
+      };
+    while (!(eos() || is(">") || is("?>") || is("/>"))) {
+      var attr = attribute();
+      if (!attr)
+        return node;
+      node.attributes[attr.name] = attr.value;
+    }
+    if (match(/^\s*\/>\s*/)) {
+      return node;
+    }
+    match(/\??>\s*/);
+    node.content = content();
+    var child;
+    while (child = tag()) {
+      node.children.push(child);
+    }
+    match(/^<\/[\w-:.]+>\s*/);
+    return node;
+  }
+  function content() {
+    debug("content %j", xml);
+    var m = match(/^([^<]*)/);
+    if (m)
+      return m[1];
+    return "";
+  }
+  function attribute() {
+    debug("attribute %j", xml);
+    var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
+    if (!m)
+      return;
+    return {
+      name: m[1],
+      value: strip(m[2])
+    };
+  }
+  function strip(val) {
+    return val.replace(/^['"]|['"]$/g, "");
+  }
+  function match(re) {
+    var m = xml.match(re);
+    if (!m)
+      return;
+    xml = xml.slice(m[0].length);
+    return m;
+  }
+  function eos() {
+    return 0 == xml.length;
+  }
+  function is(prefix) {
+    return 0 == xml.indexOf(prefix);
+  }
+}
+
+return module.exports;
+
+});
+define('lib/mml-to-latex',['require', 'exports', 'module', '../node_modules/xml-parser/index'], function (require, exports, module) {
+  
+
+var parseString = require("../node_modules/xml-parser/index");
 var entities = {
     "&#913;": "\\Alpha",
     "&Alpha;": "\\Alpha",
@@ -693,7 +793,7 @@ function parse(mml) {
   } else if (mml.name == "mfrac") {
     return "\\frac{" + parse(mml.children[0]) + "}{" + parse(mml.children[1]) + "}";
   } else if (mml.name == "msqrt") {
-    return "\\sqrt{" + mml.children.map(parse).join("") + "}";
+    return "\\sqrt{" + mml.children.map(parse).join(" ") + "}";
   } else if (mml.name == "mo") {
     if (entities[mml.content]) {
       return entities[mml.content];
@@ -703,7 +803,7 @@ function parse(mml) {
       return mml.content;
     }
   } else if (mml.name == "mrow" && mml.attributes.class == "MJX-TeXAtom-ORD") {
-    return mml.children.map(parse).join("");
+    return mml.children.map(parse).join(" ");
   } else if (mml.name == "math" || mml.name == "mrow") {
     return "(" + mml.children.map(parse).join(" ") + ")";
   }
@@ -7527,12 +7627,12 @@ return __umodule__;
 
 };
 if (__isAMD) {
-  return define(['xml-parser'], bundleFactory);
+  return define(bundleFactory);
 } else {
     if (__isNode) {
-        return module.exports = bundleFactory(require('xml-parser'));
+        return module.exports = bundleFactory();
     } else {
-        return bundleFactory((typeof parseString !== 'undefined') ? parseString : __throwMissing('xml-parser', 'parseString'));
+        return bundleFactory();
     }
 }
 }).call(this, (typeof exports === 'object' || typeof window === 'undefined' ? global : window),
