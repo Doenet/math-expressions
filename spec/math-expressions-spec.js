@@ -28,6 +28,9 @@ describe("expression", function() {
 
     var equivalences = {
 	"3+2": "5",
+	'-2 sin(t^2)/t': '-2 t sin(t^2)/t^2',
+	'-2t sin(t^2)/t^2 + 3t^2 sin(t^3)/t^3': '-2 sin(t^2)/t + 3 sin(t^3)/t',	
+	'sin(t^2)*t/t':'sin(t^2)',
 	"(1/3)g^3": "(g^3)/(3)",
 	"x*log(3)": "log(3^x)",
 	"e^(e^x+x/x)": "e^(e^x+1)",
@@ -209,6 +212,7 @@ describe("expression", function() {
 	'cos(x + y)' : 'cos(x)*cos(y) - sin(x)*sin(y)',
 	'log(x)/8' : '0.125*log(x)',
 	'log(x)/8' : '(1/8)*log(x)',
+	"x/2-sin(2x)/4-(cos(x))^3/3": "x/2+sin(2x)/4-(cos(x))^3/3",	
 	'(1/8)*log(x)' : '0.125*log(x)',
 	'1' : '1',
 	'sqrt(10000 - x)' : 'sqrt(10000 - x)',
@@ -226,7 +230,6 @@ describe("expression", function() {
 
     var nonequivalences = {
 	"0.33": "1/3",
-	"x/2-sin(2x)/4-(cos(x))^3/3": "x/2+sin(2x)/4-(cos(x))^3/3",
 	"x": "sqrt(x^2)",
 	"sqrt((x-3)*(x-5))": "sqrt(x-3)*sqrt(x-5)",
 	'(19601-13861*sqrt(2))^(7/4)': '(5*sqrt(2)-7)^7',
@@ -260,7 +263,6 @@ describe("expression", function() {
 	'sqrt(x^2)' : 'x',
 	'x' : 'sqrt(x^2)',
 	'abs(x)' : 'x',
-	'-2t sin(t^2)/t^2 + 3t^2 sin(t^3)/t^3': '-2 sin(t^2)/t + 3 sin(t^3)/t'
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
