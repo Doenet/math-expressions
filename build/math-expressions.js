@@ -2820,28 +2820,28 @@ var text = function () {
                 return ")";
                 break;
               case 70:
-                return "SIN";
+                return "CSC";
                 break;
               case 71:
-                return "COS";
+                return "CSC";
                 break;
               case 72:
-                return "TAN";
-                break;
-              case 73:
-                return "CSC";
-                break;
-              case 74:
-                return "CSC";
-                break;
-              case 75:
                 return "SEC";
                 break;
-              case 76:
+              case 73:
                 return "COT";
                 break;
-              case 77:
+              case 74:
                 return "COT";
+                break;
+              case 75:
+                return "SIN";
+                break;
+              case 76:
+                return "COS";
+                break;
+              case 77:
+                return "TAN";
                 break;
               case 78:
                 return "ARCSIN";
@@ -3105,14 +3105,14 @@ var text = function () {
               /^(?:\])/,
               /^(?:\{)/,
               /^(?:\})/,
-              /^(?:[Ss][Ii][Nn])/,
-              /^(?:[Cc][Oo][Ss])/,
-              /^(?:[Tt][Aa][Nn])/,
               /^(?:[Cc][Ss][Cc])/,
               /^(?:[Cc][Oo][Ss][Ee][Cc])/,
               /^(?:[Ss][Ee][Cc])/,
-              /^(?:[Cc][Oo][Tt])/,
               /^(?:[Cc][Oo][Tt][Aa][Nn])/,
+              /^(?:[Cc][Oo][Tt])/,
+              /^(?:[Ss][Ii][Nn])/,
+              /^(?:[Cc][Oo][Ss])/,
+              /^(?:[Tt][Aa][Nn])/,
               /^(?:[Aa][Rr][Cc][Ss][Ii][Nn])/,
               /^(?:[Aa][Rr][Cc][Cc][Oo][Ss])/,
               /^(?:[Aa][Rr][Cc][Tt][Aa][Nn])/,
@@ -4683,6 +4683,142 @@ exports.astToComplexFunction = astToComplexFunction;
 return module.exports;
 
 });
+define('lib/ast-to-real-function',['require', 'exports', 'module', './complex-number'], function (require, exports, module) {
+  
+
+var ComplexNumber = require("./complex-number").ComplexNumber;
+var real_math_functions = {
+    "+": function (operands) {
+      var result = 0;
+      operands.forEach(function (v, i) {
+        result = result + v;
+      });
+      return result;
+    },
+    "-": function (operands) {
+      var result = operands[0];
+      operands.slice(1).forEach(function (v, i) {
+        result = result - v;
+      });
+      return result;
+    },
+    "~": function (operands) {
+      var result = 0;
+      operands.forEach(function (v, i) {
+        result = result - v;
+      });
+      return result;
+    },
+    "*": function (operands) {
+      var result = operands[0];
+      operands.slice(1).forEach(function (v, i) {
+        result = result * v;
+      });
+      return result;
+    },
+    "/": function (operands) {
+      var result = operands[0];
+      operands.slice(1).forEach(function (v, i) {
+        result = result / v;
+      });
+      return result;
+    },
+    "sin": function (operands) {
+      return Math.sin(operands[0]);
+    },
+    "cos": function (operands) {
+      return Math.cos(operands[0]);
+    },
+    "tan": function (operands) {
+      return Math.tan(operands[0]);
+    },
+    "arcsin": function (operands) {
+      return Math.asin(operands[0]);
+    },
+    "arccos": function (operands) {
+      return Math.acos(operands[0]);
+    },
+    "arctan": function (operands) {
+      return Math.atan(operands[0]);
+    },
+    "arccsc": function (operands) {
+      return Math.asin(1 / operands[0]);
+    },
+    "arcsec": function (operands) {
+      return Math.acos(1 / operands[0]);
+    },
+    "arccot": function (operands) {
+      return Math.atan(1 / operands[0]);
+    },
+    "csc": function (operands) {
+      return 1 / Math.sin(operands[0]);
+    },
+    "sec": function (operands) {
+      return 1 / Math.cos(operands[0]);
+    },
+    "cot": function (operands) {
+      return 1 / Math.tan(operands[0]);
+    },
+    "sqrt": function (operands) {
+      return Math.sqrt(operands[0]);
+    },
+    "log": function (operands) {
+      return Math.log(operands[0]);
+    },
+    "ln": function (operands) {
+      return Math.log(operands[0]);
+    },
+    "exp": function (operands) {
+      return Math.exp(operands[0]);
+    },
+    "factorial": function (operands) {
+      return new ComplexNumber(operands[0], 0).factorial().real;
+    },
+    "gamma": function (operands) {
+      return new ComplexNumber(operands[0], 0).gamma().real;
+    },
+    "^": function (operands) {
+      return Math.pow(operands[0], operands[1]);
+    },
+    "abs": function (operands) {
+      return Math.abs(operands[0]);
+    },
+    "apply": function (operands) {
+      return NaN;
+    }
+  };
+function real_evaluate_ast(tree, bindings) {
+  if (typeof tree === "string") {
+    if (tree === "e")
+      return Math.E;
+    if (tree === "pi")
+      return Math.PI;
+    if (tree in bindings)
+      return bindings[tree];
+    return tree;
+  }
+  if (typeof tree === "number") {
+    return tree;
+  }
+  var operator = tree[0];
+  var operands = tree.slice(1);
+  if (operator in real_math_functions) {
+    return real_math_functions[operator](operands.map(function (v, i) {
+      return real_evaluate_ast(v, bindings);
+    }));
+  }
+  return NaN;
+}
+function astToRealFunction(tree) {
+  return function (bindings) {
+    return real_evaluate_ast(tree, bindings);
+  };
+}
+exports.astToRealFunction = astToRealFunction;
+
+return module.exports;
+
+});
 define('node_modules/number-theory/lib/sieve',['require', 'exports', 'module'], function (require, exports, module) {
   
 
@@ -6226,6 +6362,13 @@ define('lib/z-mod-n',['require', 'exports', 'module', '../node_modules/number-th
 
 var numberTheory = require("../node_modules/number-theory/index");
 var PRIME = 10739999;
+function gcd(a, b) {
+  if (Number.isNaN(a))
+    return NaN;
+  if (Number.isNaN(b))
+    return NaN;
+  return numberTheory.gcd(a, b);
+}
 function flatten(array) {
   return array.reduce(function (a, b) {
     return a.concat(b);
@@ -6237,11 +6380,17 @@ var ZmodN = function () {
       this.modulus = modulus;
     }
     ZmodN.prototype.apply = function (other, callback, modulus) {
-      if (modulus == undefined)
-        modulus = numberTheory.gcd(this.modulus, other.modulus);
+      if (modulus == undefined || Number.isNaN(modulus)) {
+        if (Number.isNaN(this.modulus) || Number.isNaN(other.modulus))
+          return new ZmodN([NaN], NaN);
+        modulus = gcd(this.modulus, other.modulus);
+      }
       return new ZmodN(flatten(this.values.map(function (x) {
         return other.values.map(function (y) {
-          return (modulus + callback(x, y)) % modulus;
+          if (Number.isNaN(x) || Number.isNaN(y)) {
+            return NaN;
+          } else
+            return (modulus + callback(x, y)) % modulus;
         });
       })), modulus);
     };
@@ -6252,12 +6401,20 @@ var ZmodN = function () {
     };
     ZmodN.prototype.power = function (other) {
       var modulus = this.modulus;
-      if (other.modulus != numberTheory.eulerPhi(modulus))
+      if (other.modulus != numberTheory.eulerPhi(modulus)) {
         return new ZmodN([NaN], NaN);
-      else
+      } else {
         return this.apply(other, function (x, y) {
           return numberTheory.powerMod(x, y, modulus);
         }, modulus);
+      }
+    };
+    ZmodN.prototype.isNaN = function () {
+      for (var v in this.values) {
+        if (isNaN(v))
+          return true;
+      }
+      return false;
     };
     ZmodN.prototype.subtract = function (other) {
       return this.apply(other, function (x, y) {
@@ -6265,7 +6422,7 @@ var ZmodN = function () {
       });
     };
     ZmodN.prototype.multiply = function (other) {
-      var modulus = numberTheory.gcd(this.modulus, other.modulus);
+      var modulus = gcd(this.modulus, other.modulus);
       return this.apply(other, function (x, y) {
         return numberTheory.multiplyMod(x, y, modulus);
       });
@@ -6283,12 +6440,12 @@ var ZmodN = function () {
       }), this.modulus);
     };
     ZmodN.prototype.divide = function (other) {
-      var m = numberTheory.gcd(this.modulus, other.modulus);
+      var m = gcd(this.modulus, other.modulus);
       var values = flatten(flatten(this.values.map(function (b) {
           return other.values.map(function (a) {
             if (b % a == 0)
               return [b / a];
-            var d = numberTheory.gcd(a, m);
+            var d = gcd(a, m);
             if (b % d != 0)
               return [];
             var ad = a / d;
@@ -6311,7 +6468,10 @@ var ZmodN = function () {
       })), this.modulus);
     };
     ZmodN.prototype.toString = function () {
-      return "{" + this.values.toString() + "}/" + this.modulus.toString();
+      return "{" + this.values.sort().toString() + "}/" + this.modulus.toString();
+    };
+    ZmodN.prototype.equals = function (other) {
+      return this.toString() == other.toString();
     };
     return ZmodN;
   }();
@@ -6359,10 +6519,10 @@ var levelFunctions = {
       return operands[0].multiply(operands[0]).sqrt();
     },
     "factorial": function (operands) {
-      return ZmodN([NaN], NaN);
+      return ZmodN([NaN], 1);
     },
     "gamma": function (operands) {
-      return ZmodN([NaN], NaN);
+      return ZmodN([NaN], 1);
     }
   };
 var deeperFunctions = {
@@ -6411,7 +6571,7 @@ function isPrimitiveRoot(a, m) {
     return true;
   }
 }
-function signature_evaluate_ast(tree, bindings, modulus, level) {
+function finite_field_evaluate_ast(tree, bindings, modulus, level) {
   if (typeof tree === "string") {
     if (tree === "e") {
       return new ZmodN([numberTheory.primitiveRoot(modulus)], modulus);
@@ -6420,7 +6580,7 @@ function signature_evaluate_ast(tree, bindings, modulus, level) {
       if (modulus % 2 == 0)
         return new ZmodN([modulus / 2], modulus);
       else
-        return new ZmodN([NaN], NaN);
+        return new ZmodN([NaN], modulus);
     }
     if (tree === "i")
       return new ZmodN([0], 1);
@@ -6434,33 +6594,63 @@ function signature_evaluate_ast(tree, bindings, modulus, level) {
   var operator = tree[0];
   var operands = tree.slice(1);
   if (operator == "exp") {
-    var base = signature_evaluate_ast("e", {}, modulus, level);
+    var base = finite_field_evaluate_ast("e", {}, modulus, level);
     console.log("base=", base);
     console.log("phi=", numberTheory.eulerPhi(modulus));
     console.log("operand=", operands[0]);
-    var exponent = signature_evaluate_ast(operands[0], bindings, numberTheory.eulerPhi(modulus), level + 1);
+    var exponent = finite_field_evaluate_ast(operands[0], bindings, numberTheory.eulerPhi(modulus), level + 1);
     console.log("exponent=", exponent);
     return base.power(exponent);
+  }
+  if (operator == "sec") {
+    return finite_field_evaluate_ast([
+      "/",
+      1,
+      [
+        "cos",
+        operands[0]
+      ]
+    ], bindings, modulus, level);
+  }
+  if (operator == "tan") {
+    var phi = numberTheory.eulerPhi(modulus);
+    var x = finite_field_evaluate_ast(operands[0], bindings, phi, level + 1);
+    return finite_field_evaluate_ast([
+      "/",
+      [
+        "sin",
+        x
+      ],
+      [
+        "cos",
+        x
+      ]
+    ], bindings, modulus, level);
   }
   if (operator == "sin") {
     var root = numberTheory.primitiveRoot(modulus);
     var g = new ZmodN([root], modulus);
-    var i = new ZmodN([numberTheory.powerMod(root, numberTheory.eulerPhi(modulus) / 4, modulus)], modulus);
-    var x = signature_evaluate_ast(operands[0], bindings, numberTheory.eulerPhi(modulus), level + 1);
+    var phi = numberTheory.eulerPhi(modulus);
+    if (phi % 4 != 0)
+      return new ZmodN([NaN], modulus);
+    var i = new ZmodN([numberTheory.powerMod(root, phi / 4, modulus)], modulus);
+    var x = finite_field_evaluate_ast(operands[0], bindings, phi, level + 1);
     return g.power(x).subtract(g.power(x.negate())).divide(i.add(i));
   }
   if (operator == "cos") {
     var g = new ZmodN([numberTheory.primitiveRoot(modulus)], modulus);
-    var x = signature_evaluate_ast(operands[0], bindings, numberTheory.eulerPhi(modulus), level + 1);
+    var x = finite_field_evaluate_ast(operands[0], bindings, numberTheory.eulerPhi(modulus), level + 1);
+    console.log("computing");
     return g.power(x).add(g.power(x.negate())).divide(new ZmodN([2], modulus));
   }
   if (operator == "log") {
+    return new ZmodN([NaN], NaN);
     var e = numberTheory.primitiveRoot(modulus);
     var k = 1;
     while (!(numberTheory.isProbablyPrime(k * modulus + 1) && isPrimitiveRoot(e, k * modulus + 1)))
       k = k + 1;
     var q = k * modulus + 1;
-    var x = signature_evaluate_ast(operands[0], bindings, modulus, level);
+    var x = finite_field_evaluate_ast(operands[0], bindings, modulus, level);
     console.log("is root = ", isPrimitiveRoot(e, q));
     console.log("q=", q, "= ", k, "*", modulus, "+1");
     console.log("isprime(q)=", numberTheory.isProbablyPrime(e));
@@ -6473,30 +6663,30 @@ function signature_evaluate_ast(tree, bindings, modulus, level) {
     }), modulus);
   }
   if (operator == "^") {
-    var base = signature_evaluate_ast(operands[0], bindings, modulus, level);
+    var base = finite_field_evaluate_ast(operands[0], bindings, modulus, level);
     console.log("base = ", base);
-    var exponent = signature_evaluate_ast(operands[1], bindings, numberTheory.eulerPhi(modulus), level + 1);
+    var exponent = finite_field_evaluate_ast(operands[1], bindings, numberTheory.eulerPhi(modulus), level + 1);
     console.log("exponent = ", exponent);
     return base.power(exponent);
   }
   if (operator in levelFunctions) {
     return levelFunctions[operator](operands.map(function (v, i) {
-      return signature_evaluate_ast(v, bindings, modulus, level);
+      return finite_field_evaluate_ast(v, bindings, modulus, level);
     }));
   }
-  return new ZmodN([NaN], NaN);
+  return new ZmodN([NaN], modulus);
 }
-function astToSignature(tree, modulus) {
+function astToFiniteField(tree, modulus) {
   return function (bindings) {
-    return signature_evaluate_ast(tree, bindings, modulus, 0);
+    return finite_field_evaluate_ast(tree, bindings, modulus, 0);
   };
 }
-exports.astToSignature = astToSignature;
+exports.astToFiniteField = astToFiniteField;
 
 return module.exports;
 
 });
-define('lib/parser',['require', 'exports', 'module', './mml-to-latex', './latex-to-ast', './text-to-ast', './ast-to-text', './ast-to-latex', './ast-to-glsl', './ast-to-function', './ast-to-complex-function', './ast-to-finite-field'], function (require, exports, module) {
+define('lib/parser',['require', 'exports', 'module', './mml-to-latex', './latex-to-ast', './text-to-ast', './ast-to-text', './ast-to-latex', './ast-to-glsl', './ast-to-function', './ast-to-complex-function', './ast-to-real-function', './ast-to-finite-field'], function (require, exports, module) {
   
 
 kinds = [
@@ -6519,7 +6709,8 @@ converters = {
       glsl: require("./ast-to-glsl").astToGlsl,
       function: require("./ast-to-function").astToFunction,
       complexFunction: require("./ast-to-complex-function").astToComplexFunction,
-      signature: require("./ast-to-finite-field").astToSignature
+      realFunction: require("./ast-to-real-function").astToRealFunction,
+      finiteField: require("./ast-to-finite-field").astToFiniteField
     }
   }
 };
@@ -7186,6 +7377,126 @@ exports.equals = function (other) {
 return module.exports;
 
 });
+define('lib/expression/equality/real',['require', 'exports', 'module'], function (require, exports, module) {
+  
+
+function randomBindings(variables) {
+  var result = {};
+  variables.forEach(function (v) {
+    result[v] = 10 * Math.random() - 5;
+  });
+  return result;
+}
+exports.equals = function (other) {
+  var variables = [
+      this.variables(),
+      other.variables()
+    ];
+  variables = variables.reduce(function (a, b) {
+    return a.concat(b);
+  });
+  variables = variables.reduce(function (p, c) {
+    if (p.indexOf(c) < 0)
+      p.push(c);
+    return p;
+  }, []);
+  var matches = 0;
+  var trials = 0;
+  for (var i = 1; i < 100; i++) {
+    var bindings = randomBindings(variables);
+    var this_evaluated = this.real_evaluate(bindings);
+    var other_evaluated = other.real_evaluate(bindings);
+    if (Number.isNaN(this_evaluated) && Number.isNaN(other_evaluated))
+      continue;
+    trials++;
+    if (!Number.isFinite(this_evaluated))
+      continue;
+    if (!Number.isFinite(other_evaluated))
+      continue;
+    if (Math.abs(this_evaluated - other_evaluated) < 0.000001)
+      matches++;
+  }
+  if (trials < 5)
+    return false;
+  return matches > 0.9 * trials;
+};
+exports.bad = function (other) {
+  var finite_tries = 0;
+  var epsilon = 0.001;
+  var sum_of_differences = 0;
+  var sum = 0;
+  for (var i = 0; i < variables.length; i++) {
+    if (variables[i] == "n") {
+      for (var i = 1; i < 11; i++) {
+        var bindings = randomIntegerBindings(variables);
+        if (isFinite(this_evaluated.real) && isFinite(other_evaluated.real) && isFinite(this_evaluated.imaginary) && isFinite(other_evaluated.imaginary)) {
+          finite_tries++;
+          sum_of_differences = sum_of_differences + this_evaluated.subtract(other_evaluated).modulus();
+          sum = sum + other_evaluated.modulus();
+        }
+      }
+      if (finite_tries < 1) {
+        return false;
+      }
+      if (sum_of_differences < epsilon * sum + epsilon * epsilon) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+  function varToOffset(s) {
+    return (s.charCodeAt(0) - 100) * 0.3;
+  }
+  var points = [];
+  for (var i = -10; i < 11; i = i + 2) {
+    for (var j = -10; j < 11; j = j + 2) {
+      var bindings = {};
+      variables.forEach(function (v) {
+        bindings[v] = new ComplexNumber(i + varToOffset(v), j + varToOffset(v));
+      });
+      var this_evaluated = this.complex_evaluate(bindings);
+      var other_evaluated = other.complex_evaluate(bindings);
+      if (isFinite(this_evaluated.real) && isFinite(other_evaluated.real) && isFinite(this_evaluated.imaginary) && isFinite(other_evaluated.imaginary)) {
+        finite_tries++;
+        var difference = this_evaluated.subtract(other_evaluated).modulus();
+        sum_of_differences = sum_of_differences + difference;
+        sum = sum + other_evaluated.modulus();
+        if (difference < 0.00001 && points.length < 3) {
+          points.push([
+            i,
+            j
+          ]);
+        }
+      }
+    }
+  }
+  if (finite_tries < 1) {
+    return false;
+  }
+  if (sum_of_differences < epsilon * sum + epsilon * epsilon) {
+    return true;
+  } else {
+    for (i = 0; i < points.length; i++) {
+      var ballsum = 0;
+      var sum = 0;
+      for (j = 0; j < 20; j++) {
+        var bindings = randomComplexBindingsBall(variables, points[i][0], points[i][1]);
+        var this_evaluated = this.complex_evaluate(bindings);
+        var other_evaluated = other.complex_evaluate(bindings);
+        sum = sum + this_evaluated.subtract(other_evaluated).modulus();
+      }
+      if (sum < 0.0001) {
+        return true;
+      }
+    }
+    return false;
+  }
+};
+
+return module.exports;
+
+});
 define('lib/expression/equality/syntax',['require', 'exports', 'module', '../../../node_modules/underscore/underscore-min'], function (require, exports, module) {
   
 
@@ -7250,15 +7561,18 @@ exports.equals = function (other) {
 return module.exports;
 
 });
-define('lib/expression/equality',['require', 'exports', 'module', './equality/complex', './equality/syntax'], function (require, exports, module) {
+define('lib/expression/equality',['require', 'exports', 'module', './equality/complex', './equality/real', './equality/syntax'], function (require, exports, module) {
   
 
 exports.equalsViaComplex = require("./equality/complex").equals;
+exports.equalsViaReal = require("./equality/real").equals;
 exports.equalsViaSyntax = require("./equality/syntax").equals;
 exports.equals = function (other) {
   if (this.equalsViaSyntax(other)) {
     return true;
   } else if (this.equalsViaComplex(other)) {
+    return true;
+  } else if (this.equalsViaReal(other)) {
     return true;
   } else {
     return false;
@@ -7324,8 +7638,11 @@ exports.evaluate = exports.f;
 exports.complex_evaluate = function (bindings) {
   return parser.ast.to.complexFunction(this.tree)(bindings);
 };
-exports.signature_evaluate = function (bindings, modulus) {
-  return parser.ast.to.signature(this.tree, modulus)(bindings);
+exports.real_evaluate = function (bindings) {
+  return parser.ast.to.realFunction(this.tree)(bindings);
+};
+exports.finite_field_evaluate = function (bindings, modulus) {
+  return parser.ast.to.finiteField(this.tree, modulus)(bindings);
 };
 function substitute_ast(tree, bindings) {
   if (typeof tree === "number") {
