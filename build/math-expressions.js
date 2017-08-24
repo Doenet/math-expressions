@@ -4480,7 +4480,7 @@ function factorWithParenthesesIfNegated(tree) {
   return result;
 }
 function astToGuppy(tree) {
-  return "<m><e></e>" + expression(tree) + "<e></e></m>";
+  return ("<m><e></e>" + expression(tree) + "<e></e></m>").replace(/<\/e><e>/g, "");
 }
 exports.astToGuppy = astToGuppy;
 
