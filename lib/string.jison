@@ -32,13 +32,9 @@
 "\u22C5"                return '*'
 "\u00D7"                return '*'
 "/"                     return '/'
-"-"                     return '-'
-"\u002D"                return '-' // there is quite some variety with unicode hyphens
-"\u007E"                return '-'
-"\u00AD"                return '-'
+"-"                     return '-'// there is quite some variety with unicode hyphens
 "\u058A"                return '-'
 "\u05BE"                return '-'
-"\u1400"                return '-'
 "\u1806"                return '-'
 "\u2010"                return '-'
 "\u2011"                return '-'
@@ -49,34 +45,11 @@
 "\u207B"                return '-'
 "\u208B"                return '-'
 "\u2212"                return '-'
-"\u2E17"                return '-'
 "\u2E3A"                return '-'
 "\u2E3B"                return '-'
-"\u301C"                return '-'
-"\u3030"                return '-'
-"\u30A0"                return '-'
-"\uFE31"                return '-'
-"\uFE32"                return '-'
 "\uFE58"                return '-'
 "\uFE63"                return '-'
 "\uFF0D"                return '-'
-"\u002D"                return '-'
-"\u007E"                return '-'
-"\u00AD"                return '-'
-"\u058A"                return '-'
-"\u1806"                return '-'
-"\u2010"                return '-'
-"\u2011"                return '-'
-"\u2012"                return '-'
-"\u2013"                return '-'
-"\u2014"                return '-'
-"\u2015"                return '-'
-"\u2053"                return '-'
-"\u207B"                return '-'
-"\u208B"                return '-'
-"\u2212"                return '-'
-"\u301C"                return '-'
-"\u3030"                return '-'
 "+"                     return '+'
 "^"                     return '^' // lots of ways to denote exponentiation
 "\u2038"                return '^'
@@ -162,13 +135,8 @@
 "\u2218"		{yytext='circ'; return 'VARMULTICHAR';}
 "\u22C6"		{yytext='star'; return 'VARMULTICHAR';}
 
-"!"			return '!'
-"'"			return "'"
-[_]			return "_"   // use [_] so don't include word boundary
-
-
 "and"			return 'AND'
-"&&?"			return 'AND'
+\&\&?			return 'AND'
 "\u2227"		return 'AND'
 
 "or"			return 'OR'
@@ -178,27 +146,50 @@
 "\u00ac"		return 'NOT'
 
 "="			return '='
-"<"			return '<'
-">"			return '>'
+"\u1400"                return '='
+"\u30A0"                return '='
+"!="			return 'NE'
+"\u2260"		return 'NE'
 "<="			return 'LE'
 "\u2264"		return 'LE'
 ">="			return 'GE'
 "\u2265"		return 'GE'
+"<"			return '<'
+">"			return '>'
 
-"in"			return "IN"
+"elementof"		return "IN"
 '\u2208'		return "IN"
+
+"notelementof"		return "NOTIN"
+'\u2209'		return "NOTIN"
+
+"containselement"	return "NI"
+"\u220B"		return "NI"
+
+"notcontainselement"	return "NOTNI"
+"\u220C"		return "NOTNI"
 
 "subset"		return 'SUBSET'
 '\u2282'		return 'SUBSET'
 
+"notsubset"		return 'NOTSUBSET'
+'\u2284'		return 'NOTSUBSET'
+
 "superset"		return 'SUPERSET'
-'\u2282'		return 'SUPERSET'
+'\u2283'		return 'SUPERSET'
+
+"notsuperset"		return 'NOTSUPERSET'
+'\u2285'		return 'NOTSUPERSET'
 
 "union"			return 'UNION'
 '\u222A'		return 'UNION'
 
-"intersection"		return 'INTERSECTION'
-'\u2229'		return 'INTERSECTION'
+"intersect"		return 'INTERSECT'
+'\u2229'		return 'INTERSECT'
+
+"!"			return '!'
+"'"			return "'"
+[_]			return "_"   // use [_] so don't include word boundary
 
 [a-zA-Z][a-zA-Z0-9]*	return 'VAR'
 <<EOF>>                 return 'EOF'
