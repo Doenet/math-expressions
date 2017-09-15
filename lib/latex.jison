@@ -22,9 +22,9 @@
 %lex
 %%
 
-(\s+|"\\,")                   /* skip whitespace */
-[0-9]+("."[0-9]+)?  return 'NUMBER'
-[,.][0-9]+		return 'NUMBER'
+(\s+|"\\,")             /* skip whitespace */
+[0-9]+(\.[0-9]+)?	return 'NUMBER'
+\.[0-9]+		return 'NUMBER'
 "*"                     return '*'
 "/"                     return '/'
 "-"                     return '-'
@@ -33,89 +33,122 @@
 "^"                     return '^'
 "("                     return '('
 "\\left"\s*"("          return '('
-"\\right"\s*")"         return ')'
-"\\left"\s*"["          return '['
-"\\right"\s*"]"         return ']'
-"["                     return '['
-"]"                     return ']'
-"\\left"\s*"|"          return '|'
-"\\right"\s*"|"         return '|'
-"|"			return '|'
+"\\bigl"\s*"("          return '('
+"\\Bigl"\s*"("          return '('
+"\\biggl"\s*"("         return '('
+"\\Biggl"\s*"("         return '('
 ")"                     return ')'
+"\\right"\s*")"         return ')'
+"\\bigr"\s*")"          return ')'
+"\\Bigr"\s*")"          return ')'
+"\\biggr"\s*")"         return ')'
+"\\Biggr"\s*")"         return ')'
+"["                     return '['
+"\\left"\s*"["          return '['
+"\\bigl"\s*"["          return '['
+"\\Bigl"\s*"["          return '['
+"\\biggl"\s*"["         return '['
+"\\Biggl"\s*"["         return '['
+"]"                     return ']'
+"\\right"\s*"]"         return ']'
+"\\bigr"\s*"]"         	return ']'
+"\\Bigr"\s*"]"         	return ']'
+"\\biggr"\s*"]"         return ']'
+"\\Biggr"\s*"]"         return ']'
+"|"			return '|'
+"\\left"\s*"|"          return '|'
+"\\bigl"\s*"|"          return '|'
+"\\Bigl"\s*"|"          return '|'
+"\\biggl"\s*"|"         return '|'
+"\\Biggl"\s*"|"         return '|'
+"\\right"\s*"|"         return '|'
+"\\bigr"\s*"|"  	return '|'
+"\\Bigr"\s*"|"         	return '|'
+"\\biggr"\s*"|"         return '|'
+"\\Biggr"\s*"|"         return '|'
+"\\big"\s*"|"  		return '|'
+"\\Big"\s*"|"         	return '|'
+"\\bigg"\s*"|"         	return '|'
+"\\Bigg"\s*"|"         	return '|'
 "{"                     return '{'
 "}"                     return '}'
+"\\{"               	return 'LBRACE'
+"\\left"\s*"\\{"        return 'LBRACE'
+"\\bigl"\s*"\\{"        return 'LBRACE'
+"\\Bigl"\s*"\\{"        return 'LBRACE'
+"\\biggl"\s*"\\{"       return 'LBRACE'
+"\\Biggl"\s*"\\{"       return 'LBRACE'
+"\\}"                   return 'RBRACE'
+"\\right"\s*"\\}"       return 'RBRACE'
+"\\bigr"\s*"\\}"        return 'RBRACE'
+"\\Bigr"\s*"\\}"        return 'RBRACE'
+"\\biggr"\s*"\\}"       return 'RBRACE'
+"\\Biggr"\s*"\\}"       return 'RBRACE'
 "\\cdot"                return '*'
 "\\times"               return '*'
 "\\frac"                return 'FRAC'
-"\\sin"                 return 'SIN'
-"\\cos"                 return 'COS'
-"\\tan"                 return 'TAN'
-"\\csc"                 return 'CSC'
-"\\sec"                 return 'SEC'
-"\\cot"                 return 'COT'
-"\\sin"                 return 'SIN'
-"\\cos"                 return 'COS'
-"\\tan"                 return 'TAN'
-"\\csc"                 return 'CSC'
-"\\sec"                 return 'SEC'
-"\\cot"                 return 'COT'
+","			return ","
 
-"\\pi"                  return 'pi'
-"\\theta"               return 'theta'
-"\\vartheta"            return 'theta'
-"\\Theta"               return 'Theta'
-"\\alpha"		return 'alpha'
-"\\nu"			return 'nu'
-"\\beta"		return 'beta'
-"\\xi"			return 'xi'
-"\\Xi"			return 'Xi'
-"\\gamma"		return 'gamma'
-"\\Gamma"		return 'Gamma'
-"\\delta"		return 'delta'
-"\\Delta"		return 'Delta'
-"\\Pi"			return 'Pi'
-"\\epsilon"		return 'epsilon'
-"\\varepsilon"		return 'epsilon'
-"\\rho"			return 'rho'
-"\\varrho"		return 'rho'
-"\\zeta"		return 'zeta'
-"\\sigma"		return 'sigma'
-"\\Sigma"		return 'Sigma'
-"\\eta"			return 'eta'
-"\\tau"			return 'tau'
-"\\upsilon"		return 'upsilon'
-"\\Upsilon"		return 'Upsilon'
-"\\iota"		return 'iota'
-"\\phi"			return 'phi'
-"\\varphi"		return 'phi'
-"\\Phi"			return 'Phi'
-"\\kappa"		return 'kappa'
-"\\chi"			return 'chi'
-"\\lambda"		return 'lambda'
-"\\Lambda"		return 'Lambda'
-"\\psi"			return 'psi'
-"\\Psi"			return 'Psi'
-"\\omega"		return 'omega'
-"\\Omega"		return 'Omega'
+"\\vartheta"            {yytext='\\theta'; return 'LATEXCOMMAND';}
+"\\varepsilon"          {yytext='\\epsilon'; return 'LATEXCOMMAND';}
+"\\varrho"        	{yytext='\\rho'; return 'LATEXCOMMAND';}
+"\\varphi"            	{yytext='\\phi'; return 'LATEXCOMMAND';}
 
-"\\infty"		return 'infinity'
+"\\infty"		return 'INFINITY'
 
-"\\arcsin"              return 'ARCSIN'
-"\\arccos"              return 'ARCCOS'
-"\\arctan"              return 'ARCTAN'
-"\\arcsec"              return 'ARCSEC'
-"\\arccsc"              return 'ARCCSC'
-"\\arccot"              return 'ARCCOT'
-"\\asin"                return 'ARCSIN'
-"\\acos"                return 'ARCCOS'
-"\\atan"                return 'ARCTAN'
-"\\log"                 return 'LOG'
-"\\ln"                  return 'LN'
-"\\exp"                 return 'EXP'
+"\\asin"                {yytext='\\arcsin'; return 'LATEXCOMMAND';}
+"\\acos"                {yytext='\\arccos'; return 'LATEXCOMMAND';}
+"\\atan"                {yytext='\\arctan'; return 'LATEXCOMMAND';}
 "\\sqrt"                return 'SQRT'
-"!"			return '!'
-[A-Za-z]                return 'VAR'
 
+"\\land"		return 'AND'
+"\\wedge"		return 'AND'
+
+"\\lor"			return 'OR'
+"\\vee"			return 'OR'
+
+"\lnot"			return 'NOT'
+
+"="			return '='
+"\\neq"			return 'NE'
+"\\ne"			return 'NE'
+"\\not"\s*"="		return 'NE'
+"\\leq"			return 'LE'
+"\\le"			return 'LE'
+"\\geq"			return 'GE'
+"\\ge"			return 'GE'
+"<"			return '<'
+"\\lt"			return '<'
+">"			return '>'
+"\\gt"			return '>'
+
+"\\in"			return "IN"
+
+"\\notin"		return "NOTIN"
+"\\not"\s*"\\in"	return "NOTIN"
+
+"\\ni"			return "NI"
+
+"\\not"\s*"\\ni"	return "NOTNI"
+
+"\\subset"		return 'SUBSET'
+
+"\\not"\s*"\\subset"	return 'NOTSUBSET'
+
+"\\supset"		return 'SUPERSET'
+
+"\\not"\s*"\\supset"	return 'NOTSUPERSET'
+
+"\\cup"			return 'UNION'
+
+"\\cap"			return 'INTERSECT'
+
+"!"			return '!'
+"'"			return "'"
+[_]			return "_"   // use [_] so don't include word boundary
+
+\\[a-zA-Z][a-zA-Z0-9]*	return 'LATEXCOMMAND'
+[a-zA-Z]		return 'VAR'
 <<EOF>>                 return 'EOF'
 EOF			return 'EOF'
 .                       return 'INVALID'
