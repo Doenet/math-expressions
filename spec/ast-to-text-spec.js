@@ -22,7 +22,7 @@ describe("ast to text", function() {
     });                
 
     it("sum of positive and negative number", function() {     
-        expect(astToText(['+',3,-4]).replace(/ /g,'')).toEqual('3+(-4)');
+        expect(astToText(['+',3,-4]).replace(/ /g,'')).toEqual('3-4');
     });
 
     it("product of positive and negative number", function() {     
@@ -34,15 +34,15 @@ describe("ast to text", function() {
     });    
 
     it("sin^2 (3x)", function() {     
-        expect(astToText(['^',['sin',['*',3,'x']],2]).replace(/ /g,'')).toEqual('sin^2(3x)');
+        expect(astToText(['apply', ['^','sin',2],['*',3,'x']]).replace(/ /g,'')).toEqual('sin^2(3x)');
     });
 
     it("arcsec(3x)", function() {     
-        expect(astToText(['arcsec',['*',3,'x']]).replace(/ /g,'')).toEqual('arcsec(3x)');
+        expect(astToText(['apply','arcsec',['*',3,'x']]).replace(/ /g,'')).toEqual('arcsec(3x)');
     });
 
     it("theta", function() {     
-        expect(astToText(['+', 1, 'theta']).replace(/ /g,'')).toEqual('1+theta');
+        expect(astToText(['+', 1, 'theta']).replace(/ /g,'')).toEqual('1+θ');
     });
 
     it("factorial", function() {     

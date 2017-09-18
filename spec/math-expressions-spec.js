@@ -296,7 +296,7 @@ describe("expression", function() {
 	'x^2/2-2*x+2+c': '(x-2)^2/2',
         '(x-1)^5/5+c': '(x-1)^5/5',
         'cos(2*x)/2+1+c': 'cos(2*x)/2',
-		'exp(x^y)' : 'exp(x^y + 1)',
+	'exp(x^y)' : 'exp(x^y + 1)',
     };
 
     _.each( _.keys(matchDerivatives), function(lhs) {

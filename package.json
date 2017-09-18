@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "jasmine",
-    "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/string.jison -o lib/lexers/string.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js && sed -i /\\'fs\\'/d lib/lexers/string.js",
+    "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
