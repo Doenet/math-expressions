@@ -14,11 +14,11 @@ describe("ast to text", function() {
     });
 
     it("factorial", function() {     
-        expect(astToText(['factorial',3]).replace(/ /g,'')).toEqual('3!');
+        expect(astToText(['apply', 'factorial',3]).replace(/ /g,'')).toEqual('3!');
     });
 
     it("factorial", function() {     
-        expect(astToText(['factorial',['+','x','1']]).replace(/ /g,'')).toEqual('(x+1)!');
+        expect(astToText(['apply', 'factorial',['+','x','1']]).replace(/ /g,'')).toEqual('(x+1)!');
     });                
 
     it("sum of positive and negative number", function() {     
@@ -46,7 +46,7 @@ describe("ast to text", function() {
     });
 
     it("factorial", function() {     
-        expect(astToText(['factorial', 17]).replace(/ /g,'')).toEqual('17!');
+        expect(astToText(['apply', 'factorial', 17]).replace(/ /g,'')).toEqual('17!');
     });                
 
     it("vector", function() {

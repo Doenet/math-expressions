@@ -20,7 +20,8 @@
   "private": false,
   "dependencies": {
     "number-theory": "*",
-    "xml-parser": "*"
+    "xml-parser": "*",
+    "mathjs": "*"
   },
   "devDependencies": {
     "jasmine": "*",
