@@ -1,5 +1,6 @@
 var _ = require('underscore');
 var textToLatex = require('../lib/parser').text.to.latex;
+var astToLatex = require('../lib/parser').ast.to.latex;
 
 describe("ast to latex", function() {
     var texts = {
@@ -31,5 +32,9 @@ describe("ast to latex", function() {
 	    expect(textToLatex(text)).toEqual(texts[text]);
 	});	
     });    
+
+    it("vector", function() {
+        expect(astToLatex(['vector', 1, 'x']).replace(/ /g,'')).toEqual('\\left(1,x\\right)');
+    });
         
 });

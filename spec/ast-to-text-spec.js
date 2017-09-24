@@ -48,4 +48,8 @@ describe("ast to text", function() {
     it("factorial", function() {     
         expect(astToText(['factorial', 17]).replace(/ /g,'')).toEqual('17!');
     });                
+
+    it("vector", function() {
+        expect(astToText(['vector', 1, 'x']).replace(/ /g,'')).toEqual('(1,x)');
+    });
 });
