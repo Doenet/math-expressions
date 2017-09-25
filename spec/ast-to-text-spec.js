@@ -52,4 +52,23 @@ describe("ast to text", function() {
     it("vector", function() {
         expect(astToText(['vector', 1, 'x']).replace(/ /g,'')).toEqual('(1,x)');
     });
+
+    it("throws error apply", function() {
+	expect(function () {astToText(['sin', 'x'])}).toThrowError();
+    });
+
+    it("throws error lts", function() {
+	expect(function () {astToText(['lts', 'x', 'y', 'z'])}).toThrowError();
+    });
+
+    it("throws error gts", function() {
+	expect(function () {astToText(['gts', 'x', 'y', 'z'])}).toThrowError();
+    });
+    
+    it("throws error interval", function() {
+	expect(function () {astToText(['interval', 'x', 'y'])}).toThrowError();
+    });
+
+
+    
 });

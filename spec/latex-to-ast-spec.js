@@ -328,6 +328,14 @@ describe("latex to ast", function() {
 	['A \\lor B \\land C', 'A \\lor (B \\land C)'],
 	['\\lnot A \\lor B', '(\\lnot A) \\lor B'],
 	['A=1 \\lor B=x/y', '(A=1) \\lor (B=\\frac{x}{y})'],
+	'x \\in (a,b)',
+	['x \\not\\in (a,b)', 'x \\notin (a,b)'],
+	'(a,b) \\ni x',
+	'(a,b) \\not\\ni x',
+	'(a,b) \\subset (c,d)',
+	'(a,b) \\not\\subset (c,d)',
+	'(a,b) \\supset (c,d)',
+	'(a,b) \\not\\supset (c,d)',
     ];
 
     function clean(text) {

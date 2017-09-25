@@ -317,7 +317,7 @@ describe("expression", function() {
     _.each( _.keys(derivatives), function(lhs) {
 	var rhs = derivatives[lhs];
 	it("(d/dx) " + lhs + " == " + rhs, function() {
-	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs))).toBeTruthy();
+	    expect(Expression.fromText(lhs).normalize_applied_functions().derivative('x').equals(Expression.fromText(rhs).normalize_applied_functions())).toBeTruthy();
 	});	
     });        
     

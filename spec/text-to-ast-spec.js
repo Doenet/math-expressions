@@ -337,6 +337,14 @@ describe("text to ast", function() {
 	['A or B & C', 'A or (B and C)'],
 	['!A or B', '(not A) or B'],
 	['A=1 or B=x/y', '(A=1) or (B=x/y)'],
+	['x elementof (a,b)', 'x ∈ (a,b)'],
+	['x notelementof (a,b)', 'x ∉ (a,b)'],
+	['(a,b) containselement x', '(a,b) ∋ x'],
+	['(a,b) notcontainselement x', '(a,b) ∌ x'],
+	['(a,b) subset (c,d)', '(a,b) ⊂ (c,d)'],
+	['(a,b) notsubset (c,d)', '(a,b) ⊄ (c,d)'],
+	['(a,b) superset (c,d)', '(a,b) ⊃ (c,d)'],
+	['(a,b) notsuperset (c,d)', '(a,b) ⊅ (c,d)'],
     ];
 
     _.each( inputs, function(input) {

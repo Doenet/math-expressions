@@ -37,4 +37,20 @@ describe("ast to latex", function() {
         expect(astToLatex(['vector', 1, 'x']).replace(/ /g,'')).toEqual('\\left(1,x\\right)');
     });
         
+    it("throws error apply", function() {
+	expect(function () {astToLatex(['sin', 'x'])}).toThrowError();
+    });
+
+    it("throws error lts", function() {
+	expect(function () {astToLatex(['lts', 'x', 'y', 'z'])}).toThrowError();
+    });
+
+    it("throws error gts", function() {
+	expect(function () {astToLatex(['gts', 'x', 'y', 'z'])}).toThrowError();
+    });
+    
+    it("throws error interval", function() {
+	expect(function () {astToLatex(['interval', 'x', 'y'])}).toThrowError();
+    });
+
 });

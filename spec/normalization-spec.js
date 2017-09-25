@@ -1,7 +1,6 @@
 var me = require('../lib/math-expressions')
 var _ = require('underscore');
 
-
 describe("normalize applied functions", function() {
     it("derivative inside", function() {
 	expect(me.from('f\'(x)').tree).toEqual(['apply', ['prime', 'f'], 'x']);
