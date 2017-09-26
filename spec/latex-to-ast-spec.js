@@ -134,6 +134,10 @@ describe("latex to ast", function() {
 	'\\lnot x=1': ['not', ['=', 'x', 1]],
 	'\\lnot(x=1)': ['not', ['=', 'x', 1]],
 	'\\lnot(x=y) \\lor z \\ne w': ['or', ['not', ['=','x','y']], ['ne','z','w']],
+	'1.2E3': 1200,
+	'1.2E+3': 1200,
+	'3.1E-3': 0.0031,
+	'1.2e-3': ['+', ['*', 1.2, 'e'], ['-', 3]],
     };
 
     _.each( _.keys(trees), function(string) {

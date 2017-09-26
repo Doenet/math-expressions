@@ -22,8 +22,8 @@
 %%
 
 \s+                   /* skip whitespace */
-[0-9]+(\.[0-9]+)?     return 'NUMBER'
-\.[0-9]+		return 'NUMBER'
+[0-9]+(\.[0-9]+)?(E[+\-]?[0-9]+)?  return 'NUMBER'
+\.[0-9]+(E[+\-]?[0-9]+)?	   return 'NUMBER'
 "**"                    return '^'
 "*"                     return '*' // there is some variety in multiplication symbols
 "\xB7"                  return '*' // '·'
