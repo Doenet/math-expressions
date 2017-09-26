@@ -27,6 +27,8 @@ describe("ast to math tree", function() {
 	'(a and b) or c',
 	'a and (b or c)',
 	'not (a or b)',
+	'a and b and c',
+	'a or b or c',
 	['x < y < z', 'x < y and y < z'],
 	['x < y <= z', 'x < y and y <= z'],
 	['x <= y < z', 'x <= y and y < z'],
@@ -122,7 +124,6 @@ describe("ast to math tree", function() {
 	    }
 	});	
     });
-
 
     
 });
