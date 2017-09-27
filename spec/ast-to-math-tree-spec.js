@@ -17,6 +17,7 @@ describe("ast to math tree", function() {
 	'(x-1)/3-x^2/(1-z+y)',
 	['sin(2y)/3', 'sin(2*y)/3'],
 	'csc(pi/2)',
+	['sqrt(x)', 'x^(0.5)'], 
 	'x < y',
 	'x <= y',
 	'x > y',

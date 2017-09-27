@@ -1,6 +1,32 @@
 var me = require('../lib/math-expressions')
 var _ = require('underscore');
 
+describe("normalize function names", function() {
+
+    var trees = {
+	'ln(x)': ['apply', 'log', 'x'],
+	'e^x': ['apply', 'exp', 'x'],
+	'arccsc(x)': ['apply', 'acsc', 'x'],
+	'arctan^2(x)': ['apply', ['^', 'atan', 2], 'x'],
+	'1+cosec(3*x)': ['+', 1, ['apply', 'csc', ['*', 3, 'x']]],
+	'1-e^(x/y)': ['+', 1, ['-', ['apply', 'exp', ['/', 'x', 'y']]]],
+	'5/sqrt(2y)': ['/', 5, ['^', ['*', 2, 'y'], 0.5]],
+	'ln(e^x)': ['apply', 'log', ['apply', 'exp', 'x']],
+	'e^(ln(x))': ['apply', 'exp', ['apply', 'log', 'x']],
+	'sqrt(sqrt(x))': ['^', ['^', 'x', 0.5], 0.5],
+	
+    }
+    
+  _.each( _.keys(trees), function(string) {
+	it(string, function() {
+	    expect(me.from(string).normalize_function_names().tree)
+		.toEqual(trees[string]);
+	});	
+    });    
+
+});
+
+
 describe("normalize applied functions", function() {
     it("derivative inside", function() {
 	expect(me.from('f\'(x)').tree).toEqual(['apply', ['prime', 'f'], 'x']);
