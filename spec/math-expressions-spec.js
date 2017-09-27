@@ -55,7 +55,7 @@ describe("expression", function() {
         '2*cos(x)^2-1': 'cos(2*x)',
         '2*cos(2*x)+x+1': '-sin(x)^2+3*cos(x)^2+x',
         '(2*sec(2*t)^2-2)/2': '-(sin(4*t)^2-2*sin(4*t)+cos(4*t)^2-1)*(sin(4*t)^2+2*sin(4*t)+cos(4*t)^2-1)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)^2',
-        '1+cosec(3*x)': '1+csc(3*x)',
+        //'1+cosec(3*x)': '1+csc(3*x)',
         '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)': '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)',
 	'log(a^2*b)': '2*log(a)+log(b)',
 	'sqrt(12)': '2*sqrt(3)',
@@ -212,13 +212,14 @@ describe("expression", function() {
 	'cos(x + y)' : 'cos(x)*cos(y) - sin(x)*sin(y)',
 	'log(x)/8' : '0.125*log(x)',
 	'log(x)/8' : '(1/8)*log(x)',
-	"x/2-sin(2x)/4-(cos(x))^3/3": "x/2+sin(2x)/4-(cos(x))^3/3",	
+	//"x/2-sin(2x)/4-(cos(x))^3/3": "x/2+sin(2x)/4-(cos(x))^3/3",	
 	'(1/8)*log(x)' : '0.125*log(x)',
 	'1' : '1',
 	'sqrt(10000 - x)' : 'sqrt(10000 - x)',
-			'x*log(y)' : 'log(y^x)',
-		'exp(x^y)' : 'exp(x^y)',
-		'(exp(x))^y' : 'exp(x*y)',
+	'x*log(y)' : 'log(y^x)',
+	'exp(x^y)' : 'exp(x^y)',
+	'(exp(x))^y' : 'exp(x*y)',
+	'0*x': '0*y',
     };
 
     _.each( _.keys(equivalences), function(lhs) {
@@ -263,6 +264,7 @@ describe("expression", function() {
 	'sqrt(x^2)' : 'x',
 	'x' : 'sqrt(x^2)',
 	'abs(x)' : 'x',
+	'1E-50*sin(x)': '1E-50*cos(x)',
     };
 
     _.each( _.keys(nonequivalences), function(lhs) {
@@ -296,12 +298,12 @@ describe("expression", function() {
 	'x^2/2-2*x+2+c': '(x-2)^2/2',
         '(x-1)^5/5+c': '(x-1)^5/5',
         'cos(2*x)/2+1+c': 'cos(2*x)/2',
-	'exp(x^y)' : 'exp(x^y + 1)',
+	//'exp(x^y)' : 'exp(x^y + 1)',
     };
 
     _.each( _.keys(matchDerivatives), function(lhs) {
 	var rhs = matchDerivatives[lhs];
-	it(lhs + " == " + rhs, function() {
+	it("(d/dx) " + lhs + " == " + "(d/dx) " + rhs, function() {
 	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
 	});	
     });    
