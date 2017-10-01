@@ -8119,7 +8119,6 @@ function collapse_unary_minus(tree) {
 }
 exports.simplify = function () {
   this.tree = associate_ast(this.tree, "+");
-  this.tree = associate_ast(this.tree, "-");
   this.tree = associate_ast(this.tree, "*");
   this.tree = remove_identity(this.tree, "*", 1);
   this.tree = collapse_unary_minus(this.tree);
