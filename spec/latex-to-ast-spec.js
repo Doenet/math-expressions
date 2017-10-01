@@ -12,7 +12,8 @@ describe("latex to ast", function() {
 	'\\ln x': ['ln', 'x'],
 	'-x^2': ['~',['^', 'x', 2]],
 	'|x|': ['abs','x'],
-	'|\\sin|x||': ['abs', ['sin', ['abs', 'x']]],	
+	'|\\sin|x||': ['abs', ['sin', ['abs', 'x']]],
+	'1-(1-h)': ['-', 1, ['-', 1, 'h']]
     };
 
     _.each( _.keys(trees), function(string) {
