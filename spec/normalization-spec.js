@@ -110,9 +110,6 @@ describe("normalize tuples", function() {
     it("vector3", function() {
 	expect(me.from('(x,y,z)').tuples_to_vectors().tree).toEqual(
 	    ['vector', 'x', 'y', 'z']);
-    });
-
-    it("vector3", function() {
 	expect(me.from('(x,y,z)').to_intervals().tree).toEqual(
 	    ['tuple', 'x', 'y', 'z']);
     });
@@ -124,6 +121,12 @@ describe("normalize tuples", function() {
 		      ['vector', 'x', 'y', 'z']]);
     });
 
-
+    it("function", function() {
+	expect(me.from('f(x,y)').tuples_to_vectors().tree).toEqual(
+	    ['apply', 'f', ['tuple', 'x', 'y']]);
+	expect(me.from('f(x,y)').to_intervals().tree).toEqual(
+	    ['apply', 'f', ['tuple', 'x', 'y']]);
+    });
+    
 });
 
