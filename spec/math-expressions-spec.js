@@ -187,7 +187,6 @@ describe("expression", function() {
 	['(n+1)*n!', '(n+1)!'],
 	['n/n!', '1/(n-1)!'],
 	['(n!)^2', 'n! * n!'],
-	['(-1)^n * (-1)^n', '1'],
 	['abs((-x)^(1/3))', '(abs(-x))^(1/3)'],
 	['abs(x)' , '(x^4)^(1/4)'],
 	['abs(x)' , 'sqrt(sqrt(x^4))'],
@@ -286,6 +285,35 @@ describe("expression", function() {
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
 	});	
     });    
+
+
+    it('integer assumption', function() {
+	var expr1 = Expression.from('(-1)^n * (-1)^n')
+	var expr2 = Expression.from('1');
+	
+	expect(expr1.equals(expr2)).toBeFalsy();
+
+	Expression.assumptions = Expression.from('n ∈ Z').tree;
+	expect(expr1.equals(expr2)).toBeTruthy();
+
+	Expression.assumptions = Expression.from('Z ∋ n').tree;
+	expect(expr1.equals(expr2)).toBeTruthy();
+
+	Expression.assumptions = Expression.from('x ∈ Z').tree;
+	expect(expr1.equals(expr2)).toBeFalsy();
+
+	Expression.assumptions = Expression.from('n ∈ R').tree;
+	expect(expr1.equals(expr2)).toBeFalsy();
+
+	Expression.assumptions = Expression.from('n ∈ Z and 3*x+5 > 3').tree;
+	expect(expr1.equals(expr2)).toBeTruthy();
+
+	Expression.assumptions = Expression.from('n ∈ Z or 3*x+5 > 3').tree;
+	expect(expr1.equals(expr2)).toBeFalsy();
+
+	Expression.assumptions = [];
+
+    });
 
     var matchDerivatives = [
         ['x^3/3+c', 'x^3/3+c'],
