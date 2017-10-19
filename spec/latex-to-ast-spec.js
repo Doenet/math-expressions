@@ -2,6 +2,7 @@ var astToLatex = require('../lib/parser').ast.to.latex;
 var latexToAst = require('../lib/parser').latex.to.ast;
 var _ = require('underscore');
 var ParseError = require('../lib/error').ParseError;
+var Context = require('../lib/math-expressions');
 
 describe("latex to ast", function() {
     var trees = {
@@ -369,4 +370,51 @@ describe("latex to ast", function() {
 		expect(astToLatex(latexToAst(astToLatex(latexToAst(input))))).toEqual(astToLatex(latexToAst(input)));
 	});	
     });
+
+
+    it("function symbol context", function () {
+	Context.set_to_default();
+	
+	Context.parser_parameters.functionSymbols = [];
+	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
+	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.parser_parameters.functionSymbols.push('f');
+	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.parser_parameters.functionSymbols.push('h');
+	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+	Context.parser_parameters.functionSymbols.push('x');
+	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+    });
+    
+    it("applied function symbol context", function () {
+	Context.set_to_default();
+	
+	Context.parser_parameters.appliedFunctionSymbols = [];
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)').tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y').tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
+
+	Context.parser_parameters.appliedFunctionSymbols.push('custom');
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)').tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y').tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	
+	Context.parser_parameters.appliedFunctionSymbols.push('sin');
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)').tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y').tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+
+    });
+
+
 });

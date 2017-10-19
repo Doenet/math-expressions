@@ -373,48 +373,53 @@ describe("text to ast", function() {
 
 
     it("unsplit context", function () {
-
-	Context.unsplitSymbols =  [];
+	Context.set_to_default();
+	
+	Context.parser_parameters.unsplitSymbols =  [];
 	expect(Context.fromText('3pi').tree).toEqual(['*', 3, 'p', 'i']);
 
-	Context.unsplitSymbols.push('pi');
+	Context.parser_parameters.unsplitSymbols.push('pi');
 	expect(Context.fromText('3pi').tree).toEqual(['*', 3, 'pi']);
 
     });
 
     it("function symbol context", function () {
-	Context.functionSymbols = [];
+	Context.set_to_default();
+
+	Context.parser_parameters.functionSymbols = [];
 	expect(Context.fromText('f(x)+h(y)').tree).toEqual(
 	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
 	
-	Context.functionSymbols.push('f');
+	Context.parser_parameters.functionSymbols.push('f');
 	expect(Context.fromText('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
 	
-	Context.functionSymbols.push('h');
+	Context.parser_parameters.functionSymbols.push('h');
 	expect(Context.fromText('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 	
-	Context.functionSymbols.push('x');
+	Context.parser_parameters.functionSymbols.push('x');
 	expect(Context.fromText('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 	
     });
     
     it("applied function symbol context", function () {
-	Context.appliedFunctionSymbols = [];
+	Context.set_to_default();
+
+	Context.parser_parameters.appliedFunctionSymbols = [];
 	expect(Context.fromText('sin(x) + custom(y)').tree).toEqual(
 	    ['+', ['*', 's', 'i', 'n', 'x'], ['*', 'c', 'u', 's', 't', 'o', 'm', 'y']]);
 	expect(Context.fromText('sin x + custom y').tree).toEqual(
 	    ['+', ['*', 's', 'i', 'n', 'x'], ['*', 'c', 'u', 's', 't', 'o', 'm', 'y']]);
 
-	Context.appliedFunctionSymbols.push('custom');
+	Context.parser_parameters.appliedFunctionSymbols.push('custom');
 	expect(Context.fromText('sin(x) + custom(y)').tree).toEqual(
 	    ['+', ['*', 's', 'i', 'n', 'x'], ['apply', 'custom', 'y']]);
 	expect(Context.fromText('sin x + custom y').tree).toEqual(
 	    ['+', ['*', 's', 'i', 'n', 'x'], ['apply', 'custom', 'y']]);
 	
-	Context.appliedFunctionSymbols.push('sin');
+	Context.parser_parameters.appliedFunctionSymbols.push('sin');
 	expect(Context.fromText('sin(x) + custom(y)').tree).toEqual(
 	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
 	expect(Context.fromText('sin x + custom y').tree).toEqual(

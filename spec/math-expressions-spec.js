@@ -225,6 +225,7 @@ describe("expression", function() {
 	var lhs = equiv[0]
 	var rhs = equiv[1];
 	it(lhs + " == " + rhs, function() {
+	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeTruthy();
 	});	
     });
@@ -282,12 +283,15 @@ describe("expression", function() {
 	var lhs = nonequiv[0]
 	var rhs = nonequiv[1];
 	it(lhs + " != " + rhs, function() {
+	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
 	});	
     });    
 
 
     it('integer assumption', function() {
+	Expression.set_to_default();
+	
 	var expr1 = Expression.from('(-1)^n * (-1)^n')
 	var expr2 = Expression.from('1');
 	
@@ -346,6 +350,7 @@ describe("expression", function() {
 	var lhs = deriv[0]
 	var rhs = deriv[1];
 	it("(d/dx) " + lhs + " == " + "(d/dx) " + rhs, function() {
+	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
 	});	
     });    
@@ -362,6 +367,7 @@ describe("expression", function() {
 	var lhs = deriv[0]
 	var rhs = deriv[1];
 	it("(d/dx) " + lhs + " == " + rhs, function() {
+	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).normalize_applied_functions().derivative('x').equals(Expression.fromText(rhs).normalize_applied_functions())).toBeTruthy();
 	});	
     });        
