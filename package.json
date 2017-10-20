@@ -21,7 +21,8 @@
   "dependencies": {
     "number-theory": "*",
     "xml-parser": "*",
-    "mathjs": "*"
+    "mathjs": "*",
+    "numeric": "*"  
   },
   "devDependencies": {
     "jasmine": "*",
