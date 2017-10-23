@@ -277,6 +277,7 @@ describe("expression", function() {
 	['x > 1000', 'x > 1001'],
 	['x + 1E-8', 'x + 2E-8'],
 	['x + 1E9', '2x + 1E9'],
+	['xy^2/2 + e^y', 'x + e^y']
     ];
 
     _.each( nonequivalences, function(nonequiv) {
