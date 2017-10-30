@@ -52,16 +52,22 @@ describe("via trees", function() {
 	expect(trees.match( TREE('x+y'), TREE('a*b') )).toBeFalsy();
     });
 
+
+    it("match must match entire tree", function() {
+	expect(trees.match( TREE('x+y/z'), TREE('a/b') )).toBeFalsy();
+    });
+
     it("replacing x*y in x*y+z with y/x results in y/x+z", function() {
 	var subtree = ['*', 'x', 'y'];
 	var replacement = ['/', 'y', 'x'];
 	var root = ['+', subtree, 'z'];
+	//var root = ['+', ['*', 'x', 'y'], 'z'];
 
 	expect(trees.equal( trees.replace( root, subtree, replacement ),
 			    TREE('y/x + z') )).toBeTruthy();
     });    
 
-    it("applying commutativity to a+b+c finds some permutations", function(done) {
+    it("applying commutativity to a+b+c finds some permutations", function () {
 	var tree = ['+', 'a', ['+', 'b', 'c']];
 	var pattern = TREE('a+b');
 	var replacement = TREE('b+a');
@@ -69,14 +75,11 @@ describe("via trees", function() {
 	var left = ['+', 'a', ['+', 'c', 'b']];
 	var right = ['+', ['+', 'b', 'c'], 'a'];
 	
-	trees.applyTransformation( tree, pattern, replacement,
-				   function(err, results) {
-				       expect(results.length).toEqual(2);
-				       
-				       expect( ((trees.equal(results[0], left) && trees.equal(results[1], right))) ||
-					       ((trees.equal(results[1], left) && trees.equal(results[0], right))) ).toBeTruthy();
-				       done();
-				   });
+	var results = trees.applyTransformation( tree, pattern, replacement);
+	expect(results.length).toEqual(2);
+	
+	expect( ((trees.equal(results[0], left) && trees.equal(results[1], right))) ||
+		((trees.equal(results[1], left) && trees.equal(results[0], right))) ).toBeTruthy();
     });
     
     it("applying commutativity and associativity finds some equalities", function() {
