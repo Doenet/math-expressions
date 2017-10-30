@@ -63,7 +63,7 @@ describe("via trees", function() {
 	var root = ['+', subtree, 'z'];
 	//var root = ['+', ['*', 'x', 'y'], 'z'];
 
-	expect(trees.equal( trees.replace( root, subtree, replacement ),
+	expect(trees.equal( trees.replaceSubtree( root, subtree, replacement ),
 			    TREE('y/x + z') )).toBeTruthy();
     });    
 
@@ -75,7 +75,7 @@ describe("via trees", function() {
 	var left = ['+', 'a', ['+', 'c', 'b']];
 	var right = ['+', ['+', 'b', 'c'], 'a'];
 	
-	var results = trees.applyTransformation( tree, pattern, replacement);
+	var results = trees.applyTransformationEachSubtree( tree, pattern, replacement);
 	expect(results.length).toEqual(2);
 	
 	expect( ((trees.equal(results[0], left) && trees.equal(results[1], right))) ||
@@ -104,7 +104,36 @@ describe("via trees", function() {
 	var right = ['+', 'a', ['+', 'b', ['+', 'c', 'a']]];
 
 	expect(trees.equalAfterTransformations( left, right, [commutativity, associativity], 3 )).toBeFalsy();
-    });    
+    });
+    
+    it("Apply distributive transformations to expand polynomial", function () {
+	
+	var transformations = [];
+	transformations.push([TREE("a*(b+c)"), TREE("a*b+a*c")]);
+	transformations.push([TREE("(a+b)*c"), TREE("a*c+b*c")]);
+
+	var factored = ['*',
+			['+', 'a', 'b'],
+			'x',
+			['+', ['*', 2, 'y'], ['*', 'p','q']]
+		       ]
+
+	var expanded = ['+',
+			['*', 'a', 'x', 2, 'y'],
+			['*', 'a', 'x', 'p', 'q'],
+			['*', 'b', 'x', 2, 'y'],
+			['*', 'b', 'x', 'p', 'q']];
+
+	factored = trees.deassociate(trees.deassociate(factored, '*'), '+');
+
+	transformed = trees.applyAllTransformations(factored, transformations);
+
+	transformed = trees.associate(trees.associate(transformed, '*'), '+');
+	
+	expect(trees.equal(expanded, transformed)).toBeTruthy();
+	
+    });
+       
 
 });
 

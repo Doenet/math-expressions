@@ -384,6 +384,7 @@ describe("text to ast", function() {
 
 	Context.parser_parameters.unsplitSymbols.push('pi');
 	expect(Context.fromText('3pi').tree).toEqual(['*', 3, 'pi']);
+	Context.set_to_default();
 
     });
 
@@ -406,6 +407,7 @@ describe("text to ast", function() {
 	expect(Context.fromText('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 	
+	Context.set_to_default();
     });
     
     it("applied function symbol context", function () {
@@ -429,6 +431,8 @@ describe("text to ast", function() {
 	expect(Context.fromText('sin x + custom y').tree).toEqual(
 	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
 
+	Context.set_to_default();
+	
     });
 
 });

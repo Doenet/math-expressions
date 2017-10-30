@@ -394,7 +394,8 @@ describe("latex to ast", function() {
 	Context.parser_parameters.functionSymbols.push('x');
 	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
-	
+
+	Context.set_to_default();
     });
     
     it("applied function symbol context", function () {
@@ -418,6 +419,8 @@ describe("latex to ast", function() {
 	expect(Context.fromLatex('\\sin x + \\custom y').tree).toEqual(
 	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
 
+	Context.set_to_default();
+	
     });
 
 
