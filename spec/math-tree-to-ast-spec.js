@@ -42,7 +42,6 @@ describe("math tree to ast", function() {
 	'x^2!': ['^', 'x', ['apply', 'factorial', 2]],
 	'x^2!!': ['^', 'x', ['apply', 'factorial', ['apply', 'factorial', 2]]],
 	'x==a': ['=', 'x', 'a'],
-	'x==y==1': ['=', 'x', 'y', 1],
 	'7 != 2': ['ne', 7, 2],
 	'not x==y': ['=', ['not', 'x'], 'y'],  // different precendence than our parser!!!!
 	'x>y': ['>', 'x','y'],
