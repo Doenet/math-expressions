@@ -1,4 +1,5 @@
-var trees = require('../lib/trees.js')
+var trees = require('../lib/trees/basic.js')
+var assoc = require('../lib/trees/associate.js')
 
 var Expression = require ('../lib/math-expressions');
 function TREE(s) {
@@ -15,12 +16,12 @@ describe("tree basics", function() {
     });
 
     it("(1+2+3) deassociates to (1+(2+3))", function() {
-	expect(trees.equal( trees.deassociate( ['+', 1, 2, 3], '+' ),
+	expect(trees.equal( assoc.deassociate( ['+', 1, 2, 3], '+' ),
 			    ['+', 1, ['+', 2, 3]])).toBeTruthy();
     });
 
     it("(1+(2+3)) associates to (1+2+3)", function() {
-	expect(trees.equal( trees.associate( ['+', 1, ['+', 2, 3]], '+' ),
+	expect(trees.equal( assoc.associate( ['+', 1, ['+', 2, 3]], '+' ),
 			    ['+', 1, 2, 3] )).toBeTruthy();
     });
 
@@ -312,11 +313,11 @@ describe("tree transformations", function () {
 			['*', 'b', 'x', 2, 'y'],
 			['*', 'b', 'x', 'p', 'q']];
 
-	factored = trees.deassociate(trees.deassociate(factored, '*'), '+');
+	factored = assoc.deassociate(assoc.deassociate(factored, '*'), '+');
 
 	transformed = trees.applyAllTransformations(factored, transformations);
 
-	transformed = trees.associate(trees.associate(transformed, '*'), '+');
+	transformed = assoc.associate(assoc.associate(transformed, '*'), '+');
 	
 	expect(trees.equal(expanded, transformed)).toBeTruthy();
 	
