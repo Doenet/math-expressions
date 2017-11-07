@@ -22,7 +22,7 @@
     "number-theory": "*",
     "xml-parser": "*",
     "mathjs": "*",
-    "numeric": "*"  
+    "numeric": "*"
   },
   "devDependencies": {
     "jasmine": "*",
