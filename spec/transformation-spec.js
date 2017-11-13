@@ -24,3 +24,45 @@ describe("expand factors", function () {
     });
 
 });
+
+
+describe("expand relations", function () {
+
+    it("equality", function () {
+	expect(tree_equal(me.fromText('a=b=c').expand_relations().tree,
+			  me.fromText('a=b and b=c').tree)).toBeTruthy();
+
+	expect(tree_equal(me.fromText('1+3/x=x-y=c^2q=log(z)').expand_relations().tree,
+			  me.fromText('1+3/x=x-y and x-y=c^2q and c^2q=log(z)').tree)).toBeTruthy();
+
+    });
+    
+    it("inequality", function () {
+	expect(tree_equal(me.fromText('a<b<c').expand_relations().tree,
+			  me.fromText('a<b and b<c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a<=b<c').expand_relations().tree,
+			  me.fromText('a<=b and b<c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a<=b<=c').expand_relations().tree,
+			  me.fromText('a<=b and b<=c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a<b<=c').expand_relations().tree,
+			  me.fromText('a<b and b<=c').tree)).toBeTruthy();
+
+	expect(tree_equal(me.fromText('a>b>c').expand_relations().tree,
+			  me.fromText('a>b and b>c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a>=b>c').expand_relations().tree,
+			  me.fromText('a>=b and b>c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a>=b>=c').expand_relations().tree,
+			  me.fromText('a>=b and b>=c').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('a>b>=c').expand_relations().tree,
+			  me.fromText('a>b and b>=c').tree)).toBeTruthy();
+
+	expect(tree_equal(me.fromText('1+3/x<=x-y<c^2q<log(z)').expand_relations().tree,
+			  me.fromText('1+3/x<=x-y and x-y<c^2q and c^2q<log(z)').tree)).toBeTruthy();
+	expect(tree_equal(me.fromText('1+3/x>=x-y>c^2q>=log(z)').expand_relations().tree,
+			  me.fromText('1+3/x>=x-y and x-y>c^2q and c^2q>=log(z)').tree)).toBeTruthy();
+
+
+    });
+
+
+});

@@ -299,25 +299,31 @@ describe("expression", function() {
 	
 	expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.assumptions = Expression.from('n ∈ Z').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('n ∈ Z'));
 	expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.assumptions = Expression.from('Z ∋ n').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('Z ∋ n'));
 	expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.assumptions = Expression.from('x ∈ Z').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('x ∈ Z'));
 	expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.assumptions = Expression.from('n ∈ R').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('n ∈ R'));
 	expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.assumptions = Expression.from('n ∈ Z and 3*x+5 > 3').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('n ∈ Z and 3*x+5 > 3'));
 	expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.assumptions = Expression.from('n ∈ Z or 3*x+5 > 3').tree;
+	Expression.clear_assumptions();
+	Expression.add_assumption(Expression.from('n ∈ Z or 3*x+5 > 3'));
 	expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.assumptions = [];
+	Expression.clear_assumptions();
 
     });
 
