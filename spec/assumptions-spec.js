@@ -1,11 +1,12 @@
 var me = require ('../lib/math-expressions');
-var is_integer = require('../lib/assumptions/field.js').is_integer;
-var is_real = require('../lib/assumptions/field.js').is_real;
-var is_nonzero = require('../lib/assumptions/field.js').is_nonzero;
-var is_nonnegative = require('../lib/assumptions/field.js').is_nonnegative;
-var is_nonpositive = require('../lib/assumptions/field.js').is_nonpositive;
-var is_positive = require('../lib/assumptions/field.js').is_positive;
-var is_negative = require('../lib/assumptions/field.js').is_negative;
+var is_integer = require('../lib/assumptions/element_of_sets.js').is_integer;
+var is_real = require('../lib/assumptions/element_of_sets.js').is_real;
+var is_complex = require('../lib/assumptions/element_of_sets.js').is_complex;
+var is_nonzero = require('../lib/assumptions/element_of_sets.js').is_nonzero;
+var is_nonnegative = require('../lib/assumptions/element_of_sets.js').is_nonnegative;
+var is_nonpositive = require('../lib/assumptions/element_of_sets.js').is_nonpositive;
+var is_positive = require('../lib/assumptions/element_of_sets.js').is_positive;
+var is_negative = require('../lib/assumptions/element_of_sets.js').is_negative;
 var trees = require('../lib/trees/basic');
 
 describe("add and get assumptions", function () {
@@ -50,7 +51,7 @@ describe("add and get assumptions", function () {
 
 	me.add_assumption(me.from('x < y+1'));
 	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0 and x < y+1').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('y'),me.from('x < y+1').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('y'),me.from('x<=0 and x < y+1').tree)).toBeTruthy();
 	expect(me.get_assumptions('z')).toEqual(undefined);
 
 	me.clear_assumptions();
@@ -59,8 +60,7 @@ describe("add and get assumptions", function () {
 	expect(trees.equal(me.get_assumptions('b'),me.from('a < b and b < c').tree)).toBeTruthy();
 	expect(trees.equal(me.assumptions.get_assumptions('b'),me.from('a < b and b < c').tree)).toBeTruthy();
 
-	// this doesn't work yet
-	expect(trees.equal(me.get_assumptions('a'),me.from('a < b and a < c').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('a'),me.from('a < b and b < c').tree)).toBeTruthy();
 
 	me.clear_assumptions();
     });
@@ -267,6 +267,18 @@ describe("is integer", function() {
 	expect(is_integer(me.fromText('n^n'))).toEqual(undefined);
 
 	me.clear_assumptions();
+	me.add_assumption(me.from('Z ∋ n'));
+	expect(is_integer(me.fromText('n'))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from('n ∉ Z'));
+	expect(is_integer(me.fromText('n'))).toEqual(false);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from('Z ∌ n'));
+	expect(is_integer(me.fromText('n'))).toEqual(false);
+	
+	me.clear_assumptions();
 	me.add_assumption(me.from('n ∈ Z and n > 0'));
 	expect(is_integer(me.fromText('n^n'))).toEqual(true);
 	expect(is_integer(me.fromText('n^3'))).toEqual(true);
@@ -333,29 +345,30 @@ describe("is integer", function() {
 });
 
 
-describe("is positive/negative/zero/real", function() {
+describe("is positive/negative/zero/real/complex", function() {
 
     var literals = [
-	['3.2', true, false, false, true, true, true],
-	['0', true, false, true, false, false, true],
-	['-5.12', false, true, true, false, true, true],
-	['8+12.3', true, false, false, true, true, true],
-	['13-13', true, false, true, false, false, true],
-	['13-13.7', false, true, true, false, true, true],
-	['2.1*3.6', true, false, false, true, true, true],
-	['21.3*(-31.2)', false, true, true, false, true, true],
-	['21.3*(4-4)*(-31.2)', true, false, true, false, false, true],
-	['2.2/3.5', true, false, false, true, true, true],
-	['-2.2/3.5', false, true, true, false, true, true],
-	['2.2/-3.5', false, true, true, false, true, true],
-	['-2.2/-3.5', true, false, false, true, true, true],
-	['-2.2/(5-5)', false, false, false, false, true, false],
-	['(-6+6)/(3-5)', true, false, true, false, false, true],
-	['(-6+6)/(5-5)', false, false, false, false, false, false],
-	['abs(-5)', true, false, false, true, true, true],
-	['sin(0)', true, false, true, false, false, true],
-	['sqrt(-4)', false, false, false, false, true, false],
+	['3.2', true, false, false, true, true, true, true],
+	['0', true, false, true, false, false, true, true],
+	['-5.12', false, true, true, false, true, true, true],
+	['8+12.3', true, false, false, true, true, true, true],
+	['13-13', true, false, true, false, false, true, true],
+	['13-13.7', false, true, true, false, true, true, true],
+	['2.1*3.6', true, false, false, true, true, true, true],
+	['21.3*(-31.2)', false, true, true, false, true, true, true],
+	['21.3*(4-4)*(-31.2)', true, false, true, false, false, true, true],
+	['2.2/3.5', true, false, false, true, true, true, true],
+	['-2.2/3.5', false, true, true, false, true, true, true],
+	['2.2/-3.5', false, true, true, false, true, true, true],
+	['-2.2/-3.5', true, false, false, true, true, true, true],
+	['-2.2/(5-5)', false, false, false, false, true, false, false],
+	['(-6+6)/(3-5)', true, false, true, false, false, true, true],
+	['(-6+6)/(5-5)', false, false, false, false, false, false, false],
+	['abs(-5)', true, false, false, true, true, true, true],
+	['sin(0)', true, false, true, false, false, true, true],
+	['sqrt(-4)', false, false, false, false, true, false, true],
 	['0^0', false, false, false, false, false, false, false],
+	['3.9-3.2i', false, false, false, false, true, false, true],
     ]
 
     literals.forEach(function(input) {
@@ -367,19 +380,20 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText(input[0]))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText(input[0]))).toEqual(input[5]);
 	    expect(is_real(me.fromText(input[0]))).toEqual(input[6]);
+	    expect(is_complex(me.fromText(input[0]))).toEqual(input[7]);
 	});
     });
 
 
     var variables = [
-	['y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['x+y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['x-y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['x*y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['x/y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['x^y', undefined, undefined, undefined, undefined, undefined, undefined],
-	['abs(x)', undefined, undefined, undefined, undefined, undefined, undefined],
-	['sin(y)', undefined, undefined, undefined, undefined, undefined, undefined],
+	['y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['x+y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['x-y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['x*y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['x/y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['x^y', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['abs(x)', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
+	['sin(y)', undefined, undefined, undefined, undefined, undefined, undefined, undefined],
     ]
     
     variables.forEach(function(input) {
@@ -391,13 +405,14 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText(input[0]))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText(input[0]))).toEqual(input[5]);
 	    expect(is_real(me.fromText(input[0]))).toEqual(input[6]);
+	    expect(is_complex(me.fromText(input[0]))).toEqual(input[7]);
 	});
     });
 
 
     var operators = [
-	['(5,2)', false, false, false, false, false, false],
-	['5=3', false, false, false, false, false, false],
+	['(5,2)', false, false, false, false, false, false, false],
+	['5=3', false, false, false, false, false, false, false],
     ];
 
     operators.forEach(function(input) {
@@ -409,29 +424,34 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText(input[0]))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText(input[0]))).toEqual(input[5]);
 	    expect(is_real(me.fromText(input[0]))).toEqual(input[6]);
+	    expect(is_complex(me.fromText(input[0]))).toEqual(input[7]);
 	});
     });
 
 
     var assumptions = [
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined, undefined, undefined],
 	['x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined, true, true],
 	['x elementof R and x != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true, true, true],
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined, undefined, true],
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, true, undefined, true],
 	['x != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true, undefined, undefined],
 	['x > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true, true, true, true],
 	['x >= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined, true, true],
 	['x < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true, true, true],
 	['x <= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined, true, true],
 	['x = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false, true, true],
     ];	
 	
     assumptions.forEach(function(input) {
@@ -444,34 +464,39 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('x'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('x'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('x'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x'))).toEqual(input[7]);
 	});
     });
 
     
-    var assumptions_negation = [
+    var assumptions_negative = [
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined, undefined, undefined],
 	['x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined, true, true],
 	['x elementof R and x != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true, true, true],
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined, undefined, true],
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, true, undefined, true],
 	['x != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true, undefined, undefined],
 	['x > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true, true, true],
 	['x >= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined, true, true],
 	['x < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true, true, true],
 	['x <= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined, true, true],
 	['x = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false, true, true],
     ];	
 	
 
-    assumptions_negation.forEach(function(input) {
-	it("assumptions: " + input, function() {
+    assumptions_negative.forEach(function(input) {
+	it("assumptions negative: " + input, function() {
 	    me.clear_assumptions();
 	    me.add_assumption(me.from(input[0]));
 	    expect(is_nonnegative(me.fromText('-x'))).toEqual(input[1]);
@@ -480,6 +505,7 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('-x'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('-x'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('-x'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('-x'))).toEqual(input[7]);
 	});
     });
 
@@ -493,137 +519,378 @@ describe("is positive/negative/zero/real", function() {
     var sum_tests=[
 
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+
+	['x elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+
+	['x elementof R and x !=  0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and x !=  0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and x !=  0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and x !=  0 and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and x !=  0 and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x !=  0 and y = 0',
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y = 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 
 	['x != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y = 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 
 	['x > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x > 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x > 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x > 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y >= 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x >= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x >= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x >= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x >= 0 and y >= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y = 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 
 	['x < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x < 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x < 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x < 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y <= 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y = 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 
 	['x <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x <= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x <= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x <= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x <= 0 and y <= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x <= 0 and y = 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 
 	['x = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x = 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x = 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x = 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x = 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x = 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x = 0 and y >= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x = 0 and y < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x = 0 and y <= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x = 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
     ]
     
     
@@ -637,6 +904,7 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('x+y'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('x+y'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('x+y'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x+y'))).toEqual(input[7]);
 	    me.clear_assumptions();
 	});
     });
@@ -794,137 +1062,378 @@ describe("is positive/negative/zero/real", function() {
     var subtraction_tests=[
 
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+
+	['x elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+
+	['x elementof R and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y = 0',
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y = 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 
 	['x != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y = 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 
 	['x > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x > 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x > 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x > 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y <= 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x >= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x >= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x >= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x >= 0 and y <= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y = 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 
 	['x < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x < 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x < 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x < 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y >= 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y = 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 
 	['x <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x <= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x <= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x <= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x <= 0 and y >= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x <= 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y = 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 
 	['x = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x = 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x = 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x = 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x = 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x = 0 and y > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x = 0 and y >= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x = 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x = 0 and y <= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x = 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
     ]
     
     
@@ -938,6 +1447,7 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('x-y'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('x-y'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('x-y'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x-y'))).toEqual(input[7]);
 	    me.clear_assumptions();
 	});
     });
@@ -946,176 +1456,380 @@ describe("is positive/negative/zero/real", function() {
     var product_tests=[
 	
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y element of R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y element of R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 
-	['x != 0 and x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-	['x != 0 and x elementof R and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
-	['x != 0 and x elementof R and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
-	['x != 0 and x elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
-	['x != 0 and x elementof R and y > 0',
-	 undefined, undefined, undefined, undefined, true, true],
-	['x != 0 and x elementof R and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
-	['x != 0 and x elementof R and y < 0',
-	 undefined, undefined, undefined, undefined, true, true],
-	['x != 0 and x elementof R and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
-	['x != 0 and x elementof R and y = 0',
-	 true, false, true, false, false, true],
+	['x elementof R and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined],
+	['x elementof R and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x elementof R and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof R and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof R and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x elementof R and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x elementof R and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x elementof R and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and x != 0 and y = 0',
+	 true, false, true, false, false,
+	 true, true],
+
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y = 0',
+	 true, false, true, false, false,
+	 true, true],
+
+
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined],
+	['x elementof C and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and x != 0 and y = 0',
+	 true, false, true, false, false,
+	 true, true],
 
 	['x != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x > 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x > 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x > 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x > 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y >= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x > 0 and y < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x > 0 and y <= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x > 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x >= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x >= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x >= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y > 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y >= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y < 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x >= 0 and y <= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x >= 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x < 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x < 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x < 0 and y > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y >= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x < 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x < 0 and y <= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x < 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x <= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x <= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x <= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y > 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x <= 0 and y >= 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x <= 0 and y < 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y <= 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 
 	['x = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y elementof R',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y elementof R and y != 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
+	['x = 0 and y elementof C',
+	 true, false, true, false, false,
+	 true, true],
+	['x = 0 and y elementof C and y != 0',
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y != 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y > 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y >= 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y < 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y <= 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y = 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
     ]
     
     
@@ -1129,6 +1843,7 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('xy'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('xy'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('xy'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('xy'))).toEqual(input[7]);
 	    me.clear_assumptions();
 	});
     });
@@ -1136,175 +1851,378 @@ describe("is positive/negative/zero/real", function() {
     var quotient_tests=[
 	
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-	['y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-	['y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x elementof R and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
 	['x elementof R and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x elementof R and x != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x elementof R and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
 	['x elementof R and x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
 	['x elementof R and x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	
+	['x elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y > 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y < 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	['x elementof C and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	
+	['x elementof C and x != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y elementof R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y elementof R and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y > 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y >= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y < 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof C and x != 0 and y <= 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof C and x != 0 and y = 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x != 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x > 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x > 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x > 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x > 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y < 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x > 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x > 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x >= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x >= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x >= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y > 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y < 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x >= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, true],
+	 undefined, undefined, undefined, undefined, true,
+	 true, true],
+	['x < 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x < 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x < 0 and y > 0',
-	 false, true, true, false, true, true],
+	 false, true, true, false, true,
+	 true, true],
 	['x < 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x < 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x < 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, true],
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	['x <= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x <= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x <= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y > 0',
-	 undefined, undefined, true, false, undefined, true],
+	 undefined, undefined, true, false, undefined,
+	 true, true],
 	['x <= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y < 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x <= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	
 	['x = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R and y != 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
+	['x = 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x = 0 and y elementof C and y != 0',
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y != 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y > 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y < 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
     ]
     
     
@@ -1318,6 +2236,7 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('x/y'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('x/y'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('x/y'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x/y'))).toEqual(input[7]);
 	    me.clear_assumptions();
 	});
     });
@@ -1326,175 +2245,310 @@ describe("is positive/negative/zero/real", function() {
     var power_tests=[
 	
 	[undefined,
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-	['y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-	['y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of R',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of R and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['y element of C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
-
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	
 	['x elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x elementof R and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x elementof R and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x elementof R and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 
 	['x elementof R and x != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof R and x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x elementof R and x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x elementof R and x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x elementof R and x != 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x != 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
+	['x != 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x != 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x > 0 and y elementof R',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y elementof R and y != 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
+	['x > 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x > 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x > 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x > 0 and y > 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y >= 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y < 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y <= 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 	['x > 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x >= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x >= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y > 0',
-	 true, false, undefined, undefined, undefined, true],
+	 true, false, undefined, undefined, undefined,
+	 true, true],
 	['x >= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x >= 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 
 	['x < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x < 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x < 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	['x < 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y != 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, undefined],
 	['x < 0 and y > 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y < 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, true, undefined],
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
 	['x < 0 and y = 0',
-	 true, false, false, true, true, true],
+	 true, false, false, true, true,
+	 true, true],
 
 	['x <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x <= 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x <= 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y > 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
 	['x <= 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x <= 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 
 	['x = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y elementof R and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x = 0 and y elementof C',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
+	['x = 0 and y elementof C and y != 0',
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y != 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y > 0',
-	 true, false, true, false, false, true],
+	 true, false, true, false, false,
+	 true, true],
 	['x = 0 and y >= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y < 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y <= 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
 	['x = 0 and y = 0',
-	 undefined, undefined, undefined, undefined, undefined, undefined],
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, undefined],
     ]
     
     
@@ -1508,53 +2562,516 @@ describe("is positive/negative/zero/real", function() {
 	    expect(is_positive(me.fromText('x^y'))).toEqual(input[4]);
 	    expect(is_nonzero(me.fromText('x^y'))).toEqual(input[5]);
 	    expect(is_real(me.fromText('x^y'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x^y'))).toEqual(input[7]);
 	    me.clear_assumptions();
 	});
     });
 
 
-    it("integer implies real", function () {
+});
+
+describe("assumptions", function () {
+    
+    it("integer implies real/complex", function () {
 	me.clear_assumptions();
 	me.add_assumption(me.from('y elementof Z'));
 	expect(is_integer(me.from('y'))).toEqual(true);
 	expect(is_real(me.from('y'))).toEqual(true);
+	expect(is_complex(me.from('y'))).toEqual(true);
 	me.clear_assumptions();
 	me.add_assumption(me.from('y notelementof Z'));
 	expect(is_integer(me.from('y'))).toEqual(false);
 	expect(is_real(me.from('y'))).toEqual(undefined);
+	expect(is_complex(me.from('y'))).toEqual(undefined);
 	me.clear_assumptions();
 	me.add_assumption(me.from('not(y elementof Z)'));
 	expect(is_integer(me.from('y'))).toEqual(false);
 	expect(is_real(me.from('y'))).toEqual(undefined);
+	expect(is_complex(me.from('y'))).toEqual(undefined);
 	me.clear_assumptions();
 	me.add_assumption(me.from('not(y notelementof Z)'));
 	expect(is_integer(me.from('y'))).toEqual(true);
 	expect(is_real(me.from('y'))).toEqual(true);
+	expect(is_complex(me.from('y'))).toEqual(true);
 	me.clear_assumptions();
 	
     });
 
-    it("recursive assumptions", function() {
+    it("real implies complex", function () {
+	me.clear_assumptions();
+	me.add_assumption(me.from('y elementof R'));
+	expect(is_real(me.from('y'))).toEqual(true);
+	expect(is_complex(me.from('y'))).toEqual(true);
+	me.clear_assumptions();
+	me.add_assumption(me.from('y notelementof R'));
+	expect(is_real(me.from('y'))).toEqual(false);
+	expect(is_complex(me.from('y'))).toEqual(undefined);
+	me.clear_assumptions();
+	me.add_assumption(me.from('not(y elementof R)'));
+	expect(is_real(me.from('y'))).toEqual(false);
+	expect(is_complex(me.from('y'))).toEqual(undefined);
+	me.clear_assumptions();
+	me.add_assumption(me.from('not(y notelementof R)'));
+	expect(is_real(me.from('y'))).toEqual(true);
+	expect(is_complex(me.from('y'))).toEqual(true);
+	me.clear_assumptions();
+	
+    });
+
+    it("recursive assumptions no infinite loop", function() {
 	me.clear_assumptions();
 	me.add_assumption(me.from("x=x"));
 	expect(is_real(me.from('x'))).toEqual(undefined);
 	me.clear_assumptions();
 	me.add_assumption(me.from("x=y=x"));
 	expect(is_real(me.from('x'))).toEqual(undefined);
+    });
+
+
+    it("combined assumptions", function() {
 	me.clear_assumptions();
 	me.add_assumption(me.from("y elementof R"));
 	me.add_assumption(me.from("x=y"));
 	expect(is_real(me.from('x'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("y < -1"));
+	me.add_assumption(me.from("y >= x"));
+	me.add_assumption(me.from("u < x"));
+	expect(is_negative(me.from('y'))).toEqual(true);
+	expect(is_negative(me.from('x'))).toEqual(true);
+	expect(is_negative(me.from('u'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("y < -1"));
+	me.add_assumption(me.from("x > 1"));
+	me.add_assumption(me.from("u < y-x"));
+	expect(is_negative(me.from('y'))).toEqual(true);
+	expect(is_positive(me.from('x'))).toEqual(true);
+	expect(is_negative(me.from('u'))).toEqual(true);
+
+	// this doesn't work yet
+	me.clear_assumptions();
+	me.add_assumption(me.from("y < -1"));
+	me.add_assumption(me.from("x > -1"));
+	me.add_assumption(me.from("u < y-x"));
+	expect(is_negative(me.from('u'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("y elementof R"));
+	me.add_assumption(me.from("x ne y"));
+	expect(is_real(me.from('x'))).toEqual(undefined);
+	me.clear_assumptions();
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0 or x > 0"));
+	expect(is_nonzero(me.from('x'))).toEqual(true);
+
+	me.clear_assumptions();
+	
+    });
+
+
+    it("combined assumptions, negated", function() {
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0"));
+	me.add_assumption(me.from("y != x"));
+	expect(is_negative(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0"));
+	me.add_assumption(me.from("not(y = x)"));
+	expect(is_negative(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0"));
+	me.add_assumption(me.from("y = x"));
+	expect(is_negative(me.from('y'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0"));
+	me.add_assumption(me.from("not(y != x)"));
+	expect(is_negative(me.from('y'))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x != 0"));
+	me.add_assumption(me.from("y != x"));
+	expect(is_nonzero(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x != 0"));
+	me.add_assumption(me.from("not(y = x)"));
+	expect(is_nonzero(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x != 0"));
+	me.add_assumption(me.from("y = x"));
+	expect(is_nonzero(me.from('y'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x != 0"));
+	me.add_assumption(me.from("not(y != x)"));
+	expect(is_nonzero(me.from('y'))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof R"));
+	me.add_assumption(me.from("y != x"));
+	expect(is_real(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof R"));
+	me.add_assumption(me.from("not(y = x)"));
+	expect(is_real(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof R"));
+	me.add_assumption(me.from("y = x"));
+	expect(is_real(me.from('y'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof R"));
+	me.add_assumption(me.from("not(y != x)"));
+	expect(is_real(me.from('y'))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof Z"));
+	me.add_assumption(me.from("y != x"));
+	expect(is_integer(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof Z"));
+	me.add_assumption(me.from("not(y = x)"));
+	expect(is_integer(me.from('y'))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof Z"));
+	me.add_assumption(me.from("y = x"));
+	expect(is_integer(me.from('y'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof Z"));
+	me.add_assumption(me.from("not(y != x)"));
+	expect(is_integer(me.from('y'))).toEqual(true);
+	
+	me.clear_assumptions();
+
+    });
+
+	//negated with and
+    
+    var assumptions_negated = [
+	['not (x elementof R)',
+	 false, false, false, false, undefined, false, undefined],
+	['not (x notelementof R)',
+	 undefined, undefined, undefined, undefined, undefined, true, true],
+	['not (x notelementof C)',
+	 undefined, undefined, undefined, undefined, undefined, undefined, true],
+	['not (x elementof C)',
+	 undefined, undefined, undefined, undefined, undefined, undefined, false],
+	['not(x != 0)',
+	 true, false, true, false, false, true, true],
+	['not(not(x != 0))',
+	 undefined, undefined, undefined, undefined, true, undefined, undefined],
+	['not(x > 0)',
+	 undefined, undefined, true, false, undefined, true, true],
+	['not(not(x > 0))',
+	 true, false, false, true, true, true, true, true],
+	['not(x >= 0)',
+	 false, true, true, false, true, true, true],
+	['not(not(x >= 0))',
+	 true, false, undefined, undefined, undefined, true, true],
+	['not(x < 0)',
+	 true, false, undefined, undefined, undefined, true, true],
+	['not(not(x < 0))',
+	 false, true, true, false, true, true, true],
+	['not(x <= 0)',
+	 true, false, false, true, true, true, true, true],
+	['not(not(x <= 0))',
+	 undefined, undefined, true, false, undefined, true, true],
+	['not(x = 0)',
+	 undefined, undefined, undefined, undefined, true, undefined, undefined],
+	['not(not(x = 0))',
+	 true, false, true, false, false, true, true],
+	
+    ];	
+	
+    assumptions_negated.forEach(function(input) {
+	it("assumptions: " + input, function() {
+	    me.clear_assumptions();
+	    me.add_assumption(me.from(input[0]));
+	    expect(is_nonnegative(me.fromText('x'))).toEqual(input[1]);
+	    expect(is_negative(me.fromText('x'))).toEqual(input[2]);
+	    expect(is_nonpositive(me.fromText('x'))).toEqual(input[3]);
+	    expect(is_positive(me.fromText('x'))).toEqual(input[4]);
+	    expect(is_nonzero(me.fromText('x'))).toEqual(input[5]);
+	    expect(is_real(me.fromText('x'))).toEqual(input[6]);
+	    expect(is_complex(me.fromText('x'))).toEqual(input[7]);
+	});
+    });
+
+
+    it("negative to power of integer", function () {
+
+	me.clear_assumptions();
+	me.add_assumption(me.from('x elementof Z'));
+	me.add_assumption(me.from('y < 0'));
+	expect(is_real(me.from('y^x'))).toEqual(true);
+	expect(is_positive(me.from('y^x'))).toEqual(undefined);
+	expect(is_positive(me.from('y^2'))).toEqual(true);
+	expect(is_nonnegative(me.from('y^x'))).toEqual(undefined);
+	expect(is_nonnegative(me.from('y^2'))).toEqual(true);
+
+	//this doesn't work yet
+	expect(is_positive(me.from('y^(2x)'))).toEqual(true);
+	expect(is_nonnegative(me.from('y^(2x)'))).toEqual(true);
+	me.clear_assumptions();
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from('x elementof Z'));
+	me.add_assumption(me.from('y <= 0'));
+	expect(is_real(me.from('y^x'))).toEqual(undefined);
+	expect(is_positive(me.from('y^2'))).toEqual(undefined);
+	expect(is_nonnegative(me.from('y^2'))).toEqual(true);
+
+	me.add_assumption(me.from('x > 0'));
+	expect(is_real(me.from('y^x'))).toEqual(true);
+	
+	expect(is_positive(me.from('y^(2x)'))).toEqual(undefined);
+	//this doesn't work yet
+	expect(is_nonnegative(me.from('y^(2x)'))).toEqual(true);
+	me.clear_assumptions();
+	
+    });
+
+    it("define constants", function () {
+	me.clear_assumptions();
+	me.add_assumption(me.from('x elementof R'));
+	expect(is_nonzero(me.from('i'))).toEqual(true);
+	expect(is_real(me.from('ix'))).toEqual(false);
+	expect(is_complex(me.from('ix'))).toEqual(true);
+
+	me.math.define_i = false;
+	expect(is_nonzero(me.from('i'))).toEqual(undefined);
+	expect(is_real(me.from('ix'))).toEqual(undefined);
+	expect(is_complex(me.from('ix'))).toEqual(undefined);
+	
+	me.math.define_i = true;
+
+	me.clear_assumptions();
+	me.add_assumption(me.from('x > 0'));
+	expect(is_positive(me.from('pi*x'))).toEqual(true);
+	expect(is_real(me.from('pi*x'))).toEqual(true);
+
+	me.math.define_pi = false;
+	expect(is_positive(me.from('pi*x'))).toEqual(undefined);
+	expect(is_real(me.from('pi*x'))).toEqual(undefined);
+	
+	me.math.define_pi = true;
+
+	expect(is_positive(me.from('x*e^x'))).toEqual(true);
+	expect(is_positive(me.from('x*exp(x)'))).toEqual(true);
+
+	me.math.define_e = false;
+	expect(is_positive(me.from('x*e^x'))).toEqual(undefined);
+	expect(is_positive(me.from('x*exp(x)'))).toEqual(true);
+	
+	me.math.define_e = true;
+	me.clear_assumptions();
+	
+	
+    });
+    
+    it("strict pow", function () {
+	me.clear_assumptions();
+	expect(is_nonzero(me.from('0^0'))).toEqual(false);
+	expect(is_real(me.from('0^0'))).toEqual(false);
+	expect(is_complex(me.from('0^0'))).toEqual(false);
+	expect(is_nonzero(me.from('(0/0)^0'))).toEqual(false);
+	expect(is_real(me.from('(0/0)^0'))).toEqual(false);
+	expect(is_complex(me.from('(0/0)^0'))).toEqual(false);
+	expect(is_nonzero(me.from('(1/0)^0'))).toEqual(false);
+	expect(is_real(me.from('(1/0)^0'))).toEqual(false);
+	expect(is_complex(me.from('(1/0)^0'))).toEqual(false);
+	
+	me.math.pow_strict = false;
+	expect(is_nonzero(me.from('0^0'))).toEqual(true);
+	expect(is_real(me.from('0^0'))).toEqual(true);
+	expect(is_complex(me.from('0^0'))).toEqual(true);
+	expect(is_nonzero(me.from('(0/0)^0'))).toEqual(true);
+	expect(is_real(me.from('(0/0)^0'))).toEqual(true);
+	expect(is_complex(me.from('(0/0)^0'))).toEqual(true);
+	expect(is_nonzero(me.from('(1/0)^0'))).toEqual(true);
+	expect(is_real(me.from('(1/0)^0'))).toEqual(true);
+	expect(is_complex(me.from('(1/0)^0'))).toEqual(true);
+
+	me.math.pow_strict = true;
+	
+    });
+
+
+    it("logical combinations", function () {
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof R and x notelementof R"))
+	expect(is_real(me.from('x'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 0 or x > 5"))
+	expect(is_nonzero(me.from("x"))).toEqual(true);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(undefined);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("not (x elementof [0,5])"))
+	expect(is_nonzero(me.from("x"))).toEqual(true);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(undefined);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x > 0 or (x elementof (4,8))"))
+	expect(is_nonzero(me.from("x"))).toEqual(true);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x >= 0 or (x elementof (4,8))"))
+	expect(is_nonzero(me.from("x"))).toEqual(undefined);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(undefined);
+	expect(is_nonnegative(me.from("x"))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x=0 or x=1 or x=2 or x=3 or x=4 or x=5"))
+	expect(is_nonzero(me.from("x"))).toEqual(undefined);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(undefined);
+	expect(is_nonnegative(me.from("x"))).toEqual(true);
+	expect(is_integer(me.from("x"))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x > 2 and (x < 7 or x > 8)"))
+	expect(is_nonzero(me.from("x"))).toEqual(true);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(true);
+	expect(is_nonnegative(me.from("x"))).toEqual(true);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x < 7 and (x > 2 or x < -8)"))
+	expect(is_nonzero(me.from("x"))).toEqual(true);
+	expect(is_real(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(undefined);
+	expect(is_nonnegative(me.from("x"))).toEqual(undefined);
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x elementof C and x notelementof R"))
+	me.add_assumption(me.from("y elementof R"));
+	expect(is_real(me.from("x"))).toEqual(false);
+	expect(is_complex(me.from("x"))).toEqual(true);
+	expect(is_positive(me.from("x"))).toEqual(false);
+	expect(is_negative(me.from("x"))).toEqual(false);
+	expect(is_nonpositive(me.from("x"))).toEqual(false);
+	expect(is_nonnegative(me.from("x"))).toEqual(false);
+	expect(is_real(me.from("xy"))).toEqual(false);
+	expect(is_complex(me.from("xy"))).toEqual(true);
+	expect(is_positive(me.from("xy"))).toEqual(false);
+	expect(is_negative(me.from("xy"))).toEqual(false);
+	expect(is_nonpositive(me.from("xy"))).toEqual(false);
+	expect(is_nonnegative(me.from("xy"))).toEqual(false);
+
+	me.clear_assumptions();
+
+    });
+
+
+    var function_tests = [
+	["sin(x)", "x elementof R",
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+	["sin(x)", "x elementof C",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["sqrt(x)", "x elementof C",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["sqrt(x)", "x elementof R",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["sqrt(x)", "x >=0",
+	 true, false, undefined, undefined, undefined,
+	 true, true],
+	["sqrt(x)", "x >0",
+	 true, false, false, true, true,
+	 true, true],
+	["exp(x)", "x elementof C",
+	 undefined, undefined, undefined, undefined, true,
+	 undefined, true],
+	["exp(x)", "x elementof R",
+	 true, false, false, true, true,
+	 true, true],
+	["exp(x)", "x >=0",
+	 true, false, false, true, true,
+	 true, true],
+	["exp(x)", "x >0",
+	 true, false, false, true, true,
+	 true, true],
+	["abs(x)", "x elementof C",
+	 true, false, undefined, undefined, undefined,
+	 true, true],
+	["abs(x)", "x elementof R",
+	 true, false, undefined, undefined, undefined,
+	 true, true],
+	["abs(x)", "x >=0",
+	 true, false, undefined, undefined, undefined,
+	 true, true],
+	["abs(x)", "x >0",
+	 true, false, false, true, true,
+	 true, true],
+	["abs(x)", "x != 0 and x elementof C",
+	 true, false, false, true, true,
+	 true, true],
+	["abs(x)", "x != 0 and x elementof R",
+	 true, false, false, true, true,
+	 true, true],
+	["log(x)", "x elementof C",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["log(x)", "x elementof R",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["log(x)", "x >=0",
+	 undefined, undefined, undefined, undefined, undefined,
+	 undefined, true],
+	["log(x)", "x >0",
+	 undefined, undefined, undefined, undefined, undefined,
+	 true, true],
+    ]
+    
+    function_tests.forEach(function(input) {
+	it("function tests: " + input, function() {
+	    me.clear_assumptions();
+	    me.add_assumption(me.from(input[1]));
+	    expect(is_nonnegative(me.fromText(input[0]))).toEqual(input[2]);
+	    expect(is_negative(me.fromText(input[0]))).toEqual(input[3]);
+	    expect(is_nonpositive(me.fromText(input[0]))).toEqual(input[4]);
+	    expect(is_positive(me.fromText(input[0]))).toEqual(input[5]);
+	    expect(is_nonzero(me.fromText(input[0]))).toEqual(input[6]);
+	    expect(is_real(me.fromText(input[0]))).toEqual(input[7]);
+	    expect(is_complex(me.fromText(input[0]))).toEqual(input[8]);
+	    me.clear_assumptions();
+	});
+    });
+
+    it("sign integer", function() {
+	me.clear_assumptions();
+	me.add_assumption(me.from('x elementof R'));
+	expect(is_integer(me.from('sign(x)'))).toEqual(true);
+
+	me.clear_assumptions();
+	me.add_assumption(me.from('x elementof C'));
+	expect(is_integer(me.from('sign(x)'))).toEqual(undefined);
+
 	me.clear_assumptions();
     });
     
-    // recursive assumptions
-    // negate assumptions (not fully implemented)
-    // equal, ne, less than, etc., to variable that has assumptions
-    // (mixed with negate)
-    // (negative)^integer, (negative)^(even integer)
-    // integer/not integer means real, even with negate
-
     
 });
 
