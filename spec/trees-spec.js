@@ -1,5 +1,5 @@
 var trees = require('../lib/trees/basic.js')
-var assoc = require('../lib/trees/associate.js')
+var flatten = require('../lib/trees/flatten.js')
 
 var Expression = require ('../lib/math-expressions');
 function TREE(s) {
@@ -15,13 +15,23 @@ describe("tree basics", function() {
 	expect(trees.equal( TREE('cos x'), TREE('cos y') )).toBeFalsy();
     });
 
-    it("(1+2+3) deassociates to (1+(2+3))", function() {
-	expect(trees.equal( assoc.deassociate( ['+', 1, 2, 3], '+' ),
+    it("(1+2+3) unflattens right to (1+(2+3))", function() {
+	expect(trees.equal( flatten.unflattenRight( ['+', 1, 2, 3]),
 			    ['+', 1, ['+', 2, 3]])).toBeTruthy();
     });
 
-    it("(1+(2+3)) associates to (1+2+3)", function() {
-	expect(trees.equal( assoc.associate( ['+', 1, ['+', 2, 3]], '+' ),
+    it("(1+2+3) unflattens left to ((1+2)+3)", function() {
+	expect(trees.equal( flatten.unflattenLeft( ['+', 1, 2, 3]),
+			    ['+', ['+', 1, 2], 3])).toBeTruthy();
+    });
+
+    it("(1+(2+3)) flattens to (1+2+3)", function() {
+	expect(trees.equal( flatten.flatten( ['+', 1, ['+', 2, 3]]),
+			    ['+', 1, 2, 3] )).toBeTruthy();
+    });
+    
+    it("((1+2)+3) flattens to (1+2+3)", function() {
+	expect(trees.equal( flatten.flatten( ['+', ['+', 1, 2], 3]),
 			    ['+', 1, 2, 3] )).toBeTruthy();
     });
 
@@ -313,11 +323,11 @@ describe("tree transformations", function () {
 			['*', 'b', 'x', 2, 'y'],
 			['*', 'b', 'x', 'p', 'q']];
 
-	factored = assoc.deassociate(assoc.deassociate(factored, '*'), '+');
+	factored = flatten.unflattenRight(factored);
 
 	transformed = trees.applyAllTransformations(factored, transformations);
 
-	transformed = assoc.associate(assoc.associate(transformed, '*'), '+');
+	transformed = flatten.flatten(transformed);
 	
 	expect(trees.equal(expanded, transformed)).toBeTruthy();
 	
