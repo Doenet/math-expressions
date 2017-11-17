@@ -205,12 +205,12 @@ describe("add and get assumptions", function () {
 	expect(trees.equal(me.get_assumptions('y'),me.from('y elementof R').tree)).toBeTruthy();
 	expect(trees.equal(me.get_assumptions('z'),me.from('z elementof R').tree)).toBeTruthy();
 
-	me.add_assumption(me.from('x != 3'));
+	me.add_assumption(me.from('x != 3'), true);
 	expect(trees.equal(me.get_assumptions('x'),me.from('x != 3').tree)).toBeTruthy();
 	expect(trees.equal(me.get_assumptions('y'),me.from('y elementof R').tree)).toBeTruthy();
 	expect(trees.equal(me.get_assumptions('z'),me.from('z elementof R').tree)).toBeTruthy();
 
-	me.add_assumption(me.from('y < z'));
+	me.add_assumption(me.from('y < z'), true);
 	me.add_assumption(me.from('x != 3'));
 	expect(trees.equal(me.get_assumptions('x'),me.from('x != 3').tree)).toBeTruthy();
 	expect(trees.equal(me.get_assumptions('y'),me.from('y < z').tree)).toBeTruthy();
@@ -223,10 +223,157 @@ describe("add and get assumptions", function () {
 	expect(trees.equal(me.get_assumptions('z'),me.from('z < y').tree)).toBeTruthy();
 	
 	me.clear_assumptions();
+	me.add_generic_assumption(me.from('x elementof R'));
+	me.add_assumption(me.from('x != 3'));
+	me.add_assumption(me.from('y != 4'), true);
+	me.add_assumption(me.from('a < b'));
+	me.add_assumption(me.from('c < d'), true);
+
 	
+	expect(trees.equal(me.get_assumptions('x'),me.from(
+	    'x != 3 and x elementof R and a elementof R and b elementof R and a < b')
+			   .tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('x', 'R'),me.from(
+	    'x != 3 and x elementof R').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('y'),me.from(
+	    'y != 4').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('y', 'R'),me.from(
+	    'y != 4').tree)).toBeTruthy();
+
+	expect(trees.equal(me.get_assumptions('a', 'R'),me.from(
+	    'a < b and a elementof R and b elementof R').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('c', 'R'),me.from(
+	    'c < d').tree)).toBeTruthy();
+
+	me.clear_assumptions();
+
     });
 
 
+    it("adding and removing assumptions", function () {
+
+	me.clear_assumptions();
+
+	me.add_assumption(me.from('x > 0'))
+	expect(trees.equal(me.get_assumptions('x'),me.from(
+	    'x>0').tree)).toBeTruthy();
+
+	me.add_assumption(me.from('y > 1'), true)
+	expect(trees.equal(me.get_assumptions('y'),me.from(
+	    'y>1').tree)).toBeTruthy();
+
+	expect(me.get_assumptions('z')).toEqual(undefined);
+	
+	me.add_generic_assumption(me.from('x elementof Z'), true)
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z elementof Z').tree)).toBeTruthy();
+
+	me.add_assumption(me.from('z > 2'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z elementof Z and z > 2').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('z elementof Z'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z > 2').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('z > 2'));
+	expect(me.get_assumptions('z')).toEqual(undefined);
+
+	me.add_assumption(me.from('z > 5'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z > 5').tree)).toBeTruthy();
+
+	me.add_assumption(me.from('z < 9'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z > 5 and z < 9').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('z <= 9'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z > 5 and z < 9').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('5 <= z < 9'));
+	expect(trees.equal(me.get_assumptions('z'),me.from(
+	    'z > 5').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('5 < z <= 9'));
+	expect(me.get_assumptions('z')).toEqual(undefined);
+
+	expect(trees.equal(me.get_assumptions('w'),me.from(
+	    'w elementof Z').tree)).toBeTruthy();
+	
+	me.add_assumption(me.from('w > 3'), true);
+	expect(trees.equal(me.get_assumptions('w'),me.from(
+	    'w >3').tree)).toBeTruthy();
+
+	me.clear_assumptions();
+    });
+
+
+    it("removing assumptions with generic", function () {
+	me.clear_assumptions();
+	
+	me.add_generic_assumption(me.from('x elementof Z'));
+	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	    'a elementof Z').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
+	    'b elementof Z').tree)).toBeTruthy();
+
+	me.add_assumption(me.from('a+b< 1'));
+	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	    'a elementof Z and a+b<1 and b elementof Z').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
+	    'b elementof Z and a+b<1 and a elementof Z').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('b \\in Z'));
+	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	    'a elementof Z and a+b<1 ').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
+	    'a+b<1 and a elementof Z').tree)).toBeTruthy();
+
+	me.remove_assumption(me.from('a+b< 1'));
+	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	    'a elementof Z').tree)).toBeTruthy();
+	expect(me.get_assumptions('b', 'Z')).toEqual(undefined);
+
+	me.clear_assumptions();
+
+    });
+
+    it("removing generic assumptions", function () {
+	me.clear_assumptions();
+
+	me.add_generic_assumption(me.from('x elementof Z'))
+	expect(trees.equal(me.get_assumptions('q'),me.from(
+	    'q elementof Z').tree)).toBeTruthy();
+
+	me.remove_generic_assumption(me.from('x elementof Z'))
+	expect(me.get_assumptions('q')).toEqual(undefined);
+	
+	me.add_generic_assumption(me.from('a < x < b'))
+	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
+	    'a<q and q<b').tree)).toBeTruthy();
+	
+	me.add_assumption(me.from('q != 0'));
+	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
+	    'a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('r', ['a','b']),me.from(
+	    'a<r and r<b').tree)).toBeTruthy();
+
+	me.remove_generic_assumption(me.from('b > x'))
+	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
+	    'a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('r', ['a','b']),me.from(
+	    'a<r').tree)).toBeTruthy();
+	
+	me.remove_generic_assumption(me.from('x > a'))
+	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
+	    'a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(me.get_assumptions('r',['a','b'])).toEqual(undefined);
+	
+	me.clear_assumptions();
+
+    });
+    
 });
 
 
@@ -3096,4 +3243,3 @@ describe("assumptions", function () {
     
     
 });
-
