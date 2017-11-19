@@ -8,6 +8,7 @@ var is_nonpositive = require('../lib/assumptions/element_of_sets.js').is_nonposi
 var is_positive = require('../lib/assumptions/element_of_sets.js').is_positive;
 var is_negative = require('../lib/assumptions/element_of_sets.js').is_negative;
 var trees = require('../lib/trees/basic');
+var simplify = require('../lib/expression/simplify').simplify;
 
 describe("add and get assumptions", function () {
 
@@ -28,8 +29,8 @@ describe("add and get assumptions", function () {
 	expect(trees.equal(me.assumptions.get_assumptions('x'),me.from('x<=0').tree)).toBeTruthy();
 
 	me.add_assumption(me.from('x > -2').tree);
-	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0 and x > -2').tree)).toBeTruthy();
-	expect(trees.equal(me.assumptions.get_assumptions('x'),me.from('x<=0 and x > -2').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('x'),simplify(me.from('x<=0 and x > -2').tree))).toBeTruthy();
+	expect(trees.equal(me.assumptions.get_assumptions('x'),simplify(me.from('x<=0 and x > -2').tree))).toBeTruthy();
 
 	me.clear_assumptions();
 	
@@ -191,7 +192,7 @@ describe("add and get assumptions", function () {
 	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0').tree)).toBeTruthy();
 	
 	me.add_assumption(me.from('-1 < x <=0'));
-	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0 and x>-1').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('x'),simplify(me.from('x<=0 and x>-1').tree))).toBeTruthy();
 	
 	me.clear_assumptions();
 	
@@ -375,7 +376,6 @@ describe("add and get assumptions", function () {
     });
     
 });
-
 
 describe("is integer", function() {
 

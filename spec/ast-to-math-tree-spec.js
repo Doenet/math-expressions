@@ -1,7 +1,7 @@
 var astToMathTree = require('../lib/parser').ast.to.mathTree;
 var textToAst = require('../lib/parser').text.to.ast;
 var textToMathTree = require('../lib/parser').text.to.mathTree;
-var to_intervals = require('../lib/expression/normalization/tuples')._to_intervals_ast;
+var to_intervals = require('../lib/expression/normalization/tuples').to_intervals;
 var _ = require('underscore');
 var math = require('../lib/mathjs');
 
