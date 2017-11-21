@@ -513,7 +513,6 @@ describe("is integer", function() {
 
 });
 
-
 describe("is positive/negative/zero/real/complex", function() {
 
     var literals = [
@@ -532,11 +531,11 @@ describe("is positive/negative/zero/real/complex", function() {
 	['-2.2/-3.5', true, false, false, true, true, true, true],
 	['-2.2/(5-5)', false, false, false, false, true, false, false],
 	['(-6+6)/(3-5)', true, false, true, false, false, true, true],
-	['(-6+6)/(5-5)', false, false, false, false, false, false, false],
+	['(-6+6)/(5-5)', false, false, false, false, undefined, false, false],
 	['abs(-5)', true, false, false, true, true, true, true],
 	['sin(0)', true, false, true, false, false, true, true],
 	['sqrt(-4)', false, false, false, false, true, false, true],
-	['0^0', false, false, false, false, false, false, false],
+	['0^0', false, false, false, false, undefined, false, false],
 	['3.9-3.2i', false, false, false, false, true, false, true],
     ]
 
@@ -580,8 +579,8 @@ describe("is positive/negative/zero/real/complex", function() {
 
 
     var operators = [
-	['(5,2)', false, false, false, false, false, false, false],
-	['5=3', false, false, false, false, false, false, false],
+	['(5,2)', false, false, false, false, undefined, false, false],
+	['5=3', false, false, false, false, undefined, false, false],
     ];
 
     operators.forEach(function(input) {
@@ -682,6 +681,9 @@ describe("is positive/negative/zero/real/complex", function() {
     it("subtract identical is zero", function() {
 	me.clear_assumptions();
 	expect(is_nonzero(me.fromText('x-x'))).toEqual(false);
+	expect(is_nonzero(me.fromText('x-x').evaluate_numbers())).toEqual(false);
+	expect(is_nonzero(me.fromText('3x-3x'))).toEqual(false);
+	expect(is_nonzero(me.fromText('3x-3x').evaluate_numbers())).toEqual(false);
 
     });
 
@@ -1627,16 +1629,16 @@ describe("is positive/negative/zero/real/complex", function() {
 	[undefined,
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R',
+	['y elementof R',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R and y != 0',
+	['y elementof R and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C',
+	['y elementof C',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C and y != 0',
+	['y elementof C and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
 	['y != 0',
@@ -2022,16 +2024,16 @@ describe("is positive/negative/zero/real/complex", function() {
 	[undefined,
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R',
+	['y elementof R',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R and y != 0',
+	['y elementof R and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C',
+	['y elementof C',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C and y != 0',
+	['y elementof C and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
 	['y != 0',
@@ -2410,22 +2412,21 @@ describe("is positive/negative/zero/real/complex", function() {
 	});
     });
 
-
     var power_tests=[
 	
 	[undefined,
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R',
+	['y elementof R',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of R and y != 0',
+	['y elementof R and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C',
+	['y elementof C',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
-	['y element of C and y != 0',
+	['y elementof C and y != 0',
 	 undefined, undefined, undefined, undefined, undefined,
 	 undefined, undefined],
 	['y != 0',
@@ -2736,8 +2737,8 @@ describe("is positive/negative/zero/real/complex", function() {
 	});
     });
 
-
 });
+
 
 describe("assumptions", function () {
     
@@ -3052,13 +3053,13 @@ describe("assumptions", function () {
     
     it("strict pow", function () {
 	me.clear_assumptions();
-	expect(is_nonzero(me.from('0^0'))).toEqual(false);
+	expect(is_nonzero(me.from('0^0'))).toEqual(undefined);
 	expect(is_real(me.from('0^0'))).toEqual(false);
 	expect(is_complex(me.from('0^0'))).toEqual(false);
-	expect(is_nonzero(me.from('(0/0)^0'))).toEqual(false);
+	expect(is_nonzero(me.from('(0/0)^0'))).toEqual(undefined);
 	expect(is_real(me.from('(0/0)^0'))).toEqual(false);
 	expect(is_complex(me.from('(0/0)^0'))).toEqual(false);
-	expect(is_nonzero(me.from('(1/0)^0'))).toEqual(false);
+	expect(is_nonzero(me.from('(1/0)^0'))).toEqual(undefined);
 	expect(is_real(me.from('(1/0)^0'))).toEqual(false);
 	expect(is_complex(me.from('(1/0)^0'))).toEqual(false);
 	
@@ -3241,5 +3242,5 @@ describe("assumptions", function () {
 	me.clear_assumptions();
     });
     
-    
 });
+

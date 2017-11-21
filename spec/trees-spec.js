@@ -1,9 +1,9 @@
 var trees = require('../lib/trees/basic.js')
 var flatten = require('../lib/trees/flatten.js')
 
-var Expression = require ('../lib/math-expressions');
+var me = require ('../lib/math-expressions');
 function TREE(s) {
-    return Expression.fromText(s).tree;
+    return me.fromText(s).tree;
 }
 
 describe("tree basics", function() {
@@ -250,6 +250,14 @@ describe("tree matching", function () {
 	expect(match['m']).toEqual(2);
 	expect(match['n']).toEqual(-1);
 	expect(match['x']).toEqual('y');
+
+	
+	match = trees.match(TREE('m'), TREE('a^b'),
+			    { allow_implicit_identities: ['b']});
+       
+	expect(match).toBeTruthy();
+	expect(match['a']).toEqual('m');
+	expect(match['b']).toEqual(1);
        
     });
 
@@ -718,7 +726,8 @@ describe("tree transformations", function () {
 	]
 
 	var result = trees.applyAllTransformations(
-	    TREE('3x+4y-2x'), [transformation]);
+	    me.fromText('3x+4y-2x').collapse_unary_minus().tree,
+	    [transformation]);
 	expect(trees.equal(result, TREE('x+4y'))).toBeTruthy();
 
 	result = trees.applyAllTransformations(
@@ -726,6 +735,15 @@ describe("tree transformations", function () {
 
 	expect(trees.equal(result, TREE('-x+3y+qx'))).toBeTruthy();
 
+    });
+
+    it("make sure replaces with 0", function () {
+	var transformation = [TREE('x^n*x^m') , TREE('x^(n+m)')]
+	
+	var result = trees.applyAllTransformations(
+	    TREE('z^0z^5'), [transformation]);
+	expect(result).toEqual(TREE('z^(0+5)'));
+	
     });
     
 });
