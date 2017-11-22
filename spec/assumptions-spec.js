@@ -2820,6 +2820,14 @@ describe("assumptions", function () {
 	expect(is_positive(me.from('x'))).toEqual(true);
 	expect(is_negative(me.from('u'))).toEqual(true);
 
+	me.clear_assumptions();
+	me.add_assumption(me.from("y + 1 < 0"));
+	me.add_assumption(me.from("x > 1"));
+	me.add_assumption(me.from("u < y-x"));
+	expect(is_negative(me.from('y'))).toEqual(true);
+	expect(is_positive(me.from('x'))).toEqual(true);
+	expect(is_negative(me.from('u'))).toEqual(true);
+
 	// this doesn't work yet
 	me.clear_assumptions();
 	me.add_assumption(me.from("y < -1"));
@@ -2991,7 +2999,6 @@ describe("assumptions", function () {
 	expect(is_nonnegative(me.from('y^x'))).toEqual(undefined);
 	expect(is_nonnegative(me.from('y^2'))).toEqual(true);
 
-	//this doesn't work yet
 	expect(is_positive(me.from('y^(2x)'))).toEqual(true);
 	expect(is_nonnegative(me.from('y^(2x)'))).toEqual(true);
 	me.clear_assumptions();
@@ -3007,7 +3014,6 @@ describe("assumptions", function () {
 	expect(is_real(me.from('y^x'))).toEqual(true);
 	
 	expect(is_positive(me.from('y^(2x)'))).toEqual(undefined);
-	//this doesn't work yet
 	expect(is_nonnegative(me.from('y^(2x)'))).toEqual(true);
 	me.clear_assumptions();
 	
