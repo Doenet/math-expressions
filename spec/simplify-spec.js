@@ -192,6 +192,12 @@ describe("collect like terms and factor", function () {
 
     });
 
+    it("collect combine numbers", function () {
+	
+	expect(me.fromText('2c+6c/(-3)').collect_like_terms_factors().tree)
+	    .toEqual(0);
+	    
+    });
 
     it("speed tests", function () {
 

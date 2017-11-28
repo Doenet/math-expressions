@@ -10,6 +10,7 @@ var is_negative = require('../lib/assumptions/element_of_sets.js').is_negative;
 var trees = require('../lib/trees/basic');
 var simplify = require('../lib/expression/simplify').simplify;
 
+
 describe("add and get assumptions", function () {
 
     it("single variable", function () {
@@ -17,8 +18,8 @@ describe("add and get assumptions", function () {
 	me.add_assumption(me.from('x>0'));
 	expect(trees.equal(me.get_assumptions('x'),me.from('x>0').tree)).toBeTruthy();
 	expect(trees.equal(me.assumptions.get_assumptions('x'),me.from('x>0').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions(['x']),me.from('x>0').tree)).toBeTruthy();
-	expect(trees.equal(me.assumptions.get_assumptions(['x']),me.from('x>0').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions([['x']]),me.from('x>0').tree)).toBeTruthy();
+	expect(trees.equal(me.assumptions.get_assumptions([['x']]),me.from('x>0').tree)).toBeTruthy();
 
 	me.clear_assumptions();
 	expect(me.get_assumptions('x')).toEqual(undefined);
@@ -45,23 +46,24 @@ describe("add and get assumptions", function () {
     it("multiple variables", function () {
 
 	me.clear_assumptions();
-	me.add_assumption(me.from('x <=0'));
-	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0').tree)).toBeTruthy();
+	me.add_assumption(me.from('x >=0'));
+	expect(trees.equal(me.get_assumptions('x'),me.from('x>=0').tree)).toBeTruthy();
 	
 	expect(me.get_assumptions('y')).toEqual(undefined);
 
 	me.add_assumption(me.from('x < y+1'));
-	expect(trees.equal(me.get_assumptions('x'),me.from('x<=0 and x < y+1').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('y'),me.from('x<=0 and x < y+1').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('x'),me.from('x>=0 and x < y+1').evaluate_numbers().tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('y'),me.from('y > x-1 and y >-1').evaluate_numbers().tree)).toBeTruthy();
 	expect(me.get_assumptions('z')).toEqual(undefined);
 
 	me.clear_assumptions();
 
 	me.assumptions.add_assumption(me.from('a < b < c'));
 	expect(trees.equal(me.get_assumptions('b'),me.from('a < b and b < c').tree)).toBeTruthy();
+
 	expect(trees.equal(me.assumptions.get_assumptions('b'),me.from('a < b and b < c').tree)).toBeTruthy();
 
-	expect(trees.equal(me.get_assumptions('a'),me.from('a < b and b < c').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('a'),me.from('a < b and a < c').tree)).toBeTruthy();
 
 	me.clear_assumptions();
     });
@@ -177,7 +179,7 @@ describe("add and get assumptions", function () {
 	it("interval containment: " + input, function() {
 	    me.clear_assumptions();
 	    me.add_assumption(me.from(input[0]));
-	    expect(trees.equal(me.get_assumptions(['a', 'b']),me.from(input[1]).tree)).toBeTruthy();
+	    expect(trees.equal(me.get_assumptions([['a', 'b']]),me.from(input[1]).tree)).toBeTruthy();
 	    me.clear_assumptions();
 	});	
     });
@@ -231,20 +233,19 @@ describe("add and get assumptions", function () {
 	me.add_assumption(me.from('c < d'), true);
 
 	
-	expect(trees.equal(me.get_assumptions('x'),me.from(
-	    'x != 3 and x elementof R and a elementof R and b elementof R and a < b')
+	expect(trees.equal(me.get_assumptions('x'),
+			   me.from('x != 3 and x elementof R')
 			   .tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('x', 'R'),me.from(
-	    'x != 3 and x elementof R').tree)).toBeTruthy();
+		    
 	expect(trees.equal(me.get_assumptions('y'),me.from(
 	    'y != 4').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('y', 'R'),me.from(
-	    'y != 4').tree)).toBeTruthy();
 
-	expect(trees.equal(me.get_assumptions('a', 'R'),me.from(
-	    'a < b and a elementof R and b elementof R').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('c', 'R'),me.from(
-	    'c < d').tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions('a'),
+	    me.from('a < b and a elementof R and b elementof R').tree))
+	    .toBeTruthy();
+	expect(trees.equal(me.get_assumptions('c'),
+			   me.from('c < d').tree)).toBeTruthy();
 
 	me.clear_assumptions();
 
@@ -310,31 +311,32 @@ describe("add and get assumptions", function () {
     });
 
 
+
     it("removing assumptions with generic", function () {
 	me.clear_assumptions();
 	
 	me.add_generic_assumption(me.from('x elementof Z'));
-	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	expect(trees.equal(me.get_assumptions('a'),me.from(
 	    'a elementof Z').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
+	expect(trees.equal(me.get_assumptions('b'),me.from(
 	    'b elementof Z').tree)).toBeTruthy();
 
 	me.add_assumption(me.from('a+b< 1'));
-	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
-	    'a elementof Z and a+b<1 and b elementof Z').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
-	    'b elementof Z and a+b<1 and a elementof Z').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('a'),me.from(
+	    'a elementof Z and a<1-b and b elementof Z').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('b'),me.from(
+	    'b elementof Z and b < 1-a and a elementof Z').tree)).toBeTruthy();
 
 	me.remove_assumption(me.from('b \\in Z'));
-	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
-	    'a elementof Z and a+b<1 ').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('b', 'Z'),me.from(
-	    'a+b<1 and a elementof Z').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('a'),me.from(
+	    'a elementof Z and a<1-b').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('b'),me.from(
+	    'b<1-a and a elementof Z').tree)).toBeTruthy();
 
 	me.remove_assumption(me.from('a+b< 1'));
-	expect(trees.equal(me.get_assumptions('a', 'Z'),me.from(
+	expect(trees.equal(me.get_assumptions('a'),me.from(
 	    'a elementof Z').tree)).toBeTruthy();
-	expect(me.get_assumptions('b', 'Z')).toEqual(undefined);
+	expect(me.get_assumptions('b')).toEqual(undefined);
 
 	me.clear_assumptions();
 
@@ -349,27 +351,27 @@ describe("add and get assumptions", function () {
 
 	me.remove_generic_assumption(me.from('x elementof Z'))
 	expect(me.get_assumptions('q')).toEqual(undefined);
-	
+
 	me.add_generic_assumption(me.from('a < x < b'))
-	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
-	    'a<q and q<b').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('q'),
+			   me.from('a<q and q<b').tree)).toBeTruthy();
 	
 	me.add_assumption(me.from('q != 0'));
-	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
-	    'a<q and q<b and q !=0').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('r', ['a','b']),me.from(
-	    'a<r and r<b').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('q'),
+			   me.from('a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('r'),
+			   me.from('a<r and r<b').tree)).toBeTruthy();
 
 	me.remove_generic_assumption(me.from('b > x'))
-	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
-	    'a<q and q<b and q !=0').tree)).toBeTruthy();
-	expect(trees.equal(me.get_assumptions('r', ['a','b']),me.from(
-	    'a<r').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('q'),
+			   me.from('a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(trees.equal(me.get_assumptions('r'),
+			   me.from('a<r').tree)).toBeTruthy();
 	
 	me.remove_generic_assumption(me.from('x > a'))
-	expect(trees.equal(me.get_assumptions('q', ['a','b']),me.from(
-	    'a<q and q<b and q !=0').tree)).toBeTruthy();
-	expect(me.get_assumptions('r',['a','b'])).toEqual(undefined);
+	expect(trees.equal(me.get_assumptions('q'),
+			   me.from('a<q and q<b and q !=0').tree)).toBeTruthy();
+	expect(me.get_assumptions('r',{known_variables:['a','b']})).toEqual(undefined);
 	
 	me.clear_assumptions();
 
@@ -512,6 +514,7 @@ describe("is integer", function() {
     });
 
 });
+
 
 describe("is positive/negative/zero/real/complex", function() {
 
@@ -1079,7 +1082,6 @@ describe("is positive/negative/zero/real/complex", function() {
 	    me.clear_assumptions();
 	});
     });
-
 
     var triple_sum_tests=[
 	['z > 0',
@@ -2739,7 +2741,6 @@ describe("is positive/negative/zero/real/complex", function() {
 
 });
 
-
 describe("assumptions", function () {
     
     it("integer implies real/complex", function () {
@@ -2828,7 +2829,6 @@ describe("assumptions", function () {
 	expect(is_positive(me.from('x'))).toEqual(true);
 	expect(is_negative(me.from('u'))).toEqual(true);
 
-	// this doesn't work yet
 	me.clear_assumptions();
 	me.add_assumption(me.from("y < -1"));
 	me.add_assumption(me.from("x > -1"));
@@ -3250,3 +3250,345 @@ describe("assumptions", function () {
     
 });
 
+
+describe("derived assumptions", function () {
+
+    it("combined equality", function () {
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from("x=a"));
+	me.add_assumption(me.from("a=b"));
+	me.add_assumption(me.from("b=c"));
+
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x=a and x=b and x=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a=x and a=b and a=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b=a and b=x and b=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c=a and c=b and c=x").tree)).toBeTruthy();
+
+	me.clear_assumptions();
+	
+    });
+    
+    it("combined inequality", function () {
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x<a"));
+	me.add_assumption(me.from("a<b"));
+	me.add_assumption(me.from("b<c"));
+
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x<a and x<b and x<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a>x and a<b and a<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b>x and b>a and b<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c>x and c>a and c>b").tree)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x<a"));
+	me.add_assumption(me.from("a<b"));
+	me.add_assumption(me.from("b<=c"));
+
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x<a and x<b and x<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a>x and a<b and a<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b>x and b>a and b<=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c>x and c>a and c >=b").tree)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x<a"));
+	me.add_assumption(me.from("a<=b"));
+	me.add_assumption(me.from("b<=c"));
+
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x<a and x<b and x<c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a>x and a<=b and a<=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b>x and b>=a and b<=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c>x and c>=a and c >=b").tree)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x<a"));
+	me.add_assumption(me.from("a>=b"));
+	me.add_assumption(me.from("b<=c"));
+
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x<a").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a>x and a>=b").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b<=a and b<=c").tree)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c >=b").tree)).toBeTruthy();
+
+	me.clear_assumptions();
+	
+    });
+
+    it("combine containment", function () {
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("x elementof A"));
+	me.add_assumption(me.fromText("A subset B"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x elementof A and x elementof B").tree
+	)).toBeTruthy();
+	me.add_assumption(me.fromText("B subset C"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x elementof A and x elementof B and x elementof C").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("x notelementof A"));
+	me.add_assumption(me.fromText("A superset B"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x notelementof A and x notelementof B").tree
+	)).toBeTruthy();
+	me.add_assumption(me.fromText("C subset B"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x notelementof A and x notelementof B and x notelementof C").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("x elementof A"));
+	me.add_assumption(me.fromText("x notelementof B"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("x elementof A and A notsubset B").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("B"),
+	    me.fromText("x notelementof B and A notsubset B").tree
+	)).toBeTruthy();
+	me.add_assumption(me.fromText("B superset C"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("x elementof A and A notsubset B and A notsubset C").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("A subset B"));
+	me.add_assumption(me.fromText("B subset C"));
+	me.add_assumption(me.fromText("B superset D"));
+	me.add_assumption(me.fromText("x notelementof B"));
+	me.add_assumption(me.fromText("E notsubset B"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("A subset B and A subset C and x notelementof A and E notsubset A").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("A notsubset B"));
+	me.add_assumption(me.fromText("B superset C"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("A notsubset B and A notsubset C").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("A superset B"));
+	me.add_assumption(me.fromText("B superset C"));
+	me.add_assumption(me.fromText("B subset D"));
+	me.add_assumption(me.fromText("x elementof B"));
+	me.add_assumption(me.fromText("E notsuperset B"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("A superset B and A superset C and x elementof A and E notsuperset A").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("A notsuperset B"));
+	me.add_assumption(me.fromText("B subset C"));
+	expect(trees.equal(
+	    me.get_assumptions("A"),
+	    me.fromText("A notsuperset B and A notsuperset C").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	
+    });
+    
+    it("retrieve additional", function () {
+
+	me.clear_assumptions();
+
+	me.add_assumption(me.fromText("x > a"));
+	me.add_assumption(me.fromText("a^2 > 2"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x > a and a^2 > 2").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("x > a"));
+	me.add_assumption(me.fromText("a^2 + y^2> 2"));
+	me.add_assumption(me.fromText("exp(y) > y"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x > a and a^2 + y^2 > 2 and exp(y) > y").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("x > a and a^2 + y^2 > 2 and exp(y) > y").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("y"),
+	    me.fromText("x > a and a^2 + y^2 > 2 and exp(y) > y").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("x > y^3"));
+	me.add_assumption(me.from("y>z"));
+	me.add_assumption(me.from("z>0"));
+	expect(trees.equal(
+	    me.get_assumptions("x"),
+	    me.fromText("x > y^3 and y>z and y > 0").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("y"),
+	    me.fromText("x > y^3 and y>z and y > 0").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("z"),
+	    me.fromText("x > y^3 and y>z and z > 0").tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+	
+	
+    });
+
+
+    it("don't retrieve additional", function () {
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("a > b"));
+	me.add_assumption(me.fromText("c > b"));
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("a>b").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("a>b and c>b").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("c>b").tree
+	)).toBeTruthy();
+	
+
+	me.clear_assumptions();
+	me.add_assumption(me.fromText("a containselement b"));
+	me.add_assumption(me.fromText("c containselement b"));
+	expect(trees.equal(
+	    me.get_assumptions("a"),
+	    me.fromText("b elementof a").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("b"),
+	    me.fromText("b elementof a and b elementof c").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions("c"),
+	    me.fromText("b elementof c").tree
+	)).toBeTruthy();
+	
+	me.clear_assumptions();
+	
+    });
+    
+    
+});
+
+describe("assumptions on expressions", function () {
+
+    it("linear inequality", function () {
+
+	me.clear_assumptions();
+	
+	me.add_assumption(me.from("q > x"));
+	expect(trees.equal(
+	    me.get_assumptions("q"),
+	    me.fromText("q > x").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions(me.from("q-x")),
+	    me.fromText("q-x > 0").tree
+	)).toBeTruthy();
+	expect(trees.equal(
+	    me.get_assumptions(me.from("q-x").tree),
+	    me.fromText("q-x > 0").tree
+	)).toBeTruthy();
+
+	me.add_assumption(me.from("a < x"));
+	
+	expect(trees.equal(
+	    me.get_assumptions(me.from("q-a").tree),
+	    me.fromText("q-a > 0 and q-a > q-x and q-a > x-a").tree
+	)).toBeTruthy();
+
+	
+	me.add_assumption(me.from("a elementof Z"));
+	expect(trees.equal(
+	    me.get_assumptions(me.from("q-a").tree),
+	    me.fromText("q-a > 0 and q-a > q-x and q-a > x-a and a elementof Z").tree
+	)).toBeTruthy();
+
+
+	me.clear_assumptions();
+	me.add_assumption(me.from("3a+4b > 2c+6d"));
+	me.add_assumption(me.from("c+3d > 0"));
+	expect(trees.equal(
+	    me.from(me.get_assumptions(me.from("3a+4b").tree)).tree,
+	    me.fromText("3a+4b > 0 and 3a+4b > 2c+6d and -3d < c and c/-3 < d").evaluate_numbers().tree
+	)).toBeTruthy();
+	
+	me.clear_assumptions();
+	me.add_assumption(me.from('a+b< 1'));
+	expect(trees.equal(
+	    me.from(me.get_assumptions(me.from("abc").tree)).tree,
+	    me.fromText("a < 1-b and b < 1-a").tree
+	)).toBeTruthy();
+	
+	
+	
+    });
+
+});
+
+// find example where must recurse on normalize_assumptions
