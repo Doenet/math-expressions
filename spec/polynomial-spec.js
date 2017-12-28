@@ -2,7 +2,7 @@ var me = require('../lib/math-expressions');
 var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
-
+/*
 describe("text to polynomial", function () {
 
     var polys = {
@@ -89,3 +89,101 @@ describe("text to polynomial", function () {
     
 });
 
+*/
+describe("polynomial operations", function () {
+
+    var sums =
+	[['x+3', '(x+1)^2', 'x^2+3x+4'],
+	 ['x+y', 'w+z', 'w+x+y+z'],
+	 ['3y-2x+1', '5y+2x+4', '8y+5'],
+	 ['t+s', 't-s', '2t'],
+	 ['t+1', '-t+2', '3'],
+	 ['1', '-3', '-2'],
+	 ['7', 'xy-z', 'xy-z+7'],
+	 ['qvu-y^2+5', '-5', 'qvu-y^2'],
+	];
+
+    
+    sums.forEach(function(item) {
+	it("sum: " + item[0] + ' + ' + item[1] + ' = ' + item[2], function () {
+	    let p1 = poly.expression_to_polynomial(me.fromText(item[0]));
+	    let p2 = poly.expression_to_polynomial(me.fromText(item[1]));
+	    let p3 = poly.expression_to_polynomial(me.fromText(item[2]));
+
+	    expect(poly.polynomial_add(p1,p2)).toEqual(p3);
+	    expect(poly.polynomial_sub(p3,p1)).toEqual(p2);
+	    expect(poly.polynomial_sub(p3,p2)).toEqual(p1);
+	});
+    });
+    
+    var negs =
+	[['x+3', '-x-3'],
+	 ['x+y', '-x-y'],
+	 ['3y-2x+1', '-3y+2x-1'],
+	 ['4', '-4'],
+	 ['-7', '7'],
+	];
+
+    
+    negs.forEach(function(item) {
+	it("neg: -(" + item[0] + ') = ' + item[1], function () {
+	    let p1 = poly.expression_to_polynomial(me.fromText(item[0]));
+	    let p2 = poly.expression_to_polynomial(me.fromText(item[1]));
+
+	    expect(poly.polynomial_neg(p1)).toEqual(p2);
+	    
+	});
+    });
+    
+    
+    var prods =
+	[['x+3', '(x+1)^2', 'x^3+5x^2+7x+3'],
+	 ['x+y', 'w+z', 'wx+wy+zx+zy'],
+	 ['3y-2x+1', '5y+2x+4', '15y^2-4xy-4x^2-6x+17y+4'],
+	 ['2', '-3', '-6'],
+	 ['7', 'xy-z', '7xy-7z'],
+	 ['qvu-y^2+5', '-5', '-5qvu+5y^2-25'],
+	 ['x-y', 'x+y', 'x^2-y^2'],
+	 ['x^2+2x+2', 'x^2-2x+2', 'x^4+4'],
+	];
+
+    
+    prods.forEach(function(item) {
+	it("prod: (" + item[0] + ') * (' + item[1] + ') = ' + item[2], function () {
+	    let p1 = poly.expression_to_polynomial(me.fromText(item[0]));
+	    let p2 = poly.expression_to_polynomial(me.fromText(item[1]));
+	    let p3 = poly.expression_to_polynomial(me.fromText(item[2]));
+
+	    expect(poly.polynomial_mul(p1,p2)).toEqual(p3);
+
+	});
+    });
+
+
+    var pows =
+	[['x+y', '2', 'x^2+2xy+y^2'],
+	 ['3y-2x+1', '2', '9y^2-12xy+4x^2-4x+6y+1'],
+	 ['x-y', '3', 'x^3-3x^2y+3xy^2-y^3'],
+	 ['x-y', '4', 'x^4-4x^3y+6x^2y^2-4xy^3+y^4'],
+	 ['7', '3', '343'],
+	 ['3', '7', '2187'],
+	 ['qvu-y^2+5', '-5', undefined],
+	 ['x+3', 'x+1', undefined],
+	];
+
+    
+    pows.forEach(function(item) {
+	it("pow: (" + item[0] + ') ^ (' + item[1] + ') = ' + item[2], function () {
+	    let p1 = poly.expression_to_polynomial(me.fromText(item[0]));
+	    let p2 = poly.expression_to_polynomial(me.fromText(item[1]));
+	    let p3 = undefined;
+	    if(item[2] !== undefined)
+		p3 = poly.expression_to_polynomial(me.fromText(item[2]));
+
+	    expect(poly.polynomial_pow(p1,p2)).toEqual(p3);
+
+	});
+    });
+
+
+});
