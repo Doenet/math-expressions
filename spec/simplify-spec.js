@@ -8,6 +8,10 @@ describe("evaluate_numbers", function () {
 	
 	expect(me.from("x+0").evaluate_numbers().tree).toEqual('x');
 
+	expect(me.from("Infinity + 3").evaluate_numbers().tree).toEqual(Infinity);
+	expect(me.from("Infinity + Infinity").evaluate_numbers().tree).toEqual(Infinity);
+	expect(me.from("Infinity - Infinity").evaluate_numbers().tree).toEqual(NaN);
+
     });
     
     it("collapse unary minus", function () {
@@ -43,6 +47,8 @@ describe("evaluate_numbers", function () {
 	expect(me.from("4(x)(-2)").evaluate_numbers().tree).toEqual(
 	    ['*', -8, 'x']);
 
+	expect(me.from("0*Infinity").evaluate_numbers().tree).toEqual(NaN);
+	
     });
 
     it("division", function () {
@@ -50,9 +56,16 @@ describe("evaluate_numbers", function () {
 	expect(me.from("2/2x").evaluate_numbers().tree).toEqual('x');
 	expect(me.from("2/(2x)").evaluate_numbers().tree).toEqual(
 	    ['/', 1, 'x']);
+	
+	expect(me.from("1/0").evaluate_numbers().tree).toEqual(Infinity);
+	expect(me.from("0*(1/(0))").evaluate_numbers().tree).toEqual(NaN);
+	expect(me.from("1/Infinity").evaluate_numbers().tree).toEqual(0);
+	expect(me.from("0/0").evaluate_numbers().tree).toEqual(NaN);
+
 	expect(me.from("2/(0x)").evaluate_numbers().tree).toEqual(Infinity);
 	expect(me.from("(2-2)/(0x)").evaluate_numbers().tree).toEqual(NaN);
-
+	expect(me.from("(2-2)*(1/(0x))").evaluate_numbers().tree).toEqual(NaN);
+	
 	expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(
 	    ['/', 0, 'x']);
 	
@@ -186,6 +199,18 @@ describe("collect like terms and factor", function () {
 	    me.fromText('u/v+uv/v^2+vuv/v^3-vuv^2/v^2/v/v')
 		.collect_like_terms_factors().tree,
 	    me.fromText('2u/v').tree
+	)).toBeTruthy();
+
+	me.clear_assumptions();
+
+    });
+
+    it("like terms and factors infinity digits", function () {
+
+	expect(trees.equal(
+	    me.fromText("a/9 -3/9 - a/9")
+		.collect_like_terms_factors(undefined, Infinity).tree,
+	    me.fromText('-1/3').collect_like_terms_factors(undefined, Infinity).tree
 	)).toBeTruthy();
 
 	me.clear_assumptions();

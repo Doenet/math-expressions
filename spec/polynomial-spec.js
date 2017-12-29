@@ -2,7 +2,7 @@ var me = require('../lib/math-expressions');
 var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
-/*
+
 describe("text to polynomial", function () {
 
     var polys = {
@@ -89,7 +89,7 @@ describe("text to polynomial", function () {
     
 });
 
-*/
+
 describe("polynomial operations", function () {
 
     var sums =
