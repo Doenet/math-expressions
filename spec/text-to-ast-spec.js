@@ -20,6 +20,7 @@ describe("text to ast", function() {
 	'x^a!':  ['^', 'x', ['apply', 'factorial', 'a']],
 	'x*y*z': ['*','x','y','z'],
 	'xyz': ['*','x','y','z'],
+	'xyz2': 'xyz2',
 	'in': ['*', 'i', 'n'],
 	'ni': ['*', 'n', 'i'],
 	'x*y*z*w': ['*','x','y','z','w'],
@@ -377,8 +378,57 @@ describe("text to ast", function() {
 	});	
     });
 
+    it("split symbols", function () {
 
-    it("unsplit context", function () {
+	Context.set_to_default();
+	expect(Context.fromText('xzy').tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	Context.parser_parameters.splitSymbols = false;
+	expect(Context.fromText('xzy').tree).toEqual('xzy');
+	
+	Context.parser_parameters.splitSymbols = "false";
+	expect(Context.fromText('xzy').tree).toEqual('xzy');
+	
+	Context.parser_parameters.splitSymbols = "False";
+	expect(Context.fromText('xzy').tree).toEqual('xzy');
+	
+	Context.parser_parameters.splitSymbols = "FALSE";
+	expect(Context.fromText('xzy').tree).toEqual('xzy');
+	
+	Context.parser_parameters.splitSymbols = true;
+	expect(Context.fromText('xzy').tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	Context.parser_parameters.splitSymbols = "true";
+	expect(Context.fromText('xzy').tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	Context.parser_parameters.splitSymbols = "True";
+	expect(Context.fromText('xzy').tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	Context.parser_parameters.splitSymbols = "TRUE";
+	expect(Context.fromText('xzy').tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	Context.set_to_default();
+	let params={};
+	
+	expect(Context.fromText('xzy', params).tree).toEqual(['*', 'x', 'z', 'y']);
+
+	Context.parser_parameters.splitSymbols = false;
+	expect(Context.fromText('xzy', params).tree).toEqual('xzy');
+	
+	params.splitSymbols = true;
+	expect(Context.fromText('xzy', params).tree).toEqual(['*', 'x', 'z', 'y']);
+	
+	params.splitSymbols = false;
+	expect(Context.fromText('xzy', params).tree).toEqual('xzy');
+
+	Context.parser_parameters.splitSymbols = true;
+	expect(Context.fromText('xzy', params).tree).toEqual('xzy');
+
+	Context.set_to_default();
+	
+    });    
+
+    it("unsplit symbols", function () {
 	Context.set_to_default();
 	
 	Context.parser_parameters.unsplitSymbols =  [];
@@ -386,11 +436,30 @@ describe("text to ast", function() {
 
 	Context.parser_parameters.unsplitSymbols.push('pi');
 	expect(Context.fromText('3pi').tree).toEqual(['*', 3, 'pi']);
+	
 	Context.set_to_default();
 
+	let params = {};
+	expect(Context.fromText('3pi', params).tree).toEqual(['*', 3, 'pi']);
+
+	Context.parser_parameters.unsplitSymbols =  [];
+	expect(Context.fromText('3pi', params).tree).toEqual(['*', 3, 'p', 'i']);
+
+	Context.set_to_default();
+
+	params.unsplitSymbols = [];
+	expect(Context.fromText('3pi', params).tree).toEqual(['*', 3, 'p', 'i']);
+	
+	params.unsplitSymbols.push('pi');
+	expect(Context.fromText('3pi', params).tree).toEqual(['*', 3, 'pi']);
+
+	Context.parser_parameters.unsplitSymbols =  [];
+	expect(Context.fromText('3pi', params).tree).toEqual(['*', 3, 'pi']);
+
+	Context.set_to_default();
     });
 
-    it("function symbol context", function () {
+    it("function symbols", function () {
 	Context.set_to_default();
 
 	Context.parser_parameters.functionSymbols = [];
@@ -410,9 +479,39 @@ describe("text to ast", function() {
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 	
 	Context.set_to_default();
+	
+	let params = {};
+	
+	params.functionSymbols = [];
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.parser_parameters.functionSymbols = [];
+	Context.parser_parameters.functionSymbols.push('f');
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
+
+	params.functionSymbols.push('f');
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.set_to_default();
+
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+
+	params.functionSymbols.push('h');
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+	params.functionSymbols.push('x');
+	expect(Context.fromText('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+	Context.set_to_default();
     });
     
-    it("applied function symbol context", function () {
+    it("applied function symbols", function () {
 	Context.set_to_default();
 
 	Context.parser_parameters.appliedFunctionSymbols = [];
@@ -434,7 +533,60 @@ describe("text to ast", function() {
 	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
 
 	Context.set_to_default();
+
+	let params={};
+	
+	params.appliedFunctionSymbols = [];
+	expect(Context.fromText('sin(x) + custom(y)', params).tree).toEqual(
+	    ['+', ['*', 's', 'i', 'n', 'x'], ['*', 'c', 'u', 's', 't', 'o', 'm', 'y']]);
+	expect(Context.fromText('sin x + custom y', params).tree).toEqual(
+	    ['+', ['*', 's', 'i', 'n', 'x'], ['*', 'c', 'u', 's', 't', 'o', 'm', 'y']]);
+
+	params.appliedFunctionSymbols.push('custom');
+	expect(Context.fromText('sin(x) + custom(y)', params).tree).toEqual(
+	    ['+', ['*', 's', 'i', 'n', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromText('sin x + custom y', params).tree).toEqual(
+	    ['+', ['*', 's', 'i', 'n', 'x'], ['apply', 'custom', 'y']]);
+	
+	params.appliedFunctionSymbols.push('sin');
+	expect(Context.fromText('sin(x) + custom(y)', params).tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromText('sin x + custom y', params).tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+
+	Context.set_to_default();
 	
     });
 
+    it("allow simplified function application", function () {
+	Context.set_to_default();
+
+	expect(Context.fromText('sin x').tree).toEqual(
+	    ['apply', 'sin', 'x']);
+	
+	Context.parser_parameters.allowSimplifiedFunctionApplication = false;
+	expect(function() {Context.fromText('sin x')}).toThrowError(
+	    ParseError, "Expected ( after function");
+
+	Context.parser_parameters.allowSimplifiedFunctionApplication = true;
+	expect(Context.fromText('sin x').tree).toEqual(
+	    ['apply', 'sin', 'x']);
+
+    	Context.set_to_default();
+	let params={};
+
+	expect(Context.fromText('sin x', params).tree).toEqual(
+	    ['apply', 'sin', 'x']);
+	
+	params.allowSimplifiedFunctionApplication = false;
+	expect(function() {Context.fromText('sin x', params)}).toThrowError(
+	    ParseError, "Expected ( after function");
+
+	params.allowSimplifiedFunctionApplication = true;
+	expect(Context.fromText('sin x', params).tree).toEqual(
+	    ['apply', 'sin', 'x']);
+
+    	Context.set_to_default();
+	
+    });
 });

@@ -378,9 +378,9 @@ describe("latex to ast", function() {
     });
 
 
-    it("function symbol context", function () {
+    it("function symbols", function () {
 	Context.set_to_default();
-	
+
 	Context.parser_parameters.functionSymbols = [];
 	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
 	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
@@ -396,13 +396,44 @@ describe("latex to ast", function() {
 	Context.parser_parameters.functionSymbols.push('x');
 	expect(Context.fromLatex('f(x)+h(y)').tree).toEqual(
 	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+	Context.set_to_default();
+	
+	let params = {};
+	
+	params.functionSymbols = [];
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.parser_parameters.functionSymbols = [];
+	Context.parser_parameters.functionSymbols.push('f');
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
 
+	params.functionSymbols.push('f');
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+	
+	Context.set_to_default();
+
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+
+	params.functionSymbols.push('h');
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
+	params.functionSymbols.push('x');
+	expect(Context.fromLatex('f(x)+h(y)', params).tree).toEqual(
+	    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+	
 	Context.set_to_default();
     });
     
-    it("applied function symbol context", function () {
+
+    it("applied function symbols", function () {
 	Context.set_to_default();
-	
+
 	Context.parser_parameters.appliedFunctionSymbols = [];
 	expect(Context.fromLatex('\\sin(x) + \\custom(y)').tree).toEqual(
 	    ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
@@ -422,8 +453,61 @@ describe("latex to ast", function() {
 	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
 
 	Context.set_to_default();
+
+	let params={};
+	
+	params.appliedFunctionSymbols = [];
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)', params).tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y', params).tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
+
+	params.appliedFunctionSymbols.push('custom');
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)', params).tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y', params).tree).toEqual(
+	    ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	
+	params.appliedFunctionSymbols.push('sin');
+	expect(Context.fromLatex('\\sin(x) + \\custom(y)', params).tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+	expect(Context.fromLatex('\\sin x + \\custom y', params).tree).toEqual(
+	    ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
+
+	Context.set_to_default();
 	
     });
 
+    it("allow simplified function application", function () {
+	Context.set_to_default();
+
+	expect(Context.fromLatex('\\sin x').tree).toEqual(
+	    ['apply', 'sin', 'x']);
+	
+	Context.parser_parameters.allowSimplifiedFunctionApplication = false;
+	expect(function() {Context.fromLatex('\\sin x')}).toThrowError(
+	    ParseError, "Expected ( after function");
+
+	Context.parser_parameters.allowSimplifiedFunctionApplication = true;
+	expect(Context.fromLatex('\\sin x').tree).toEqual(
+	    ['apply', 'sin', 'x']);
+
+    	Context.set_to_default();
+	let params={};
+
+	expect(Context.fromLatex('\\sin x', params).tree).toEqual(
+	    ['apply', 'sin', 'x']);
+	
+	params.allowSimplifiedFunctionApplication = false;
+	expect(function() {Context.fromLatex('\\sin x', params)}).toThrowError(
+	    ParseError, "Expected ( after function");
+
+	params.allowSimplifiedFunctionApplication = true;
+	expect(Context.fromLatex('\\sin x', params).tree).toEqual(
+	    ['apply', 'sin', 'x']);
+
+    	Context.set_to_default();
+	
+    });
 
 });
