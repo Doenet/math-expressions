@@ -3,6 +3,108 @@ var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
 
+describe("monomial to polynomial", function () {
+         var mono_poly = [
+                          [["monomial", 6, [["y",1]]], ["polynomial", "y", {1: 6}]],
+                          [["monomial", 5, [["x", 3],["y", 2]]], ["polynomial", "x", {3: ["polynomial", "y", {2: 5}]}]],
+                          [["monomial", 1, [["x", 2],["y", 3],["z", 5]]], ["polynomial", "x", {2: ["polynomial", "y", {3: ["polynomial", "z", {5: 1}]}]}]],
+                          [7, 7]
+                              ];
+         mono_poly.forEach(function(monos) {
+                               it(monos, function() {
+                                  expect(poly.mono_to_poly(monos[0])).toEqual(monos[1]);
+                                  });
+                               });
+         });
+
+describe("monomial division", function () {
+         var mono_mono_div = [
+                              [["monomial", 1, [["y",1]]], 1, ["monomial", 1, [["y",1]]]],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 1, [["x", 1],["y", 1]]], ["monomial", 5, [["x", 2],["y", 1]]]],
+                              [["monomial", 1, [["x", 2],["y", 3],["z", 5]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3],["z", 1]]]],
+                              [["monomial", 1, [["x", 2],["y", 3],["z", 4]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3]]]],
+                              [7, 1, 7]
+                              ];
+         mono_mono_div.forEach(function(monos) {
+                                            it(monos, function() {
+                                               expect(poly.mono_div(monos[0],monos[1])).toEqual(monos[2]);
+                                               });
+                                            });
+         });
+
+describe("monomial gcd", function () {
+         var mono_mono_gcd = [
+                              [["monomial", 1, [["y",1]]], 7, 1],
+                              [["monomial", 1, [["x",1]]], ["monomial", 1, [["y",1]]], 1],
+                              [["monomial", 1, [["y",1]]], ["monomial", 1, [["y",1]]], ["monomial", 1, [["y",1]]]],
+                              [["monomial", 1, [["x", 2],["y", 2]]], ["monomial", 1, [["x", 3],["y", 1]]], ["monomial", 1, [["x", 2],["y", 1]]]],
+                              [["monomial", 1, [["x", 2],["y", 3],["z", 4]]], ["monomial", 1, [["a", 5],["z", 5]]], ["monomial", 1, [["z", 4]]]],
+                              [["monomial", 1, [["x", 2],["y", 5]]], ["monomial", 1, [["a", 5], ["b", 2], ["c", 7]]], 1]
+                              ];
+         mono_mono_gcd.forEach(function(monos) {
+                                            it(monos, function() {
+                                               expect(poly.mono_gcd(monos[0],monos[1])).toEqual(monos[2]);
+                                               expect(poly.mono_gcd(monos[1],monos[0])).toEqual(monos[2]);
+                                               });
+                                            });
+         });
+
+describe("monomial order", function () {
+    var inc_mono_pairs = [
+        [["monomial", 1, [["y",1]]], ["monomial", 2, [["x",1]]]],
+        [["monomial", 2, [["x",1]]], ["monomial", 1, [["x",2]]]],
+        [["monomial", 1, [["x",2],["y",2]]], ["monomial", 1, [["x",3],["y",1]]]],
+        [["monomial", 1, [["x",2],["y",2]]], ["monomial", 1, [["x",2],["y",3]]]],
+        [["monomial", 1, [["x",2]]], ["monomial", 1, [["x",2],["y",1]]]],
+        [["monomial", 1, [["x",2],["y",2],["z",5]]], ["monomial", 1, [["x",3],["y",1]]]],
+                          ];
+    
+    inc_mono_pairs.forEach(function(pair) {
+        it(pair, function() {
+           expect(poly.mono_less_than( pair[0], pair[1] )).toBeTruthy();
+           expect(poly.mono_less_than( pair[1], pair[0] )).toBeFalsy();
+                             });
+                           });
+         
+    var equal_mono_pairs = [
+         [["monomial", 1, [["x",1]]], ["monomial", 1, [["x",1]]]],
+         [["monomial", 1, [["x",2],["y",2]]], ["monomial", 1, [["x",2],["y",2]]]],
+         ]
+         
+    equal_mono_pairs.forEach(function(pair) {
+        it(pair, function() {
+            expect(poly.mono_less_than( pair[0], pair[1] )).toBeFalsy();
+            expect(poly.mono_less_than( pair[1], pair[0] )).toBeFalsy();
+                                   });
+                                });
+});
+
+describe("initial terms", function () {
+    var polys_inits = {
+    '1+x^3': ["monomial", 1, [["x",3]]],
+    '3-2y^2+5/2y': ["monomial", -2, [["y",2]]],
+    '2abc-a-2b+3c': ["monomial", 2, [["a",1],["b",1],["c",1]]],
+    'x sin(x)-x': ["monomial", 1, [["x",1],[["apply", "sin", "x"],1]]],
+    '(x+3)(2x-4)': ["monomial", 2, [["x",2]]],
+    'x/7-2/3+3/4x^2': ["monomial", 0.75, [["x",2]]],
+    '9x^(2/3)-pi*x': ["monomial", ['-', 'pi'], [["x",1]]],
+    '(5x^2-3x+1)/3': ["monomial", ['/', 5, 3], [["x",2]]],
+    '7i+2x+3ix': ["monomial", ['+', 2, ['*', 3, 'i']], [["x", 1]]],
+    '6t+2t-5t^2-1+5t^2': ["monomial", 8, [["t", 1]]],
+    't-t^1000000000': ["monomial", -1, [["t",1000000000]]],
+    '(x+y)^2': ["monomial", 1, [["x",2]]],
+    '(s-t)(s+t)': ["monomial", 1, [["s", 2]]],
+    '5t^(3.1)': ["monomial", 5, [[[ '^', 't', 0.1 ], 31]]],
+    };
+         
+    Object.keys(polys_inits).forEach(function(string) {
+        it("poly " + string, function() {
+           expect(poly.initial_term(poly.expression_to_polynomial(me.fromText(string)))).toEqual(polys_inits[string]);
+        });
+    });
+});
+
+
 describe("text to polynomial", function () {
 
     var polys = {
@@ -31,6 +133,7 @@ describe("text to polynomial", function () {
 	    expect(poly.expression_to_polynomial(me.fromText(string))).toEqual(polys[string]);
 	});	
     });
+
 
 
     var expressions = [
