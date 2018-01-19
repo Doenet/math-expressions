@@ -3,6 +3,45 @@ var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
 
+describe("division algorithm", function () {
+         //write division algorithm tests
+         var divisions = [
+                          [["polynomial", "x", {1: 1}], [["polynomial", "x", {1: 1}]], [[[0, 1]], 0]]
+                          ]
+         
+         
+         divisions.forEach(function(divs) {
+                           it(divs, function() {
+                              expect(poly.poly_div(divs[0], divs[1])).toEqual(divs[2]);
+                              });
+                           });
+         
+         });
+
+describe("find maximum term divisible by one of the monomials", function () {
+         var poly_monos = [
+                           [["polynomial", "x", {1:1}], [["monomial", 1, [["x",1]]]], [["monomial", 1, [["x",1]]], 0]],
+                           [["polynomial", "x", {0: 1, 2: 3}], [["monomial", 1, [["x", 2]]]], [["monomial", 3, [["x", 2]]], 0]],
+                           [["polynomial", "x", {1: 5, 3: 2}], [["monomial", 1, [["x", 4]]]], 0],
+                           [["polynomial", "x", {1: 5, 3: 2}], [["monomial", 1, [["x", 4]]], ["monomial", 1, [["x", 1]]]], [["monomial", 2, [["x", 3]]], 1]],
+                           [["polynomial", "x", {1: ["polynomial", "y", {1: 1}]}], [["monomial", 4, [["x", 1], ["y", 1]]]], [["monomial", 1, [["x", 1], ["y", 1]]], 0]],
+                           [["polynomial", "x", {0: ["polynomial", "y", {2: 5}], 1: ["polynomial", "y", {1: 1}]}], [["monomial", 4, [["y", 2]]]], [["monomial", 5, [["y", 2]]], 0]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["y", 1]]]], [["monomial", 1, [["x", 2], ["y", 1]]], 0]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["x", 1]]]], [["monomial", 1, [["x", 3]]], 0]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["y", 2]]]], [["monomial", 1, [["x", 1], ["y", 2]]], 0]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["x", 1], ["y", 1]]]], [["monomial", 1, [["x", 2], ["y", 1]]], 0]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["x", 2], ["y", 2]]]], 0],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["y", 1]]], ["monomial", 1, [["x", 1]]]], [["monomial", 1, [["x", 3]]], 1]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["y", 2]]], ["monomial", 1, [["x", 1], ["y", 1]]]], [["monomial", 1, [["x", 2], ["y", 1]]], 1]],
+                           [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1: 1, 2: 1}], 2: ["polynomial", "y", {1:1}], 3: 1}], [["monomial", 1, [["x", 4]]], ["monomial", 1, [["x", 2], ["y", 2]]], ["monomial", 1, [["x", 1], ["y", 1]]]], [["monomial", 1, [["x", 2], ["y", 1]]], 2]]
+                          ];
+         poly_monos.forEach(function(monos) {
+                           it(monos, function() {
+                              expect(poly.max_div_init(monos[0], monos[1])).toEqual(monos[2]);
+                              });
+                           });
+         });
+
 describe("monomial to polynomial", function () {
          var mono_poly = [
                           [["monomial", 6, [["y",1]]], ["polynomial", "y", {1: 6}]],
@@ -19,17 +58,39 @@ describe("monomial to polynomial", function () {
 
 describe("monomial division", function () {
          var mono_mono_div = [
+                              [["monomial", 1, [["x",1]]], ["monomial", 1 ,[["x",1]]], 1],
                               [["monomial", 1, [["y",1]]], 1, ["monomial", 1, [["y",1]]]],
                               [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 1, [["x", 1],["y", 1]]], ["monomial", 5, [["x", 2],["y", 1]]]],
                               [["monomial", 1, [["x", 2],["y", 3],["z", 5]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3],["z", 1]]]],
                               [["monomial", 1, [["x", 2],["y", 3],["z", 4]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3]]]],
-                              [7, 1, 7]
+                              [7, 1, 7],
+                              [7, 2, ['/', 7, 2]],
+                              [["monomial", 1, [["y",1]]], 3, ["monomial", ['/', 1, 3], [["y",1]]]],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 1, [["x", 3],["y", 2]]], 5],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 3],["y", 2]]], ['/', 5, 2]],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", ['/', 5, 2], [["x", 2],["y", 1]]]]
                               ];
          mono_mono_div.forEach(function(monos) {
                                             it(monos, function() {
                                                expect(poly.mono_div(monos[0],monos[1])).toEqual(monos[2]);
+                                               expect(poly.mono_is_div(monos[0],monos[1])).toBeTruthy();
+                                               expect(poly.mono_is_div(monos[0],monos[2])).toBeTruthy();
                                                });
                                             });
+         var mono_nondiv = [
+                              [1, ["monomial", 1, [["y",1]]]],
+                              [["monomial", 1, [["x", 1],["y", 1]]], ["monomial", 5, [["x", 2],["y", 1]]]],
+                              [["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3],["z", 4]]]],
+                            [["monomial", 1, [["x", 3]]], ["monomial", 1, [["y", 1]]]],
+                            [["monomial", 1, [["x", 3]]], ["monomial", 1, [["y", 2]]]],
+                            [["monomial", 1, [["x", 3]]], ["monomial", 1, [["x", 1], ["y", 1]]]],
+                            [["monomial", 1, [["x", 3]]], ["monomial", 1, [["x", 2], ["y", 2]]]]
+                            ];
+         mono_nondiv.forEach(function(monos) {
+                               it(monos, function() {
+                                  expect(poly.mono_is_div(monos[0],monos[1])).toBeFalsy();
+                                  });
+                               });
          });
 
 describe("monomial gcd", function () {
