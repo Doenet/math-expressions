@@ -3,10 +3,56 @@ var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
 
+describe("grobner", function () {
+         var poly_sets = [
+                          [[0], [0]],
+                          [[0,5], [1]],
+                          [[["polynomial", "x", {1:1}], 1], [1]],
+                          [[["polynomial", "x", {1:2}], 1], [1]],
+                          [[["polynomial", "x", {1:1}], ["polynomial", "x", {2:1}]], [["polynomial", "x", {1:1}]]],
+                          [[["polynomial", "x", {1:1}], ["polynomial", "x", {0:1, 2:1}]], [1]],
+                           [[["polynomial", "x", {0:1, 1:1}], ["polynomial", "y", {2:1}]], [["polynomial", "x", {0:1, 1:1}], ["polynomial", "y", {2:1}]]],
+                           [[["polynomial", "x", {1:1}], ["polynomial", "x", {2:["polynomial", "y", {2:1}]}]], [["polynomial", "x", {1:1}]]],
+                          [[["polynomial", "x", {1:2}], ["polynomial", "x", {2:["polynomial", "y", {2:7}]}]], [["polynomial", "x", {1:1}]]],
+                          [[["polynomial", "x", {1: ["polynomial", "y", {1:1}], 2: 1}], ["polynomial", "x", {3: ["polynomial", "y", {1:-1}], 4: 1}], ["polynomial", "x", {0:1, 1: ["polynomial", "y", {1:1}]}]], [1]]
+                          ]
+         
+         poly_sets.forEach(function(red) {
+                           it(red, function() {
+                              expect(poly.reduced_grobner(red[0])).toEqual(red[1]);
+                              });
+                           });
+         });
+
+describe("reduce", function () {
+         var poly_sets = [
+                          [[0], [0]],
+                          [[["polynomial", "x", {1:1}]], [["polynomial", "x", {1:1}]]],
+                          [[["polynomial", "x", {1:1}], ["polynomial", "y", {1:1}]], [["polynomial", "x", {1:1}], ["polynomial", "y", {1:1}]]],
+                          [[["polynomial", "x", {1:1}], ["polynomial", "x", {2:1}],  ["polynomial", "y", {1:1}]], [["polynomial", "x", {1:1}], ["polynomial", "y", {1:1}]]],
+                           [[["polynomial", "x", {1:1}], ["polynomial", "x", {0:1, 2:1}],  ["polynomial", "y", {1:1}]], [1]],
+                          [[["polynomial", "x", {1:1}], ["polynomial", "x", {2:["polynomial", "y", {2:1}]}]], [["polynomial", "x", {1:1}]]]
+         ]
+         
+         poly_sets.forEach(function(red) {
+                           it(red, function() {
+                              expect(poly.reduce(red[0])).toEqual(red[1]);
+                              });
+                           });
+         });
+
 describe("division algorithm", function () {
-         //write division algorithm tests
          var divisions = [
-                          [["polynomial", "x", {1: 1}], [["polynomial", "x", {1: 1}]], [[[0, 1]], 0]]
+                          [["polynomial", "x", {1: 1}], [["polynomial", "x", {1: 1}]], [[[0, 1]], 0]],
+                          [["polynomial", "x", {0: 2, 1: 5, 3: 1}], [["polynomial", "x", {1:1}]], [[[0, ["monomial", 1, [["x", 2]]]], [0,5]], 2]],
+                          [["polynomial", "x", {0: 2, 1: 5, 2: 5}], [["polynomial", "x", {0:1, 1:1}]], [[[0, ["monomial", 5, [["x", 1]]]]], 2]],
+                          [["polynomial", "x", {0: 2, 1: 5, 3: 1}], [["polynomial", "x", {0:-1, 1:1}]], [[[0, ["monomial", 1, [["x", 2]]]], [0, ["monomial", 1, [["x", 1]]]], [0,6]], 8]],
+                          [["polynomial", "x", {1: 1}], [["polynomial", "x", {2: 1}]], [[], ["polynomial", "x", {1: 1}]]],
+                          [["polynomial", "x", {1: 1}], [["polynomial", "y", {1: 1}]], [[], ["polynomial", "x", {1: 1}]]],
+                          [["polynomial", "x", {0: 1, 1: 1, 2: 1}], [["polynomial", "x", {2: 1}], ["polynomial", "x", {1: 1}]], [[[0, 1], [1, 1]], 1]],
+                          [["polynomial", "x", {0: 1, 1: ["polynomial", "y", {1:1}], 2: 1}], [["polynomial", "y", {1:1}]], [[[0, ["monomial", 1, [["x", 1]]]]], ["polynomial", "x", {0:1, 2:1}]]],
+                          [1, [["polynomial", "x", {1: 1}]], [[], 1]],
+                          [["polynomial", "x", {1: 1}], [1], [[[0, ["monomial", 1, [["x", 1]]]]], 0]]
                           ]
          
          
@@ -20,6 +66,8 @@ describe("division algorithm", function () {
 
 describe("find maximum term divisible by one of the monomials", function () {
          var poly_monos = [
+                           [["polynomial", "x", {1: 1}], [["monomial", "1", [["x",2]]]],
+                            0],
                            [["polynomial", "x", {1:1}], [["monomial", 1, [["x",1]]]], [["monomial", 1, [["x",1]]], 0]],
                            [["polynomial", "x", {0: 1, 2: 3}], [["monomial", 1, [["x", 2]]]], [["monomial", 3, [["x", 2]]], 0]],
                            [["polynomial", "x", {1: 5, 3: 2}], [["monomial", 1, [["x", 4]]]], 0],
