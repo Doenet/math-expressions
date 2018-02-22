@@ -3,6 +3,78 @@ var trees = require('../lib/trees/basic');
 var poly = require('../lib/polynomial/polynomial');
 var simplify = require('../lib/expression/simplify');
 
+describe("reduce rational expression", function () {
+         var poly_sets = [
+                          [['x', 'x'], ['1', '1']],
+                          [['2x+x', 'x'], ['3', '1']],
+                          [['2xy+y^2', 'yx^2'], ['2x+y', 'x^2']],
+                          [['(1+y)(x+z)', '(1+y)(x+x^2)'], ['x+z', 'x+x^2']]
+                          ]
+         
+         poly_sets.forEach(function(example) {
+                           it(example, function() {
+                              let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
+                              let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
+                              let new_top = poly.expression_to_polynomial(me.fromText(example[1][0]));
+                              let new_bottom = poly.expression_to_polynomial(me.fromText(example[1][1]));
+                              expect(poly.reduce_rational_expression(top,bottom)).toEqual([new_top, new_bottom]);
+                              });
+                           });
+         });
+
+describe("gcd", function () {
+         var poly_sets = [
+                          [['x', 'x'], 'x']
+                          ]
+         
+         poly_sets.forEach(function(example) {
+                           it(example, function() {
+                              let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
+                              let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
+                              let gcd = poly.expression_to_polynomial(me.fromText(example[1]));
+                              expect(poly.poly_gcd(top,bottom)).toEqual(gcd);
+                              });
+                           });
+         });
+
+describe("gcd", function () {
+         var poly_sets = [
+                          [5, ['/', 1, 2], 1],
+                          [["polynomial", "x", {1:1}], 1, 1],
+                          [["polynomial", "x", {1:5}], -1, 1],
+                          [["polynomial", "x", {1:1}], ["polynomial", "x", {2:1}], ["polynomial", "x", {1:1}]],
+                          [["polynomial", "x", {1:1}], ["polynomial", "y", {1:1}], 1],
+                          [["polynomial", "x", {1:["polynomial", "y", {2:7}]}], ["polynomial", "x", {2:["polynomial", "y", {1:['/',1,2]}]}], ["polynomial", "x", {1:["polynomial", "y", {1:1}]}]],
+                          [["polynomial", "x", {0:1, 1:1}], ["polynomial", "y", {1:1}], 1],
+                          [["polynomial", "x", {0:["polynomial", "y", {2:1}], 1:["polynomial", "y", {1:1}]}], ["polynomial", "y", {1:1, 2:1}], ["polynomial", "y", {1:1}]]
+                          ]
+         
+         poly_sets.forEach(function(example) {
+                           it(example, function() {
+                              expect(poly.poly_gcd(example[0],example[1])).toEqual(example[2]);
+                              });
+                           });
+         });
+
+describe("lcm", function () {
+         var poly_sets = [
+                          [5, ['/', 1, 2], 1],
+                          [["polynomial", "x", {1:1}], 1, ["polynomial", "x", {1:1}]],
+                          [["polynomial", "x", {1:5}], -1, ["polynomial", "x", {1:1}]],
+                          [["polynomial", "x", {1:1}], ["polynomial", "x", {2:1}], ["polynomial", "x", {2:1}]],
+                          [["polynomial", "x", {1:1}], ["polynomial", "y", {1:1}], ["polynomial", "x", {1:["polynomial", "y", {1:1}]}]],
+                          [["polynomial", "x", {1:["polynomial", "y", {2:7}]}], ["polynomial", "x", {2:["polynomial", "y", {1:['/',1,2]}]}], ["polynomial", "x", {2:["polynomial", "y", {2:1}]}]],
+                          [["polynomial", "x", {0:1, 1:1}], ["polynomial", "y", {1:1}], ["polynomial", "x", {0:["polynomial", "y", {1:1}], 1:["polynomial", "y", {1:1}]}]],
+                          [["polynomial", "x", {0:["polynomial", "y", {2:1}], 1:["polynomial", "y", {1:1}]}], ["polynomial", "y", {1:1, 2:1}], ["polynomial", "x", {0:["polynomial", "y", {2:1, 3:1}], 1:["polynomial", "y", {1:1, 2:1}]}]]
+         ]
+         
+         poly_sets.forEach(function(example) {
+                           it(example, function() {
+                              expect(poly.poly_lcm(example[0],example[1])).toEqual(example[2]);
+                              });
+                           });
+         });
+
 describe("grobner", function () {
          var poly_sets = [
                           [[0], [0]],
