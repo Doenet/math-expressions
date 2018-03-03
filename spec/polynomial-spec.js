@@ -6,6 +6,8 @@ var simplify = require('../lib/expression/simplify');
 describe("reduce rational expression", function () {
          var poly_sets = [
                           [['x', 'x'], ['1', '1']],
+                          [['5x', '5x'], ['1', '1']],
+                          [['5x', '5y'], ['x', 'y']],
                           [['2x+x', 'x'], ['3', '1']],
                           [['2xy+y^2', 'yx^2'], ['2x+y', 'x^2']],
                           [['(1+y)(x+z)', '(1+y)(x+x^2)'], ['x+z', 'x+x^2']]
@@ -184,11 +186,11 @@ describe("monomial division", function () {
                               [["monomial", 1, [["x", 2],["y", 3],["z", 5]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3],["z", 1]]]],
                               [["monomial", 1, [["x", 2],["y", 3],["z", 4]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3]]]],
                               [7, 1, 7],
-                              [7, 2, ['/', 7, 2]],
+                              [7, 2, 3.5],
                               [["monomial", 1, [["y",1]]], 3, ["monomial", ['/', 1, 3], [["y",1]]]],
                               [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 1, [["x", 3],["y", 2]]], 5],
-                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 3],["y", 2]]], ['/', 5, 2]],
-                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", ['/', 5, 2], [["x", 2],["y", 1]]]]
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 3],["y", 2]]], 2.5],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", 2.5, [["x", 2],["y", 1]]]]
                               ];
          mono_mono_div.forEach(function(monos) {
                                             it(monos, function() {
