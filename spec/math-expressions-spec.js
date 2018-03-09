@@ -219,6 +219,7 @@ describe("expression", function() {
 	['exp(x^y)' , 'exp(x^y)'],
 	['(exp(x))^y' , 'exp(x*y)'],
 	['0*x', '0*y'],
+	['oo', '+oo'],
     ];
 
     _.each( equivalences, function(equiv) {

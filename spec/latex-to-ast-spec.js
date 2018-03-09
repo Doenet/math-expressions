@@ -144,6 +144,9 @@ describe("latex to ast", function() {
 	'1.2E+3': 1200,
 	'3.1E-3': 0.0031,
 	'1.2e-3': ['+', ['*', 1.2, 'e'], ['-', 3]],
+	'+2': 2,
+	'\\infty': 'infinity',
+	'+\\infty': 'infinity',
     };
 
     _.each( _.keys(trees), function(string) {
