@@ -1,4 +1,4 @@
-var astToText = require('../lib/parser').ast.to.text;
+var astToText = require('../lib/converters/parser').ast.to.text;
 
 describe("ast to text", function() {
     it("sum of two numbers", function() {

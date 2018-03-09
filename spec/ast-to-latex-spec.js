@@ -1,6 +1,6 @@
 var _ = require('underscore');
-var textToLatex = require('../lib/parser').text.to.latex;
-var astToLatex = require('../lib/parser').ast.to.latex;
+var textToLatex = require('../lib/converters/parser').text.to.latex;
+var astToLatex = require('../lib/converters/parser').ast.to.latex;
 
 describe("ast to latex", function() {
     var texts = {

@@ -1,4 +1,4 @@
-var textToGlsl = require('../lib/parser').text.to.glsl;
+var textToGlsl = require('../lib/converters/parser').text.to.glsl;
 var _ = require('underscore');
 
 describe("ast to GLSL", function() {

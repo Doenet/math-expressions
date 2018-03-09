@@ -1,5 +1,5 @@
-var astToMathTree = require('../lib/parser').ast.to.mathTree;
-var mathTreeToAst = require('../lib/parser').mathTree.to.ast;
+var astToMathTree = require('../lib/converters/parser').ast.to.mathTree;
+var mathTreeToAst = require('../lib/converters/parser').mathTree.to.ast;
 var _ = require('underscore');
 var math = require('../lib/mathjs');
 

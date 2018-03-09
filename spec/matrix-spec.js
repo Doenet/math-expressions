@@ -6,7 +6,7 @@ describe("matrixtest", function(){
              var a21=me.from('x3');
              var a22=me.from('x4');
              var matrix=me.matrix([[a11,a12],[a21,a22]]);
-             expect(matrix.tree).toEqual(["matrix",["tuple",2,2],["tuple",["tuple",'y1','x2'],["tuple",'x3','x4']]]);
+             expect(matrix.tree).toEqual(["matrix",["tuple",2,2],["tuple",["tuple",'x1','x2'],["tuple",'x3','x4']]]);
              
              
              

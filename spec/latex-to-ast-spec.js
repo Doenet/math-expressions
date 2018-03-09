@@ -1,5 +1,5 @@
-var astToLatex = require('../lib/parser').ast.to.latex;
-var latexToAst = require('../lib/parser').latex.to.ast;
+var astToLatex = require('../lib/converters/parser').ast.to.latex;
+var latexToAst = require('../lib/converters/parser').latex.to.ast;
 var _ = require('underscore');
 var ParseError = require('../lib/error').ParseError;
 var Context = require('../lib/math-expressions');
