@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "jasmine",
-    "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
+    "install": "jison lib/converters/text.jison -o lib/converters/lexers/text.js && jison lib/converters/latex.jison -o lib/converters/lexers/latex.js && sed -i /\\'fs\\'/d lib/converters/lexers/latex.js && sed -i /\\'fs\\'/d lib/converters/lexers/text.js",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
@@ -19,18 +19,18 @@
   "main": "./build/math-expressions.js",
   "private": false,
   "dependencies": {
+    "mathjs": "^4.0.0",
     "number-theory": "*",
-    "xml-parser": "*",
-    "mathjs": "*",
-    "numeric": "*"
+    "numeric": "*",
+    "xml-parser": "*"
   },
   "devDependencies": {
-    "jasmine": "*",
-    "jshint": "*",
-    "grunt": "*",
-    "grunt-urequire": "*",
+    "grunt": "^1.0.2",
     "grunt-cli": "*",
+    "grunt-urequire": "*",
+    "jasmine": "^3.1.0",
     "jison": "*",
+    "jshint": "*",
     "urequire": "~0.7.0-beta.29",
     "urequire-cli": "*"
   },
