@@ -19,8 +19,11 @@ describe("reduce rational expression", function () {
                           [['(sin(x))^2', 'sin(x)'], ['sin(x)', '1']],
                           [['sin(x)cos(y)', 'cos(y)sin(y)'], ['sin(x)', 'sin(y)']],
                           [['t^100', 't'], ['t^99', '1']],
-                          [['t^8-t', 't'], ['t^7-1', '1']],          //can handle this
-                          //[['t^9-t', 't'], ['t^8-1', '1']]          //can't handle this
+                          [['t^8-t', 't'], ['t^7-1', '1']],
+                          [['t^1000000-t', 't'], ['t^999999-1', '1']],
+                          [['(a+b)(c+d)','(a+b)(e+f)'], ['c+d', 'e+f']],
+                          [['(ac+ad+bc+bd)','(ae+af+be+bf)'], ['(c + d)','(e + f)']],
+                          [['(a+sin(x))(c+cos(y))','((a+sin(x))(e+exp(z)))'], ['(c + cos(y))','(e + exp(z))']]
                           ]
          
          poly_sets.forEach(function(example) {
