@@ -9,7 +9,6 @@
   },
   "scripts": {
     "test": "jasmine",
-    "install": "jison lib/converters/text.jison -o lib/converters/lexers/text.js && jison lib/converters/latex.jison -o lib/converters/lexers/latex.js && sed -i /\\'fs\\'/d lib/converters/lexers/latex.js && sed -i /\\'fs\\'/d lib/converters/lexers/text.js",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
@@ -25,14 +24,8 @@
     "xml-parser": "*"
   },
   "devDependencies": {
-    "grunt": "^1.0.2",
-    "grunt-cli": "*",
-    "grunt-urequire": "*",
-    "jasmine": "^3.1.0",
-    "jison": "*",
+    "babel-preset-es2015-node": "^6.1.1",
     "jshint": "*",
-    "urequire": "~0.7.0-beta.29",
-    "urequire-cli": "*"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }
