@@ -8,7 +8,8 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "test": "jest --watchAll",
+    "test": "jest quick_  --watchAll",
+    "test:all": "jest",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {

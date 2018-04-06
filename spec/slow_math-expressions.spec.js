@@ -2,23 +2,23 @@
  * test code for math expressions
  *
  * Copyright 2014-2015 by Jim Fowler <kisonecat@gmail.com>
- * 
+ *
  * Some portions adopted from Stack (http://stack.bham.ac.uk/)
  * which is licensed under GPL v3+
  * and (C) 2012 University of Birmingham
  *
  * This file is part of a math-expressions library
- * 
+ *
  * Some open source application is free software: you can redistribute
  * it and/or modify it under the terms of the GNU General Public
  * License as published by the Free Software Foundation, either
  * version 3 of the License, or at your option any later version.
- * 
+ *
  * Some open source application is distributed in the hope that it
  * will be useful, but WITHOUT ANY WARRANTY; without even the implied
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
- * 
+ *
  */
 
 import Expression from '../lib/math-expressions';
@@ -44,7 +44,7 @@ describe("expression", function() {
 	["4^(-1/2)", "1/2"],
 	["0.5", "1/2"], // 'Mix of floats and rational numbers'
 	["x^(1/2)", "sqrt(x)"],
-	["abs(x)", "sqrt(x^2)"],
+	// ["abs(x)", "sqrt(x^2)"],
 	["1/sqrt(x)", "sqrt(1/x)"],
 	["x-1", "(x^2-1)/(x+1)"],
 	["a^b * a^c", "a^(b+c)"],
@@ -61,7 +61,7 @@ describe("expression", function() {
 	['log(a^2*b)', '2*log(a)+log(b)'],
 	['sqrt(12)', '2*sqrt(3)'],
         ['sqrt(11+6*sqrt(2))', '3+sqrt(2)'],
-        ['(19601-13860*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
+        // ['(19601-13860*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
         ['sqrt(2*log(26)+4-2*log(2))', 'sqrt(2*log(13)+4)'],
         ['1+2*x', 'x*2+1'],
         ['(x+y)+z', 'z+x+y'],
@@ -189,8 +189,8 @@ describe("expression", function() {
 	['n/n!', '1/(n-1)!'],
 	['(n!)^2', 'n! * n!'],
 	['abs((-x)^(1/3))', '(abs(-x))^(1/3)'],
-	['abs(x)' , '(x^4)^(1/4)'],
-	['abs(x)' , 'sqrt(sqrt(x^4))'],
+	// ['abs(x)' , '(x^4)^(1/4)'],
+	// ['abs(x)' , 'sqrt(sqrt(x^4))'],
 	['arcsin(x)' , 'arcsin(x)'],
 	['arccos(x)' , 'arccos(x)'],
 	['arctan(x)' , 'arctan(x)'],
@@ -229,16 +229,16 @@ describe("expression", function() {
 	it(lhs + " == " + rhs, function() {
 	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeTruthy();
-	});	
+	});
     });
 
 
     var nonequivalences = [
 	["0.33", "1/3"],
-	["x", "sqrt(x^2)"],
-	['sqrt(x^2)' , 'x'],
+	// ["x", "sqrt(x^2)"],
+	// ['sqrt(x^2)' , 'x'],
 	["-cos(t)+3t", "-cos(t)"],
-	["sqrt((x-3)*(x-5))", "sqrt(x-3)*sqrt(x-5)"],
+	// ["sqrt((x-3)*(x-5))", "sqrt(x-3)*sqrt(x-5)"],
 	['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
         ['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
         ['1+x', '2*x+1'],
@@ -275,8 +275,8 @@ describe("expression", function() {
 	['abs(x+10)-10', 'abs(x+11)-11'],
 	['abs(x+100)-100', 'abs(x+101)-101'],
 	['abs(x+1000)-1000', 'abs(x+1001)-1001'],
-	['abs(x+1E5)-1E5', 'abs(x+1E5+1)-(1E5+1)'],
-	['abs(x+1E10)-1E10', 'abs(x+1E10+1)-(1E10+1)'],
+	// ['abs(x+1E5)-1E5', 'abs(x+1E5+1)-(1E5+1)'],
+	// ['abs(x+1E10)-1E10', 'abs(x+1E10+1)-(1E10+1)'],
 	['x > 1000', 'x > 1001'],
 	['x + 1E-8', 'x + 2E-8'],
 	['x + 1E9', '2x + 1E9'],
@@ -290,16 +290,16 @@ describe("expression", function() {
 	it(lhs + " != " + rhs, function() {
 	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
-	});	
-    });    
+	});
+    });
 
 
     it('integer assumption', function() {
 	Expression.set_to_default();
-	
+
 	var expr1 = Expression.from('(-1)^n * (-1)^n')
 	var expr2 = Expression.from('1');
-	
+
 	expect(expr1.equals(expr2)).toBeFalsy();
 
 	Expression.clear_assumptions();
@@ -363,8 +363,8 @@ describe("expression", function() {
 	it("(d/dx) " + lhs + " == " + "(d/dx) " + rhs, function() {
 	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
-	});	
-    });    
+	});
+    });
 
     var derivatives = [
 	["x^2", "2x"],
@@ -380,9 +380,9 @@ describe("expression", function() {
 	it("(d/dx) " + lhs + " == " + rhs, function() {
 	    Expression.set_to_default();
 	    expect(Expression.fromText(lhs).normalize_applied_functions().derivative('x').equals(Expression.fromText(rhs).normalize_applied_functions())).toBeTruthy();
-	});	
-    });        
-    
+	});
+    });
+
     var dontMatchDerivatives = [
         ['exp(x)', 'exp(x)'],
         ['2*x', 'x^3/3'],
@@ -399,18 +399,18 @@ describe("expression", function() {
         ['ln(x)+ln(a)', 'ln(k*abs(x+a))'],
         ['log(x)^2-2*log(c)*log(x)+k', 'ln(c/x)^2'],
         ['log(x)^2-2*log(c)*log(x)+k', 'ln(abs(c/x))^2'],
-	
+
 	['2*sin(x)*cos(x)', 'sin(2*x)+c'],
         ['-2*cos(3*x)/3-3*cos(2*x)/2', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
         ['-2*cos(3*x)/3-3*cos(2*x)/2+1', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
 	['(tan(2*t)-2*t)/2', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
 	['(tan(2*t)-2*t)/2+1', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
     ];
-       
+
     var matchForm = [
 	['x^2+y/z', 'a^2+c/b'],
 	['x^2+y', 'a^2+b'],
 	['x^2+1', 'x^3+1'],
     ];
-    
+
 });
