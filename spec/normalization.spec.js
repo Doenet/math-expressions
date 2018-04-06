@@ -1,5 +1,5 @@
-var me = require('../lib/math-expressions')
-var _ = require('underscore');
+import me from '../lib/math-expressions';
+import _ from 'underscore';
 
 describe("normalize function names", function() {
 

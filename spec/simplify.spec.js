@@ -1,5 +1,5 @@
-var me = require('../lib/math-expressions');
-var trees = require('../lib/trees/basic');
+import me from '../lib/math-expressions';
+import * as trees from '../lib/trees/basic';
 
 describe("evaluate_numbers", function () {
 

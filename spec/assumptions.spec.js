@@ -1,14 +1,14 @@
-var me = require ('../lib/math-expressions');
-var is_integer = require('../lib/assumptions/element_of_sets.js').is_integer;
-var is_real = require('../lib/assumptions/element_of_sets.js').is_real;
-var is_complex = require('../lib/assumptions/element_of_sets.js').is_complex;
-var is_nonzero = require('../lib/assumptions/element_of_sets.js').is_nonzero;
-var is_nonnegative = require('../lib/assumptions/element_of_sets.js').is_nonnegative;
-var is_nonpositive = require('../lib/assumptions/element_of_sets.js').is_nonpositive;
-var is_positive = require('../lib/assumptions/element_of_sets.js').is_positive;
-var is_negative = require('../lib/assumptions/element_of_sets.js').is_negative;
-var trees = require('../lib/trees/basic');
-var simplify = require('../lib/expression/simplify').simplify;
+import me from '../lib/math-expressions';
+import { is_integer } from '../lib/assumptions/element_of_sets.js';
+import { is_real } from '../lib/assumptions/element_of_sets.js';
+import { is_complex } from '../lib/assumptions/element_of_sets.js';
+import { is_nonzero } from '../lib/assumptions/element_of_sets.js';
+import { is_nonnegative } from '../lib/assumptions/element_of_sets.js';
+import { is_nonpositive } from '../lib/assumptions/element_of_sets.js';
+import { is_positive } from '../lib/assumptions/element_of_sets.js';
+import { is_negative } from '../lib/assumptions/element_of_sets.js';
+import * as trees from '../lib/trees/basic';
+import { simplify } from '../lib/expression/simplify';
 
 
 describe("add and get assumptions", function () {

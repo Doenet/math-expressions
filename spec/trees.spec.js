@@ -1,7 +1,6 @@
-var trees = require('../lib/trees/basic.js')
-var flatten = require('../lib/trees/flatten.js')
-
-var me = require ('../lib/math-expressions');
+import * as trees from '../lib/trees/basic.js';
+import * as flatten from '../lib/trees/flatten.js';
+import me from '../lib/math-expressions';
 function TREE(s) {
     return me.fromText(s).tree;
 }
@@ -615,7 +614,7 @@ describe("tree transformations", function () {
 			['*', 'b', 'x', 2, 'y'],
 			['*', 'b', 'x', 'p', 'q']];
 
-	transformed = trees.applyAllTransformations(factored, transformations);
+	var transformed = trees.applyAllTransformations(factored, transformations);
 
 	expect(trees.equal(expanded, transformed)).toBeTruthy();
 	

@@ -8,7 +8,7 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "test": "jasmine",
+    "test": "jest --watchAll",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
@@ -25,7 +25,8 @@
   },
   "devDependencies": {
     "babel-preset-es2015-node": "^6.1.1",
-    "jshint": "*",
+    "jest": "^22.4.3",
+    "jshint": "*"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }

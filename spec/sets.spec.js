@@ -1,4 +1,4 @@
-var me = require ('../lib/math-expressions');
+import me from '../lib/math-expressions';
 
 describe("discrete infinite", function () {
 

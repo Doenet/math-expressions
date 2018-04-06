@@ -1,7 +1,7 @@
-var me = require('../lib/math-expressions');
-var trees = require('../lib/trees/basic');
-var poly = require('../lib/polynomial/polynomial');
-var simplify = require('../lib/expression/simplify');
+import me from '../lib/math-expressions';
+import * as trees from '../lib/trees/basic';
+import * as poly from '../lib/polynomial/polynomial';
+import * as simplify from '../lib/expression/simplify';
 
 describe("reduce rational expression", function () {
          var poly_sets = [

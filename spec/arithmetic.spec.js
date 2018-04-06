@@ -1,10 +1,10 @@
-var me = require('../lib/math-expressions');
+import me from '../lib/math-expressions';
 
 describe("basic arithmetic operions", function () {
 
     it("addition", function () {
-	expect(me.from('a+b').add(me.from('c+b')).simplify().tree).toEqual(
-	    me.from('a+2b+c').simplify().tree)
+	expect(me.fromText('a+b').add(me.fromText('c+b')).simplify().tree).toEqual(
+	    me.fromText('a+2b+c').simplify().tree)
     });
     
     it("subtraction", function () {

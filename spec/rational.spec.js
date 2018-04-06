@@ -1,7 +1,7 @@
-var me = require('../lib/math-expressions');
-var trees = require('../lib/trees/basic');
-var rational = require('../lib/expression/rational');
-var simplify = require('../lib/expression/simplify');
+import me from '../lib/math-expressions';
+import trees from '../lib/trees/basic';
+import rational from '../lib/expression/rational';
+import simplify from '../lib/expression/simplify';
 
 describe("reduce rational expressions", function () {
 

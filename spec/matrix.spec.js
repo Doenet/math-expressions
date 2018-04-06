@@ -1,4 +1,5 @@
-var me=require("../lib/math-expressions");
+import me from '../lib/math-expressions';
+
 describe("matrixtest", function(){
          it ("creation",function(){
              var a11=me.from('x1');

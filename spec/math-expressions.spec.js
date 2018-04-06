@@ -21,8 +21,9 @@
  * 
  */
 
-var Expression = require('../lib/math-expressions');
-var _ = require('underscore');
+import Expression from '../lib/math-expressions';
+
+import _ from 'underscore';
 
 describe("expression", function() {
 

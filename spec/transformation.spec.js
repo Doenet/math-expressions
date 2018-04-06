@@ -1,10 +1,9 @@
-var me = require('../lib/math-expressions');
-var tree_equal = require('../lib/trees/basic').equal;
+import me from '../lib/math-expressions';
+import { equal as tree_equal } from '../lib/trees/basic';
 
 describe("expand factors", function () {
 
     it("expand polynomial", function () {
-
 	expect(tree_equal(me.fromText("(a+x)(b-y)").expand().tree, me.fromText("ab-ay+xb-xy").tree)).toBeTruthy();
 
     });
