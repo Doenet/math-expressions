@@ -1,0 +1,8 @@
+deploy:
+  provider: npm
+  email: kisonecat@gmail.com
+  api_key:
+    secure: eFmTmfM0H6nVpfBpbDsdwYh1VTcw130fjWvzUUeBPOl/jn6Z4R77kup6DKl+uPUkNzaKVtvba22uRxJlUXc0m8vW+XP26+NK1qAc5qxNJqJOc5gRr247CbCSNKQeIfNOfwQP4Af66G+UtuOaWDIAcNrcaEwdq0suVyYOPUmq+t7ZJQrg83Wa7pTQDOXaOnOqEaPjIHpX+HDvG6D76KIl5UZfpYyv9dhBwZ3mtXETnvftsFmPyL8nIE+P0XULmsT+gSuwSxcxtLxmrE8rCxrDBnnQldCwgf0UAsAAVluYDV7lQd/lnjL4vlNYwNz/GqTaw4a0D9HlW43JgE0J6eCmLn4zjQAY5f4kBwS0E4zRLvCT0031AOdQa3OP9hqCTsic8Ju8S7iMP6AA8sRBlc0XOuU3NrxKXYXQapTLx0w4oLfnjDqAhBvKN7vnaQNWChBsp3KpYbHnDLvUcDSwRdfn75r+bcyUpHeBsOXymLI/s+8PhhxHrmFh7s0vSFGSFN8zbmhuIkdAItu2xanF9E0nakku4Y4tD8GaTQhTUP8V+znt61ATt/7z9Vi3HWnX3pyaO9VmRssbzQUcK+aCWzVycKQpd/ed5kHI/Nd0eI3GiuIKcSGMuxMlm4oplr6Ox/DHCU/3PYnbiTW25oF6Q+FdBDEYrcBOk3UAbk0p50ackds=
+  on:
+    tags: true
+    repo: kisonecat/math-expressions
