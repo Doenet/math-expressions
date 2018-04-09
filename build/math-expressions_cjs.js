@@ -70610,7 +70610,7 @@ function get_assumptions_for_expr(assumptions, expr, exclude_variables) {
 function combine_assumptions(expr1, op1, expr2, new_as) {
     // given the assumption "expr1 op1 expr2" and assumptions from new_as
     // - return new assumptions involving expr1, if possible
-    // - return undefined if new_as appear to not affect expr1
+    // - return undefined if new_as appears to not affect expr1
     // - return new_as if new_as appear to affect expr1 but cannot
     //   be distilled to assumptions on expr1
 
@@ -70632,7 +70632,7 @@ function combine_assumptions(expr1, op1, expr2, new_as) {
 	if(results.length == 0)
 	    return undefined;
 	if(op2 === 'or') {
-	    if(results.length === operands.length)
+	    if(results.length === operands2.length)
 		return [['or'].concat(results)];
 	    else
 		return undefined;
@@ -78426,7 +78426,7 @@ function parseLatex(string, pars) {
 }
 
 function parseMml(string, pars) {
-    return new Expression( mmltoAst.convert(string), Context);
+    return new Expression( mmlToAst$1.convert(string), Context);
 }
 
 
