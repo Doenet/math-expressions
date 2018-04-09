@@ -18,7 +18,7 @@
     "type": "git",
     "url": "https://github.com/kisonecat/math-expressions"
   },
-  "main": "./build/math-expressions.js",
+  "main": "./lib/math-expressions.js",
   "private": false,
   "dependencies": {
     "mathjs": "^4.0.0",
