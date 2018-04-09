@@ -1,3 +1,5 @@
+'use strict';
+
 const get_tree = function(expr_or_tree) {
 
     if(expr_or_tree===undefined)
@@ -78506,4 +78508,4 @@ function flatten_array(ary, ret) {
     return ret;
 }
 
-export default Context;
+module.exports = Context;

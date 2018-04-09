@@ -8,6 +8,7 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
+    "build": "rollup -c",
     "test": "jest --watch",
     "test:quick": "jest quick_",
     "test:all": "jest",
@@ -26,9 +27,14 @@
     "xml-parser": "*"
   },
   "devDependencies": {
+    "babel-loader": "^7.1.4",
     "babel-preset-es2015-node": "^6.1.1",
     "jest": "^22.4.3",
-    "jshint": "*"
+    "jshint": "*",
+    "rollup": "^0.57.1",
+    "rollup-plugin-commonjs": "^9.1.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-resolve": "^3.3.0"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }
