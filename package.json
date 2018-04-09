@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "test": "jest --watch",
-    "test:quick": "jest quick_",
+    "test:watch": "jest --watch",
+    "test": "jest quick_",
     "test:all": "jest",
     "lint": "jshint lib/*.js spec/*.js"
   },
