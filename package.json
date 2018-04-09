@@ -1,36 +1,40 @@
 {
   "name": "math-expressions",
   "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "1.8.6",
+  "version": "2.0.0-alpha",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "test": "jasmine",
-    "install": "jison lib/text.jison -o lib/lexers/text.js && jison lib/latex.jison -o lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/latex.js && sed -i /\\'fs\\'/d lib/lexers/text.js",
+    "build": "rollup -c",
+    "test": "jest --watch",
+    "test:quick": "jest quick_",
+    "test:all": "jest",
     "lint": "jshint lib/*.js spec/*.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/kisonecat/math-expressions"
   },
-  "main": "./build/math-expressions.js",
+  "main": "./lib/math-expressions.js",
   "private": false,
   "dependencies": {
+    "mathjs": "^4.0.0",
     "number-theory": "*",
+    "numeric": "*",
     "xml-parser": "*"
   },
   "devDependencies": {
-    "jasmine": "*",
+    "babel-loader": "^7.1.4",
+    "babel-preset-es2015-node": "^6.1.1",
+    "jest": "^22.4.3",
     "jshint": "*",
-    "grunt": "*",
-    "grunt-urequire": "*",
-    "grunt-cli": "*",
-    "jison": "*",
-    "urequire": "~0.7.0-beta.29",
-    "urequire-cli": "*"
+    "rollup": "^0.57.1",
+    "rollup-plugin-commonjs": "^9.1.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-resolve": "^3.3.0"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }
