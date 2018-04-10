@@ -6,8 +6,9 @@ import builtins from 'rollup-plugin-node-builtins';
 export default {
   input: 'lib/math-expressions.js',
   output: [{
-    file: 'build/math-expressions_cjs.js',
-    format: 'cjs'
+    file: 'build/math-expressions_umd.js',
+    format: 'umd',
+    name: 'MathExpression'
   },{
     file: 'build/math-expressions.js',
     format: 'es'
