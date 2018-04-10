@@ -21,7 +21,7 @@
   "main": "./lib/math-expressions.js",
   "private": false,
   "dependencies": {
-    "mathjs": "^4.0.0",
+    "mathjs": "^4.1.0",
     "number-theory": "*",
     "numeric": "*",
     "xml-parser": "*"
