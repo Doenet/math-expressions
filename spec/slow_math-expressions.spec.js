@@ -221,6 +221,7 @@ describe("expression", function() {
 	['(exp(x))^y' , 'exp(x*y)'],
 	['0*x', '0*y'],
 	['oo', '+oo'],
+	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"]
     ];
 
     _.each( equivalences, function(equiv) {
