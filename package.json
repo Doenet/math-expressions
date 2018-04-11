@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "2.0.4-alpha",
+  "version": "2.0.5-alpha",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
@@ -22,7 +22,7 @@
   "jsnext:main": "build/math-expressions.js",
   "private": false,
   "dependencies": {
-    "mathjs": "^4.1.0",
+    "mathjs": "^4.1.1",
     "number-theory": "*",
     "numeric": "*",
     "xml-parser": "*"
