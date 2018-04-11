@@ -10651,6 +10651,28 @@ function factory$5 (type, config, load, typed, math) {
   };
 
   /**
+   * Get a JSON representation of the chain
+   * @returns {Object}
+   */
+  Chain.prototype.toJSON = function () {
+    return {
+      mathjs: 'Chain',
+      value: this.value
+    };
+  };
+
+  /**
+   * Instantiate a Chain from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "Chain", value: ...}`,
+   *                       where mathjs is optional
+   * @returns {Chain}
+   */
+  Chain.fromJSON = function (json) {
+    return new Chain(json.value);
+  };
+
+  /**
    * Create a proxy method for the chain
    * @param {string} name
    * @param {Function} fn      The function to be proxied
@@ -22939,23 +22961,38 @@ function factory$54 (type, config, load, typed) {
    * ---------------------- | ------------- | ------------------------------------------
    * null                   | `'null'`      | `math.typeof(null)`
    * number                 | `'number'`    | `math.typeof(3.5)`
-   * boolean                | `'boolean'`   | `math.typeof (true)`
-   * string                 | `'string'`    | `math.typeof ('hello world')`
-   * Array                  | `'Array'`     | `math.typeof ([1, 2, 3])`
-   * Date                   | `'Date'`      | `math.typeof (new Date())`
-   * Function               | `'Function'`  | `math.typeof (function () {})`
-   * Object                 | `'Object'`    | `math.typeof ({a: 2, b: 3})`
-   * RegExp                 | `'RegExp'`    | `math.typeof (/a regexp/)`
+   * boolean                | `'boolean'`   | `math.typeof(true)`
+   * string                 | `'string'`    | `math.typeof('hello world')`
+   * Array                  | `'Array'`     | `math.typeof([1, 2, 3])`
+   * Date                   | `'Date'`      | `math.typeof(new Date())`
+   * Function               | `'Function'`  | `math.typeof(function () {})`
+   * Object                 | `'Object'`    | `math.typeof({a: 2, b: 3})`
+   * RegExp                 | `'RegExp'`    | `math.typeof(/a regexp/)`
    * undefined              | `'undefined'` | `math.typeof(undefined)`
-   * math.type.BigNumber    | `'BigNumber'` | `math.typeof (math.bignumber('2.3e500'))`
-   * math.type.Chain        | `'Chain'`     | `math.typeof (math.chain(2))`
-   * math.type.Complex      | `'Complex'`   | `math.typeof (math.complex(2, 3))`
-   * math.type.Fraction     | `'Fraction'`  | `math.typeof (math.fraction(1, 3))`
-   * math.type.Help         | `'Help'`      | `math.typeof (math.help('sqrt'))`
-   * math.type.Index        | `'Index'`     | `math.typeof (math.index(1, 3))`
-   * math.type.Matrix       | `'Matrix'`    | `math.typeof (math.matrix([[1,2], [3, 4]]))`
-   * math.type.Range        | `'Range'`     | `math.typeof (math.range(0, 10))`
-   * math.type.Unit         | `'Unit'`      | `math.typeof (math.unit('45 deg'))`
+   * math.type.BigNumber    | `'BigNumber'` | `math.typeof(math.bignumber('2.3e500'))`
+   * math.type.Chain        | `'Chain'`     | `math.typeof(math.chain(2))`
+   * math.type.Complex      | `'Complex'`   | `math.typeof(math.complex(2, 3))`
+   * math.type.Fraction     | `'Fraction'`  | `math.typeof(math.fraction(1, 3))`
+   * math.type.Help         | `'Help'`      | `math.typeof(math.help('sqrt'))`
+   * math.type.Help         | `'Help'`      | `math.typeof(math.help('sqrt'))`
+   * math.type.Index        | `'Index'`     | `math.typeof(math.index(1, 3))`
+   * math.type.Matrix       | `'Matrix'`    | `math.typeof(math.matrix([[1,2], [3, 4]]))`
+   * math.type.Range        | `'Range'`     | `math.typeof(math.range(0, 10))`
+   * math.type.ResultSet    | `'ResultSet'` | `math.typeof(math.eval('a=2\nb=3'))`
+   * math.type.Unit         | `'Unit'`      | `math.typeof(math.unit('45 deg'))`
+   * math.expression.node.AccessorNode            | `'AccessorNode'`            | `math.typeof(math.parse('A[2]'))`
+   * math.expression.node.ArrayNode               | `'ArrayNode'`               | `math.typeof(math.parse('[1,2,3]'))`
+   * math.expression.node.AssignmentNode          | `'AssignmentNode'`          | `math.typeof(math.parse('x=2'))`
+   * math.expression.node.BlockNode               | `'BlockNode'`               | `math.typeof(math.parse('a=2; b=3'))`
+   * math.expression.node.ConditionalNode         | `'ConditionalNode'`         | `math.typeof(math.parse('x<0 ? -x : x'))`
+   * math.expression.node.ConstantNode            | `'ConstantNode'`            | `math.typeof(math.parse('2.3'))`
+   * math.expression.node.FunctionAssignmentNode  | `'FunctionAssignmentNode'`  | `math.typeof(math.parse('f(x)=x^2'))`
+   * math.expression.node.FunctionNode            | `'FunctionNode'`            | `math.typeof(math.parse('sqrt(4)'))`
+   * math.expression.node.IndexNode               | `'IndexNode'`               | `math.typeof(math.parse('A[2]').index)`
+   * math.expression.node.ObjectNode              | `'ObjectNode'`              | `math.typeof(math.parse('{a:2}'))`
+   * math.expression.node.ParenthesisNode         | `'ParenthesisNode'`         | `math.typeof(math.parse('(2+3)'))`
+   * math.expression.node.RangeNode               | `'RangeNode'`               | `math.typeof(math.parse('1:10'))`
+   * math.expression.node.SymbolNode              | `'SymbolNode'`              | `math.typeof(math.parse('x'))`
    *
    * Syntax:
    *
@@ -22995,6 +23032,8 @@ function factory$54 (type, config, load, typed) {
         if (type.isUnit(x))      return 'Unit';
         if (type.isIndex(x))     return 'Index';
         if (type.isRange(x))     return 'Range';
+        if (type.isResultSet(x)) return 'ResultSet';
+        if (type.isNode(x))      return x.type;
         if (type.isChain(x))     return 'Chain';
         if (type.isHelp(x))      return 'Help';
 
@@ -24443,7 +24482,7 @@ function factory$55 (type, config, load, typed, math) {
     }
   };
 
-  // Add a prefix list for both short and long prefixes (for ohm in particular, since Mohm and megaohm are both acceptable):
+  // Add a prefix list for both short and long prefixes (for example for ohm and bar which support both Mohm and megaohm, mbar and millibar):
   PREFIXES.SHORTLONG = {};
   for (var key in PREFIXES.SHORT) {
     if(PREFIXES.SHORT.hasOwnProperty(key)) {
@@ -25582,7 +25621,7 @@ function factory$55 (type, config, load, typed, math) {
     bar: {
       name: 'bar',
       base: BASE_UNITS.PRESSURE,
-      prefixes: PREFIXES.NONE,
+      prefixes: PREFIXES.SHORTLONG,
       value: 100000,
       offset: 0
     },
@@ -26655,7 +26694,7 @@ var type = [
   unit$1
 ];
 
-var version = '4.0.1';
+var version = '4.1.0';
 
 function factory$60 (type, config, load, typed, math) {
   // listen for changed in the configuration, automatically reload
@@ -31087,6 +31126,16 @@ function factory$63 (type, config, load, typed, math) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * Both .toJSON() and the static .fromJSON(json) should be implemented by all
+   * implementations of Node
+   * @returns {Object}
+   */
+  Node.prototype.toJSON = function () {
+    throw new Error('Cannot serialize object: toJSON not implemented by ' + this.type);
+  };
+
+  /**
    * Get HTML representation. (wrapper function)
    *
    * This function can get an object of the following form:
@@ -31439,6 +31488,29 @@ function factory$64 (type, config, load, typed) {
     return this.dotNotation
         ? ('.' + this.getObjectProperty())
         : ('[' + this.dimensions.join(', ') + ']');
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  IndexNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'IndexNode',
+      dimensions: this.dimensions,
+      dotNotation: this.dotNotation
+    };
+  };
+
+  /**
+   * Instantiate an IndexNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "IndexNode", dimensions: [...], dotNotation: false}`,
+   *                       where mathjs is optional
+   * @returns {IndexNode}
+   */
+  IndexNode.fromJSON = function (json) {
+    return new IndexNode(json.dimensions, json.dotNotation);
   };
 
   /**
@@ -31963,6 +32035,29 @@ function factory$67 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  AccessorNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'AccessorNode',
+      object: this.object,
+      index: this.index
+    };
+  };
+
+  /**
+   * Instantiate an AccessorNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "AccessorNode", object: ..., index: ...}`,
+   *                       where mathjs is optional
+   * @returns {AccessorNode}
+   */
+  AccessorNode.fromJSON = function (json) {
+    return new AccessorNode(json.object, json.index);
+  };
+
+  /**
    * Are parenthesis needed?
    * @private
    */
@@ -32107,6 +32202,28 @@ function factory$68 (type, config, load, typed) {
       return node.toString(options);
     });
     return '[' + items.join(', ') + ']';
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  ArrayNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'ArrayNode',
+      items: this.items
+    };
+  };
+
+  /**
+   * Instantiate an ArrayNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "ArrayNode", items: [...]}`,
+   *                       where mathjs is optional
+   * @returns {ArrayNode}
+   */
+  ArrayNode.fromJSON = function (json) {
+    return new ArrayNode(json.items);
   };
 
   /**
@@ -32779,6 +32896,30 @@ function factory$70 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  AssignmentNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'AssignmentNode',
+      object: this.object,
+      index: this.index,
+      value: this.value
+    };
+  };
+
+  /**
+   * Instantiate an AssignmentNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "AssignmentNode", object: ..., index: ..., value: ...}`,
+   *                       where mathjs is optional
+   * @returns {AssignmentNode}
+   */
+  AssignmentNode.fromJSON = function (json) {
+    return new AssignmentNode(json.object, json.index, json.value);
+  };
+
+  /**
    * Get HTML representation
    * @param {Object} options
    * @return {string}
@@ -32958,6 +33099,28 @@ function factory$71 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  BlockNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'BlockNode',
+      blocks: this.blocks
+    };
+  };
+
+  /**
+   * Instantiate an BlockNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "BlockNode", blocks: [{node: ..., visible: false}, ...]}`,
+   *                       where mathjs is optional
+   * @returns {BlockNode}
+   */
+  BlockNode.fromJSON = function (json) {
+    return new BlockNode(json.blocks);
+  };
+
+  /**
    * Get HTML representation
    * @param {Object} options
    * @return {string} str
@@ -33120,6 +33283,30 @@ function factory$72 (type, config, load, typed) {
       falseExpr = '(' + falseExpr + ')';
     }
     return condition + ' ? ' + trueExpr + ' : ' + falseExpr;
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  ConditionalNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'ConditionalNode',
+      condition: this.condition,
+      trueExpr: this.trueExpr,
+      falseExpr: this.falseExpr
+    };
+  };
+
+  /**
+   * Instantiate an ConditionalNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "ConditionalNode", "condition": ..., "trueExpr": ..., "falseExpr": ...}`,
+   *                       where mathjs is optional
+   * @returns {ConditionalNode}
+   */
+  ConditionalNode.fromJSON = function (json) {
+    return new ConditionalNode(json.condition, json.trueExpr, json.falseExpr);
   };
 
   /**
@@ -33341,6 +33528,28 @@ function factory$73 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  ConstantNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'ConstantNode',
+      value: this.value
+    };
+  };
+
+  /**
+   * Instantiate a ConstantNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "SymbolNode", value: 2.3}`,
+   *                       where mathjs is optional
+   * @returns {ConstantNode}
+   */
+  ConstantNode.fromJSON = function (json) {
+    return new ConstantNode(json.value);
+  };
+
+  /**
    * Get LaTeX representation
    * @param {Object} options
    * @return {string} str
@@ -33534,6 +33743,37 @@ function factory$74 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  FunctionAssignmentNode.prototype.toJSON = function () {
+    var types = this.types;
+
+    return {
+      mathjs: 'FunctionAssignmentNode',
+      name: this.name,
+      params: this.params.map(function(param, index) {
+        return {
+          name: param,
+          type: types[index]
+        }
+      }),
+      expr: this.expr
+    };
+  };
+
+  /**
+   * Instantiate an FunctionAssignmentNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "FunctionAssignmentNode", name: ..., params: ..., expr: ...}`,
+   *                       where mathjs is optional
+   * @returns {FunctionAssignmentNode}
+   */
+  FunctionAssignmentNode.fromJSON = function (json) {
+    return new FunctionAssignmentNode(json.name, json.params, json.expr);
+  };
+
+  /**
    * get HTML representation
    * @param {Object} options
    * @return {string} str
@@ -33591,7 +33831,7 @@ function factory$75 (type, config, load, typed) {
    * @constructor ObjectNode
    * @extends {Node}
    * Holds an object with keys/values
-   * @param {Object.<string, Node>} [properties]   array with key/value pairs
+   * @param {Object.<string, Node>} [properties]   object with key/value pairs
    */
   function ObjectNode(properties) {
     if (!(this instanceof ObjectNode)) {
@@ -33716,6 +33956,28 @@ function factory$75 (type, config, load, typed) {
       }
     }
     return '{' + entries.join(', ') + '}';
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  ObjectNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'ObjectNode',
+      properties: this.properties
+    };
+  };
+
+  /**
+   * Instantiate an OperatorNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "ObjectNode", "properties": {...}}`,
+   *                       where mathjs is optional
+   * @returns {ObjectNode}
+   */
+  ObjectNode.fromJSON = function (json) {
+    return new ObjectNode(json.properties);
   };
 
   /**
@@ -34189,6 +34451,31 @@ function factory$76 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  OperatorNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'OperatorNode',
+      op: this.op,
+      fn: this.fn,
+      args: this.args,
+      implicit: this.implicit
+    };
+  };
+
+  /**
+   * Instantiate an OperatorNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "OperatorNode", "op": "+", "fn": "add", "args": [...], "implicit": false}`,
+   *                       where mathjs is optional
+   * @returns {OperatorNode}
+   */
+  OperatorNode.fromJSON = function (json) {
+    return new OperatorNode(json.op, json.fn, json.args, json.implicit);
+  };
+
+  /**
    * Get HTML representation.
    * @param {Object} options
    * @return {string} str
@@ -34466,6 +34753,28 @@ function factory$77 (type, config, load, typed) {
   };
 
   /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  ParenthesisNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'ParenthesisNode',
+      content: this.content
+    };
+  };
+
+  /**
+   * Instantiate an ParenthesisNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "ParenthesisNode", "content": ...}`,
+   *                       where mathjs is optional
+   * @returns {ParenthesisNode}
+   */
+  ParenthesisNode.fromJSON = function (json) {
+    return new ParenthesisNode(json.content);
+  };
+
+  /**
    * Get HTML representation
    * @param {Object} options
    * @return {string} str
@@ -34660,6 +34969,28 @@ function factory$78 (type, config, load, typed, math) {
 	}
 	
 	return '<span class="math-symbol">' + name + '</span>';
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  SymbolNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'SymbolNode',
+      name: this.name
+    };
+  };
+
+  /**
+   * Instantiate a SymbolNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "SymbolNode", name: "x"}`,
+   *                       where mathjs is optional
+   * @returns {SymbolNode}
+   */
+  SymbolNode.fromJSON = function (json) {
+    return new SymbolNode(json.name);
   };
 
   /**
@@ -34937,7 +35268,30 @@ function factory$79 (type, config, load, typed, math) {
     // format the arguments like "add(2, 4.2)"
     return fn + '(' + args.join(', ') + ')';
   };
-  
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  FunctionNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'FunctionNode',
+      fn: this.fn,
+      args: this.args
+    };
+  };
+
+  /**
+   * Instantiate an AssignmentNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "FunctionNode", fn: ..., args: ...}`,
+   *                       where mathjs is optional
+   * @returns {FunctionNode}
+   */
+  FunctionNode.fromJSON = function (json) {
+    return new FunctionNode(json.fn, json.args);
+  };
+
   /**
    * Get HTML representation
    * @param {Object} options
@@ -35302,6 +35656,30 @@ function factory$80 (type, config, load, typed) {
     str += ':' + end;
 
     return str;
+  };
+
+  /**
+   * Get a JSON representation of the node
+   * @returns {Object}
+   */
+  RangeNode.prototype.toJSON = function () {
+    return {
+      mathjs: 'RangeNode',
+      start: this.start,
+      end: this.end,
+      step: this.step
+    };
+  };
+
+  /**
+   * Instantiate an RangeNode from its JSON representation
+   * @param {Object} json  An object structured like
+   *                       `{"mathjs": "RangeNode", "start": ..., "end": ..., "step": ...}`,
+   *                       where mathjs is optional
+   * @returns {RangeNode}
+   */
+  RangeNode.fromJSON = function (json) {
+    return new RangeNode(json.start, json.end, json.step);
   };
 
   /**
@@ -58048,22 +58426,29 @@ function factory$246 (type, config, load, typed) {
    *       date: new Date(2013, 2, 23).toISOString().substring(0, 10)
    *     });
    *
+   *    // the following outputs: 'My favorite fruits are apples and bananas !'
+   *    math.print('My favorite fruits are $0 and $1 !', [
+   *      'apples',
+   *      'bananas'
+   *    ]);
+   *
    * See also:
    *
    *     format
    *
-   * @param {string} template     A string containing variable placeholders.
-   * @param {Object} values       An object containing variables which will
-   *                              be filled in in the template.
+   * @param {string} template       A string containing variable placeholders.
+   * @param {Object | Array | Matrix} values An object or array containing variables
+   *                                which will be filled in in the template.
    * @param {number | Object} [options]  Formatting options,
-   *                              or the number of digits to format numbers.
-   *                              See function math.format for a description
-   *                              of all options.
+   *                                or the number of digits to format numbers.
+   *                                See function math.format for a description
+   *                                of all options.
    * @return {string} Interpolated string
    */
   var print = typed ('print', {
-    'string, Object': _print,
-    'string, Object, number | Object': _print
+    // note: Matrix will be converted automatically to an Array
+    'string, Object | Array': _print,
+    'string, Object | Array, number | Object': _print
   });
 
   print.toTex = undefined; // use default template
@@ -60067,7 +60452,7 @@ var _function$3 = [
   utils$1
 ];
 
-function factory$275 (type, config, load, typed) {
+function factory$275 (type, config, load, typed, math) {
   /**
    * Instantiate mathjs data types from their JSON representation
    * @param {string} key
@@ -60075,7 +60460,10 @@ function factory$275 (type, config, load, typed) {
    * @returns {*} Returns the revived object
    */
   return function reviver(key, value) {
-    var constructor = type[value && value.mathjs];
+    var constructor = type[value && value.mathjs] ||
+        (math.expression && math.expression.node[value && value.mathjs]);
+    // TODO: instead of checking math.expression.node, expose all Node classes on math.type too
+
     if (constructor && typeof constructor.fromJSON === 'function') {
       return constructor.fromJSON(value);
     }
@@ -60087,11 +60475,13 @@ function factory$275 (type, config, load, typed) {
 var name$261 = 'reviver';
 var path$65 = 'json';
 var factory_1$275 = factory$275;
+var math$20 = true; // request the math namespace as fifth argument
 
 var reviver = {
 	name: name$261,
 	path: path$65,
-	factory: factory_1$275
+	factory: factory_1$275,
+	math: math$20
 };
 
 var json = [
@@ -61251,15 +61641,19 @@ function substitute_abs(expr_or_tree) {
 var astToMathjs$1 = new astToMathjs({mathjs: mathjs });
 
 const f = function(expr_or_tree) {
-
-  var tree = get_tree(expr_or_tree);
-
-  var mt = factorial_to_gamma_function(
-    normalize_function_names(
-      normalize_applied_functions(
-	astToMathjs$1.convert( tree ))));
+    var tree = get_tree(expr_or_tree);
     
-  return mt.eval.bind(mt);
+    var mt = factorial_to_gamma_function(
+	astToMathjs$1.convert(	
+	    normalize_function_names(
+		normalize_applied_functions(
+		    tree
+		)
+	    )
+	)
+    );
+    
+    return mt.eval.bind(mt);
 };
 
 const evaluate = function(expr, bindings) {
@@ -68686,120 +69080,219 @@ var printing = /*#__PURE__*/Object.freeze({
 // check for equality by randomly sampling
 
 function generate_random_integer(minvalue, maxvalue) {
-    minvalue = mathjs.ceil(minvalue);
-    maxvalue = mathjs.floor(maxvalue);
-    return mathjs.floor(mathjs.random()*(maxvalue-minvalue+1)) + minvalue;
+  minvalue = mathjs.ceil(minvalue);
+  maxvalue = mathjs.floor(maxvalue);
+  return mathjs.floor(mathjs.random()*(maxvalue-minvalue+1)) + minvalue;
 }
 
 
+
 const equals = function(expr, other, randomBindings,
-			  expr_context, other_context) {
+			       expr_context, other_context) {
 
-    expr = expr.normalize_function_names();
-    other = other.normalize_function_names();
+  if(Array.isArray(expr.tree) && Array.isArray(other.tree)) {
+    
+    let expr_operator = expr.tree[0];
+    let expr_operands = expr.tree.slice(1);
+    let other_operator = other.tree[0];
+    let other_operands = other.tree.slice(1);
 
-    var max_value = Number.MAX_VALUE*1E-20;
+    if(expr_operator === 'tuple' || expr_operator === 'vector'
+       || expr_operator === 'list' || expr_operator === 'array'
+       || expr_operator === 'matrix'
+      ) {
 
-    var epsilon = 1E-12;
-    var minimum_matches = 10;
+      if(other_operator !== expr_operator)
+	return false;
 
-    // Get set of variables mentioned in at least one of the two expressions
-    var variables = [ expr.variables(), other.variables() ];
-    variables = variables.reduce( function(a,b) { return a.concat(b); } );
-    variables = variables.reduce(function(p, c) {
-        if (p.indexOf(c) < 0) p.push(c);
-        return p;
-    }, []);
+      if(other_operands.length !== expr_operands.length)
+	return false;
 
-    // determine if any of the variables are integers
-    // consider integer if is integer in either expressions' assumptions
-    var integer_variables = [];
-    for(var i=0; i < variables.length; i++)
-	if(is_integer_ast(variables[i], expr_context.assumptions)
-	   || is_integer_ast(variables[i], other_context.assumptions))
-	    integer_variables.push(variables[i]);
+      for(let i=0; i<expr_operands.length; i++) {
+	if(!equals(expr_context.fromAst(expr_operands[i]),
+		   other_context.fromAst(other_operands[i]),
+		   randomBindings,
+		   expr_context, other_context))
+	  return false;
+      }
+
+      return true;  // each component is equal
+    }
+  }
+
+  // if not special case, use standard numerical equality
+  return component_equals(expr, other, randomBindings,
+			  expr_context, other_context);
+
+};
 
 
-    var expr_f = expr.f();
-    var other_f = other.f();
+const component_equals = function(expr, other, randomBindings,
+			       expr_context, other_context) {
+
+  var max_value = Number.MAX_VALUE*1E-20;
+
+  var epsilon = 1E-12;
+  var minimum_matches = 10;
+
+  // Get set of variables mentioned in at least one of the two expressions
+  var variables = [ expr.variables(), other.variables() ];
+  variables = variables.reduce( function(a,b) { return a.concat(b); } );
+  variables = variables.reduce(function(p, c) {
+    if (p.indexOf(c) < 0) p.push(c);
+    return p;
+  }, []);
+
+  // determine if any of the variables are integers
+  // consider integer if is integer in either expressions' assumptions
+  var integer_variables = [];
+  for(var i=0; i < variables.length; i++)
+    if(is_integer_ast(variables[i], expr_context.assumptions)
+       || is_integer_ast(variables[i], other_context.assumptions))
+      integer_variables.push(variables[i]);
 
 
-    // find a location where the magnitudes of both expressions
+  var expr_f = expr.f();
+  var other_f = other.f();
+
+  var noninteger_binding_scale = 1;
+
+  var binding_scales = [10, 1, 100, 0.1, 1000, 0.01];
+  var scale_num = 0;
+
+
+  // Numerical test of equality
+  // If can find a region of the complex plane where the functions are equal
+  // at minimum_matches points, consider the functions equal
+  // unless the functions were always zero, in which case
+  // test at multiple scales to check for underflow
+
+  // In order to account for possible branch cuts, 
+  // finding points where the functions are not equal does not lead to the
+  // conclusion that expression are unequal. Instead, to be consider unequal either
+  // A. the functions are unequal at many points, or B
+  // B. the functions are equal at a point and then unequal at a nearby point
+
+
+  for(var i=0; i<100; i++) {
+    
+    // Look for a location where the magnitudes of both expressions
     // are below max_value;
-    for(var i=0; i<100; i++) {
+    try {
+      var result = find_equality_region(binding_scales[scale_num]);
+    }
+    catch(e) {
+      continue;
+    }
+    if(result.equality === true) {
+      if(result.always_zero) {
+	// functions equal but zero
+	// try changing the scale and repeating
+	scale_num +=1;
+	if(scale_num >= binding_scales.length)
+	  return true;  // were equal and zero at all scales
+	else
+	  continue
+      }
+      else
+	return true;
+    }
+    else if(result.equality === false)
+      return false;
+  }
 
-	var bindings= randomBindings(variables, 10);
+  return false;
 
-	// replace any integer variables with integer
-	for(var j=0; j<integer_variables.length; j++) {
-	    bindings[integer_variables[j]] = generate_random_integer(-10,10);
-	}
+  
+  
+  function find_equality_region(noninteger_scale) {
 
-	try {
-	    var expr_evaluated = expr_f(bindings);
-	    var other_evaluated = other_f(bindings);
-	}
-	catch (e) {
-	    continue;
-	}
-	var expr_abs = mathjs.abs(expr_evaluated);
-	var other_abs = mathjs.abs(other_evaluated);
+    // Check if expr and other are equal in a region as follows
+    // 1. Randomly select bindings (use noninteger scale for non-integer variables)
+    //    and evaluate expr and other at that point
+    // 2. If either value is too large, return { out_of_bounds: true }
+    // 3. If values are not equal (within tolerance), return { equal_at_start: false }
+    // 4. If functions are equal, then
+    //    randomly select binding in neighborhood of that point
+    //    (use non_integer scale/100 for non-integer variables)
+    // 5. If find a point where the functions are not equality,
+    //    then return { equality: false }
+    // 6. If find that functions are equal at minimum_matches points
+    //    then return { equality: true, always_zero: always_zero }
+    //    where always_zero is true if both functions were always zero
+    //    and is false otherwise
+    // 7. If were unable to find sufficent points where both functions are findit
+    //    return { sufficient_finite_values: false }
+    
+    
+    var bindings= randomBindings(variables, noninteger_scale);
 
-	if(expr_abs < max_value && other_abs < max_value) {
-	    // now that found a finite point,
-	    // check to see if expressions are nearly equal.
-
-	    var min_mag = mathjs.min(expr_abs, other_abs);
-	    if(mathjs.abs(mathjs.subtract(expr_evaluated, other_evaluated))
-	       > min_mag * epsilon)
-		continue;
-
-	    // Look for a region around point
-	    var found_large_difference=false;
-	    var finite_tries = 0;
-	    for(var j=0; j<100; j++) {
-
-		var bindings2 = randomBindings(variables, 0.1, bindings);
-
-		// replace any integer variables with integer
-		for(var j=0; j<integer_variables.length; j++) {
-		    bindings2[integer_variables[j]]
-			= generate_random_integer(-10,10);
-		}
-
-		try {
-		    expr_evaluated = expr_f(bindings2);
-		    other_evaluated = other_f(bindings2);
-		}
-		catch (e) {
-		    continue;
-		}
-		expr_abs = mathjs.abs(expr_evaluated);
-		other_abs = mathjs.abs(other_evaluated);
-
-		if(expr_abs < max_value && other_abs < max_value) {
-		    min_mag = mathjs.min(expr_abs, other_abs);
-
-		    finite_tries++;
-
-		    if(mathjs.abs(mathjs.subtract(expr_evaluated, other_evaluated))
-		       > min_mag * epsilon) {
-			found_large_difference = true;
-			break;
-		    }
-
-		    if(finite_tries >=minimum_matches)
-			break;
-		}
-	    }
-
-	    if(!found_large_difference && finite_tries >= minimum_matches) {
-		return true;
-	    }
-	}
+    // replace any integer variables with integer
+    for(let i=0; i<integer_variables.length; i++) {
+      bindings[integer_variables[i]] = generate_random_integer(-10,10);
     }
 
-    return false;
+    var expr_evaluated = expr_f(bindings);
+    var other_evaluated = other_f(bindings);
+
+    var expr_abs = mathjs.abs(expr_evaluated);
+    var other_abs = mathjs.abs(other_evaluated);
+
+    if(expr_abs >= max_value || other_abs > max_value)
+      return { out_of_bounds: true };
+    
+    // now that found a finite point,
+    // check to see if expressions are nearly equal.
+
+    var min_mag = mathjs.min(expr_abs, other_abs);
+    if(mathjs.abs(mathjs.subtract(expr_evaluated, other_evaluated))
+       > min_mag * epsilon)
+      return { equal_at_start: false };
+
+
+    var always_zero = (min_mag == 0);
+    
+    // Look for a region around point
+    var finite_tries = 0;
+    for(let j=0; j<100; j++) {
+      var bindings2 = randomBindings(
+	variables, noninteger_binding_scale/100, bindings);
+
+      // replace any integer variables with integer
+      for(let k=0; k<integer_variables.length; k++) {
+	bindings2[integer_variables[k]]
+	  = generate_random_integer(-10,10);
+      }
+
+      try {
+	expr_evaluated = expr_f(bindings2);
+	other_evaluated = other_f(bindings2);
+      }
+      catch (e) {
+	continue;
+      }
+      expr_abs = mathjs.abs(expr_evaluated);
+      other_abs = mathjs.abs(other_evaluated);
+
+      if(expr_abs < max_value && other_abs < max_value) {
+	min_mag = mathjs.min(expr_abs, other_abs);
+
+	finite_tries++;
+
+	if(mathjs.abs(mathjs.subtract(expr_evaluated, other_evaluated))
+	   > min_mag * epsilon) {
+	  return { equality: false };
+	}
+
+	always_zero = always_zero && (min_mag == 0);
+
+	if(finite_tries >=minimum_matches) {
+	  return { equality: true, always_zero: always_zero }
+	}
+      }
+    }
+    return { sufficient_finite_values: false };
+  }
 
 };
 
@@ -68825,17 +69318,23 @@ function randomComplexBindings(variables, radius, centers) {
 
 const equals$1 = function(expr, other) {
 
-    //expr = expr.substitute_abs();
-    //other = other.substitute_abs();
-
-    // don't use complex equality if not analytic expression
-    // except abs is OK
-    if((!expr.isAnalytic({allow_abs: true})) ||
-       (!other.isAnalytic({allow_abs: true})) )
-	return false;
-
-    return equals(expr, other, randomComplexBindings,
-			    expr.context, other.context);
+  //expr = expr.substitute_abs();
+  //other = other.substitute_abs();
+  
+  // don't use complex equality if not analytic expression
+  // except abs is OK
+  if((!expr.isAnalytic({allow_abs: true})) ||
+     (!other.isAnalytic({allow_abs: true})) )
+    return false;
+  
+  let expr_normalized = expr.normalize_function_names()
+      .normalize_applied_functions();
+  let other_normalized = other.normalize_function_names()
+      .normalize_applied_functions();
+  
+  return equals(expr_normalized, other_normalized,
+			  randomComplexBindings,
+			  expr.context, other.context);
 };
 
 function randomRealBindings(variables, radius, centers) {
@@ -68857,12 +69356,18 @@ function randomRealBindings(variables, radius, centers) {
 
 const equals$2 = function(expr, other) {
 
-    // don't use real equality if not analytic expression
-    if((!expr.isAnalytic()) || (!other.isAnalytic()))
-	return false;
+  // don't use real equality if not analytic expression
+  if((!expr.isAnalytic()) || (!other.isAnalytic()))
+    return false;
 
-    return equals(expr, other, randomRealBindings,
-			    expr.context, other.context);
+  let expr_normalized = expr.normalize_function_names()
+      .normalize_applied_functions();
+  let other_normalized = other.normalize_function_names()
+      .normalize_applied_functions();
+  
+  return equals(expr_normalized, other_normalized,
+			  randomRealBindings,
+			  expr.context, other.context);
 };
 
 const equals$3 = function (expr, other) {
