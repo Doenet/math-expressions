@@ -81,6 +81,7 @@ describe("expression", function() {
         ['1/n-1/(n+1)', '1/(n*(n+1))'],
         ['cos(x)', 'cos(-x)'],
         ['cos(x)^2+sin(x)^2', '1'],
+        ['cos^2 x+sin^2 x', '1'],
         ['2*cos(x)^2-1', 'cos(2*x)'],
 	['(1/2)/(3/4)', '2/3'],
         ['1/n', '1/n'],
