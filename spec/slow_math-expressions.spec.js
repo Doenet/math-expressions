@@ -81,6 +81,7 @@ describe("expression", function() {
         ['1/n-1/(n+1)', '1/(n*(n+1))'],
         ['cos(x)', 'cos(-x)'],
         ['cos(x)^2+sin(x)^2', '1'],
+        ['cos^2 x+sin^2 x', '1'],
         ['2*cos(x)^2-1', 'cos(2*x)'],
 	['(1/2)/(3/4)', '2/3'],
         ['1/n', '1/n'],
@@ -221,7 +222,8 @@ describe("expression", function() {
 	['(exp(x))^y' , 'exp(x*y)'],
 	['0*x', '0*y'],
 	['oo', '+oo'],
-	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"]
+	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
+        ['(2x,y^2)', '(x+x, y*y)']
     ];
 
     _.each( equivalences, function(equiv) {
@@ -282,7 +284,8 @@ describe("expression", function() {
 	['x + 1E-8', 'x + 2E-8'],
 	['x + 1E9', '2x + 1E9'],
 	['(8-r sin(theta))r', '(8-r^2 sin(theta))'],
-	['xy^2/2 + e^y', 'x + e^y']
+        ['xy^2/2 + e^y', 'x + e^y'],
+        ['x^(sin(x))', 'x^(cos(x))'],
     ];
 
     _.each( nonequivalences, function(nonequiv) {
