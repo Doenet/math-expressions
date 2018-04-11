@@ -19,9 +19,10 @@
     "url": "https://github.com/kisonecat/math-expressions"
   },
   "main": "build/math-expressions_umd.js",
-  "jsnext:main": "build/math-expressions.js",    
+  "jsnext:main": "build/math-expressions.js",
   "private": false,
   "dependencies": {
+    "babel-cli": "^6.26.0",
     "mathjs": "^4.0.0",
     "number-theory": "*",
     "numeric": "*",
