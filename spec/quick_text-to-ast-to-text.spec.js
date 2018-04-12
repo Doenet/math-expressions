@@ -194,6 +194,9 @@ var inputs = [
   'A > B | C and D',
   'A or B : C < D',
   ['{ x_t | t elementof Z }', '{ x_t | t ∈ Z }'],
+  '...',
+  '1, 2, 3, ...',
+  '( 1, 2, 3, ... )',
 ];
 
 

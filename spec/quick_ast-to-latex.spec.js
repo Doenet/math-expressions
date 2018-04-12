@@ -648,6 +648,18 @@ const objectsToTest = [
     'ast': ['set', [':', 'x', ['>', 'x', 0]]],
     'latex': '\\left\\{ x : x > 0 \\right\\}',
   },
+  {
+    'ast': ['ldots'],
+    'latex': '\\ldots',
+  },
+  {
+    'ast': ['list', 1, 2, 3, ['ldots']],
+    'latex': '1, 2, 3, \\ldots',
+  },
+  {
+    'ast': ['tuple', 1, 2, 3, ['ldots']],
+    'latex': '\\left( 1, 2, 3, \\ldots \\right)',
+  },
 
 
 ]
