@@ -5,6 +5,10 @@ describe("expand factors", function () {
 
   test("expand polynomial", function () {
     expect(tree_equal(me.fromText("(a+x)(b-y)").expand().tree, me.fromText("ab-ay+xb-xy").tree)).toBeTruthy();
+    expect(tree_equal(me.fromText("(a-x)^2").expand().tree, me.fromText("a^2 -2ax + x^2").evaluate_numbers().tree)).toBeTruthy();
+    expect(tree_equal(me.fromText("(a-x+c)^2").expand().tree, me.fromText("a^2 +x^2+c^2 -2ax +2ac-2xc").evaluate_numbers().tree)).toBeTruthy();
+    expect(tree_equal(me.fromText("(a-x)^3").expand().tree, me.fromText("a^3 -3a^2x + 3ax^2-x^3").evaluate_numbers().tree)).toBeTruthy();
+    expect(tree_equal(me.fromText("(a-x+c)^3").expand().tree, me.fromText("a^3 -x^3+c^3 -3a^2x +3a^2c+3ax^2+3x^2c+3ac^2-3xc^2-6axc").evaluate_numbers().tree)).toBeTruthy();
 
   });
 
@@ -13,13 +17,13 @@ describe("expand factors", function () {
     var factored = me.fromText("x(sin(x)-cos(y))(3log(z)+be^a)(ts+q^2)");
     var expanded = me.fromText("x sin(x) 3 log(z) ts + x sin(x) 3 log(z) q^2 + x sin(x) be^a ts + x sin(x) be^a q^2  - x cos(y) 3 log(z) ts - x cos(y) 3 log(z) q^2 - x cos(y) be^a ts - x cos(y) be^a q^2");
     var factored_expanded = factored.expand();
-    expect(tree_equal(factored_expanded.tree,expanded.tree)).toBeTruthy();
+    expect(tree_equal(factored_expanded.tree,expanded.evaluate_numbers().tree)).toBeTruthy();
 
   });
 
   test("expand negative", function () {
     expect(tree_equal(me.fromText('-(x+y)').expand().tree,
-		      me.fromText('-x-y').tree)).toBeTruthy();
+		      me.fromText('-x-y').evaluate_numbers().tree)).toBeTruthy();
   });
 
 });
