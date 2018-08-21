@@ -582,7 +582,7 @@ describe("is positive/negative/zero/real/complex", function() {
 
 
     var operators = [
-	['(5,2)', false, false, false, false, undefined, false, false],
+	['(5,2)', false, false, false, false, false, false, false],
 	['5=3', false, false, false, false, undefined, false, false],
     ];
 

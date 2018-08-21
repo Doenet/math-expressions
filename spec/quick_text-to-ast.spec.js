@@ -190,6 +190,9 @@ var trees = {
   '{ x | x > 0 }': ['set', ['|', 'x', ['>', 'x', 0]]],
   'r=1:x': [':', ['=', 'r', 1], 'x'],
   '{ x : x > 0 }': ['set', [':', 'x', ['>', 'x', 0]]],
+  '...': ['ldots'],
+  '1,2,3,...': ['list', 1, 2, 3, ['ldots']],
+  '(1,2,3,...)':  ['tuple', 1, 2, 3, ['ldots']],
 };
 
 Object.keys(trees).forEach(function(string) {

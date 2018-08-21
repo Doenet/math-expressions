@@ -645,7 +645,18 @@ const objectsToTest = [
     'ast': ['set', [':', 'x', ['>', 'x', 0]]],
     'text': '{ x : x > 0 }',
   },
-
+  {
+    'ast': ['ldots'],
+    'text': '...',
+  },
+  {
+    'ast': ['list', 1, 2, 3, ['ldots']],
+    'text': '1, 2, 3, ...',
+  },
+  {
+    'ast': ['tuple', 1, 2, 3, ['ldots']],
+    'text': '( 1, 2, 3, ... )',
+  },
 ]
 
 

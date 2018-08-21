@@ -1,580 +1,579 @@
 import astToMathjs from '../lib/converters/ast-to-mathjs';
-
+import math from 'mathjs';
+import _ from 'underscore';
 var converter = new astToMathjs();
+let reviver = math.json.reviver;
 
 
 const objectsToTest = [
   {
     'ast': ['*', ['/', 1, 2], 'x'],
-    'mathjs': {"args": [{"args": [{"value": 1}, {"value": 2}], "fn": "divide", "implicit": false, "op": "/"}, {"name": "x"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"OperatorNode","op":"/","fn":"divide","args":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}],"implicit":false},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['+', 1, 'x', 3],
-    'mathjs': {"args": [{"value": 1}, {"name": "x"}, {"value": 3}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"ConstantNode","value":1},{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":3}],"implicit":false}', reviver)
   },
   {
     'ast': ['+', 1, ['-', 'x'],
       ['-', 3]
     ],
-    'mathjs': {"args": [{"value": 1}, {"args": [{"name": "x"}], "fn": "unaryMinus", "implicit": false, "op": "-"}, {"args": [{"value": 3}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"ConstantNode","value":1},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"SymbolNode","name":"x"}],"implicit":false},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"ConstantNode","value":3}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['+', 1, ['-', ['-', 'x']]],
-    'mathjs': {"args": [{"value": 1}, {"args": [{"args": [{"name": "x"}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"ConstantNode","value":1},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"SymbolNode","name":"x"}],"implicit":false}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'log', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "log"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"log"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['apply', 'ln', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "ln"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"ln"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['apply', 'abs', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "abs"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],
-    'mathjs': {"args": [{"args": [{"args": [{"name": "x"}], "fn": {"name": "abs"}}], "fn": {"name": "sin"}}], "fn": {"name": "abs"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"sin"},"args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"SymbolNode","name":"x"}]}]}]}', reviver)
+
   },
   {
     'ast': ['^', 'x', 2],
-    'mathjs': {"args": [{"name": "x"}, {"value": 2}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":2}],"implicit":false}', reviver)
   },
   {
     'ast': ['-', ['^', 'x', 2]],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"value": 2}], "fn": "pow", "implicit": false, "op": "^"}], "fn": "unaryMinus", "implicit": false, "op": "-"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":2}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', 'x', 47],
-    'mathjs': {"args": [{"name": "x"}, {"value": 47}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":47}],"implicit":false}', reviver)
   },
   {
     'ast': ['*', ['^', 'x', 'a'], 'b'],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "a"}], "fn": "pow", "implicit": false, "op": "^"}, {"name": "b"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"a"}],"implicit":false},{"mathjs":"SymbolNode","name":"b"}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', 'x', ['apply', 'factorial', 'a']],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"name": "a"}], "fn": "factorial", "implicit": false, "op": "!"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"SymbolNode","name":"a"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['vector', 1, 2],
-    'mathjs': {"items": [{"value": 1}, {"value": 2}]}
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}', reviver)
   },
   {
     'ast': ['*', 'x', 'y', 'z'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}, {"name": "z"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}', reviver)
   },
   {
     'ast': ['*', 'c', ['+', 'a', 'b']],
-    'mathjs': {"args": [{"name": "c"}, {"args": [{"name": "a"}, {"name": "b"}], "fn": "add", "implicit": false, "op": "+"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"c"},{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"a"},{"mathjs":"SymbolNode","name":"b"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['*', ['+', 'a', 'b'], 'c'],
-    'mathjs': {"args": [{"args": [{"name": "a"}, {"name": "b"}], "fn": "add", "implicit": false, "op": "+"}, {"name": "c"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"a"},{"mathjs":"SymbolNode","name":"b"}],"implicit":false},{"mathjs":"SymbolNode","name":"c"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'factorial', 'a'],
-    'mathjs': {"args": [{"name": "a"}], "fn": "factorial", "implicit": false, "op": "!"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"SymbolNode","name":"a"}],"implicit":false}', reviver)
   },
   {
     'ast': 'theta',
-    'mathjs': {"name": "theta"}
+    'mathjs': JSON.parse('{"mathjs":"SymbolNode","name":"theta"}', reviver)
   },
   {
     'ast': ['*', 't', 'h', 'e', 't', 'a'],
-    'mathjs': {"args": [{"name": "t"}, {"name": "h"}, {"name": "e"}, {"name": "t"}, {"name": "a"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"t"},{"mathjs":"SymbolNode","name":"h"},{"mathjs":"SymbolNode","name":"e"},{"mathjs":"SymbolNode","name":"t"},{"mathjs":"SymbolNode","name":"a"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'cos', 'theta'],
-    'mathjs': {"args": [{"name": "theta"}], "fn": {"name": "cos"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"cos"},"args":[{"mathjs":"SymbolNode","name":"theta"}]}', reviver)
   },
   {
     'ast': ['*', 'c', 'o', 's', 'x'],
-    'mathjs': {"args": [{"name": "c"}, {"name": "o"}, {"name": "s"}, {"name": "x"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"c"},{"mathjs":"SymbolNode","name":"o"},{"mathjs":"SymbolNode","name":"s"},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],
-    'mathjs': {"args": [{"args": [{"args": [{"name": "x"}], "fn": {"name": "abs"}}], "fn": {"name": "sin"}}], "fn": {"name": "abs"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"sin"},"args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"SymbolNode","name":"x"}]}]}]}', reviver)
   },
   {
     'ast': ['*', 'blah', 'x'],
-    'mathjs': {"args": [{"name": "blah"}, {"name": "x"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"blah"},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'abs', ['=', ['+', 'x', 3], 2]],
-    'mathjs': {"args": [{"args": [{"args": [{"name": "x"}, {"value": 3}], "fn": "add", "implicit": false, "op": "+"}, {"value": 2}], "fn": "equal", "implicit": false, "op": "=="}], "fn": {"name": "abs"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"abs"},"args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":3}],"implicit":false},{"mathjs":"ConstantNode","value":2}],"implicit":false}]}', reviver)
   },
   {
     'ast': ['_', 'x', ['_', 'y', 'z']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['_', 'x', ['_', 'y', 'z']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['_', ['_', 'x', 'y'], 'z'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['^', 'x', ['^', 'y', 'z']],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "pow", "implicit": false, "op": "^"}], "fn": "pow", "implicit": false, "op": "^"}
-  },
-  {
-    'ast': ['^', 'x', ['^', 'y', 'z']],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "pow", "implicit": false, "op": "^"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', ['^', 'x', 'y'], 'z'],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "pow", "implicit": false, "op": "^"}, {"name": "z"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', 'x', ['_', 'y', 'z']],
-    'mathjs': {"args": [{"name": "x"}, {"name": "NaN"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['^', ['_', 'x', 'y'], 'z'],
-    'mathjs':  {"args": [{"name": "NaN"}, {"name": "z"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', 'x', 'y', ['apply', 'factorial', 'z']],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}, {"args": [{"name": "z"}], "fn": "factorial", "implicit": false, "op": "!"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"},{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': 'x',
-    'mathjs': {"name": "x"}
+    'mathjs': JSON.parse('{"mathjs":"SymbolNode","name":"x"}', reviver)
   },
   {
     'ast': 'f',
-    'mathjs': {"name": "f"}
+    'mathjs': JSON.parse('{"mathjs":"SymbolNode","name":"f"}', reviver)
   },
   {
     'ast': ['*', 'f', 'g'],
-    'mathjs':  {"args": [{"name": "f"}, {"name": "g"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"f"},{"mathjs":"SymbolNode","name":"g"}],"implicit":false}', reviver)
   },
   {
     'ast': ['+', 'f', 'g'],
-    'mathjs': {"args": [{"name": "f"}, {"name": "g"}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"f"},{"mathjs":"SymbolNode","name":"g"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', 'f', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "f"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"f"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['apply', 'f', ['tuple', 'x', 'y', 'z']],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}, {"name": "z"}], "fn": {"name": "f"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"f"},"args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}]}', reviver)
   },
   {
     'ast': ['*', 'f', ['apply', 'g', 'x']],
-    'mathjs': {"args": [{"name": "f"}, {"args": [{"name": "x"}], "fn": {"name": "g"}}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"f"},{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"g"},"args":[{"mathjs":"SymbolNode","name":"x"}]}],"implicit":false}', reviver)
   },
   {
     'ast': ['*', 'f', 'p', 'x'],
-    'mathjs': {"args": [{"name": "f"}, {"name": "p"}, {"name": "x"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"f"},{"mathjs":"SymbolNode","name":"p"},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['*', 'f', 'x'],
-    'mathjs': {"args": [{"name": "f"}, {"name": "x"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"f"},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['prime', 'f'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', 'f', ['prime', 'g']],
-    'mathjs': {"args": [{"name": "f"}, {"name": "NaN"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', ['prime', 'f'], 'g'],
-    'mathjs': {"args": [{"name": "NaN"}, {"name": "g"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', ['prime', 'f'],
       ['prime', ['prime', 'g']]
     ],
-    'mathjs': {"args": [{"name": "NaN"}, {"name": "NaN"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['prime', 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['prime', 'f'], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['prime', ['apply', 'f', 'x']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['prime', ['apply', 'sin', 'x']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['prime', 'sin'], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['prime', ['prime', 'f']], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['prime', ['prime', ['apply', 'sin', 'x']]],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['^', ['apply', 'f', 'x'],
       ['_', 't', 'y']
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}], "fn": {"name": "f"}}, {"name": "NaN"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['_', 'f', 't'], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['_', ['apply', 'f', 'x'], 't'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['^', 'f', 2], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['^', ['apply', 'f', 'x'], 2],
-    'mathjs': {"args": [{"args": [{"name": "x"}], "fn": {"name": "f"}}, {"value": 2}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"f"},"args":[{"mathjs":"SymbolNode","name":"x"}]},{"mathjs":"ConstantNode","value":2}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', ['^', ['prime', 'f'], 'a'], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['^', 'f', ['prime', 'a']], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['^', ['_', 'f', 'a'],
       ['prime', 'b']
     ], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', ['^', ['prime', ['_', 'f', 'a']], 'b'], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', 'sin', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "sin"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"sin"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['*', ['apply', ['^', 'sin', 'x'], 'y'], 'z'],
-    'mathjs': {"args": [{"name": "NaN"}, {"name": "z"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', ['apply', 'sin', 'x'], 'y'],
-    'mathjs': {"args": [{"args": [{"name": "x"}], "fn": {"name": "sin"}}, {"name": "y"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"sin"},"args":[{"mathjs":"SymbolNode","name":"x"}]},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}', reviver)
   },
   {
     'ast': ['apply', ['^', 'sin', 2], 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['apply', 'exp', 'x'],
-    'mathjs': {"args": [{"name": "x"}], "fn": {"name": "exp"}}
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"exp"},"args":[{"mathjs":"SymbolNode","name":"x"}]}', reviver)
   },
   {
     'ast': ['^', 'e', 'x'],
-    'mathjs': {"args": [{"name": "e"}, {"name": "x"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"e"},{"mathjs":"SymbolNode","name":"x"}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', 'x', ['apply', 'factorial', 2]],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"value": 2}], "fn": "factorial", "implicit": false, "op": "!"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"ConstantNode","value":2}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', 'x', ['apply', 'factorial', ['apply', 'factorial', 2]]],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"args": [{"value": 2}], "fn": "factorial", "implicit": false, "op": "!"}], "fn": "factorial", "implicit": false, "op": "!"}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"^","fn":"pow","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"OperatorNode","op":"!","fn":"factorial","args":[{"mathjs":"ConstantNode","value":2}],"implicit":false}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['^', ['_', 'x', 't'], 2],
-    'mathjs': {"args": [{"name": "NaN"}, {"value": 2}], "fn": "pow", "implicit": false, "op": "^"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['_', 'x', ['^', 'f', 2]],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['prime', ['_', 'x', 't']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['_', 'x', ['prime', 'f']],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['tuple', 'x', 'y', 'z'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['+', ['tuple', 'x', 'y'],
       ['-', ['array', 'x', 'y']]
     ],
-    'mathjs': {"args": [{"name": "NaN"}, {"args": [{"name": "NaN"}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['*', 2, ['+', 'z', ['-', ['+', 'x', 1]]]],
-    'mathjs': {"args": [{"value": 2}, {"args": [{"name": "z"}, {"args": [{"args": [{"name": "x"}, {"value": 1}], "fn": "add", "implicit": false, "op": "+"}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "add", "implicit": false, "op": "+"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"ConstantNode","value":2},{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"z"},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":1}],"implicit":false}],"implicit":false}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['set', 1, 2, 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['set', 'x', 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['set', 'x'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['interval', ['tuple', 1, 2],
       ['tuple', false, true]
     ],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['array', 1, 2],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['tuple', 1, 2],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['list', 1, 2, 3],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['=', 'x', 'a'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "a"}], "fn": "equal", "implicit": false, "op": "=="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"a"}],"implicit":false}', reviver)
   },
   {
     'ast': ['=', 'x', 'y', 1],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "equal", "implicit": false, "op": "=="}, {"args": [{"name": "y"}, {"value": 1}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"ConstantNode","value":1}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['=', 'x', ['=', 'y', 1]],
-    'mathjs': {"args": [{"name": "x"}, {"args": [{"name": "y"}, {"value": 1}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "equal", "implicit": false, "op": "=="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"ConstantNode","value":1}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['=', ['=', 'x', 'y'], 1],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "equal", "implicit": false, "op": "=="}, {"value": 1}], "fn": "equal", "implicit": false, "op": "=="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"ConstantNode","value":1}],"implicit":false}', reviver)
   },
   {
     'ast': ['ne', 7, 2],
-    'mathjs': {"args": [{"value": 7}, {"value": 2}], "fn": "unequal", "implicit": false, "op": "!="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"!=","fn":"unequal","args":[{"mathjs":"ConstantNode","value":7},{"mathjs":"ConstantNode","value":2}],"implicit":false}', reviver)
   },
   {
     'ast': ['not', ['=', 'x', 'y']],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "not", "implicit": false, "op": "not"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"not","fn":"not","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['not', ['=', 'x', 'y']],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "not", "implicit": false, "op": "not"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"not","fn":"not","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['>', 'x', 'y'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}], "fn": "larger", "implicit": false, "op": ">"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}', reviver)
   },
   {
     'ast': ['ge', 'x', 'y'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}], "fn": "largerEq", "implicit": false, "op": ">="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":">=","fn":"largerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}', reviver)
   },
   {
     'ast': ['gts', ['tuple', 'x', 'y', 'z'],
       ['tuple', true, true]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "larger", "implicit": false, "op": ">"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "larger", "implicit": false, "op": ">"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['gts', ['tuple', 'x', 'y', 'z'],
       ['tuple', true, false]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "larger", "implicit": false, "op": ">"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "largerEq", "implicit": false, "op": ">="}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":">=","fn":"largerEq","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['gts', ['tuple', 'x', 'y', 'z'],
       ['tuple', false, true]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "largerEq", "implicit": false, "op": ">="}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "larger", "implicit": false, "op": ">"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":">=","fn":"largerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['gts', ['tuple', 'x', 'y', 'z'],
       ['tuple', false, false]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "largerEq", "implicit": false, "op": ">="}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "largerEq", "implicit": false, "op": ">="}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":">=","fn":"largerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":">=","fn":"largerEq","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['<', 'x', 'y'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}], "fn": "smaller", "implicit": false, "op": "<"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}', reviver)
   },
   {
     'ast': ['le', 'x', 'y'],
-    'mathjs': {"args": [{"name": "x"}, {"name": "y"}], "fn": "smallerEq", "implicit": false, "op": "<="}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"<=","fn":"smallerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}', reviver)
   },
   {
     'ast': ['lts', ['tuple', 'x', 'y', 'z'],
       ['tuple', true, true]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "smaller", "implicit": false, "op": "<"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "smaller", "implicit": false, "op": "<"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['lts', ['tuple', 'x', 'y', 'z'],
       ['tuple', true, false]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "smaller", "implicit": false, "op": "<"}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "smallerEq", "implicit": false, "op": "<="}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":"<=","fn":"smallerEq","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['lts', ['tuple', 'x', 'y', 'z'],
       ['tuple', false, true]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "smallerEq", "implicit": false, "op": "<="}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "smaller", "implicit": false, "op": "<"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":"<=","fn":"smallerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['lts', ['tuple', 'x', 'y', 'z'],
       ['tuple', false, false]
     ],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "smallerEq", "implicit": false, "op": "<="}, {"args": [{"name": "y"}, {"name": "z"}], "fn": "smallerEq", "implicit": false, "op": "<="}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"OperatorNode","op":"<=","fn":"smallerEq","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"OperatorNode","op":"<=","fn":"smallerEq","args":[{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['>', ['<', 'x', 'y'], 'z'],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "smaller", "implicit": false, "op": "<"}, {"name": "z"}], "fn": "larger", "implicit": false, "op": ">"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":">","fn":"larger","args":[{"mathjs":"OperatorNode","op":"<","fn":"smaller","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}', reviver)
   },
-  // {
-  //   'ast': ['subset', 'A', 'B'],
-  //   'mathjs': 'A ⊂ B'
-  // },
-  // {
-  //   'ast': ['notsubset', 'A', 'B'],
-  //   'mathjs': 'A ⊄ B'
-  // },
-  // {
-  //   'ast': ['superset', 'A', 'B'],
-  //   'mathjs': 'A ⊃ B'
-  // },
-  // {
-  //   'ast': ['notsuperset', 'A', 'B'],
-  //   'mathjs': 'A ⊅ B'
-  // },
-  // {
-  //   'ast': ['in', 'x', 'A'],
-  //   'mathjs': 'x ∈ A'
-  // },
-  // {
-  //   'ast': ['notin', 'x', 'A'],
-  //   'mathjs': 'x ∉ A'
-  // },
-  // {
-  //   'ast': ['ni', 'A', 'x'],
-  //   'mathjs': 'A ∋ x'
-  // },
-  // {
-  //   'ast': ['notni', 'A', 'x'],
-  //   'mathjs': 'A ∌ x'
-  // },
-  // {
-  //   'ast': ['union', 'A', 'B'],
-  //   'mathjs': 'A ∪ B'
-  // },
-  // {
-  //   'ast': ['intersect', 'A', 'B'],
-  //   'mathjs': 'A ∩ B'
-  // },
   {
-    'ast': ['and', 'A', 'B'],
-    'mathjs': {"args": [{"name": "A"}, {"name": "B"}], "fn": "and", "implicit": false, "op": "and"}
+    'ast': ['subset', 'A', 'B'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['notsubset', 'A', 'B'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['superset', 'A', 'B'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['notsuperset', 'A', 'B'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['in', 'x', 'A'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['notin', 'x', 'A'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['ni', 'A', 'x'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['notni', 'A', 'x'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['union', 'A', 'B'],
+    'mathjs': {'implemented': false }
+  },
+  {
+    'ast': ['intersect', 'A', 'B'],
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['and', 'A', 'B'],
-    'mathjs': {"args": [{"name": "A"}, {"name": "B"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"}],"implicit":false}', reviver)
+  },
+  {
+    'ast': ['and', 'A', 'B'],
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"}],"implicit":false}', reviver)
   },
   {
     'ast': ['or', 'A', 'B'],
-    'mathjs': {"args": [{"name": "A"}, {"name": "B"}], "fn": "or", "implicit": false, "op": "or"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"or","fn":"or","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"}],"implicit":false}', reviver)
   },
   {
     'ast': ['and', 'A', 'B', 'C'],
-    'mathjs': {"args": [{"name": "A"}, {"name": "B"}, {"name": "C"}], "fn": "and", "implicit": false, "op": "and"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"},{"mathjs":"SymbolNode","name":"C"}],"implicit":false}', reviver)
   },
   {
     'ast': ['or', 'A', 'B', 'C'],
-    'mathjs': {"args": [{"name": "A"}, {"name": "B"}, {"name": "C"}], "fn": "or", "implicit": false, "op": "or"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"or","fn":"or","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"},{"mathjs":"SymbolNode","name":"C"}],"implicit":false}', reviver)
   },
   {
     'ast': ['or', ['and', 'A', 'B'], 'C'],
-    'mathjs': {"args": [{"args": [{"name": "A"}, {"name": "B"}], "fn": "and", "implicit": false, "op": "and"}, {"name": "C"}], "fn": "or", "implicit": false, "op": "or"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"or","fn":"or","args":[{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"SymbolNode","name":"B"}],"implicit":false},{"mathjs":"SymbolNode","name":"C"}],"implicit":false}', reviver)
   },
   {
     'ast': ['or', 'A', ['and', 'B', 'C']],
-    'mathjs': {"args": [{"name": "A"}, {"args": [{"name": "B"}, {"name": "C"}], "fn": "and", "implicit": false, "op": "and"}], "fn": "or", "implicit": false, "op": "or"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"or","fn":"or","args":[{"mathjs":"SymbolNode","name":"A"},{"mathjs":"OperatorNode","op":"and","fn":"and","args":[{"mathjs":"SymbolNode","name":"B"},{"mathjs":"SymbolNode","name":"C"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['not', ['=', 'x', 1]],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"value": 1}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "not", "implicit": false, "op": "not"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"not","fn":"not","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":1}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['not', ['=', 'x', 1]],
-    'mathjs': {"args": [{"args": [{"name": "x"}, {"value": 1}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "not", "implicit": false, "op": "not"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"not","fn":"not","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"ConstantNode","value":1}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['or', ['not', ['=', 'x', 'y']],
       ['ne', 'z', 'w']
     ],
-    'mathjs': {"args": [{"args": [{"args": [{"name": "x"}, {"name": "y"}], "fn": "equal", "implicit": false, "op": "=="}], "fn": "not", "implicit": false, "op": "not"}, {"args": [{"name": "z"}, {"name": "w"}], "fn": "unequal", "implicit": false, "op": "!="}], "fn": "or", "implicit": false, "op": "or"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"or","fn":"or","args":[{"mathjs":"OperatorNode","op":"not","fn":"not","args":[{"mathjs":"OperatorNode","op":"==","fn":"equal","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}],"implicit":false},{"mathjs":"OperatorNode","op":"!=","fn":"unequal","args":[{"mathjs":"SymbolNode","name":"z"},{"mathjs":"SymbolNode","name":"w"}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],
-    'mathjs': {"args": [{"args": [{"value": 1.2}, {"name": "e"}], "fn": "multiply", "implicit": false, "op": "*"}, {"args": [{"value": 3}], "fn": "unaryMinus", "implicit": false, "op": "-"}], "fn": "add", "implicit": false, "op": "+"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"ConstantNode","value":1.2},{"mathjs":"SymbolNode","name":"e"}],"implicit":false},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"ConstantNode","value":3}],"implicit":false}],"implicit":false}', reviver)
   },
   {
     'ast': 'infinity',
-    'mathjs': {"name": "Infinity"}
+    'mathjs': JSON.parse('{"mathjs":"SymbolNode","name":"Infinity"}', reviver)
   },
   {
     'ast': ['*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-    'mathjs': {"args": [{"name": "a"}, {"name": "b"}, {"name": "c"}, {"name": "d"}, {"name": "e"}, {"name": "f"}, {"name": "g"}, {"name": "h"}, {"name": "i"}, {"name": "j"}], "fn": "multiply", "implicit": false, "op": "*"}
+    'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"a"},{"mathjs":"SymbolNode","name":"b"},{"mathjs":"SymbolNode","name":"c"},{"mathjs":"SymbolNode","name":"d"},{"mathjs":"SymbolNode","name":"e"},{"mathjs":"SymbolNode","name":"f"},{"mathjs":"SymbolNode","name":"g"},{"mathjs":"SymbolNode","name":"h"},{"mathjs":"SymbolNode","name":"i"},{"mathjs":"SymbolNode","name":"j"}],"implicit":false}', reviver)
   },
   {
     'ast': 2,
-    'mathjs': {"value": 2}
+    'mathjs': JSON.parse('{"mathjs":"ConstantNode","value":2}', reviver)
   },
   {
     'ast': '',
-    'mathjs':  {"name": ""}
+    'mathjs':  JSON.parse('{"mathjs":"SymbolNode","name":""}', reviver)
   },
   {
     'ast':  ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 'd']]],
-    'mathjs': {"name": "NaN"}
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ArrayNode","items":[{"mathjs":"SymbolNode","name":"a"},{"mathjs":"SymbolNode","name":"b"}]},{"mathjs":"ArrayNode","items":[{"mathjs":"SymbolNode","name":"c"},{"mathjs":"SymbolNode","name":"d"}]}]}', reviver)
   },
   {
     'ast': ['matrix', ['tuple', 1, 2], ['tuple', ['tuple', ['+', 'a', ['*', 3, 'y']], ['*', 2, ['apply', 'sin', 'theta']]]]],
-    'mathjs': {"name": "NaN"}
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ArrayNode","items":[{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"SymbolNode","name":"a"},{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"ConstantNode","value":3},{"mathjs":"SymbolNode","name":"y"}],"implicit":false}],"implicit":false},{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"ConstantNode","value":2},{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"sin"},"args":[{"mathjs":"SymbolNode","name":"theta"}]}],"implicit":false}]}]}', reviver)
   },
   {
     'ast': ['matrix', ['tuple', 2, 3], ['tuple', ['tuple', 8, 0, 0], ['tuple', 1, 2, 3]]],
-    'mathjs': {"name": "NaN"}
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":8},{"mathjs":"ConstantNode","value":0},{"mathjs":"ConstantNode","value":0}]},{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2},{"mathjs":"ConstantNode","value":3}]}]}', reviver)
   },
   {
     'ast': ['derivative_leibniz', 'x', 't'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
   {
     'ast': ['derivative_leibniz_mult', 2, 'x', 't'],
-    'mathjs': {"name": "NaN"}
+    'mathjs': {'implemented': false }
   },
 
 ]
@@ -582,7 +581,12 @@ const objectsToTest = [
 
 for (let objectToTest of objectsToTest) {
   test("parses " + objectToTest.ast + ' to ' + objectToTest.mathjs, () => {
-    expect(converter.convert(objectToTest.ast)).toEqual(objectToTest.mathjs);
+    if(objectToTest.mathjs.implemented === false) {
+      expect(() => converter.convert(objectToTest.ast)).toThrow("not implemented");
+    }
+    else {
+      expect(converter.convert(objectToTest.ast)).toEqual(objectToTest.mathjs);
+    }
   });
 
 }
