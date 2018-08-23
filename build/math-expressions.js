@@ -73769,6 +73769,12 @@ const component_equals = function(expr, other, randomBindings,
     if (p.indexOf(c) < 0) p.push(c);
     return p;
   }, []);
+    
+  // pi shouldn't be treated as a variable for the purposes of complex
+  // equality; for now, e is also special
+  variables = variables.filter( function(a) {
+      return (a !== "pi") && (a != "e");
+  });
 
   // determine if any of the variables are integers
   // consider integer if is integer in either expressions' assumptions
@@ -73788,7 +73794,7 @@ const component_equals = function(expr, other, randomBindings,
   functions = functions.filter( function(a) {
       return a.length == 1;
   });
-    
+
   try {
     var expr_f = expr.f();
     var other_f = other.f();
@@ -73819,7 +73825,7 @@ const component_equals = function(expr, other, randomBindings,
     // Look for a location where the magnitudes of both expressions
     // are below max_value;
     try {
-      var result = find_equality_region(binding_scales[scale_num]);
+	var result = find_equality_region(binding_scales[scale_num]);
     }
     catch(e) {
       continue;
@@ -73897,9 +73903,8 @@ const component_equals = function(expr, other, randomBindings,
        > min_mag * epsilon)
       return { equal_at_start: false };
 
-
     var always_zero = (min_mag == 0);
-    
+
     // Look for a region around point
     var finite_tries = 0;
     for(let j=0; j<100; j++) {
@@ -73921,7 +73926,6 @@ const component_equals = function(expr, other, randomBindings,
 	    return math$21.add(math$21.multiply(math$21.add(math$21.multiply(a,x),b),x),c);
       };
     }
-	
 
       try {
 	expr_evaluated = expr_f(bindings2);
@@ -73984,7 +73988,7 @@ const equals$1 = function(expr, other) {
   // except abs is OK
   if((!expr.isAnalytic({allow_abs: true})) ||
      (!other.isAnalytic({allow_abs: true})) )
-    return false;
+    return true;
   
   return equals(expr, other,
 			  randomComplexBindings,
