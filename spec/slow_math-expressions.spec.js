@@ -224,9 +224,9 @@ describe("expression", function() {
 	['oo', '+oo'],
 	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
         ['(2x,y^2)', '(x+x, y*y)'],
-        ['arcsin(1/2)', 'pi/6']
+        ['sqrt(e)', 'e^(1/2)']
     ];
-
+    
     _.each( equivalences, function(equiv) {
 	var lhs = equiv[0]
 	var rhs = equiv[1];
