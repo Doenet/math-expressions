@@ -553,7 +553,7 @@ const objectsToTest = [
   },
   {
     'ast': 2,
-    'latex': 2
+    'latex': '2'
   },
 
   {

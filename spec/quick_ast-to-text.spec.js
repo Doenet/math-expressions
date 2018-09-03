@@ -550,7 +550,7 @@ const objectsToTest = [
   },
   {
     'ast': 2,
-    'text': 2
+    'text': '2'
   },
 
   {
