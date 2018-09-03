@@ -544,7 +544,7 @@ const objectsToTest = [
   //   'guppy': '1.2 \\, e - 3'
   // },
   // {
-  //   'ast': 'infinity',
+  //   'ast': Infinity,
   //   'guppy': '\\infty'
   // },
   // {
