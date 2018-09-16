@@ -39,7 +39,7 @@ describe("expand relations", function () {
 		      me.fromText('1+3/x=x-y and x-y=c^2q and c^2q=log(z)').tree)).toBeTruthy();
 
   });
-  
+
   test("inequality", function () {
     expect(tree_equal(me.fromText('a<b<c').expand_relations().tree,
 		      me.fromText('a<b and b<c').tree)).toBeTruthy();
@@ -80,12 +80,55 @@ test("substitution", function () {
 
   let expr3 = expr.substitute({y: 5});
   let expr3a = me.fromText('2x^2+3*5')
-  
+
   expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
 
   let expr4= me.substitute(expr, {x: ['*', 4, 'q']});
   let expr4a = me.fromText('2(4q)^2+3y')
-  
+
   expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
-  
+
+});
+
+test("substitute component", function () {
+
+  let expr = me.fromText('x^2, y, z')
+  let expr2 = expr.substitute_component(1, me.fromText('q^2'));
+  let expr2a = me.fromText('x^2, q^2, z')
+
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  let expr3 = expr.substitute_component(0, 5);
+  let expr3a = me.fromText('5, y, z');
+
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+  let expr4= me.substitute_component(expr, 2, ['*', 4, 'q']);
+  let expr4a = me.fromText('x^2, y, 4q');
+
+  expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
+
+  expr = me.fromText('(a,b,c,d)');
+  expr2 = expr.substitute_component(3, me.fromText('e'));
+  expr2a = me.fromText('(a,b,c,e)');
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  expr3 = expr.substitute_component([2], 3);
+  expr3a = me.fromText('(a,b,3,d)');
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+
+  expr = me.fromText('(a,(b0,b1), (c0,(c10,c11, c12), c2), d)');
+  expr2 = expr.substitute_component(1, 'x');
+  expr2a = me.fromText('(a, x, (c0,(c10,c11, c12), c2), d)');
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  expr3 = expr.substitute_component([1,0], 'x');
+  expr3a = me.fromText('(a,(x,b1), (c0,(c10,c11, c12), c2), d)');
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+  expr4 = expr.substitute_component([2,1,2], 'x');
+  expr4a = me.fromText('(a,(b0,b1), (c0,(c10,c11, x), c2), d)');
+  expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
+
 });
