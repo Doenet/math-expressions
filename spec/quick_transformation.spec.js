@@ -132,3 +132,46 @@ test("substitute component", function () {
   expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
 
 });
+
+test("get component", function () {
+
+  let expr = me.fromText('x^2, y, z')
+  let expr2 = expr.get_component(1);
+  let expr2a = me.fromText('y')
+
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  let expr3 = expr.get_component(0);
+  let expr3a = me.fromText('x^2');
+
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+  let expr4= me.get_component(expr, 2);
+  let expr4a = me.fromText('z');
+
+  expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
+
+  expr = me.fromText('(a,b,c,d)');
+  expr2 = expr.get_component(3);
+  expr2a = me.fromText('d');
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  expr3 = expr.get_component([2]);
+  expr3a = me.fromText('c');
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+
+  expr = me.fromText('(a,(b0,b1), (c0,(c10,c11, c12), c2), d)');
+  expr2 = expr.get_component(1);
+  expr2a = me.fromText('(b0,b1)');
+  expect(tree_equal(expr2.tree, expr2a.tree)).toBeTruthy();
+
+  expr3 = expr.get_component([1,0]);
+  expr3a = me.fromText('b0');
+  expect(tree_equal(expr3.tree, expr3a.tree)).toBeTruthy();
+
+  expr4 = expr.get_component([2,1,2]);
+  expr4a = me.fromText('c12');
+  expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
+
+});
