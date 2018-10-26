@@ -223,9 +223,10 @@ describe("expression", function() {
 	['0*x', '0*y'],
 	['oo', '+oo'],
 	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
-        ['(2x,y^2)', '(x+x, y*y)']
+        ['(2x,y^2)', '(x+x, y*y)'],
+        ['sqrt(e)', 'e^(1/2)']
     ];
-
+    
     _.each( equivalences, function(equiv) {
 	var lhs = equiv[0]
 	var rhs = equiv[1];
