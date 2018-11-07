@@ -262,7 +262,7 @@ describe("expression", function() {
 	['1', '(x-1)^2+1'],
 	['(t-1)^2+1', '(x-1)^2+1'],
 	['X^2+1', 'x^2+1'],
-	["X", "x"], // The system SHOULD be case sensitive], to distinguish say r and R
+	["X", "x"], // The system SHOULD be case sensitive, to distinguish say r and R
 	['n!*n!', '(2n)!'],
 	['sin(2*pi*x)' , '0'],
 	['cos((pi*x))' , '(-1)^(x)'],
@@ -287,6 +287,10 @@ describe("expression", function() {
 	['(8-r sin(theta))r', '(8-r^2 sin(theta))'],
         ['xy^2/2 + e^y', 'x + e^y'],
         ['x^(sin(x))', 'x^(cos(x))'],
+        ['sin(pi)', '0'],
+        ['cos(pi)', '-1'],
+        ['sin(pi/2)', '1'],
+        ['cos(pi/2)', '0'],            
     ];
 
     _.each( nonequivalences, function(nonequiv) {
