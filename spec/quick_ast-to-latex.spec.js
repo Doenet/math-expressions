@@ -544,7 +544,7 @@ const objectsToTest = [
     'latex': '1.2 \\, e - 3'
   },
   {
-    'ast': 'infinity',
+    'ast': Infinity,
     'latex': '\\infty'
   },
   {
@@ -553,7 +553,7 @@ const objectsToTest = [
   },
   {
     'ast': 2,
-    'latex': 2
+    'latex': '2'
   },
 
   {

@@ -541,7 +541,7 @@ const objectsToTest = [
     'text': '1.2 e - 3'
   },
   {
-    'ast': 'infinity',
+    'ast': Infinity,
     'text': '∞'
   },
   {
@@ -550,7 +550,7 @@ const objectsToTest = [
   },
   {
     'ast': 2,
-    'text': 2
+    'text': '2'
   },
 
   {

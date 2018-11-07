@@ -3,7 +3,8 @@ import * as trees from '../lib/trees/basic';
 import * as poly from '../lib/polynomial/polynomial';
 import * as simplify from '../lib/expression/simplify';
 
-describe("reduce rational expression", function () {
+
+describe("pt reduce rational expression", function () {
          var poly_sets = [
                           [['x', 'x'], ['1', '1']],
                           [['5x', '5x'], ['1', '1']],
@@ -19,8 +20,46 @@ describe("reduce rational expression", function () {
                           [['(sin(x))^2', 'sin(x)'], ['sin(x)', '1']],
                           [['sin(x)cos(y)', 'cos(y)sin(y)'], ['sin(x)', 'sin(y)']],
                           [['t^100', 't'], ['t^99', '1']],
-                          [['t^8-t', 't'], ['t^7-1', '1']],          //can handle this
-                          //[['t^9-t', 't'], ['t^8-1', '1']]          //can't handle this
+                          [['t^8-t', 't'], ['t^7-1', '1']],
+                          [['t^1000000-t', 't'], ['t^999999-1', '1']],
+                          [['(a+b)(c+d)','(a+b)(e+f)'], ['c+d', 'e+f']],
+                          [['(ac+ad+bc+bd)','(ae+af+be+bf)'], ['(c + d)','(e + f)']],
+                          [['(a+sin(x))(c+cos(y))','((a+sin(x))(e+exp(z)))'], ['(c + cos(y))','(e + exp(z))']]
+                           
+                          ]
+         
+         poly_sets.forEach(function(example) {
+                           it(example, function() {
+                              let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
+                              let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
+                              let new_top = poly.expression_to_polynomial(me.fromText(example[1][0]));
+                              let new_bottom = poly.expression_to_polynomial(me.fromText(example[1][1]));
+                              expect(poly.pt_reduce_rational_expression(top,bottom)).toEqual([new_top, new_bottom]);
+                              });
+                           });
+         });
+
+describe("reduce rational expression", function () {
+         var poly_sets = [
+                          [['x', 'x'], ['1', '1']],         //fail
+                          [['5x', '5x'], ['1', '1']],       //fail
+                          [['5x', '5y'], ['x', 'y']],
+                          [['2x+x', 'x'], ['3', '1']],      //fail
+                          [['2xy+y^2', 'yx^2'], ['2x+y', 'x^2']],
+                          [['(1+y)(x+z)', '(1+y)(x+x^2)'], ['x+z', 'x+x^2']],
+                          [['(x^2+x+y)(z+t)', '(u^4+x)(2z+2t)'], ['0.5x^2+0.5x+0.5y', 'u^4+x']],
+                          [['(xy+zy)(t+v)', '(t+v)(x^5y)'], ['x+z', 'x^5']],
+                          [['x sin(x)-x', 'x'], ['sin(x)-1', '1']],
+                          [['xs-ys', 'x^2s-z^2s'], ['x-y', 'x^2-z^2']],
+                          [['x sin(x)-y sin(x)', 'x^2sin(x)-z^2sin(x)'], ['x-y', 'x^2-z^2']],
+                          [['(sin(x))^2', 'sin(x)'], ['sin(x)', '1']],
+                          [['sin(x)cos(y)', 'cos(y)sin(y)'], ['sin(x)', 'sin(y)']],
+                          [['t^100', 't'], ['t^99', '1']],
+                          [['t^8-t', 't'], ['t^7-1', '1']],
+                          [['t^1000000-t', 't'], ['t^999999-1', '1']],
+                          [['(a+b)(c+d)','(a+b)(e+f)'], ['c+d', 'e+f']],
+                          [['(ac+ad+bc+bd)','(ae+af+be+bf)'], ['(c + d)','(e + f)']],
+                          [['(a+sin(x))(c+cos(y))','((a+sin(x))(e+exp(z)))'], ['(c + cos(y))','(e + exp(z))']]
                           ]
          
          poly_sets.forEach(function(example) {
@@ -36,7 +75,7 @@ describe("reduce rational expression", function () {
 
 describe("gcd", function () {
          var poly_sets = [
-                          [['x', 'x'], 'x']
+                          [['x', 'x'], 'x']         //fail
                           ]
          
          poly_sets.forEach(function(example) {
@@ -93,10 +132,10 @@ describe("grobner", function () {
                           [[0,5], [1]],
                           [[["polynomial", "x", [[1,1]]], 1], [1]],
                           [[["polynomial", "x", [[1,2]]], 1], [1]],
-                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,1]]]], [["polynomial", "x", [[1,1]]]]],
+                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,1]]]], [["polynomial", "x", [[1,1]]]]],           //fail
                           [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[0,1], [2,1]]]], [1]],
-                           [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,1]]]]]]], [["polynomial", "x", [[1,1]]]]],
-                          [[["polynomial", "x", [[1,2]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,7]]]]]]], [["polynomial", "x", [[1,1]]]]]
+                           [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,1]]]]]]], [["polynomial", "x", [[1,1]]]]],           //fail
+                          [[["polynomial", "x", [[1,2]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,7]]]]]]], [["polynomial", "x", [[1,1]]]]]         //fail
                           ]
          
          poly_sets.forEach(function(red) {
@@ -111,9 +150,9 @@ describe("reduce", function () {
                           [[0], [0]],
                           [[["polynomial", "x", [[1,1]]]], [["polynomial", "x", [[1,1]]]]],
                           [[["polynomial", "x", [[1,1]]], ["polynomial", "y", [[1,1]]]], [["polynomial", "x", [[1,1]]], ["polynomial", "y", [[1,1]]]]],
-                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,1]]],  ["polynomial", "y", [[1,1]]]], [["polynomial", "x", [[1,1]]], ["polynomial", "y", [[1,1]]]]],
-                           [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[0,1], [2,1]]],  ["polynomial", "y", [[1,1]]]], [1]],
-                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,1]]]]]]], [["polynomial", "x", [[1,1]]]]]
+                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,1]]],  ["polynomial", "y", [[1,1]]]], [["polynomial", "x", [[1,1]]], ["polynomial", "y", [[1,1]]]]],      //fail
+                           [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[0,1], [2,1]]],  ["polynomial", "y", [[1,1]]]], [1]],           //fail
+                          [[["polynomial", "x", [[1,1]]], ["polynomial", "x", [[2,["polynomial", "y", [[2,1]]]]]]], [["polynomial", "x", [[1,1]]]]]         //fail
          ]
          
          poly_sets.forEach(function(red) {

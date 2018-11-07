@@ -224,7 +224,11 @@ describe("expression", function() {
 	['oo', '+oo'],
 	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
         ['(2x,y^2)', '(x+x, y*y)'],
-        ['sqrt(e)', 'e^(1/2)']
+        ['(2x,y^2]', '(x+x,y*y]'],
+        ['[2x,y^2)', '[x+x,y*y)'],
+        ['[2x,y^2]', '[x+x,y*y]'],
+        ['arcsin(1/2)', 'pi/6'],
+        ['sqrt(e)', 'e^(1/2)'],
     ];
     
     _.each( equivalences, function(equiv) {
@@ -291,6 +295,8 @@ describe("expression", function() {
         ['cos(pi)', '-1'],
         ['sin(pi/2)', '1'],
         ['cos(pi/2)', '0'],            
+        ['(1,2]', '[1,2)'],
+        ['sign(1)', 'sign(-1)'],
     ];
 
     _.each( nonequivalences, function(nonequiv) {

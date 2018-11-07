@@ -540,7 +540,7 @@ const objectsToTest = [
     'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"+","fn":"add","args":[{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"ConstantNode","value":1.2},{"mathjs":"SymbolNode","name":"e"}],"implicit":false},{"mathjs":"OperatorNode","op":"-","fn":"unaryMinus","args":[{"mathjs":"ConstantNode","value":3}],"implicit":false}],"implicit":false}', reviver)
   },
   {
-    'ast': 'infinity',
+    'ast': Infinity,
     'mathjs': JSON.parse('{"mathjs":"SymbolNode","name":"Infinity"}', reviver)
   },
   {
