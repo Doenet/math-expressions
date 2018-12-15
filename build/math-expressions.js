@@ -74063,33 +74063,37 @@ var arithmetic$1 = /*#__PURE__*/Object.freeze({
 
 var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array','matrix', 'interval'];
 var analytic_functions = ["exp", "log", "log10", "sqrt", "factorial", "gamma", "erf", "acos", "acosh", "acot", "acoth", "acsc", "acsch", "asec", "asech", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cot", "coth", "csc", "csch", "sec", "sech", "sin", "sinh", "tan", "tanh", 'arcsin', 'arccos', 'arctan', 'arccsc', 'arcsec', 'arccot', 'cosec'];
+var relation_operators = ['=', 'le', 'ge', '<', '>'];
 
-function isAnalytic(expr_or_tree, params) {
+function isAnalytic(expr_or_tree, {allow_abs=false, allow_relation=false} ={}) {
 
-    var tree = normalize_applied_functions(
-        normalize_function_names(expr_or_tree));
+  var tree = normalize_applied_functions(
+    normalize_function_names(expr_or_tree));
 
-    var allow_abs = false;
-    if (params !== undefined && params.hasOwnProperty('allow_abs'))
-	allow_abs = params['allow_abs'];
-
-    var operators_found = operators$1(tree);
-    for (let i=0; i < operators_found.length; i++ ) {
-	let oper = operators_found[i];
-	if(analytic_operators.indexOf(oper) === -1)
-	    return false;
+  var operators_found = operators$1(tree);
+  for (let i=0; i < operators_found.length; i++ ) {
+	  let oper = operators_found[i];
+	  if(analytic_operators.indexOf(oper) === -1) {
+      if(allow_relation) {
+        if(relation_operators.indexOf(oper) === -1) {
+          return false;
+        }
+      }else {
+        return false;
+      }
     }
+  }
 
-    var functions_found = functions(tree);
-    for (let i=0; i < functions_found.length; i++ ) {
-	let fun = functions_found[i];
-	if(analytic_functions.indexOf(fun) === -1) {
+  var functions_found = functions(tree);
+  for (let i=0; i < functions_found.length; i++ ) {
+    let fun = functions_found[i];
+    if(analytic_functions.indexOf(fun) === -1) {
 	    if((!allow_abs) || fun !== "abs")
-		return false;
-	}
+    		return false;
     }
+  }
 
-    return true;
+  return true;
 }
 
 var analytic = /*#__PURE__*/Object.freeze({
@@ -75160,21 +75164,68 @@ const equals = function(expr, other, randomBindings,
           randomBindings,
           expr_context, other_context))
             return false;
-        }
+      }
 
       return true;  // each component is equal
     }
+
+    // check if a relation with two operands
+    if(expr_operands.length === 2 && ["=", '>', '<', 'ge', 'le'].includes(expr_operator)) {
+      if(other_operands.length !== 2) {
+        return false;
+      }
+      //normalize operator
+      if(expr_operator === ">") {
+        expr_operator = "<";
+        expr_operands = [expr_operands[1], expr_operands[0]];
+      }else if(expr_operator === "ge") {
+        expr_operator = "le";
+        expr_operands = [expr_operands[1], expr_operands[0]];
+      }
+      if(other_operator === ">") {
+        other_operator = "<";
+        other_operands = [other_operands[1], other_operands[0]];
+      }else if(other_operator === "ge") {
+        other_operator = "le";
+        other_operands = [other_operands[1], other_operands[0]];
+      }
+
+      if(expr_operator !== other_operator) {
+        return false;
+      }
+    
+      // put in standard form
+      let expr_rhs = ['+', expr_operands[0], ['-', expr_operands[1]]];
+      let other_rhs = ['+', other_operands[0], ['-', other_operands[1]]];
+      let require_positive_proportion = (expr_operator !== "=");
+
+      return component_equals({
+        expr: expr_context.fromAst(expr_rhs),
+        other: other_context.fromAst(other_rhs),
+        randomBindings: randomBindings,
+        expr_context: expr_context,
+        other_context: other_context,
+        allow_proportional: true,
+        require_positive_proportion: require_positive_proportion});
+
+    }
+
   }
 
   // if not special case, use standard numerical equality
-  return component_equals(expr, other, randomBindings,
-			  expr_context, other_context);
+  return component_equals({
+    expr: expr,
+    other: other,
+    randomBindings: randomBindings,
+    expr_context: expr_context,
+    other_context: other_context});
 
 };
 
 
-const component_equals = function(expr, other, randomBindings,
-			       expr_context, other_context) {
+const component_equals = function({expr, other, randomBindings,
+             expr_context, other_context,
+             allow_proportional=false, require_positive_proportion=false}) {
 
   var max_value = Number.MAX_VALUE*1E-20;
 
@@ -75258,23 +75309,23 @@ const component_equals = function(expr, other, randomBindings,
     // Look for a location where the magnitudes of both expressions
     // are below max_value;
     try {
-	var result = find_equality_region(binding_scales[scale_num]);
+	    var result = find_equality_region(binding_scales[scale_num]);
     }
     catch(e) {
       continue;
     }
     if(result.equal) {
       if(result.always_zero) {
-	// functions equal but zero
-	// try changing the scale and repeating
-	scale_num +=1;
-	if(scale_num >= binding_scales.length)
-	  return true;  // were equal and zero at all scales
-	else
-	  continue
+        // functions equal but zero
+        // try changing the scale and repeating
+        scale_num +=1;
+        if(scale_num >= binding_scales.length)
+          return true;  // were equal and zero at all scales
+        else
+          continue
       }
       else
-	return true;
+        return true;
     }
   }
 
@@ -75314,8 +75365,8 @@ const component_equals = function(expr, other, randomBindings,
       var a = generate_random_integer(-10,10);
       var b = generate_random_integer(-10,10);
       var c = generate_random_integer(-10,10);	
-	bindings[functions[i]] = function(x) {
-	    return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a,x),b),x),c);
+	    bindings[functions[i]] = function(x) {
+	      return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a,x),b),x),c);
       };
     }
 
@@ -75332,9 +75383,22 @@ const component_equals = function(expr, other, randomBindings,
     // check to see if expressions are nearly equal.
 
     var min_mag = math$19.min(expr_abs, other_abs);
+    var proportion = 1;
     if(math$19.abs(math$19.subtract(expr_evaluated, other_evaluated))
-       > min_mag * epsilon)
-      return { equal_at_start: false };
+        > min_mag * epsilon) {
+      if(!allow_proportional) {
+        return { equal_at_start: false };
+      }
+      // at this point, know both are not zero
+      if(expr_abs === 0 || other_abs === 0) {
+        return { equal_at_start: false };
+      }
+
+      proportion = math$19.divide(expr_evaluated,other_evaluated);
+      if(require_positive_proportion && !(proportion > 0)) {
+        return { equal_at_start: false };
+      }
+    }
 
 
     var always_zero = (min_mag === 0);
@@ -75343,49 +75407,49 @@ const component_equals = function(expr, other, randomBindings,
     var finite_tries = 0;
     for(let j=0; j<100; j++) {
       var bindings2 = randomBindings(
-	variables, noninteger_binding_scale/100, bindings);
+	      variables, noninteger_binding_scale/100, bindings);
 
       // replace any integer variables with integer
       for(let k=0; k<integer_variables.length; k++) {
-	bindings2[integer_variables[k]]
-	  = generate_random_integer(-10,10);
+      	bindings2[integer_variables[k]]
+	        = generate_random_integer(-10,10);
       }
 
-    // replace any function variables with a function
-    for(let i=0; i<functions.length; i++) {
-      var a = generate_random_integer(-10,10);
-      var b = generate_random_integer(-10,10);
-      var c = generate_random_integer(-10,10);	
-	bindings2[functions[i]] = function(x) {
-	    return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a,x),b),x),c);
-      };
-    }
+      // replace any function variables with a function
+      for(let i=0; i<functions.length; i++) {
+        var a = generate_random_integer(-10,10);
+        var b = generate_random_integer(-10,10);
+        var c = generate_random_integer(-10,10);	
+        bindings2[functions[i]] = function(x) {
+          return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a,x),b),x),c);
+        };
+      }
 
       try {
-	expr_evaluated = expr_f(bindings2);
-	other_evaluated = other_f(bindings2);
+        expr_evaluated = expr_f(bindings2);
+        other_evaluated = math$19.multiply(other_f(bindings2), proportion);
       }
       catch (e) {
-	continue;
+	      continue;
       }
       expr_abs = math$19.abs(expr_evaluated);
       other_abs = math$19.abs(other_evaluated);
 
       if(expr_abs < max_value && other_abs < max_value) {
-	min_mag = math$19.min(expr_abs, other_abs);
+        min_mag = math$19.min(expr_abs, other_abs);
 
-	finite_tries++;
+        finite_tries++;
 
-	if(math$19.abs(math$19.subtract(expr_evaluated, other_evaluated))
-	   > min_mag * epsilon) {
-	  return { equality_in_middle: false };
-	}
+        if(math$19.abs(math$19.subtract(expr_evaluated, other_evaluated))
+          > min_mag * epsilon) {
+          return { equality_in_middle: false };
+        }
 
-	always_zero = always_zero && (min_mag === 0);
+        always_zero = always_zero && (min_mag === 0);
 
-	if(finite_tries >=minimum_matches) {
-	  return { equal: true, always_zero: always_zero }
-	}
+        if(finite_tries >=minimum_matches) {
+          return { equal: true, always_zero: always_zero }
+        }
       }
     }
     return { sufficient_finite_values: false };
@@ -75396,23 +75460,23 @@ const component_equals = function(expr, other, randomBindings,
 //import { substitute_abs } from '../normalization/standard_form';
 
 function randomComplexBindings(variables, radius, centers) {
-    var result = {};
+  var result = {};
 
-    if(centers === undefined) {
-	variables.forEach( function(v) {
-	    result[v] = math$19.complex( math$19.random()*2*radius - radius,
-				      math$19.random()*2*radius - radius );
-	});
-    }
-    else {
-	variables.forEach( function(v) {
-	    result[v] = math$19.complex(
-		centers[v].re + math$19.random()*2*radius - radius,
-		centers[v].im + math$19.random()*2*radius - radius );
-	});
-    }
+  if(centers === undefined) {
+    variables.forEach( function(v) {
+    result[v] = math$19.complex( math$19.random()*2*radius - radius,
+                    math$19.random()*2*radius - radius );
+    });
+  }
+  else {
+    variables.forEach( function(v) {
+      result[v] = math$19.complex(
+      centers[v].re + math$19.random()*2*radius - radius,
+      centers[v].im + math$19.random()*2*radius - radius );
+    });
+  }
 
-    return result;
+  return result;
 }
 
 const equals$1 = function(expr, other) {
@@ -75422,13 +75486,13 @@ const equals$1 = function(expr, other) {
   
   // don't use complex equality if not analytic expression
   // except abs is OK
-  if((!expr.isAnalytic({allow_abs: true})) ||
-     (!other.isAnalytic({allow_abs: true})) )
+  if((!expr.isAnalytic({allow_abs: true, allow_relation: true})) ||
+      (!other.isAnalytic({allow_abs: true, allow_relation: true})) )
     return false;
   
   return equals(expr, other,
-			  randomComplexBindings,
-			  expr.context, other.context);
+    randomComplexBindings,
+    expr.context, other.context);
 };
 
 function randomRealBindings(variables, radius, centers) {

@@ -229,6 +229,16 @@ describe("expression", function() {
         ['[2x,y^2]', '[x+x,y*y]'],
         ['arcsin(1/2)', 'pi/6'],
         ['sqrt(e)', 'e^(1/2)'],
+        ['sin(pi)', '0'],
+        ['cos(pi)', '-1'],
+        ['sin(pi/2)', '1'],
+        ['cos(pi/2)', '0'],
+        ['5x + 2y = 3', '6-4y = 10x'],
+        ['5x + 2y = 3', '-(6-4y) = -10x'],
+        ['5q-9z < 2u+9z', '27z -5q > -4u + 5q-9z'],
+        ['5q-9z > 2u+9z', '27z -5q < -4u + 5q-9z'],
+        ['5q-9z <= 2u+9z', '27z -5q >= -4u + 5q-9z'],
+        ['5q-9z >= 2u+9z', '27z -5q <= -4u + 5q-9z'],
     ];
     
     _.each( equivalences, function(equiv) {
@@ -291,13 +301,16 @@ describe("expression", function() {
 	['(8-r sin(theta))r', '(8-r^2 sin(theta))'],
         ['xy^2/2 + e^y', 'x + e^y'],
         ['x^(sin(x))', 'x^(cos(x))'],
-        ['sin(pi)', '0'],
-        ['cos(pi)', '-1'],
-        ['sin(pi/2)', '1'],
-        ['cos(pi/2)', '0'],            
         ['(1,2]', '[1,2)'],
         ['sign(1)', 'sign(-1)'],
-    ];
+        ['5q < 9z', '5q > 9z'],
+        ['5q < 9z', '-5q < -9z'],
+        ['5q > 9z', '-5q > -9z'],
+        ['5q <= 9z', '5q >= 9z'],
+        ['5q <= 9z', '-5q <= -9z'],
+        ['5q >= 9z', '-5q >= -9z'],
+        ['10^(-30)', '2*10^(-30)'],
+     ];
 
     _.each( nonequivalences, function(nonequiv) {
 	var lhs = nonequiv[0]
