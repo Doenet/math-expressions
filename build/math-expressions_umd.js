@@ -80617,7 +80617,15 @@
 
     function Expression (ast, context) {
         this.tree = flatten(ast);
-        this.context = context;
+    	this.context = context;
+    	
+    	this.toJSON = function () {
+    		return {
+    			objectType: "math-expression",
+    			tree: this.tree,
+    			assumptions: this.context.assumptions
+    		}
+    	};
     }
 
     function extend$4(object, tree_to_expression) {
@@ -80767,7 +80775,18 @@
     	this.assumptions = initialize_assumptions();
         },
 
-        math: math$19,
+    	math: math$19,
+    	
+    	reviver: function (key, value) {
+    		if(value.objectType === "math-expression" && value.tree !== undefined) {
+    			let expr = Context.fromAst(value.tree);
+    			if(value.assumptions !== undefined) {
+    				expr.assumptions = value.assumptions;
+    			}
+    			return expr;
+    		}
+    		return value;
+    	}
     };
 
 

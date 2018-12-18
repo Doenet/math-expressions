@@ -358,6 +358,23 @@ describe("expression", function() {
 
     });
 
+    it('stringify and revive', function() {
+	Expression.set_to_default();
+
+	var expr1 = Expression.fromText('sin(x)')
+        var copy1 = JSON.parse(JSON.stringify(expr1), Expression.reviver);
+
+        expect(expr1.equals(copy1)).toBeTruthy();
+        console.log(copy1.equals(expr1));
+        expect(copy1.equals(expr1)).toBeTruthy();
+        
+        let obj2 = {expr: expr1, other: {a: 1, b: "hi"}};
+        let copy2 = JSON.parse(JSON.stringify(obj2), Expression.reviver);
+        expect(obj2.other).toEqual(copy2.other);
+        expect(copy2.expr.equals(expr1)).toBeTruthy();
+
+    });
+
     var matchDerivatives = [
         ['x^3/3+c', 'x^3/3+c'],
         ['x^2/2-2*x+2+c', '(x-2)^2/2+k'],
@@ -440,5 +457,7 @@ describe("expression", function() {
 	['x^2+y', 'a^2+b'],
 	['x^2+1', 'x^3+1'],
     ];
+
+
 
 });

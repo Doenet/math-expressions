@@ -37,13 +37,13 @@ describe("normalize applied functions", function() {
     });
 
     it("derivative normalized outside", function() {
-	expect(me.from('f\'(x)').normalize_applied_functions()).toEqual(
-	    me.from('f(x)\''));
+	expect(me.from('f\'(x)').normalize_applied_functions().tree).toEqual(
+	    me.from('f(x)\'').tree);
     });
 
     it("derivative normalized outside b", function() {
-	expect(me.normalize_applied_functions(me.from('f\'(x)'))).toEqual(
-	    me.from('f(x)\''));
+	expect(me.normalize_applied_functions(me.from('f\'(x)')).tree).toEqual(
+	    me.from('f(x)\'').tree);
     });
 
     it("exponent inside", function() {
@@ -55,13 +55,13 @@ describe("normalize applied functions", function() {
     });
 
     it("exponent normalized outside", function() {
-	expect(me.from('f^2(x)').normalize_applied_functions()).toEqual(
-	    me.from('f(x)^2'));
+	expect(me.from('f^2(x)').normalize_applied_functions().tree).toEqual(
+	    me.from('f(x)^2').tree);
     });
 
     it("exponent normalized outside b", function() {
-	expect(me.normalize_applied_functions(me.from('f^2(x)'))).toEqual(
-	    me.from('f(x)^2'));
+	expect(me.normalize_applied_functions(me.from('f^2(x)')).tree).toEqual(
+	    me.from('f(x)^2').tree);
     });
 
     it("derivative exponent inside", function() {
@@ -73,13 +73,13 @@ describe("normalize applied functions", function() {
     });
 
     it("derivative exponent normalized outside", function() {
-	expect(me.from('f\'^2(x)').normalize_applied_functions()).toEqual(
-	    me.from('f(x)\'^2'));
+	expect(me.from('f\'^2(x)').normalize_applied_functions().tree).toEqual(
+	    me.from('f(x)\'^2').tree);
     });
 
     it("derivative exponent normalized outside b", function() {
-	expect(me.normalize_applied_functions(me.from('f\'^2(x)'))).toEqual(
-	    me.from('f(x)\'^2'));
+	expect(me.normalize_applied_functions(me.from('f\'^2(x)')).tree).toEqual(
+	    me.from('f(x)\'^2').tree);
     });
 });
 
