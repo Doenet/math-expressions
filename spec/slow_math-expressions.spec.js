@@ -365,7 +365,6 @@ describe("expression", function() {
         var copy1 = JSON.parse(JSON.stringify(expr1), Expression.reviver);
 
         expect(expr1.equals(copy1)).toBeTruthy();
-        console.log(copy1.equals(expr1));
         expect(copy1.equals(expr1)).toBeTruthy();
         
         let obj2 = {expr: expr1, other: {a: 1, b: "hi"}};

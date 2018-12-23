@@ -3,102 +3,108 @@ import * as trees from '../lib/trees/basic';
 
 describe("evaluate_numbers", function () {
 
-    it("addition", function () {
-	expect(me.from("4+x-2").evaluate_numbers().tree).toEqual(['+', 2, 'x']);
-	
-	expect(me.from("x+0").evaluate_numbers().tree).toEqual('x');
+  it("addition", function () {
+    expect(me.from("4+x-2").evaluate_numbers().tree).toEqual(['+', 2, 'x']);
 
-	expect(me.from("Infinity + 3").evaluate_numbers().tree).toEqual(Infinity);
-	expect(me.from("Infinity + Infinity").evaluate_numbers().tree).toEqual(Infinity);
-	expect(me.from("Infinity - Infinity").evaluate_numbers().tree).toEqual(NaN);
+    expect(me.from("x+0").evaluate_numbers().tree).toEqual('x');
 
-    });
+    expect(me.from("Infinity + 3").evaluate_numbers().tree).toEqual(Infinity);
+    expect(me.from("Infinity + Infinity").evaluate_numbers().tree).toEqual(Infinity);
+    expect(me.from("Infinity - Infinity").evaluate_numbers().tree).toEqual(NaN);
+
+  });
     
-    it("collapse unary minus", function () {
-	expect(me.from("x-2").evaluate_numbers().tree).toEqual(['+', -2, 'x']);
-    });
+  it("collapse unary minus", function () {
+    expect(me.from("x-2").evaluate_numbers().tree).toEqual(['+', -2, 'x']);
+  });
 
-    it("unary minus of product", function() {
-	expect(me.from("x-2uv").evaluate_numbers().tree).toEqual(
-	    ['+', 'x', ['*', -2, 'u', 'v']]);
-	
-    });
-    it("unary minus of quotient", function() {
-	expect(me.from("x-2/(uv)").evaluate_numbers().tree).toEqual(
-	    ['+', 'x', ['/', -2, ['*', 'u', 'v']]]);
-	expect(me.from("x-2u/v").evaluate_numbers().tree).toEqual(
-	    ['+', 'x', ['/', ['*', -2, 'u'], 'v']]);
-	
-    });
+  it("unary minus of product", function() {
+    expect(me.from("x-2uv").evaluate_numbers().tree).toEqual(
+      ['+', 'x', ['*', -2, 'u', 'v']]);
 
-    it("multiplication", function () {
-	expect(me.from("3*2*x*4").evaluate_numbers().tree).toEqual(
-	    ['*', 24, 'x']);
+  });
+  it("unary minus of quotient", function() {
+    expect(me.from("x-2/(uv)").evaluate_numbers().tree).toEqual(
+        ['+', 'x', ['/', -2, ['*', 'u', 'v']]]);
+    expect(me.from("x-2u/v").evaluate_numbers().tree).toEqual(
+        ['+', 'x', ['/', ['*', -2, 'u'], 'v']]);
 
-	expect(me.from("3*2*x*0").evaluate_numbers().tree).toEqual(0);
+  });
 
-	expect(me.from("(2-1)x").evaluate_numbers().tree).toEqual('x');
-	
-	expect(me.from("(-1+2-1)x").evaluate_numbers().tree).toEqual(0);
+  it("multiplication", function () {
+    expect(me.from("3*2*x*4").evaluate_numbers().tree).toEqual(
+        ['*', 24, 'x']);
 
-	expect(me.from("(-1+2-2)x").evaluate_numbers().tree).toEqual(
-	    ['-', 'x']);
-	
-	expect(me.from("4(x)(-2)").evaluate_numbers().tree).toEqual(
-	    ['*', -8, 'x']);
+    expect(me.from("3*2*x*0").evaluate_numbers().tree).toEqual(0);
 
-	expect(me.from("0*Infinity").evaluate_numbers().tree).toEqual(NaN);
-	
-    });
+    expect(me.from("(2-1)x").evaluate_numbers().tree).toEqual('x');
 
-    it("division", function () {
-	expect(me.from("2x/2").evaluate_numbers().tree).toEqual('x');
-	expect(me.from("2/2x").evaluate_numbers().tree).toEqual('x');
-	expect(me.from("2/(2x)").evaluate_numbers().tree).toEqual(
-	    ['/', 1, 'x']);
-	
-	expect(me.from("1/0").evaluate_numbers().tree).toEqual(Infinity);
-	expect(me.from("0*(1/(0))").evaluate_numbers().tree).toEqual(NaN);
-	expect(me.from("1/Infinity").evaluate_numbers().tree).toEqual(0);
-	expect(me.from("0/0").evaluate_numbers().tree).toEqual(NaN);
+    expect(me.from("(-1+2-1)x").evaluate_numbers().tree).toEqual(0);
 
-	expect(me.from("2/(0x)").evaluate_numbers().tree).toEqual(Infinity);
-	expect(me.from("(2-2)/(0x)").evaluate_numbers().tree).toEqual(NaN);
-	expect(me.from("(2-2)*(1/(0x))").evaluate_numbers().tree).toEqual(NaN);
-	
-	expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(
-	    ['/', 0, 'x']);
-	
-	me.add_assumption(me.from('x > 0'));
-	expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(0);
-	me.clear_assumptions();
-    });
+    expect(me.from("(-1+2-2)x").evaluate_numbers().tree).toEqual(
+        ['-', 'x']);
 
-    it("power", function () {
-	expect(me.from("x^0").evaluate_numbers().tree).toEqual(['^','x', 0]);
-	me.add_assumption(me.from('x!= 0'));
-	expect(me.from("x^0").evaluate_numbers().tree).toEqual(1);
-	me.clear_assumptions();
+    expect(me.from("4(x)(-2)").evaluate_numbers().tree).toEqual(
+        ['*', -8, 'x']);
 
-	expect(me.from("(3-3)^0").evaluate_numbers().tree).toEqual(NaN);
-	
-	expect(me.from("(3x-3x)^0").evaluate_numbers().tree).toEqual(NaN);
-	
-	expect(me.from("(4-3)^7").evaluate_numbers().tree).toEqual(1);
+    expect(me.from("0*Infinity").evaluate_numbers().tree).toEqual(NaN);
 
-	expect(me.from("(5-3)^3").evaluate_numbers().tree).toEqual(8);
-	
-    });
+  });
 
-    it("to constant", function () {
+  it("division", function () {
+    expect(me.from("2x/2").evaluate_numbers().tree).toEqual('x');
+    expect(me.from("2/2x").evaluate_numbers().tree).toEqual('x');
+    expect(me.from("2/(2x)").evaluate_numbers().tree).toEqual(
+        ['/', 1, 'x']);
 
-	expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual('x');
+    expect(me.from("1/0").evaluate_numbers().tree).toEqual(Infinity);
+    expect(me.from("0*(1/(0))").evaluate_numbers().tree).toEqual(NaN);
+    expect(me.from("1/Infinity").evaluate_numbers().tree).toEqual(0);
+    expect(me.from("0/0").evaluate_numbers().tree).toEqual(NaN);
 
-	expect(me.from("cos(0)x+sin(pi/2)y").evaluate_numbers().tree).toEqual(
-	    ['+', 'x', 'y']);
-	
-	
-    });
+    expect(me.from("2/(0x)").evaluate_numbers().tree).toEqual(Infinity);
+    expect(me.from("(2-2)/(0x)").evaluate_numbers().tree).toEqual(NaN);
+    expect(me.from("(2-2)*(1/(0x))").evaluate_numbers().tree).toEqual(NaN);
+
+    expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(
+        ['/', 0, 'x']);
+
+    me.add_assumption(me.from('x > 0'));
+    expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(0);
+    me.clear_assumptions();
+  });
+
+  it("power", function () {
+    expect(me.from("x^0").evaluate_numbers().tree).toEqual(['^','x', 0]);
+    me.add_assumption(me.from('x!= 0'));
+    expect(me.from("x^0").evaluate_numbers().tree).toEqual(1);
+    me.clear_assumptions();
+
+    expect(me.from("(3-3)^0").evaluate_numbers().tree).toEqual(NaN);
+
+    expect(me.from("(3x-3x)^0").evaluate_numbers().tree).toEqual(NaN);
+
+    expect(me.from("(4-3)^7").evaluate_numbers().tree).toEqual(1);
+
+    expect(me.from("(5-3)^3").evaluate_numbers().tree).toEqual(8);
+
+  });
+
+  it("to constant", function () {
+
+    expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual('x');
+
+    expect(me.from("cos(0)x+sin(pi/2)y").evaluate_numbers().tree).toEqual(
+        ['+', 'x', 'y']);
+  });
+
+  it("to decimals", function () {
+
+    expect(me.fromText('pi').evaluate_numbers().tree).toEqual('pi');
+    expect(me.fromText('0.5 pi').evaluate_numbers().tree).toBeCloseTo(0.5*Math.PI, 1E-12);
+    expect(me.fromText('pi/2').evaluate_numbers().tree).toEqual(['/', 'pi', 2]);
+
+  })
 
 });
 
