@@ -70611,6 +70611,10 @@ function simplify$2(expr_or_tree, assumptions, max_digits) {
 	    [expr_or_tree.variables()]);
 
     tree = evaluate_numbers(tree, assumptions, max_digits);
+    // if already have it down to a number of variable, no need for more simplification
+    if(!Array.isArray(tree)) {
+      return tree;
+    }
     tree = simplify_logical(tree, assumptions);
     tree = collect_like_terms_factors(tree, assumptions, max_digits);
 
