@@ -49,6 +49,9 @@ describe("evaluate_numbers", function () {
 
     expect(me.from("0*Infinity").evaluate_numbers().tree).toEqual(NaN);
 
+	expect(me.from("2*2*2*2*2*2*2*2*2*2*2*2*2*2").evaluate_numbers().tree)
+		.toEqual(16384);
+
   });
 
   it("division", function () {

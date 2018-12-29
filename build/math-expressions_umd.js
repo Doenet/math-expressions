@@ -67424,21 +67424,28 @@
     // };
 
     const evaluate_to_constant = function(expr_or_tree) {
-        // evaluate to number by converting tree to number
-        // and calling without arguments
+      // evaluate to number by converting tree to number
+      // and calling without arguments
 
-        // return null if couldn't evaluate to constant (e.g., contains a variable)
-        // otherwise returns constant
-        // NOTE: constant could be a math.js complex number object
+      // return null if couldn't evaluate to constant (e.g., contains a variable)
+      // otherwise returns constant
+      // NOTE: constant could be a math.js complex number object
 
+      var tree = get_tree(expr_or_tree);
 
-        var num=null;
-        try {
-          var the_f = f(expr_or_tree);
-          num = the_f();
-        }
-        catch (e) {}
-        return num;
+      if(typeof tree === "number") {
+        return tree;
+      }else if(typeof tree === "string") {
+        return null;
+      }
+
+      var num=null;
+      try {
+        var the_f = f(expr_or_tree);
+        num = the_f();
+      }
+      catch (e) {}
+      return num;
     };
 
     function factorial_to_gamma_function(math_tree) {
@@ -70692,6 +70699,9 @@
           if(Number.isFinite(c)) {
             if(max_digits === Infinity)
               return c;
+            if(Number.isInteger(c)) {
+              return c;
+            }
             let c_minround = evalf(c, 14);
             let c_round = evalf(c, max_digits);
             if(c_round === c_minround)
@@ -70709,7 +70719,11 @@
             if(c_frac.n < 1E4 || (c_frac_d_round === c_frac.d)) {
               let c_reconstruct = evalf(c_frac.s*c_frac.n/c_frac.d, 14);
               if(c_reconstruct === c_minround) {
-                return ['/', c_frac.s*c_frac.n, c_frac.d];
+                if(c_frac.d === 1) {
+                  return c_frac.s*c_frac.n;
+                } else {
+                  return ['/', c_frac.s*c_frac.n, c_frac.d];
+                }
               }
             }
           }
