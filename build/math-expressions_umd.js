@@ -62653,8 +62653,42 @@
     });
     var underscore_1 = underscore._;
 
+    function handleNaNInfinityStringify(key, value) {
+      if (value !== value) {
+        return '0/0';
+      }
+
+      if (value === 1/0) {
+        return '1/0';
+      }
+
+      if (value === -1/0) {
+        return '-1/0';
+      }
+
+      return value;
+    }
+
+    function handleNaNInfinityParse(key, value) {
+      if (value === '0/0') {
+        return 0/0;
+      }
+
+      if (value === '1/0') {
+        return Infinity;
+      }
+
+      if (value === '-1/0') {
+        return -1/0;
+      }
+
+      return value;
+    }
+
     function deepClone(s) {
-      return JSON.parse(JSON.stringify(s));
+      return JSON.parse(
+        JSON.stringify(s, handleNaNInfinityStringify),
+        handleNaNInfinityParse);
     }
 
     const equal$2 = function(left, right) {

@@ -88,6 +88,15 @@ test("substitution", function () {
 
   expect(tree_equal(expr4.tree, expr4a.tree)).toBeTruthy();
 
+  let expr5 = me.fromAst("x").substitute({x: NaN});
+  expect(expr5.tree).toBeNaN();
+
+  let expr6 = me.fromAst("x").substitute({x: Infinity});
+  expect(expr6.tree).toBe(Infinity);
+
+  let expr7 = me.fromAst("x").substitute({x: -Infinity});
+  expect(expr7.tree).toBe(-Infinity);
+
 });
 
 test("substitute component", function () {
