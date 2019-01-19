@@ -104,8 +104,9 @@ describe("evaluate_numbers", function () {
   it("to decimals", function () {
 
     expect(me.fromText('pi').evaluate_numbers().tree).toEqual('pi');
-    expect(me.fromText('0.5 pi').evaluate_numbers().tree).toBeCloseTo(0.5*Math.PI, 1E-12);
+    expect(me.fromText('0.5 pi').evaluate_numbers().tree).toEqual(['*', 0.5, 'pi']);
     expect(me.fromText('pi/2').evaluate_numbers().tree).toEqual(['/', 'pi', 2]);
+    expect(me.fromText('0.5 7').evaluate_numbers().tree).toEqual(3.5);
 
   })
 
@@ -248,5 +249,11 @@ describe("collect like terms and factor", function () {
 	)).toBeTruthy();
 	
     });
-    
+	
+	it("don't turn pi to decimal", function() {
+		expect(me.fromText('pi/2')
+			.collect_like_terms_factors().tree).toEqual(['*', 0.5, 'pi'])
+	
+	})
+
 });

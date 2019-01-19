@@ -70692,23 +70692,6 @@ function simplify_logical(expr_or_tree, assumptions) {
     return tree;
 }
 
-function contains_decimal_number(tree) {
-  if(typeof tree === "string") {
-    return false;
-  }
-  if(typeof tree === "number") {
-    if(Number.isFinite(tree) && !Number.isInteger(tree)) {
-      return tree;
-    }else {
-      return false;
-    }
-  }
-  if(!Array.isArray(tree)) {
-    return false;
-  }
-  return tree.slice(1).some(x => contains_decimal_number(x));
-}
-
 function evaluate_numbers_sub(tree, assumptions, max_digits) {
   // assume that tree has been sorted to default order (while flattened)
   // and then unflattened_right
@@ -70735,11 +70718,11 @@ function evaluate_numbers_sub(tree, assumptions, max_digits) {
         if(c_round === c_minround)
           return c;
 
-        // if expression already contained a decimal,
-        // return the number
-        if(contains_decimal_number(tree)) {
-          return c;
-        }
+        // // if expression already contained a decimal,
+        // // return the number
+        // if(contains_decimal_number(tree)) {
+        //   return c;
+        // }
 
         let c_frac = math$19.fraction(c);
         let c_frac_d_round = evalf(c_frac.d, 3);
