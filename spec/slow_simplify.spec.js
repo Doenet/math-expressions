@@ -112,6 +112,16 @@ describe("evaluate_numbers", function () {
 
 });
 
+describe("evaluate_to_constant", function () {
+
+  it("check pi e", function () {
+    expect(me.from("pi").evaluate_to_constant()).toBeCloseTo(Math.PI);
+    expect(me.from("2pi").evaluate_to_constant()).toBeCloseTo(2*Math.PI);
+    expect(me.from("e").evaluate_to_constant()).toBeCloseTo(Math.E);
+    expect(me.from("2e").evaluate_to_constant()).toBeCloseTo(2*Math.E);
+
+  });
+});
 
 describe("collect like terms and factor", function () {
 

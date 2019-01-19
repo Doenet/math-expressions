@@ -67470,6 +67470,11 @@
       if(typeof tree === "number") {
         return tree;
       }else if(typeof tree === "string") {
+        if(tree === "pi" && math$19.define_pi) {
+          return Math.PI;
+        }else if(tree === "e" && math$19.define_e) {
+          return Math.E;
+        }
         return null;
       }
 
