@@ -73954,6 +73954,9 @@
         "cos": function(operands) { return "ccos(" + operands[0] + ")"; },
         "tan": function(operands) { return "ctan(" + operands[0] + ")"; },
 
+        "sinh": function(operands) { return "csinh(" + operands[0] + ")"; },
+        "cosh": function(operands) { return "ccosh(" + operands[0] + ")"; },
+      
         "arcsin": function(operands) { return "carcsin(" + operands[0] + ")"; },
         "arccos": function(operands) { return "carccos(" + operands[0] + ")"; },
         "arctan": function(operands) { return "carctan(" + operands[0] + ")"; },
