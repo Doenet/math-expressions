@@ -74027,217 +74027,6 @@ var differentiation = /*#__PURE__*/Object.freeze({
     derivativeStory: derivativeStory
 });
 
-
-
-var normalization = /*#__PURE__*/Object.freeze({
-    normalize_function_names: normalize_function_names,
-    normalize_applied_functions: normalize_applied_functions,
-    substitute_abs: substitute_abs,
-    default_order: default_order,
-    tuples_to_vectors: tuples_to_vectors,
-    to_intervals: to_intervals
-});
-
-const equalUpToSign = function(expression, correct) {
-    var root = expression.tree;
-    var stack = [[root]];
-    var pointer = 0;
-    var tree;
-    var i;
-
-    /* Unfortunately the root is handled separately */
-    expression.tree = ['-', root];
-    var equals = expression.equals(correct);
-    expression.tree = root;
-
-    if (equals) return true;
-
-    while (tree = stack[pointer++]) {
-	tree = tree[0];
-
-	if (typeof tree === 'number') {
-	    continue;
-	}
-
-	if (typeof tree === 'string') {
-	    continue;
-	}
-
-	for (i = 1; i < tree.length; i++) {
-            stack.push([tree[i]]);
-	    tree[i] = ['-', tree[i]];
-	    equals = expression.equals(correct);
-	    tree[i] = tree[i][1];
-
-	    if (equals) return true;
-	}
-    }
-
-    return false;
-};
-
-var sign_error = /*#__PURE__*/Object.freeze({
-    equalUpToSign: equalUpToSign
-});
-
-function add$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['+', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
-    return clean(result);
-}
-
-function subtract$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['+', get_tree(expr_or_tree1), ['-', get_tree(expr_or_tree2)]];
-    return clean(result);
-}
-
-function multiply$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['*', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
-    return clean(result);
-}
-
-function divide$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['/', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
-    return clean(result);
-}
-
-function pow$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['^', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
-    return clean(result);
-}
-
-function mod$2(expr_or_tree1, expr_or_tree2) {
-    var result = ['apply', 'mod', ['tuple', get_tree(expr_or_tree1),
-				   get_tree(expr_or_tree2)]];
-    return clean(result);
-}
-
-function copy(expr_or_tree) {
-  return get_tree(expr_or_tree);
-}
-
-var arithmetic$1 = /*#__PURE__*/Object.freeze({
-    add: add$2,
-    subtract: subtract$2,
-    multiply: multiply$2,
-    divide: divide$2,
-    pow: pow$2,
-    mod: mod$2,
-    copy: copy
-});
-
-var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array','matrix', 'interval'];
-var analytic_functions = ["exp", "log", "log10", "sqrt", "factorial", "gamma", "erf", "acos", "acosh", "acot", "acoth", "acsc", "acsch", "asec", "asech", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cot", "coth", "csc", "csch", "sec", "sech", "sin", "sinh", "tan", "tanh", 'arcsin', 'arccos', 'arctan', 'arccsc', 'arcsec', 'arccot', 'cosec'];
-var relation_operators = ['=', 'le', 'ge', '<', '>'];
-
-function isAnalytic(expr_or_tree, {allow_abs=false, allow_relation=false} ={}) {
-
-  var tree = normalize_applied_functions(
-    normalize_function_names(expr_or_tree));
-
-  var operators_found = operators$1(tree);
-  for (let i=0; i < operators_found.length; i++ ) {
-	  let oper = operators_found[i];
-	  if(analytic_operators.indexOf(oper) === -1) {
-      if(allow_relation) {
-        if(relation_operators.indexOf(oper) === -1) {
-          return false;
-        }
-      }else {
-        return false;
-      }
-    }
-  }
-
-  var functions_found = functions(tree);
-  for (let i=0; i < functions_found.length; i++ ) {
-    let fun = functions_found[i];
-    if(analytic_functions.indexOf(fun) === -1) {
-	    if((!allow_abs) || fun !== "abs")
-    		return false;
-    }
-  }
-
-  return true;
-}
-
-var analytic = /*#__PURE__*/Object.freeze({
-    isAnalytic: isAnalytic
-});
-
-function create_discrete_infinite_set({
-  offsets,
-  periods,
-  min_index = ['-', Infinity],
-  max_index = Infinity,
-} = {}) {
-
-  offsets = get_tree(offsets);
-  periods = get_tree(periods);
-  min_index = get_tree(min_index);
-  max_index = get_tree(max_index);
-
-
-
-  if(offsets === undefined || periods === undefined)
-    return undefined;
-
-  let results = [];
-  if(offsets[0] === 'list') {
-    if(periods[0] === 'list') {
-      if(offsets.length !== periods.length || offsets.length === 1)
-	return undefined;
-      for(let i=1; i<offsets.length; i++)
-	results.push(['tuple', offsets[i], periods[i], min_index, max_index]);
-    }
-    else {
-      for(let i=1; i<offsets.length; i++)
-	results.push(['tuple', offsets[i], periods, min_index, max_index]);
-    }
-  }
-  else {
-    results.push(['tuple', offsets, periods, min_index, max_index]);
-
-  }
-  return ['discrete_infinite_set'].concat(results);
-}
-
-var sets = /*#__PURE__*/Object.freeze({
-    create_discrete_infinite_set: create_discrete_infinite_set
-});
-
-function tuple(entries){
-    var expression=[];
-    expression.push('tuple');
-    var len = entries.length;
-    for (let i = 0; i < len; i++){
-        expression.push(entries[i]);
-    }
-    return expression;
-}
-
-function matrix$4(entries){       //entries is an array of arrays of math expressions
-    var expression=[];
-    expression.push('matrix');
-    var r = entries.length;
-    var c = entries[0].length;
-    for (let i = 1; i < r; i++){
-        if (entries[i].length !== c){      //check if columns are equal size
-            throw new Error("Matrix dimensions mismatch");
-        }
-    }
-    expression.push(tuple([r,c]));
-    let theMatrix = [];
-    for (let j = 0; j < r; j++){
-        theMatrix.push(tuple(entries[j].map(function(v) {return v.tree;})));
-    }
-    expression.push(tuple(theMatrix));
-    return expression;
-}
-
-var matrix$5 = /*#__PURE__*/Object.freeze({
-    matrix: matrix$4
-});
-
 /*
  * convert syntax trees back to string representations
  *
@@ -74829,6 +74618,244 @@ class astToText {
 
 }
 
+var astToText$1 = new astToText();
+
+function subscripts_to_strings(expr_or_tree, force=false) {
+  // convert ['_', a,b] to string
+  // if force is set, perform conversions for any values of a or b
+  // otherwise (the default), perform conversion only
+  // when both a and b are strings or numbers
+
+  var tree = get_tree(expr_or_tree);
+
+  if(!Array.isArray(tree)) {
+    return tree;
+  }
+  
+  let operator = tree[0];
+  let operands = tree.slice(1);
+  
+  if(operator === '_') {
+    if(force || operands.every(x => ['number', 'string'].includes(typeof x))) {
+      return astToText$1.convert(tree);
+    }
+  }
+
+  return [operator].concat(operands.map(subscripts_to_strings));
+}
+
+
+
+var normalization = /*#__PURE__*/Object.freeze({
+    normalize_function_names: normalize_function_names,
+    normalize_applied_functions: normalize_applied_functions,
+    substitute_abs: substitute_abs,
+    default_order: default_order,
+    tuples_to_vectors: tuples_to_vectors,
+    to_intervals: to_intervals,
+    subscripts_to_strings: subscripts_to_strings
+});
+
+const equalUpToSign = function(expression, correct) {
+    var root = expression.tree;
+    var stack = [[root]];
+    var pointer = 0;
+    var tree;
+    var i;
+
+    /* Unfortunately the root is handled separately */
+    expression.tree = ['-', root];
+    var equals = expression.equals(correct);
+    expression.tree = root;
+
+    if (equals) return true;
+
+    while (tree = stack[pointer++]) {
+	tree = tree[0];
+
+	if (typeof tree === 'number') {
+	    continue;
+	}
+
+	if (typeof tree === 'string') {
+	    continue;
+	}
+
+	for (i = 1; i < tree.length; i++) {
+            stack.push([tree[i]]);
+	    tree[i] = ['-', tree[i]];
+	    equals = expression.equals(correct);
+	    tree[i] = tree[i][1];
+
+	    if (equals) return true;
+	}
+    }
+
+    return false;
+};
+
+var sign_error = /*#__PURE__*/Object.freeze({
+    equalUpToSign: equalUpToSign
+});
+
+function add$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['+', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
+    return clean(result);
+}
+
+function subtract$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['+', get_tree(expr_or_tree1), ['-', get_tree(expr_or_tree2)]];
+    return clean(result);
+}
+
+function multiply$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['*', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
+    return clean(result);
+}
+
+function divide$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['/', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
+    return clean(result);
+}
+
+function pow$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['^', get_tree(expr_or_tree1), get_tree(expr_or_tree2)];
+    return clean(result);
+}
+
+function mod$2(expr_or_tree1, expr_or_tree2) {
+    var result = ['apply', 'mod', ['tuple', get_tree(expr_or_tree1),
+				   get_tree(expr_or_tree2)]];
+    return clean(result);
+}
+
+function copy(expr_or_tree) {
+  return get_tree(expr_or_tree);
+}
+
+var arithmetic$1 = /*#__PURE__*/Object.freeze({
+    add: add$2,
+    subtract: subtract$2,
+    multiply: multiply$2,
+    divide: divide$2,
+    pow: pow$2,
+    mod: mod$2,
+    copy: copy
+});
+
+var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array','matrix', 'interval'];
+var analytic_functions = ["exp", "log", "log10", "sqrt", "factorial", "gamma", "erf", "acos", "acosh", "acot", "acoth", "acsc", "acsch", "asec", "asech", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cot", "coth", "csc", "csch", "sec", "sech", "sin", "sinh", "tan", "tanh", 'arcsin', 'arccos', 'arctan', 'arccsc', 'arcsec', 'arccot', 'cosec'];
+var relation_operators = ['=', 'le', 'ge', '<', '>'];
+
+function isAnalytic(expr_or_tree, {allow_abs=false, allow_relation=false} ={}) {
+
+  var tree = normalize_applied_functions(
+    normalize_function_names(expr_or_tree));
+
+  var operators_found = operators$1(tree);
+  for (let i=0; i < operators_found.length; i++ ) {
+	  let oper = operators_found[i];
+	  if(analytic_operators.indexOf(oper) === -1) {
+      if(allow_relation) {
+        if(relation_operators.indexOf(oper) === -1) {
+          return false;
+        }
+      }else {
+        return false;
+      }
+    }
+  }
+
+  var functions_found = functions(tree);
+  for (let i=0; i < functions_found.length; i++ ) {
+    let fun = functions_found[i];
+    if(analytic_functions.indexOf(fun) === -1) {
+	    if((!allow_abs) || fun !== "abs")
+    		return false;
+    }
+  }
+
+  return true;
+}
+
+var analytic = /*#__PURE__*/Object.freeze({
+    isAnalytic: isAnalytic
+});
+
+function create_discrete_infinite_set({
+  offsets,
+  periods,
+  min_index = ['-', Infinity],
+  max_index = Infinity,
+} = {}) {
+
+  offsets = get_tree(offsets);
+  periods = get_tree(periods);
+  min_index = get_tree(min_index);
+  max_index = get_tree(max_index);
+
+
+
+  if(offsets === undefined || periods === undefined)
+    return undefined;
+
+  let results = [];
+  if(offsets[0] === 'list') {
+    if(periods[0] === 'list') {
+      if(offsets.length !== periods.length || offsets.length === 1)
+	return undefined;
+      for(let i=1; i<offsets.length; i++)
+	results.push(['tuple', offsets[i], periods[i], min_index, max_index]);
+    }
+    else {
+      for(let i=1; i<offsets.length; i++)
+	results.push(['tuple', offsets[i], periods, min_index, max_index]);
+    }
+  }
+  else {
+    results.push(['tuple', offsets, periods, min_index, max_index]);
+
+  }
+  return ['discrete_infinite_set'].concat(results);
+}
+
+var sets = /*#__PURE__*/Object.freeze({
+    create_discrete_infinite_set: create_discrete_infinite_set
+});
+
+function tuple(entries){
+    var expression=[];
+    expression.push('tuple');
+    var len = entries.length;
+    for (let i = 0; i < len; i++){
+        expression.push(entries[i]);
+    }
+    return expression;
+}
+
+function matrix$4(entries){       //entries is an array of arrays of math expressions
+    var expression=[];
+    expression.push('matrix');
+    var r = entries.length;
+    var c = entries[0].length;
+    for (let i = 1; i < r; i++){
+        if (entries[i].length !== c){      //check if columns are equal size
+            throw new Error("Matrix dimensions mismatch");
+        }
+    }
+    expression.push(tuple([r,c]));
+    let theMatrix = [];
+    for (let j = 0; j < r; j++){
+        theMatrix.push(tuple(entries[j].map(function(v) {return v.tree;})));
+    }
+    expression.push(tuple(theMatrix));
+    return expression;
+}
+
+var matrix$5 = /*#__PURE__*/Object.freeze({
+    matrix: matrix$4
+});
+
 /*
  * convert syntax trees to Guppy XML representations
  *
@@ -75166,7 +75193,7 @@ class astToGLSL {
 }
 
 var astToLatex$2 = new astToLatex();
-var astToText$1 = new astToText();
+var astToText$2 = new astToText();
 var astToGuppy$1 = new astToGuppy();
 var astToGLSL$1 = new astToGLSL();
 
@@ -75177,7 +75204,7 @@ const tex = function(expr) {
 const toLatex = tex;
 
 const toString = function(expr) {
-    return astToText$1.convert( expr.tree );
+    return astToText$2.convert( expr.tree );
 };
 
 const toGLSL = function(expr) {

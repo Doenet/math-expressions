@@ -130,6 +130,26 @@ describe("normalize tuples", function() {
     
 });
 
+describe("convert subscripts to strings", function() {
+  it("simple subscripts", function() {
+    expect(me.from('x_2').subscripts_to_strings().tree).toEqual('x_2');
+    expect(me.from('x_y').subscripts_to_strings().tree).toEqual('x_y');
+    expect(me.from('2_2').subscripts_to_strings().tree).toEqual('2_2');
+    expect(me.from('3_y').subscripts_to_strings().tree).toEqual('3_y');
+  });
+
+  it("subscripts embedded", function() {
+    expect(me.from('x_2^y').subscripts_to_strings().tree).toEqual(['^','x_2','y']);
+    expect(me.from('sin(x_t)^y_3').subscripts_to_strings().tree).toEqual(
+      ['^',['apply', 'sin', 'x_t'],'y_3']
+    );
+  });
+
+  it("complex subscripts skipped", function() {
+    expect(me.from('(x^3)_2').subscripts_to_strings(true).tree).toEqual('(x^3)_2');
+  });
+});
+
 
 describe("default order", function () {
 
