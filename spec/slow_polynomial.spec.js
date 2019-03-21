@@ -12,7 +12,7 @@ describe("pt reduce rational expression", function () {
                           [['2x+x', 'x'], ['3', '1']],
                           [['2xy+y^2', 'yx^2'], ['2x+y', 'x^2']],
                           [['(1+y)(x+z)', '(1+y)(x+x^2)'], ['x+z', 'x+x^2']],
-                          [['(x^2+x+y)(z+t)', '(u^4+x)(2z+2t)'], ['0.5x^2+0.5x+0.5y', 'u^4+x']],
+                          [['(x^2+x+y)(z+t)', '(u^4+x)(2z+2t)'], ['1/2x^2+1/2x+1/2y', 'u^4+x']],
                           [['(xy+zy)(t+v)', '(t+v)(x^5y)'], ['x+z', 'x^5']],
                           [['x sin(x)-x', 'x'], ['sin(x)-1', '1']],
                           [['xs-ys', 'x^2s-z^2s'], ['x-y', 'x^2-z^2']],
@@ -47,7 +47,7 @@ describe("reduce rational expression", function () {
                           [['2x+x', 'x'], ['3', '1']],      //fail
                           [['2xy+y^2', 'yx^2'], ['2x+y', 'x^2']],
                           [['(1+y)(x+z)', '(1+y)(x+x^2)'], ['x+z', 'x+x^2']],
-                          [['(x^2+x+y)(z+t)', '(u^4+x)(2z+2t)'], ['0.5x^2+0.5x+0.5y', 'u^4+x']],
+                          [['(x^2+x+y)(z+t)', '(u^4+x)(2z+2t)'], ['1/2x^2+1/2x+1/2y', 'u^4+x']],
                           [['(xy+zy)(t+v)', '(t+v)(x^5y)'], ['x+z', 'x^5']],
                           [['x sin(x)-x', 'x'], ['sin(x)-1', '1']],
                           [['xs-ys', 'x^2s-z^2s'], ['x-y', 'x^2-z^2']],
@@ -232,11 +232,11 @@ describe("monomial division", function () {
                               [["monomial", 1, [["x", 2],["y", 3],["z", 5]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3],["z", 1]]]],
                               [["monomial", 1, [["x", 2],["y", 3],["z", 4]]], ["monomial", 1, [["x", 1],["z", 4]]], ["monomial", 1, [["x", 1],["y", 3]]]],
                               [7, 1, 7],
-                              [7, 2, 3.5],
+                              [7, 2, ['/', 7, 2]],
                               [["monomial", 1, [["y",1]]], 3, ["monomial", ['/', 1, 3], [["y",1]]]],
                               [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 1, [["x", 3],["y", 2]]], 5],
-                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 3],["y", 2]]], 2.5],
-                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", 2.5, [["x", 2],["y", 1]]]]
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 3],["y", 2]]], ['/', 5, 2]],
+                              [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", ["/", 5, 2], [["x", 2],["y", 1]]]]
                               ];
          mono_mono_div.forEach(function(monos) {
                                             it(monos, function() {
@@ -315,7 +315,7 @@ describe("initial terms", function () {
     '2abc-a-2b+3c': ["monomial", 2, [["a",1],["b",1],["c",1]]],
     'x sin(x)-x': ["monomial", 1, [["x",1],[["apply", "sin", "x"],1]]],
     '(x+3)(2x-4)': ["monomial", 2, [["x",2]]],
-    'x/7-2/3+3/4x^2': ["monomial", 0.75, [["x",2]]],
+    'x/7-2/3+3/4x^2': ["monomial", ['/', 3, 4], [["x",2]]],
     '9x^(2/3)-pi*x': ["monomial", ['-', 'pi'], [["x",1]]],
     '(5x^2-3x+1)/3': ["monomial", ['/', 5, 3], [["x",2]]],
     '7i+2x+3ix': ["monomial", ['+', 2, ['*', 3, 'i']], [["x", 1]]],
@@ -323,7 +323,7 @@ describe("initial terms", function () {
     't-t^1000000000': ["monomial", -1, [["t",1000000000]]],
     '(x+y)^2': ["monomial", 1, [["x",2]]],
     '(s-t)(s+t)': ["monomial", 1, [["s", 2]]],
-    '5t^(3.1)': ["monomial", 5, [[[ '^', 't', 0.1 ], 31]]],
+    '5t^(3.1)': ["monomial", 5, [[[ '^', 't', ['/', 1, 10] ], 31]]],
     };
          
     Object.keys(polys_inits).forEach(function(string) {
@@ -338,11 +338,11 @@ describe("text to polynomial", function () {
     var polys = {
     '1+x': ["polynomial", "x", [[0,1], [1,1]]],
 	'1+x^3': ["polynomial", "x", [[0,1], [3,1]]],
-	'3-2y^2+5/2y': ["polynomial", "y", [[0, 3], [1, 2.5], [2,-2]]],
+	'3-2y^2+5/2y': ["polynomial", "y", [[0, 3], [1, ['/', 5, 2]], [2,-2]]],
 	'2abc-a-2b+3c': ["polynomial", "a", [[0, ["polynomial", "b", [[0, ["polynomial", "c", [[1, 3]]]], [1, -2]]]], [1, ["polynomial", "b", [[0, -1], [1, ["polynomial", "c", [[1, 2]]]]]]]]],
 	'x sin(x)-x': ["polynomial", "x", [[1, ["polynomial", ["apply", "sin", "x"], [[0, -1], [1, 1]]]]]],
 	'(x+3)(2x-4)': ["polynomial", "x", [[0, -12], [1, 2], [2, 2]]],
-	'x/7-2/3+3/4x^2': ["polynomial", "x", [[0, ['/', -2, 3]], [1, ['/', 1, 7]], [2, 0.75]]],
+	'x/7-2/3+3/4x^2': ["polynomial", "x", [[0, ['/', -2, 3]], [1, ['/', 1, 7]], [2, ['/', 3, 4]]]],
 	'9x^(2/3)-pi*x': ["polynomial", "x", [[0, ["polynomial", ['^', 'x', ['/', 1, 3]], [[2, 9]]]], [1, ['-', 'pi']]]],
 	'(5x^2-3x+1)/3': ["polynomial", "x", [[0, ['/', 1, 3]], [1, -1], [2, ['/', 5, 3]]]],
 	'7i+2x+3ix': ["polynomial", "x", [[0, ['*', 7, 'i']], [1, ['+', 2, ['*', 3, 'i']]]]],
@@ -353,7 +353,7 @@ describe("text to polynomial", function () {
 	'x/y+3x': ["polynomial", 'x', [[0, ["polynomial", ['/', 'x', 'y'], [[1,1]]]], [1, 3]]],
 	'(x+y)^2': ["polynomial", 'x', [[0, ["polynomial", "y", [[2,1]]]], [1, ["polynomial", "y", [[1, 2]]]], [2, 1]]],
 	'(s-t)(s+t)': ["polynomial", "s", [[0, ["polynomial", "t", [[2,-1]]]], [2, 1]]],
-	'5t^(3.1)': ["polynomial", ['^', 't', 0.1], [[31, 5]]],
+	'5t^(3.1)': ["polynomial", ['^', 't', ["/",1,10]], [[31, 5]]],
 	'5t^(3.1415)': ["polynomial", ['^', 't', 3.1415], [[1, 5]]],
     };
 
@@ -370,7 +370,7 @@ describe("text to polynomial", function () {
 	['(s-t)(s+t)', 's^2-t^2'],
 	['(x+y)^3', 'x^3 + 3x^2y + 3xy^2 + y^3'],
 	'sin(x)y-y^3',
-	'9(3y-2x)^3.1',
+	['9(3y-2x)^3.1', '9((3y-2x)^(1/10))^31'],
 	'9(3y-2x)^3.1415',
 	['(5a^2xyz-3uvw)(5a^2xyz+3uvw)', '25a^4x^2y^2z^2-9u^2v^2w^2'],
 	'3qt-qt/(3sr)',

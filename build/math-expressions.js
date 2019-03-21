@@ -67468,6 +67468,8 @@ const evaluate_to_constant = function(expr_or_tree) {
       return Math.PI;
     }else if(tree === "e" && math$19.define_e) {
       return Math.E;
+    }else if(tree === "i" && math$19.define_i) {
+      return { re: 0, im: 1};
     }
     return null;
   }
@@ -70696,6 +70698,36 @@ function simplify_logical(expr_or_tree, assumptions) {
     return tree;
 }
 
+function contains_decimal_number(tree) {
+  if(typeof tree === "string") {
+    return false;
+  }
+  if(typeof tree === "number") {
+    if(Number.isFinite(tree) && !Number.isInteger(tree)) {
+      return true;
+    }else {
+      return false;
+    }
+  }
+  if(!Array.isArray(tree)) {
+    return false;
+  }
+  return tree.slice(1).some(x => contains_decimal_number(x));
+}
+
+function contains_only_numbers(tree) {
+  if(typeof tree === "string") {
+    return false;
+  }
+  if(typeof tree === "number") {
+    return true;
+  }
+  if(!Array.isArray(tree)) {
+    return false;
+  }
+  return tree.slice(1).every(x => contains_only_numbers(x));
+}
+
 function evaluate_numbers_sub(tree, assumptions, max_digits) {
   // assume that tree has been sorted to default order (while flattened)
   // and then unflattened_right
@@ -70717,16 +70749,24 @@ function evaluate_numbers_sub(tree, assumptions, max_digits) {
         if(Number.isInteger(c)) {
           return c;
         }
+
         let c_minround = evalf(c, 14);
         let c_round = evalf(c, max_digits);
-        if(c_round === c_minround)
+        if(max_digits === 0) {
+          // interpret 0 max_digits as only accepting integers
+          // (even though positive max_digits is number of significant digits)
+          c_round = math$19.round(c);
+        }
+        if(c_round === c_minround) {
           return c;
+        }
 
-        // // if expression already contained a decimal,
-        // // return the number
-        // if(contains_decimal_number(tree)) {
-        //   return c;
-        // }
+        // if expression already contained a decimal,
+        // and contains only numbers (no constants like pi)
+        // return the number
+        if(contains_decimal_number(tree) && contains_only_numbers(tree)) {
+          return c;
+        }
 
         let c_frac = math$19.fraction(c);
         let c_frac_d_round = evalf(c_frac.d, 3);
@@ -70999,7 +71039,7 @@ function evaluate_numbers(expr_or_tree, assumptions, max_digits) {
 
   if(max_digits === undefined ||
       !(Number.isInteger(max_digits) || max_digits === Infinity))
-    max_digits = 4;
+    max_digits = 0;
 
   var tree=get_tree(expr_or_tree);
 

@@ -108,6 +108,13 @@ describe("evaluate_numbers", function () {
     expect(me.fromText('pi/2').evaluate_numbers().tree).toEqual(['/', 'pi', 2]);
     expect(me.fromText('0.5 7').evaluate_numbers().tree).toEqual(3.5);
 
+    expect(me.fromAst(1/3).evaluate_numbers().tree).toBeCloseTo(1/3);
+    expect(me.fromAst(0.5).evaluate_numbers().tree).toBeCloseTo(1/2);
+    expect(me.fromAst(['+', 0.5, 1/3]).evaluate_numbers().tree).toBeCloseTo(0.5+1/3);
+    expect(me.fromText("1/3").evaluate_numbers().tree).toEqual(["/", 1, 3]);
+    expect(me.fromText("1/2").evaluate_numbers().tree).toEqual(["/", 1, 2]);
+    expect(me.fromText("1/2+1/3").evaluate_numbers().tree).toEqual(["/", 5, 6]);
+
   })
 
 });
@@ -262,7 +269,7 @@ describe("collect like terms and factor", function () {
 	
 	it("don't turn pi to decimal", function() {
 		expect(me.fromText('pi/2')
-			.collect_like_terms_factors().tree).toEqual(['*', 0.5, 'pi'])
+			.collect_like_terms_factors().tree).toEqual(['/', 'pi', 2])
 	
 	})
 

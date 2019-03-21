@@ -8,7 +8,7 @@ describe("solve linear", function () {
 	expect(trees.equal(me.fromText('3x+4 = 2').solve_linear('x').tree,
 			   me.fromText("x = -2/3").evaluate_numbers().tree)).toBeTruthy();
 	expect(trees.equal(me.fromText('-3y-2 = y+1').solve_linear('y').tree,
-			   me.fromText("y = -0.75").evaluate_numbers().tree)).toBeTruthy();
+			   me.fromText("y = -3/4").evaluate_numbers().tree)).toBeTruthy();
 
 	expect(me.fromText('2uv-v = 3u+q').solve_linear('u').tree)
 	    .toEqual(undefined);
