@@ -151,6 +151,23 @@ describe("convert subscripts to strings", function() {
 });
 
 
+describe("convert strings to subscripts", function() {
+	it("simple subscripts", function() {
+	  expect(me.fromAst('x_2').strings_to_subscripts().tree).toEqual(['_','x',2]);
+	  expect(me.fromAst('x_y').strings_to_subscripts().tree).toEqual(['_', 'x', 'y']);
+	  expect(me.fromAst('2_2').strings_to_subscripts().tree).toEqual(['_', 2, 2]);
+	  expect(me.fromAst('3_y').strings_to_subscripts().tree).toEqual(['_', 3, 'y']);
+	});
+  
+	it("subscripts embedded", function() {
+	  expect(me.fromAst(['^', 'x_2', 'y']).strings_to_subscripts().tree).toEqual(['^',['_', 'x', 2],'y']);
+	  expect(me.fromAst(['^',['apply', 'sin', 'x_t'],'y_3']).strings_to_subscripts().tree).toEqual(
+		['^',['apply', 'sin', ['_', 'x', 't']],['_', 'y', 3]]
+	  );
+	});
+  });
+
+
 describe("default order", function () {
 
     it("order terms", function () {

@@ -74681,7 +74681,41 @@ function subscripts_to_strings(expr_or_tree, force=false) {
     }
   }
 
-  return [operator].concat(operands.map(subscripts_to_strings));
+  return [operator].concat(operands.map(x => subscripts_to_strings(x,force)));
+}
+
+
+
+function strings_to_subscripts(expr_or_tree) {
+  // convert string 'a_b' to ['_', 'a','b'] and string 'a_1' to ['_', 'a', 1]
+
+  var tree = get_tree(expr_or_tree);
+
+  if(typeof tree === "string") {
+    let res = tree.match(/^([0-9a-zA-Z]+)_([a-zA-Z]+|[0-9]+)$/);
+    if(res) {
+      let base = Number(res[1]);
+      if(isNaN(base)) {
+        base = res[1];
+      }
+      let sub = Number(res[2]);
+      if(isNaN(sub)) {
+        sub = res[2];
+      }
+      return ['_', base, sub]
+    }else {
+      return tree;
+    }
+  }
+
+  if(!Array.isArray(tree)) {
+    return tree;
+  }
+  
+  let operator = tree[0];
+  let operands = tree.slice(1);
+  
+  return [operator].concat(operands.map(strings_to_subscripts));
 }
 
 
@@ -74693,7 +74727,8 @@ var normalization = /*#__PURE__*/Object.freeze({
     default_order: default_order,
     tuples_to_vectors: tuples_to_vectors,
     to_intervals: to_intervals,
-    subscripts_to_strings: subscripts_to_strings
+    subscripts_to_strings: subscripts_to_strings,
+    strings_to_subscripts: strings_to_subscripts
 });
 
 const equalUpToSign = function(expression, correct) {
