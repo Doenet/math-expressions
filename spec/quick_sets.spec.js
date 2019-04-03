@@ -22,8 +22,15 @@ describe("discrete infinite", function () {
       { offsets: me.fromText("7*pi/4"), periods: me.fromText("pi")});
     expect(set1.equals(set2)).toBeFalsy();
 
+    set1 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("-pi/4"), periods: me.fromText("pi/2")});
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("-pi/4, pi/4, 11pi/4, -11pi/4"), periods: me.fromText("2pi")});
+    expect(set1.equals(set2)).toBeTruthy();
+    
 
   });
+
 
 
   test("overcounting", function () {
@@ -73,7 +80,7 @@ describe("discrete infinite", function () {
   test("compare with list", function () {
     var set = me.create_discrete_infinite_set(
       { offsets: me.fromText("0"), periods: me.fromText("7"),
-	min_index: me.fromText("0")});
+        min_index: me.fromText("0")});
     var list1 = me.fromText("0, 7, 14, 21, ...");
     var list2 = me.fromText("-14, -7, 0, 7, 14, 21, ...");
     var list3 = me.fromText("0, 7, 14, 21");
@@ -86,7 +93,7 @@ describe("discrete infinite", function () {
 
     set = me.create_discrete_infinite_set(
       { offsets: me.fromText("0"), periods: me.fromText("7"),
-	min_index: me.fromText("-2")});
+        min_index: me.fromText("-2")});
 
     expect(set.equals(list1)).toBeFalsy();
     expect(set.equals(list2)).toBeTruthy();
