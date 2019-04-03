@@ -74884,13 +74884,13 @@
       if(offsets[0] === 'list') {
         if(periods[0] === 'list') {
           if(offsets.length !== periods.length || offsets.length === 1)
-    	return undefined;
+            return undefined;
           for(let i=1; i<offsets.length; i++)
-    	results.push(['tuple', offsets[i], periods[i], min_index, max_index]);
+            results.push(['tuple', offsets[i], periods[i], min_index, max_index]);
         }
         else {
           for(let i=1; i<offsets.length; i++)
-    	results.push(['tuple', offsets[i], periods, min_index, max_index]);
+            results.push(['tuple', offsets[i], periods, min_index, max_index]);
         }
       }
       else {
@@ -75809,7 +75809,7 @@
         ['/', offset0, period0], assumptions, Infinity);
 
       // if(!(typeof offset0 === 'number'))
-      // 	return false;
+      //   return false;
 
       var tuples = i_set.slice(1);
 
@@ -75858,17 +75858,19 @@
         // offsets match, then we've covered all of tree
         let offset_diff =  simplify$2(
           expand(
-    	['+', offset, ['-', offset0]]),
+            ['+', offset, ['-', offset0]]),
           assumptions, Infinity);
-        offset_diff = offset_diff % period;
 
-        if(math$19.abs(offset_diff) < 1E-10*period)
-          return true;
-        else {
-          data.splice(0,1);  // remove first entry from data
-          if(data.length === 0)
-    	return false;
+        if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
+          // use math.mod rather than % so it always non-negative
+          offset_diff = math$19.mod(offset_diff, period);
+
+          if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period)
+            return true;
         }
+        data.splice(0,1);  // remove first entry from data
+        if(data.length === 0)
+          return false;
 
       }
 
@@ -75879,9 +75881,9 @@
         let options = data.map(function (v,i) {
           let m = base_p/v[0];
           if(Number.isInteger(m))
-    	return [v[0], m, i];
+            return [v[0], m, i];
           else
-    	return undefined;
+            return undefined;
         }).filter(v=>v);
 
         let covered = [];
@@ -75896,32 +75898,36 @@
 
           for(let j=0; j < p; j++) {
 
-    	let offset_diff =  simplify$2(
-    	  expand(
-    	    ['+', offset, ['-', ['+', offset0, j]]]),
-    	  assumptions, Infinity);
-    	offset_diff = offset_diff % period;
+            let offset_diff =  simplify$2(
+              expand(
+                ['+', offset, ['-', ['+', offset0, j]]]),
+              assumptions, Infinity);
 
-    	if(math$19.abs(offset_diff) < 1E-10*period) {
+            // use math.mod rather than % so it always non-negative
+            if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
+              offset_diff = math$19.mod(offset_diff, period);
 
-    	  for(let k=0; k<m; k++) {
-    	    covered[j+k*p] = true;
-    	  }
+              if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period) {
 
-    	  // check to see if covered all;
-    	  let covered_all = true;
-    	  for(let ind=0; ind < base_p; ind++) {
-    	    if(!covered[ind]) {
-    	      covered_all = false;
-    	      break;
-    	    }
-    	  }
+                for(let k=0; k<m; k++) {
+                  covered[j+k*p] = true;
+                }
 
-    	  if(covered_all)
-    	    return true;
+                // check to see if covered all;
+                let covered_all = true;
+                for(let ind=0; ind < base_p; ind++) {
+                  if(!covered[ind]) {
+                    covered_all = false;
+                    break;
+                  }
+                }
 
-    	  break;
-    	}
+                if(covered_all)
+                  return true;
+
+                break;
+              }
+            }
           }
         }
       }
@@ -75963,17 +75969,20 @@
     //exports.equalsViaFiniteField = equalsViaFiniteField;
 
     const equals$5 = function(expr, other) {
-        if (expr.equalsViaSyntax(other)) {
-    	return true;
-        } else if (expr.equalsViaComplex(other)) {
-    	return true;
-        // } else if (expr.equalsViaReal(other)) {
-        //   	return true;
-        } else if(equals$4(expr,other)) {
-    	return true;
-        } else {
-    	return false;
-        }
+      if(expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
+        return false;
+      }
+      if (expr.equalsViaSyntax(other)) {
+        return true;
+      } else if (expr.equalsViaComplex(other)) {
+        return true;
+      // } else if (expr.equalsViaReal(other)) {
+      //   	return true;
+      } else if(equals$4(expr,other)) {
+        return true;
+      } else {
+        return false;
+      }
     };
 
     var equality = /*#__PURE__*/Object.freeze({
