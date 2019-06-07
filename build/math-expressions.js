@@ -1,43 +1,43 @@
-const get_tree = function(expr_or_tree) {
+const get_tree = function (expr_or_tree) {
 
-    if(expr_or_tree===undefined)
-	return undefined;
-    
-    var tree;
-    if(expr_or_tree.tree !== undefined)
-	tree = expr_or_tree.tree;
-    else
-	tree = expr_or_tree;
+  if (expr_or_tree === undefined || expr_or_tree === null)
+    return undefined;
 
-    return tree;
+  var tree;
+  if (expr_or_tree.tree !== undefined)
+    tree = expr_or_tree.tree;
+  else
+    tree = expr_or_tree;
+
+  return tree;
 };
 
 
-function *subsets(arr, m) {
-    // returns an iterator over all subsets of array arr
-    // up to size m
-    
-    var n = arr.length;
+function* subsets(arr, m) {
+  // returns an iterator over all subsets of array arr
+  // up to size m
 
-    if(m===undefined)
-	m=n;
+  var n = arr.length;
 
-    if(m === 0)
-	return;
-    
-    for(let i=0; i < n; i++) {
-	yield [arr[i]];
+  if (m === undefined)
+    m = n;
+
+  if (m === 0)
+    return;
+
+  for (let i = 0; i < n; i++) {
+    yield [arr[i]];
+  }
+
+  if (m === 1)
+    return
+
+  for (let i = 0; i < n; i++) {
+    let sub = subsets(arr.slice(i + 1), m - 1);
+    for (let val of sub) {
+      yield [arr[i]].concat(val);
     }
-
-    if(m === 1)
-	return
-    
-    for(let i=0; i < n; i++) {
-	let sub = subsets(arr.slice(i+1), m-1);
-	for(let val of sub) {
-	    yield [arr[i]].concat(val);
-	}
-    }
+  }
 }
 
 var is_associative = { '+': true, '*': true, 'and': true, 'or': true, 'union': true, 'intersect': true};
@@ -61092,9 +61092,9 @@ function functions( expr_or_tree ) {
 }
 
 var variables$1 = /*#__PURE__*/Object.freeze({
-    variables: variables,
-    operators: operators$1,
-    functions: functions
+  variables: variables,
+  operators: operators$1,
+  functions: functions
 });
 
 var underscore = createCommonjsModule(function (module, exports) {
@@ -67502,9 +67502,9 @@ function factorial_to_gamma_function(math_tree) {
 }
 
 var evaluation = /*#__PURE__*/Object.freeze({
-    f: f,
-    evaluate: evaluate,
-    evaluate_to_constant: evaluate_to_constant
+  f: f,
+  evaluate: evaluate,
+  evaluate_to_constant: evaluate_to_constant
 });
 
 // functions that map from one set to another
@@ -71352,14 +71352,14 @@ function simplify_ratios(expr_or_tree, assumptions) {
 }
 
 var simplify$3 = /*#__PURE__*/Object.freeze({
-    clean: clean,
-    simplify: simplify$2,
-    simplify_logical: simplify_logical,
-    evaluate_numbers: evaluate_numbers,
-    collect_like_terms_factors: collect_like_terms_factors,
-    collapse_unary_minus: collapse_unary_minus,
-    simplify_ratios: simplify_ratios,
-    default_order: default_order
+  clean: clean,
+  simplify: simplify$2,
+  simplify_logical: simplify_logical,
+  evaluate_numbers: evaluate_numbers,
+  collect_like_terms_factors: collect_like_terms_factors,
+  collapse_unary_minus: collapse_unary_minus,
+  simplify_ratios: simplify_ratios,
+  default_order: default_order
 });
 
 function tuples_to_vectors(expr_or_tree) {
@@ -71819,11 +71819,11 @@ function get_component(pattern, component) {
 }
 
 var transformation = /*#__PURE__*/Object.freeze({
-    expand: expand,
-    expand_relations: expand_relations,
-    substitute: substitute$1,
-    substitute_component: substitute_component,
-    get_component: get_component
+  expand: expand,
+  expand_relations: expand_relations,
+  substitute: substitute$1,
+  substitute_component: substitute_component,
+  get_component: get_component
 });
 
 function solve_linear(expr_or_tree, variable, assumptions) {
@@ -71920,7 +71920,7 @@ function solve_linear(expr_or_tree, variable, assumptions) {
 }
 
 var solve = /*#__PURE__*/Object.freeze({
-    solve_linear: solve_linear
+  solve_linear: solve_linear
 });
 
 function clean_assumptions(tree, known) {
@@ -74062,9 +74062,9 @@ function derivative_story(expr, x) {
 const derivativeStory = derivative_story;
 
 var differentiation = /*#__PURE__*/Object.freeze({
-    derivative: derivative$2,
-    derivative_story: derivative_story,
-    derivativeStory: derivativeStory
+  derivative: derivative$2,
+  derivative_story: derivative_story,
+  derivativeStory: derivativeStory
 });
 
 /*
@@ -74721,14 +74721,14 @@ function strings_to_subscripts(expr_or_tree) {
 
 
 var normalization = /*#__PURE__*/Object.freeze({
-    normalize_function_names: normalize_function_names,
-    normalize_applied_functions: normalize_applied_functions,
-    substitute_abs: substitute_abs,
-    default_order: default_order,
-    tuples_to_vectors: tuples_to_vectors,
-    to_intervals: to_intervals,
-    subscripts_to_strings: subscripts_to_strings,
-    strings_to_subscripts: strings_to_subscripts
+  normalize_function_names: normalize_function_names,
+  normalize_applied_functions: normalize_applied_functions,
+  substitute_abs: substitute_abs,
+  default_order: default_order,
+  tuples_to_vectors: tuples_to_vectors,
+  to_intervals: to_intervals,
+  subscripts_to_strings: subscripts_to_strings,
+  strings_to_subscripts: strings_to_subscripts
 });
 
 const equalUpToSign = function(expression, correct) {
@@ -74770,7 +74770,7 @@ const equalUpToSign = function(expression, correct) {
 };
 
 var sign_error = /*#__PURE__*/Object.freeze({
-    equalUpToSign: equalUpToSign
+  equalUpToSign: equalUpToSign
 });
 
 function add$2(expr_or_tree1, expr_or_tree2) {
@@ -74809,13 +74809,13 @@ function copy(expr_or_tree) {
 }
 
 var arithmetic$1 = /*#__PURE__*/Object.freeze({
-    add: add$2,
-    subtract: subtract$2,
-    multiply: multiply$2,
-    divide: divide$2,
-    pow: pow$2,
-    mod: mod$2,
-    copy: copy
+  add: add$2,
+  subtract: subtract$2,
+  multiply: multiply$2,
+  divide: divide$2,
+  pow: pow$2,
+  mod: mod$2,
+  copy: copy
 });
 
 var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array','matrix', 'interval'];
@@ -74854,7 +74854,7 @@ function isAnalytic(expr_or_tree, {allow_abs=false, allow_relation=false} ={}) {
 }
 
 var analytic = /*#__PURE__*/Object.freeze({
-    isAnalytic: isAnalytic
+  isAnalytic: isAnalytic
 });
 
 function create_discrete_infinite_set({
@@ -74895,7 +74895,7 @@ function create_discrete_infinite_set({
 }
 
 var sets = /*#__PURE__*/Object.freeze({
-    create_discrete_infinite_set: create_discrete_infinite_set
+  create_discrete_infinite_set: create_discrete_infinite_set
 });
 
 function tuple(entries){
@@ -74928,7 +74928,7 @@ function matrix$4(entries){       //entries is an array of arrays of math expres
 }
 
 var matrix$5 = /*#__PURE__*/Object.freeze({
-    matrix: matrix$4
+  matrix: matrix$4
 });
 
 /*
@@ -75291,11 +75291,11 @@ const toXML = function(expr) {
 };
 
 var printing = /*#__PURE__*/Object.freeze({
-    tex: tex,
-    toLatex: toLatex,
-    toString: toString,
-    toXML: toXML,
-    toGLSL: toGLSL
+  tex: tex,
+  toLatex: toLatex,
+  toString: toString,
+  toXML: toXML,
+  toGLSL: toGLSL
 });
 
 // check for equality by randomly sampling
@@ -75980,10 +75980,10 @@ const equals$5 = function(expr, other) {
 };
 
 var equality = /*#__PURE__*/Object.freeze({
-    equals: equals$5,
-    equalsViaComplex: equals$1,
-    equalsViaReal: equals$2,
-    equalsViaSyntax: equals$3
+  equals: equals$5,
+  equalsViaComplex: equals$1,
+  equalsViaReal: equals$2,
+  equalsViaSyntax: equals$3
 });
 
 const integrateNumerically = function(expr, x,a,b) {
@@ -76001,7 +76001,7 @@ const integrateNumerically = function(expr, x,a,b) {
 };
 
 var integration = /*#__PURE__*/Object.freeze({
-    integrateNumerically: integrateNumerically
+  integrateNumerically: integrateNumerically
 });
 
 function expression_to_polynomial(expr_or_tree) {
@@ -77211,8 +77211,8 @@ function reduce_rational(expr_or_tree) {
 const common_demoninator = common_denominator;
 
 var rational = /*#__PURE__*/Object.freeze({
-    reduce_rational: reduce_rational,
-    common_demoninator: common_demoninator
+  reduce_rational: reduce_rational,
+  common_demoninator: common_demoninator
 });
 
 function round_numbers_to_precision(expr_or_tree, digits=14) {
@@ -77251,7 +77251,7 @@ const round_numbers_to_precision_sub = function(tree, digits=14) {
 };
 
 var round$2 = /*#__PURE__*/Object.freeze({
-    round_numbers_to_precision: round_numbers_to_precision
+  round_numbers_to_precision: round_numbers_to_precision
 });
 
 const expression_to_tree = [
@@ -77326,43 +77326,43 @@ function atan2$2(expr_or_tree1, expr_or_tree2) {
 }
 
 var standard = /*#__PURE__*/Object.freeze({
-    abs: abs$2,
-    exp: exp$2,
-    log: log$2,
-    log10: log10$2,
-    sign: sign$4,
-    sqrt: sqrt$2,
-    conj: conj$2,
-    im: im$2,
-    re: re$2,
-    factorial: factorial$2,
-    gamma: gamma$2,
-    erf: erf$2,
-    acos: acos$2,
-    acosh: acosh$2,
-    acot: acot$2,
-    acoth: acoth$2,
-    acsc: acsc$2,
-    acsch: acsch$2,
-    asec: asec$2,
-    asech: asech$2,
-    asin: asin$2,
-    asinh: asinh$2,
-    atan: atan$2,
-    atanh: atanh$2,
-    cos: cos$2,
-    cosh: cosh$2,
-    cot: cot$2,
-    coth: coth$2,
-    csc: csc$2,
-    csch: csch$2,
-    sec: sec$2,
-    sech: sech$2,
-    sin: sin$2,
-    sinh: sinh$2,
-    tan: tan$2,
-    tanh: tanh$2,
-    atan2: atan2$2
+  abs: abs$2,
+  exp: exp$2,
+  log: log$2,
+  log10: log10$2,
+  sign: sign$4,
+  sqrt: sqrt$2,
+  conj: conj$2,
+  im: im$2,
+  re: re$2,
+  factorial: factorial$2,
+  gamma: gamma$2,
+  erf: erf$2,
+  acos: acos$2,
+  acosh: acosh$2,
+  acot: acot$2,
+  acoth: acoth$2,
+  acsc: acsc$2,
+  acsch: acsch$2,
+  asec: asec$2,
+  asech: asech$2,
+  asin: asin$2,
+  asinh: asinh$2,
+  atan: atan$2,
+  atanh: atanh$2,
+  cos: cos$2,
+  cosh: cosh$2,
+  cot: cot$2,
+  coth: coth$2,
+  csc: csc$2,
+  csch: csch$2,
+  sec: sec$2,
+  sech: sech$2,
+  sin: sin$2,
+  sinh: sinh$2,
+  tan: tan$2,
+  tanh: tanh$2,
+  atan2: atan2$2
 });
 
 const expression_to_tree$1 = [
@@ -80829,77 +80829,79 @@ var latexToAst$1 = new latexToAst();
 var mmlToAst$1 = new mmlToAst();
 
 
-function Expression (ast, context) {
-    this.tree = flatten(ast);
-	this.context = context;
-	
-	this.toJSON = function () {
-		return {
-			objectType: "math-expression",
-			tree: this.tree,
-			assumptions: this.context.assumptions
-		}
-	};
+function Expression(ast, context) {
+  this.tree = flatten(ast);
+  this.context = context;
+
+  this.toJSON = function () {
+    return {
+      objectType: "math-expression",
+      tree: this.tree,
+      assumptions: this.context.assumptions
+    }
+  };
 }
 
 function extend$4(object, tree_to_expression) {
-    // if tree_to_expression, convert ast to expression
+  // if tree_to_expression, convert ast to expression
 
-    // arguments object is NOT an array
-    var args = flatten_array(Array.prototype.slice.call(arguments, 2));
+  // arguments object is NOT an array
+  var args = flatten_array(Array.prototype.slice.call(arguments, 2));
 
-    args.forEach(
-	function(rhs) {
-            if (rhs) {
-		for (var property in rhs) {
-		    if(tree_to_expression) {
-			(function () {
-			    var prop=property;
-			    object[prop] =  function() {
-				return this.fromAst(
-				    rhs[prop].apply(null, arguments));
-			    };
-			})();
-		    }
-		    else
-			object[property] = rhs[property];
-		}
-            }
-	});
+  args.forEach(
+    function (rhs) {
+      if (rhs) {
+        for (var property in rhs) {
+          if (tree_to_expression) {
+            (function () {
+              var prop = property;
+              object[prop] = function () {
+                return this.fromAst(
+                  rhs[prop].apply(null, arguments));
+              };
+            })();
+          }
+          else
+            object[property] = rhs[property];
+        }
+      }
+    }
+  );
 
-    return object;
+  return object;
 }
 
 function extend_prototype(object, tree_to_expression) {
-    // append a properties to object prepending this as first argument
-    // if tree_to_expression, convert ast to expression
+  // append a properties to object prepending this as first argument
+  // if tree_to_expression, convert ast to expression
 
-    // arguments object is NOT an array
-    var args = flatten_array(Array.prototype.slice.call(arguments, 2));
+  // arguments object is NOT an array
+  var args = flatten_array(Array.prototype.slice.call(arguments, 2));
 
-    args.forEach(
-	function(rhs) {
-            if (rhs) {
-		for (var property in rhs) {
-		    // prepend this as first argument
-		    (function () {
-			var prop=property;
-			object[prop] =  function() {
-			    var arg2 = [this].concat(
-				Array.prototype.slice.call(arguments));
-			    // convert to expression if output_expression
-			    if(tree_to_expression)
-				return this.context.fromAst(
-				    rhs[prop].apply(null, arg2));
-			    else
-				return rhs[prop].apply(null, arg2);
-			};
-		    })();
-		}
-            }
-	});
+  args.forEach(
+    function (rhs) {
+      if (rhs) {
+        for (var property in rhs) {
+          // prepend this as first argument
+          (function () {
+            var prop = property;
+            object[prop] = function () {
+              var arg2 = [this].concat(
+                Array.prototype.slice.call(arguments));
+              // convert to expression if output_expression
+              if (tree_to_expression)
+                return this.context.fromAst(
+                  rhs[prop].apply(null, arg2));
+              else
+                return rhs[prop].apply(null, arg2);
+            };
+          })();
+        }
+      }
+    }
+  );
 
-    return object;
+  return object;
 }
 
 
@@ -80908,133 +80910,133 @@ function extend_prototype(object, tree_to_expression) {
 /* Factory methods */
 
 function create_from_multiple(expr, pars) {
-    if (Array.isArray(expr) || (typeof expr === 'number')) {
-	return new Expression(expr, Context);
+  if (Array.isArray(expr) || (typeof expr === 'number')) {
+    return new Expression(expr, Context);
+  }
+  else if (typeof expr === 'string') {
+    try {
+      return new Expression(textToAst$5.convert(expr), Context);
     }
-    else if (typeof expr === 'string') {
-	try {
-	  return new Expression( textToAst$5.convert(expr), Context);
-	}
-	catch(e_text) {
-	    try {
-		 return new Expression( latexToAst$1.convert(expr), Context );
-	    }
-	    catch(e_latex){
-		try {
-		    return new Expression( mmlToAst$1.convert(expr), Context );
-		}
-		catch(e_mml) {
-		    if(expr.indexOf("\\") !== -1)
-			throw(e_latex)
-		    if(expr.indexOf("</") !== -1)
-			throw(e_mml)
-		    throw(e_text)
-		}
-	    }
-	}
+    catch (e_text) {
+      try {
+        return new Expression(latexToAst$1.convert(expr), Context);
+      }
+      catch (e_latex) {
+        try {
+          return new Expression(mmlToAst$1.convert(expr), Context);
+        }
+        catch (e_mml) {
+          if (expr.indexOf("\\") !== -1)
+            throw (e_latex)
+          if (expr.indexOf("</") !== -1)
+            throw (e_mml)
+          throw (e_text)
+        }
+      }
     }
+  }
 }
 
 function parseText(string, pars) {
-    return new Expression( textToAst$5.convert(string), Context);
+  return new Expression(textToAst$5.convert(string), Context);
 }
 
 function parseLatex(string, pars) {
-    return new Expression( latexToAst$1.convert(string), Context);
+  return new Expression(latexToAst$1.convert(string), Context);
 }
 
 function parseMml(string, pars) {
-    return new Expression( mmlToAst$1.convert(string), Context);
+  return new Expression(mmlToAst$1.convert(string), Context);
 }
 
 
 var Context = {
-    assumptions: initialize_assumptions(),
-    parser_parameters: {},
-    from: create_from_multiple,
-    fromText: parseText,
-    parse: parseText,
-    fromLaTeX: parseLatex,
-    fromLatex: parseLatex,
-    fromTeX: parseLatex,
-    fromTex: parseLatex,
-    fromMml: parseMml,
-    parse_tex: parseLatex,
-    fromAst: function(ast) {
-	return new Expression( ast, this );
-    },
-    set_to_default: function() {
-	this.assumptions=initialize_assumptions();
-	// this.parser_parameters = JSON.parse(JSON.stringify(parser_defaults));
-    },
-    get_assumptions: function(variables_or_expr, params) {
-	return get_assumptions(this.assumptions, variables_or_expr,
-					   params);
-    },
-    add_assumption: function(assumption, exclude_generic) {
-	return add_assumption(
-	    this.assumptions, assumption, exclude_generic);
-    },
-    add_generic_assumption: function(assumption) {
-	return add_generic_assumption(this.assumptions,assumption);
-    },
-    remove_assumption: function(assumption) {
-	return remove_assumption(this.assumptions,assumption);
-    },
-    remove_generic_assumption: function(assumption) {
-	return remove_generic_assumption(this.assumptions,
-						     assumption);
-    },
-    clear_assumptions: function() {
-	this.assumptions = initialize_assumptions();
-    },
+  assumptions: initialize_assumptions(),
+  parser_parameters: {},
+  from: create_from_multiple,
+  fromText: parseText,
+  parse: parseText,
+  fromLaTeX: parseLatex,
+  fromLatex: parseLatex,
+  fromTeX: parseLatex,
+  fromTex: parseLatex,
+  fromMml: parseMml,
+  parse_tex: parseLatex,
+  fromAst: function (ast) {
+    return new Expression(ast, this);
+  },
+  set_to_default: function () {
+    this.assumptions = initialize_assumptions();
+    // this.parser_parameters = JSON.parse(JSON.stringify(parser_defaults));
+  },
+  get_assumptions: function (variables_or_expr, params) {
+    return get_assumptions(this.assumptions, variables_or_expr,
+      params);
+  },
+  add_assumption: function (assumption, exclude_generic) {
+    return add_assumption(
+      this.assumptions, assumption, exclude_generic);
+  },
+  add_generic_assumption: function (assumption) {
+    return add_generic_assumption(this.assumptions, assumption);
+  },
+  remove_assumption: function (assumption) {
+    return remove_assumption(this.assumptions, assumption);
+  },
+  remove_generic_assumption: function (assumption) {
+    return remove_generic_assumption(this.assumptions,
+      assumption);
+  },
+  clear_assumptions: function () {
+    this.assumptions = initialize_assumptions();
+  },
 
-	math: math$19,
-	
-	reviver: function (key, value) {
-		if(value.objectType === "math-expression" && value.tree !== undefined) {
-			let expr = Context.fromAst(value.tree);
-			if(value.assumptions !== undefined) {
-				expr.assumptions = value.assumptions;
-			}
-			return expr;
-		}
-		return value;
-	}
+  math: math$19,
+
+  reviver: function (key, value) {
+    if (value.objectType === "math-expression" && value.tree !== undefined) {
+      let expr = Context.fromAst(value.tree);
+      if (value.assumptions !== undefined) {
+        expr.assumptions = value.assumptions;
+      }
+      return expr;
+    }
+    return value;
+  },
+  class: Expression,
 };
-
 
 
 Context.set_to_default();
 
 
-extend$4( Context, true,
-	expression_to_tree,
-	expression_to_tree$1,
-      );
-extend$4( Context, false,
-	expression_to_other,
-      );
+extend$4(Context, true,
+  expression_to_tree,
+  expression_to_tree$1,
+);
+extend$4(Context, false,
+  expression_to_other,
+);
 
-extend_prototype( Expression.prototype, true,
-		  expression_to_tree
-		);
-extend_prototype( Expression.prototype, false,
-		  expression_to_other
-		);
+extend_prototype(Expression.prototype, true,
+  expression_to_tree
+);
+extend_prototype(Expression.prototype, false,
+  expression_to_other
+);
 
 
 // from https://stackoverflow.com/a/34757676
 function flatten_array(ary, ret) {
-    ret = ret === undefined ? [] : ret;
-    for (var i = 0; i < ary.length; i++) {
-        if (Array.isArray(ary[i])) {
-            flatten_array(ary[i], ret);
-        } else {
-            ret.push(ary[i]);
-        }
+  ret = ret === undefined ? [] : ret;
+  for (var i = 0; i < ary.length; i++) {
+    if (Array.isArray(ary[i])) {
+      flatten_array(ary[i], ret);
+    } else {
+      ret.push(ary[i]);
     }
-    return ret;
+  }
+  return ret;
 }
 
 export default Context;
