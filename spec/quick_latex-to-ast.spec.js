@@ -4,6 +4,7 @@ import { ParseError } from '../lib/converters/error';
 var converter = new latexToAst();
 
 var trees = {
+  
   '\\frac{1}{2} x': ['*',['/',1,2],'x'],
   '1+x+3': ['+',1,'x',3],
   '1-x-3': ['+',1,['-','x'],['-',3]],
@@ -197,6 +198,8 @@ var trees = {
   '2\\cdot3': ['*', 2, 3],
   '2 \\times 3': ['*', 2, 3],
   '2\\times3': ['*', 2, 3],
+  '3 \\div 1': ['/', 3, 1],
+  '3\\div1': ['/', 3, 1],
   '\\sin2': ['apply', 'sin', 2],
   '3|x|': ['*', 3, ['apply', 'abs', 'x']],
   '|a|b|c|': ['*',['apply', 'abs', 'a'], 'b', ['apply', 'abs', 'c']],
