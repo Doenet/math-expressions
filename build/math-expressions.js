@@ -374,10 +374,10 @@ function default_order(expr_or_tree, params) {
     return normalize_negatives(sort_ast(tree));
 }
 
-var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function unwrapExports (x) {
-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x.default : x;
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
 }
 
 function createCommonjsModule(fn, module) {
@@ -63204,7 +63204,7 @@ const applyAllTransformations = function( tree, transformations, depth ) {
 
     			if(params.evaluate_numbers)
   			    result = evaluate_numbers(
-      				result, undefined, params.max_digits);
+      				result, {max_digits: params.max_digits});
 
     			let add_right=[], add_left=[];
     			if(m._skipped) {
@@ -63229,7 +63229,7 @@ const applyAllTransformations = function( tree, transformations, depth ) {
 
     			if(params.evaluate_numbers)
   			    result = evaluate_numbers(
-        				result, undefined, params.max_digits);
+        				result, {max_digits: params.max_digits});
 
     			return result;
 		    }
@@ -70657,7 +70657,7 @@ function simplify$2(expr_or_tree, assumptions, max_digits) {
 	assumptions = expr_or_tree.context.get_assumptions(
 	    [expr_or_tree.variables()]);
 
-    tree = evaluate_numbers(tree, assumptions, max_digits);
+    tree = evaluate_numbers(tree, {assumptions: assumptions, max_digits: max_digits});
     // if already have it down to a number of variable, no need for more simplification
     if(!Array.isArray(tree)) {
       return tree;
@@ -70676,7 +70676,7 @@ function simplify_logical(expr_or_tree, assumptions) {
 	assumptions = expr_or_tree.context.get_assumptions(
 	    [expr_or_tree.variables()]);
 
-    tree = evaluate_numbers(tree, assumptions);
+    tree = evaluate_numbers(tree, {assumptions: assumptions});
 
     tree = unflattenRight(tree);
 
@@ -70728,7 +70728,7 @@ function contains_only_numbers(tree) {
   return tree.slice(1).every(x => contains_only_numbers(x));
 }
 
-function evaluate_numbers_sub(tree, assumptions, max_digits) {
+function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
   // assume that tree has been sorted to default order (while flattened)
   // and then unflattened_right
   // returns unflattened tree
@@ -70793,7 +70793,7 @@ function evaluate_numbers_sub(tree, assumptions, max_digits) {
 
   var operator = tree[0];
   var operands = tree.slice(1).map(v => evaluate_numbers_sub(
-    v, assumptions, max_digits));
+    v, assumptions, max_digits, skip_ordering));
 
   if(operator === '+') {
     let left = operands[0];
@@ -70813,9 +70813,9 @@ function evaluate_numbers_sub(tree, assumptions, max_digits) {
           && (typeof right[1] === 'number')) {
         return ['+', left+right[1], right[2]];
       }
-      // check if right is an addition with that begins with
+      // check if right is an addition with that ends with
       // a constant.  If so combine with left
-      if(Array.isArray(right) && right[0] === '+'
+      if(!skip_ordering && Array.isArray(right) && right[0] === '+'
           && (typeof right[2] === 'number')) {
         return ['+', left+right[2], right[1]];
       }
@@ -71035,7 +71035,7 @@ function evaluate_numbers_sub(tree, assumptions, max_digits) {
 }
 
 
-function evaluate_numbers(expr_or_tree, assumptions, max_digits) {
+function evaluate_numbers(expr_or_tree, {assumptions, max_digits, skip_ordering=false}={}) {
 
   if(max_digits === undefined ||
       !(Number.isInteger(max_digits) || max_digits === Infinity))
@@ -71049,10 +71049,16 @@ function evaluate_numbers(expr_or_tree, assumptions, max_digits) {
     assumptions = expr_or_tree.context.get_assumptions(
       [expr_or_tree.variables()]);
 
-  tree = unflattenRight(default_order(flatten(tree)));
-
-  var result = default_order(evaluate_numbers_sub(
-    tree, assumptions, max_digits));
+  var result;
+  if(skip_ordering) {
+    tree = unflattenRight(flatten(tree));
+    result = evaluate_numbers_sub(
+      tree, assumptions, max_digits, skip_ordering);
+  }else {
+    tree = unflattenRight(default_order(flatten(tree)));
+    result = default_order(evaluate_numbers_sub(
+      tree, assumptions, max_digits, skip_ordering));
+  }
 
   return flatten(result);
 }
@@ -71236,7 +71242,7 @@ function collect_like_terms_factors(expr_or_tree, assumptions, max_digits) {
     			  }]);
     tree = applyAllTransformations(tree, transformations, 40);
 
-    tree = evaluate_numbers(tree, assumptions, max_digits);
+    tree = evaluate_numbers(tree, {assumptions: assumptions, max_digits: max_digits});
 
     return tree;
 
@@ -77574,6 +77580,7 @@ const latex_rules = [
   ['\\\\biggr\\s*\\\\}', 'RBRACE'],
   ['\\\\Biggr\\s*\\\\}', 'RBRACE'],
   ['\\\\cdot(?![a-zA-Z])', '*'],
+  ['\\\\div(?![a-zA-Z])', '/'],
   ['\\\\times(?![a-zA-Z])', '*'],
   ['\\\\frac(?![a-zA-Z])', 'FRAC'],
   [',', ','],

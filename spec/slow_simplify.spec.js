@@ -5,8 +5,10 @@ describe("evaluate_numbers", function () {
 
   it("addition", function () {
     expect(me.from("4+x-2").evaluate_numbers().tree).toEqual(['+', 2, 'x']);
+    expect(me.from("4+x-2").evaluate_numbers({skip_ordering: true}).tree).toEqual(['+', 4, 'x', -2]);
 
     expect(me.from("x+0").evaluate_numbers().tree).toEqual('x');
+    expect(me.from("x+0").evaluate_numbers({skip_ordering: true}).tree).toEqual('x');
 
     expect(me.from("Infinity + 3").evaluate_numbers().tree).toEqual(Infinity);
     expect(me.from("Infinity + Infinity").evaluate_numbers().tree).toEqual(Infinity);
@@ -34,8 +36,11 @@ describe("evaluate_numbers", function () {
   it("multiplication", function () {
     expect(me.from("3*2*x*4").evaluate_numbers().tree).toEqual(
         ['*', 24, 'x']);
-
+    expect(me.from("3*2*x*4").evaluate_numbers({skip_ordering: true}).tree).toEqual(
+        ['*', 6, 'x', 4]);
+    
     expect(me.from("3*2*x*0").evaluate_numbers().tree).toEqual(0);
+    expect(me.from("3*2*x*0").evaluate_numbers({skip_ordering: true}).tree).toEqual(0);
 
     expect(me.from("(2-1)x").evaluate_numbers().tree).toEqual('x');
 
@@ -46,7 +51,9 @@ describe("evaluate_numbers", function () {
 
     expect(me.from("4(x)(-2)").evaluate_numbers().tree).toEqual(
         ['*', -8, 'x']);
-
+    expect(me.from("4(x)(-2)").evaluate_numbers({skip_ordering: true}).tree).toEqual(
+        ['*', 4, 'x', -2]);
+    
     expect(me.from("0*Infinity").evaluate_numbers().tree).toEqual(NaN);
 
 	expect(me.from("2*2*2*2*2*2*2*2*2*2*2*2*2*2").evaluate_numbers().tree)
