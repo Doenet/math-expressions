@@ -100,6 +100,15 @@ describe("evaluate_numbers", function () {
 
   });
 
+
+  it("combination", function () {
+    expect(me.from("1x^2-3 +0x^2 + 4 -2x^2 -3 + 5x^2").evaluate_numbers().tree).toEqual(-2);
+    expect(me.from("1x^2-3 +0x^2 + 4 -2x^2 -3 + 5x^2").evaluate_numbers({skip_ordering: true}).tree).toEqual(
+        [ '+', [ '^', 'x', 2 ], 1, [ '*', -2, [ '^', 'x', 2 ] ], -3, [ '*', 5, [ '^', 'x', 2 ] ] ]
+    );
+  });
+
+
   it("to constant", function () {
 
     expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual('x');
