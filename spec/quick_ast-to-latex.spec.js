@@ -660,6 +660,11 @@ const objectsToTest = [
     'ast': ['tuple', 1, 2, 3, ['ldots']],
     'latex': '\\left( 1, 2, 3, \\ldots \\right)',
   },
+  {
+    'ast': ['^', ['apply', 'sqrt', 2], 3],
+    'latex': '\\left(\\sqrt{2}\\right)^{3}',
+  },
+
 
 
 ]
