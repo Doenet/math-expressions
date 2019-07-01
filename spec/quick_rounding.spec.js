@@ -10,6 +10,18 @@ describe("round to significant digits", function () {
     expect(expr.round_numbers_to_precision(10).tree).toEqual(1.23456789)
     expect(expr.round_numbers_to_precision(4).tree).toEqual(1.235)
 
+    expr = me.fromText('12345678901234567890000000000');
+    expect(expr.round_numbers_to_precision(100).tree).toEqual(12345678901234568000000000000)
+    expect(expr.round_numbers_to_precision(14).tree).toEqual(12345678901235000000000000000)
+    expect(expr.round_numbers_to_precision(10).tree).toEqual(12345678900000000000000000000)
+    expect(expr.round_numbers_to_precision(4).tree).toEqual(12350000000000000000000000000)
+
+    expr = me.fromText('0.000000000000000000001234567890123456789');
+    expect(expr.round_numbers_to_precision(100).tree).toEqual(0.0000000000000000000012345678901234568)
+    expect(expr.round_numbers_to_precision(14).tree).toEqual(0.0000000000000000000012345678901235)
+    expect(expr.round_numbers_to_precision(10).tree).toEqual(0.00000000000000000000123456789)
+    expect(expr.round_numbers_to_precision(4).tree).toEqual(0.000000000000000000001235)
+
   });
 
   it("expression", function () {

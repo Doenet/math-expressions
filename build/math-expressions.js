@@ -77239,18 +77239,20 @@ function round_numbers_to_precision(expr_or_tree, digits=14) {
 }
 
 const round_numbers_to_precision_sub = function(tree, digits=14) {
+  if(digits > 15) {
+    return tree;
+  }
   if(typeof tree === "number") {
     if(Number.isFinite(tree)) {
       const scaleFactor = math$19.floor(math$19.log10(math$19.abs(tree)));
       const n = digits - scaleFactor - 1;
-      if(n > 15) {
-        return tree; // can't round to more than 15 digits
+      if(n < 0) {
+        // mathjs toFixed truncates zeros when n is negative
+        // so add back on when creating float
+        return parseFloat(number_7(tree, n)+'0'.repeat(math$19.abs(n)));
+      } else {
+        return parseFloat(number_7(tree, n))
       }
-      if(n >= 0) {
-        return math$19.round(tree, n);
-      }
-      const m = math$19.pow(10, n);
-      return math$19.round(tree * m) / m;
     }
   }
   if(!Array.isArray(tree)) {
