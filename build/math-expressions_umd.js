@@ -71033,6 +71033,8 @@
             return result;
 
         }
+      }else if(base === 1) {
+        return 1;
       }
       return [operator].concat(operands);
     }
@@ -71064,6 +71066,9 @@
       tree = unflattenRight(default_order(flatten(tree)));
       result = default_order(evaluate_numbers_sub(
         tree, assumptions, max_digits, skip_ordering));
+      // TODO: determine how often have to repeat
+      result = default_order(evaluate_numbers_sub(
+        result, assumptions, max_digits, skip_ordering));
     }
 
     return flatten(result);
@@ -73420,7 +73425,7 @@
       // factor(tree) is a single character
       // or tree is a number
       // or tree is a string
-      // or tree is a function call
+      // or tree is a function call other than sqrt
       // or factor(tree) is in parens
 
       var result = this.factor(tree);
@@ -73428,7 +73433,7 @@
       if (result.toString().length === 1 ||
         (typeof tree === 'number') ||
         (typeof tree === 'string') ||
-        (tree[0] === 'apply') ||
+        (tree[0] === 'apply' && tree[1] !== "sqrt") ||
         result.toString().match(/^\\left\(.*\\right\)$/)
       )
         return true;

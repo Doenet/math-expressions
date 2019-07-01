@@ -98,6 +98,10 @@ describe("evaluate_numbers", function () {
 
     expect(me.from("(5-3)^3").evaluate_numbers().tree).toEqual(8);
 
+    expect(me.from("1^t").evaluate_numbers().tree).toEqual(1);
+
+    expect(me.from("1^t 5^x").evaluate_numbers().tree).toEqual(['^', 5, 'x']);
+
   });
 
 
