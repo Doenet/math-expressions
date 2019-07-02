@@ -22,6 +22,10 @@ describe("round to significant digits", function () {
     expect(expr.round_numbers_to_precision(10).tree).toEqual(0.00000000000000000000123456789)
     expect(expr.round_numbers_to_precision(4).tree).toEqual(0.000000000000000000001235)
 
+    expect(me.fromAst(0).round_numbers_to_precision(10).tree).toEqual(0)
+    expect(me.fromAst(Infinity).round_numbers_to_precision(10).tree).toEqual(Infinity)
+    expect(me.fromAst(-Infinity).round_numbers_to_precision(10).tree).toEqual(-Infinity)
+
   });
 
   it("expression", function () {

@@ -77249,7 +77249,7 @@
       return tree;
     }
     if(typeof tree === "number") {
-      if(Number.isFinite(tree)) {
+      if(Number.isFinite(tree) && tree !== 0) {
         const scaleFactor = math$19.floor(math$19.log10(math$19.abs(tree)));
         const n = digits - scaleFactor - 1;
         if(n < 0) {
