@@ -71068,7 +71068,7 @@
         tree, assumptions, max_digits, skip_ordering));
       // TODO: determine how often have to repeat
       result = default_order(evaluate_numbers_sub(
-        result, assumptions, max_digits, skip_ordering));
+        unflattenRight(result), assumptions, max_digits, skip_ordering));
     }
 
     return flatten(result);
