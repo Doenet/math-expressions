@@ -128,250 +128,412 @@ const allChildren = function( tree ) {
 };
 
 function remove_duplicate_negatives(tree) {
-    // remove pairs of consecutive minus signs
+  // remove pairs of consecutive minus signs
 
-    if(!Array.isArray(tree))
-	return tree;
+  if (!Array.isArray(tree))
+    return tree;
 
-    var operator = tree[0];
-    var operands = tree.slice(1);
+  var operator = tree[0];
+  var operands = tree.slice(1);
 
-    if(operator === '-' && operands[0][0] === '-') {
-	return remove_duplicate_negatives(operands[0][1]);
-    }
+  if (operator === '-' && operands[0][0] === '-') {
+    return remove_duplicate_negatives(operands[0][1]);
+  }
 
-    operands = operands.map(remove_duplicate_negatives);
-    
-    return [operator].concat(operands);
+  operands = operands.map(remove_duplicate_negatives);
+
+  return [operator].concat(operands);
 
 }
 
 function normalize_negatives_in_factors(tree) {
-    // if any factors contain a negative,
-    // place negative outside factor
-    //
-    // run remove_duplicates_negatives before and after
-    // running this function to make sure all negatives are addressed
-    
-    if(!Array.isArray(tree))
-	return tree;
+  // if any factors contain a negative,
+  // place negative outside factor
+  //
+  // run remove_duplicates_negatives before and after
+  // running this function to make sure all negatives are addressed
 
-    var operator = tree[0];
-    var operands = tree.slice(1);
+  if (!Array.isArray(tree))
+    return tree;
 
-    operands = operands.map(normalize_negatives_in_factors);
+  var operator = tree[0];
+  var operands = tree.slice(1);
 
-    if(operator !== '*' && operator !== '/')
-	return [operator].concat(operands);
+  operands = operands.map(normalize_negatives_in_factors);
 
-    var sign = 1;
-    var operands_no_negatives=[];
+  if (operator !== '*' && operator !== '/')
+    return [operator].concat(operands);
 
-    for(var i = 0; i < operands.length; i++) {
-	if(operands[i][0] === '-') {
-	    sign *= -1;
-	    operands_no_negatives.push(operands[i][1]);
-	}
-	else {
-	    operands_no_negatives.push(operands[i]);
-	}
+  var sign = 1;
+  var operands_no_negatives = [];
+
+  for (var i = 0; i < operands.length; i++) {
+    if (operands[i][0] === '-') {
+      sign *= -1;
+      operands_no_negatives.push(operands[i][1]);
     }
-    var result = [operator].concat(operands_no_negatives);
-    if(sign === -1)
-	result = ['-', result];
+    else {
+      operands_no_negatives.push(operands[i]);
+    }
+  }
+  var result = [operator].concat(operands_no_negatives);
+  if (sign === -1)
+    result = ['-', result];
 
-    return result;
+  return result;
 }
 
 
 function normalize_negatives(expr_or_tree) {
-    // Remove duplicate negatives and pull all negatives outside factors
-    var tree = get_tree(expr_or_tree);
-    
-    tree = remove_duplicate_negatives(tree);
-    tree = normalize_negatives_in_factors(tree);
-    tree = remove_duplicate_negatives(tree);
+  // Remove duplicate negatives and pull all negatives outside factors
+  var tree = get_tree(expr_or_tree);
 
-    return tree;
+  tree = remove_duplicate_negatives(tree);
+  tree = normalize_negatives_in_factors(tree);
+  tree = remove_duplicate_negatives(tree);
+
+  return tree;
 }
 
 
-
-function compare_function(a,b, params) {
-
-    if(params === undefined)
-	params = {};
-    
-    function sort_key(tree) {
-	if (typeof tree === 'number') {
-	    if(params.ignore_negatives)
-		return [0, 'number', Math.abs(tree)];
-	    return [0, 'number', tree];
-	}
-	if (typeof tree === 'string') {
-	    // if string is a constant, return number with value?
-	    return [1, 'symbol', tree];
-	}
-	if (typeof tree === 'boolean') {
-	    return [1, 'boolean', tree];
-	}
+function sort_key(tree, params={}) {
+  if (typeof tree === 'number') {
+    if (params.ignore_negatives)
+      return [0, 'number', Math.abs(tree)];
+    return [0, 'number', tree];
+  }
+  if (typeof tree === 'string') {
+    // if string is a constant, return number with value?
+    return [1, 'symbol', tree];
+  }
+  if (typeof tree === 'boolean') {
+    return [1, 'boolean', tree];
+  }
 
 
-	if(!Array.isArray(tree))
-	    return [-1, 'unknown', tree];
-	
-	
-	var operator = tree[0];
-	var operands = tree.slice(1);
-
-	if(operator === 'apply') {
-	    var key = [2, 'function', operands[0]];
-
-	    var f_args = operands[1];
-	    
-	    var n_args = 1;
-
-	    var arg_keys = [];
-	    
-	    if(Array.isArray(f_args)) {
-
-		f_args = f_args.slice(1);  // remove vector operator
-		
-		n_args = f_args.length;
-
-		arg_keys = f_args.map(sort_key);
-		
-		
-	    }
-	    else {
-		arg_keys = [sort_key(f_args)];
-	    }
-
-	    key.push([n_args, arg_keys]);
-
-	    return key;
-	}
-
-	var n_factors = operands.length;
-	
-	var factor_keys = operands.map(sort_key);
+  if (!Array.isArray(tree))
+    return [-1, 'unknown', tree];
 
 
-	if(operator === "*") {
-	    return [4, 'product', n_factors, factor_keys];
-	}
+  var operator = tree[0];
+  var operands = tree.slice(1);
 
-	if(operator === "/") {
-	    return [4, 'quotient', n_factors, factor_keys];
-	}
+  if (operator === 'apply') {
+    var key = [2, 'function', operands[0]];
 
-	if(operator === "+") {
-	    return [5, 'sum', n_factors, factor_keys];
-	}
+    var f_args = operands[1];
 
-	if(operator === "-") {
-	    if(params.ignore_negatives)
-		return factor_keys[0];
-	    return [6, 'minus', n_factors, factor_keys];
-	}
+    var n_args = 1;
 
-	
-	return [7, operator, n_factors, factor_keys];
-	
+    var arg_keys = [];
+
+    if (Array.isArray(f_args)) {
+
+      f_args = f_args.slice(1);  // remove vector operator
+
+      n_args = f_args.length;
+
+      arg_keys = f_args.map(x=>sort_key(x,params));
+
+
+    }
+    else {
+      arg_keys = [sort_key(f_args,params)];
     }
 
-    var key_a = sort_key(a);
-    var key_b = sort_key(b);
+    key.push([n_args, arg_keys]);
 
-    if(key_a < key_b)
-	return -1;
-    if(key_a > key_b)
-	return 1;
-    return 0;
+    return key;
+  }
+
+  var n_factors = operands.length;
+
+  var factor_keys = operands.map(sort_key, params);
+
+
+  if (operator === "*") {
+    return [4, 'product', n_factors, factor_keys];
+  }
+
+  if (operator === "/") {
+    return [4, 'quotient', n_factors, factor_keys];
+  }
+
+  if (operator === "+") {
+    return [5, 'sum', n_factors, factor_keys];
+  }
+
+  if (operator === "-") {
+    if (params.ignore_negatives)
+      return factor_keys[0];
+    return [6, 'minus', n_factors, factor_keys];
+  }
+
+
+  return [7, operator, n_factors, factor_keys];
+
 }
 
 
+function arrayCompare(a,b) {
+  if(Array.isArray(a)) {
+    if(Array.isArray(b)) {
+      let minLength = Math.min(a.length, b.length);
+      for(let i=0; i < minLength; i++) {
+        let comp = arrayCompare(a[i], b[i]);
+        if(comp !== 0) {
+          return comp;
+        }
+      }
+
+      // shorter array comes first
+      return a.length < b.length ? -1 : (a.length > b.length ? 1: 0);
+
+    }else {
+      // non array comes before array
+      // a is the array
+      return 1;
+    }
+  } else {
+    if(Array.isArray(b)) {
+      // non-array comes before array
+      // b is the array
+      return -1;
+    } else {
+      // got to two scalar
+      return a < b ? -1 : (a > b ? 1: 0)
+    }
+  }
+}
+
+function compare_function(a, b, params={}) {
+
+  var key_a = sort_key(a, params);
+  var key_b = sort_key(b, params);
+
+  return arrayCompare(key_a, key_b);
+}
+
+
+function coeff_factors_from_term(term, string_factors) {
+  if(typeof term === "string") {
+    let ind = string_factors.indexOf(term);
+    if(ind === -1) {
+      string_factors.push(term);
+      ind = string_factors.length - 1;
+    }
+    let f = [];
+    f[ind] = 1;
+    return { factor_contains: f, coeff: 1}
+  } else if(Array.isArray(term)) {
+    let operator = term[0];
+    let operands = term.slice(1);
+    if(operator === '*') {
+      let coeff = [];
+      let f = [];
+      for(let factor of operands) {
+        if(typeof factor === "string") {
+          let ind = string_factors.indexOf(factor);
+          if(ind === -1) {
+            string_factors.push(factor);
+            ind = string_factors.length - 1;
+          }
+          if(f[ind] === undefined) {
+            f[ind] = 0;
+          }
+          f[ind]++;
+          continue;
+        } else if(Array.isArray(factor) && factor[0] === "^" || factor[0] === '-') {
+          let result = coeff_factors_from_term(factor, string_factors);
+          for(let ind in result.factor_contains) {
+            if(f[ind] === undefined) {
+              f[ind] = 0;
+            }
+            f[ind] += result.factor_contains[ind];
+          }
+          if(result.coeff !== 1) {
+            coeff.push(result.coeff);
+          }
+          continue;
+        }
+        coeff.push(factor);
+      }
+
+      if(coeff.length === 0) {
+        coeff = 1;
+      } else if(coeff.length === 1) {
+        coeff = coeff[0];
+      } else {
+        coeff = ['*', ...coeff];
+      }
+      return { factor_contains: f, coeff: coeff};
+    } else if(operator === '^') {
+      let base = operands[0];
+      let exponent = operands[1];
+      let f=[];
+      if(typeof base === "string" && Number.isInteger(exponent) && exponent >= 0) {
+        let ind = string_factors.indexOf(base);
+        if(ind === -1) {
+          string_factors.push(base);
+          ind = string_factors.length - 1;
+        }
+        f[ind] = exponent;
+        return {factor_contains: f, coeff: 1}
+      }
+    } else if(operator === '-') {
+      let result = coeff_factors_from_term(operands[0], string_factors);
+      let coeff = -1;
+      if(typeof result.coeff === "number") {
+        coeff *= result.coeff;
+      } else {
+        coeff = ['-', result.coeff];
+      }
+      return {factor_contains: result.factor_contains, coeff: coeff};
+    } else if(operator === '/') {
+      let result = coeff_factors_from_term(operands[0], string_factors);
+      let coeff = ['/', result.coeff, operands[1]];
+      return {factor_contains: result.factor_contains, coeff: coeff};
+    }
+  }
+  
+  return {factor_contains: [], coeff: term}
+}
 
 function default_order(expr_or_tree, params) {
 
-    if(params === undefined)
-	params = {};
+  if (params === undefined)
+    params = {};
 
-    var tree = get_tree(expr_or_tree);
+  var tree = get_tree(expr_or_tree);
 
-    tree = flatten(tree);
-    tree = normalize_negatives(tree);
+  tree = flatten(tree);
+  tree = normalize_negatives(tree);
 
-    function sort_ast(subTree) {
-	if(!Array.isArray(subTree))
-	    return subTree;
+  function sort_ast(subTree) {
+    if (!Array.isArray(subTree))
+      return subTree;
 
-	var operator = subTree[0];
-	var operands = subTree.slice(1);
+    var operator = subTree[0];
+    var operands = subTree.slice(1);
 
-	operands = operands.map(sort_ast);
+    operands = operands.map(sort_ast);
 
-	// TODO: determine if commutative
-	if(operator === "*" || operator === "+" || operator === "="
-	   || operator === "and" || operator === "or" || operator === "ne"
-	   || operator === "union" || operator === "intersect") {
-	    
-	    // sort all operands of these arguments in default order
-	    // determined by compare function
-	    operands.sort((a,b) => compare_function(a,b,params));
-	}
-	else if(operator === ">" || operator === "ge") {
-	    // turn all greater thans to less thans
-	    
-	    operands = operands.reverse();
-	    if(operator === ">") 
-		operator = "<";
-	    else
-		operator = "le";
-	}
-	else if(operator === "gts")  {
-	    // turn all greater thans to less thans
-	    var args = operands[0];
-	    var strict = operands[1];
-	    
-	    if(args[0] !== 'tuple' || strict[0] !== 'tuple')
-		// something wrong if args or strict are not tuples
-		throw new Error("Badly formed ast");
+    if (operator === "+" ) {
 
-	    args = ['tuple'].concat(args.slice(1).reverse());
-	    strict = ['tuple'].concat(strict.slice(1).reverse());
-	    
-	    operator = "lts";
-	    operands = [args, strict];
-	    
-	}
-	else if(operator === 'ni' || operator === 'notni'
-		|| operator === 'superset' || operator === 'notsuperset') {
-	    // turn all containment operators to have larger set at right
+      // kludge to get sort order closer to lexographic order
 
-	    operands = operands.reverse();
-	    if(operator === 'ni')
-		operator = 'in';
-	    else if(operator === 'notni') 
-		operator = 'notin';
-	    else if(operator === 'superset')
-		operator = 'subset';
-	    else
-		operator = 'notsubset';
-	}
-	else if(operator === '-') {
-	    // when negating a product with a numerical first factor
-	    // put negative sign in that first factor
-	    if(operands[0][0] === '*') {
-		operands[0][1] = ['-', operands[0][1]];
-		return operands[0];
-	    }
-	}
-	
-	return [operator].concat(operands);
+      // TODO: clean this up
+
+      // find all string factors
+      let string_factors = [];
+      let factors_by_term = [];
+      let coeffs_by_term = [];
+      for(let term of operands) {
+        let result = coeff_factors_from_term(term, string_factors);
+        factors_by_term.push(result.factor_contains);
+        coeffs_by_term.push(result.coeff);
+      }
+
+      // factors_by_term = factors_by_term.map(x => Array.from(x, item => item || 0))
+
+      let variableInfo = [];
+      for(let [ind, varname] of string_factors.entries()) {
+        let thisvar = {varname: varname, exponents_in_term: []};
+        for(let j=0; j< factors_by_term.length; j++) {
+          thisvar.exponents_in_term.push(factors_by_term[j][ind] || 0);
+        }
+        variableInfo.push(thisvar);
+      }
+
+      variableInfo.sort((a,b) => a.varname < b.varname ? -1 : 1);
+
+      let sort_keys_by_term = [];
+
+      for(let i=0; i< coeffs_by_term.length; i++) {
+        let this_sort_key = variableInfo.reduce((a,c) => [...a, -c.exponents_in_term[i]],[]);
+        this_sort_key.push(sort_key(coeffs_by_term[i], params));
+        sort_keys_by_term.push(this_sort_key);
+      }
+
+      let terms_with_sort_key = [];
+
+      for(let [ind,term] of operands.entries()) {
+        terms_with_sort_key.push({
+          term: term,
+          sort_key: sort_keys_by_term[ind],
+        });
+      }
+
+      terms_with_sort_key.sort((a,b) => arrayCompare(a.sort_key, b.sort_key));
+
+      operands = terms_with_sort_key.map(x => x.term);
+
+      // sort all operands of these arguments in default order
+      // determined by compare function
+      // operands.sort((a, b) => compare_function(a, b, params));
+    }
+    else if (operator === "*" || operator === "="
+      || operator === "and" || operator === "or" || operator === "ne"
+      || operator === "union" || operator === "intersect") {
+
+      // TODO: determine if commutative
+
+      // sort all operands of these arguments in default order
+      // determined by compare function
+      operands.sort((a, b) => compare_function(a, b, params));
+    }
+    else if (operator === ">" || operator === "ge") {
+      // turn all greater thans to less thans
+
+      operands = operands.reverse();
+      if (operator === ">")
+        operator = "<";
+      else
+        operator = "le";
+    }
+    else if (operator === "gts") {
+      // turn all greater thans to less thans
+      var args = operands[0];
+      var strict = operands[1];
+
+      if (args[0] !== 'tuple' || strict[0] !== 'tuple')
+        // something wrong if args or strict are not tuples
+        throw new Error("Badly formed ast");
+
+      args = ['tuple'].concat(args.slice(1).reverse());
+      strict = ['tuple'].concat(strict.slice(1).reverse());
+
+      operator = "lts";
+      operands = [args, strict];
+
+    }
+    else if (operator === 'ni' || operator === 'notni'
+      || operator === 'superset' || operator === 'notsuperset') {
+      // turn all containment operators to have larger set at right
+
+      operands = operands.reverse();
+      if (operator === 'ni')
+        operator = 'in';
+      else if (operator === 'notni')
+        operator = 'notin';
+      else if (operator === 'superset')
+        operator = 'subset';
+      else
+        operator = 'notsubset';
+    }
+    else if (operator === '-') {
+      // when negating a product with a numerical first factor
+      // put negative sign in that first factor
+      if (operands[0][0] === '*') {
+        operands[0][1] = ['-', operands[0][1]];
+        return operands[0];
+      }
     }
 
-    return normalize_negatives(sort_ast(tree));
+    return [operator].concat(operands);
+  }
+
+  return normalize_negatives(sort_ast(tree));
 }
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -70602,127 +70764,127 @@ class textToAst {
 var textToAst$1 = new textToAst();
 
 function clean(expr_or_tree) {
-    var tree=get_tree(expr_or_tree);
-    return flatten(tree);
+  var tree = get_tree(expr_or_tree);
+  return flatten(tree);
 }
 
 function evalf(x, n) {
-    return parseFloat(number_8(x,n));
+  return parseFloat(number_8(x, n));
 }
 
-function collapse_unary_minus( expr_or_tree) {
-    var tree=get_tree(expr_or_tree);
+function collapse_unary_minus(expr_or_tree) {
+  var tree = get_tree(expr_or_tree);
 
-    if(!Array.isArray(tree))
-	return tree;
+  if (!Array.isArray(tree))
+    return tree;
 
-    var operator = tree[0];
-    var operands = tree.slice(1);
-    operands = operands.map( v => collapse_unary_minus(v));
+  var operator = tree[0];
+  var operands = tree.slice(1);
+  operands = operands.map(v => collapse_unary_minus(v));
 
-    if (operator === "-") {
-	if (typeof operands[0] === 'number')
-	    return -operands[0];
-	// check if operand is a multiplication with that begins with
-	// a constant.  If so combine with constant
-	if(Array.isArray(operands[0]) && operands[0][0] === '*'
-	   && (typeof operands[0][1] === 'number')) {
-	    return ['*', -operands[0][1]].concat(operands[0].slice(2));
-	}
-	// check if operand is a division with that begins with
-	// either
-	/// (A) a constant or
-	//  (B) a multiplication that begins with a constant.
-	// If so. combine with constant
-	if(Array.isArray(operands[0]) && operands[0][0] === '/') {
-	    if(typeof operands[0][1] === 'number')
-		return ['/', -operands[0][1], operands[0][2]];
-	    if(Array.isArray(operands[0][1]) && operands[0][1][0] === '*'
-	       && (typeof operands[0][1][1] === 'number')) {
-		return ['/', [
-		    '*', -operands[0][1][1]].concat(operands[0][1].slice(2)),
-			operands[0][2]];
-	    }
-	}
+  if (operator === "-") {
+    if (typeof operands[0] === 'number')
+      return -operands[0];
+    // check if operand is a multiplication with that begins with
+    // a constant.  If so combine with constant
+    if (Array.isArray(operands[0]) && operands[0][0] === '*'
+      && (typeof operands[0][1] === 'number')) {
+      return ['*', -operands[0][1]].concat(operands[0].slice(2));
     }
+    // check if operand is a division with that begins with
+    // either
+    /// (A) a constant or
+    //  (B) a multiplication that begins with a constant.
+    // If so. combine with constant
+    if (Array.isArray(operands[0]) && operands[0][0] === '/') {
+      if (typeof operands[0][1] === 'number')
+        return ['/', -operands[0][1], operands[0][2]];
+      if (Array.isArray(operands[0][1]) && operands[0][1][0] === '*'
+        && (typeof operands[0][1][1] === 'number')) {
+        return ['/', [
+          '*', -operands[0][1][1]].concat(operands[0][1].slice(2)),
+          operands[0][2]];
+      }
+    }
+  }
 
-    return [operator].concat( operands );
+  return [operator].concat(operands);
 }
 
 function simplify$2(expr_or_tree, assumptions, max_digits) {
-    var tree = get_tree(expr_or_tree);
+  var tree = get_tree(expr_or_tree);
 
-    if(assumptions===undefined && expr_or_tree.context !== undefined
-       && expr_or_tree.context.get_assumptions !== undefined)
-	assumptions = expr_or_tree.context.get_assumptions(
-	    [expr_or_tree.variables()]);
+  if (assumptions === undefined && expr_or_tree.context !== undefined
+    && expr_or_tree.context.get_assumptions !== undefined)
+    assumptions = expr_or_tree.context.get_assumptions(
+      [expr_or_tree.variables()]);
 
-    tree = evaluate_numbers(tree, {assumptions: assumptions, max_digits: max_digits});
-    // if already have it down to a number of variable, no need for more simplification
-    if(!Array.isArray(tree)) {
-      return tree;
-    }
-    tree = simplify_logical(tree, assumptions);
-    tree = collect_like_terms_factors(tree, assumptions, max_digits);
-
+  tree = evaluate_numbers(tree, { assumptions: assumptions, max_digits: max_digits });
+  // if already have it down to a number of variable, no need for more simplification
+  if (!Array.isArray(tree)) {
     return tree;
+  }
+  tree = simplify_logical(tree, assumptions);
+  tree = collect_like_terms_factors(tree, assumptions, max_digits);
+
+  return tree;
 }
 
 function simplify_logical(expr_or_tree, assumptions) {
-    var tree = get_tree(expr_or_tree);
+  var tree = get_tree(expr_or_tree);
 
-    if(assumptions===undefined && expr_or_tree.context !== undefined
-       && expr_or_tree.context.get_assumptions !== undefined)
-	assumptions = expr_or_tree.context.get_assumptions(
-	    [expr_or_tree.variables()]);
+  if (assumptions === undefined && expr_or_tree.context !== undefined
+    && expr_or_tree.context.get_assumptions !== undefined)
+    assumptions = expr_or_tree.context.get_assumptions(
+      [expr_or_tree.variables()]);
 
-    tree = evaluate_numbers(tree, {assumptions: assumptions});
+  tree = evaluate_numbers(tree, { assumptions: assumptions });
 
-    tree = unflattenRight(tree);
+  tree = unflattenRight(tree);
 
-    var transformations = [];
-    transformations.push([textToAst$1.convert("not (not a)"), textToAst$1.convert("a")]);
-    transformations.push([textToAst$1.convert("not (a and b)"), textToAst$1.convert("(not a) or (not b)")]);
-    transformations.push([textToAst$1.convert("not (a or b)"), textToAst$1.convert("(not a) and (not b)")]);
-    transformations.push([textToAst$1.convert("not (a = b)"), textToAst$1.convert("a != b")]);
-    transformations.push([textToAst$1.convert("not (a != b)"), textToAst$1.convert("a = b")]);
-    transformations.push([textToAst$1.convert("not (a < b)"), textToAst$1.convert("b <= a")]);
-    transformations.push([textToAst$1.convert("not (a <= b)"), textToAst$1.convert("b < a")]);
-    transformations.push([textToAst$1.convert("not (a elementof b)"), textToAst$1.convert("a notelementof b")]);
-    transformations.push([textToAst$1.convert("not (a subset b)"), textToAst$1.convert("a notsubset b")]);
+  var transformations = [];
+  transformations.push([textToAst$1.convert("not (not a)"), textToAst$1.convert("a")]);
+  transformations.push([textToAst$1.convert("not (a and b)"), textToAst$1.convert("(not a) or (not b)")]);
+  transformations.push([textToAst$1.convert("not (a or b)"), textToAst$1.convert("(not a) and (not b)")]);
+  transformations.push([textToAst$1.convert("not (a = b)"), textToAst$1.convert("a != b")]);
+  transformations.push([textToAst$1.convert("not (a != b)"), textToAst$1.convert("a = b")]);
+  transformations.push([textToAst$1.convert("not (a < b)"), textToAst$1.convert("b <= a")]);
+  transformations.push([textToAst$1.convert("not (a <= b)"), textToAst$1.convert("b < a")]);
+  transformations.push([textToAst$1.convert("not (a elementof b)"), textToAst$1.convert("a notelementof b")]);
+  transformations.push([textToAst$1.convert("not (a subset b)"), textToAst$1.convert("a notsubset b")]);
 
-    tree = applyAllTransformations(tree, transformations, 20);
+  tree = applyAllTransformations(tree, transformations, 20);
 
-    tree = flatten(tree);
+  tree = flatten(tree);
 
-    return tree;
+  return tree;
 }
 
 function contains_decimal_number(tree) {
-  if(typeof tree === "string") {
+  if (typeof tree === "string") {
     return false;
   }
-  if(typeof tree === "number") {
-    if(Number.isFinite(tree) && !Number.isInteger(tree)) {
+  if (typeof tree === "number") {
+    if (Number.isFinite(tree) && !Number.isInteger(tree)) {
       return true;
-    }else {
+    } else {
       return false;
     }
   }
-  if(!Array.isArray(tree)) {
+  if (!Array.isArray(tree)) {
     return false;
   }
   return tree.slice(1).some(x => contains_decimal_number(x));
 }
 
 function contains_only_numbers(tree) {
-  if(typeof tree === "string") {
+  if (typeof tree === "string") {
     return false;
   }
-  if(typeof tree === "number") {
+  if (typeof tree === "number") {
     return true;
   }
-  if(!Array.isArray(tree)) {
+  if (!Array.isArray(tree)) {
     return false;
   }
   return tree.slice(1).every(x => contains_only_numbers(x));
@@ -70733,107 +70895,107 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
   // and then unflattened_right
   // returns unflattened tree
 
-  if(tree===undefined)
+  if (tree === undefined)
     return tree;
 
-  if(typeof tree === 'number')
+  if (typeof tree === 'number')
     return tree;
 
   var c = evaluate_to_constant(tree);
 
-  if(c !== null) {
-    if(typeof c === 'number') {
-      if(Number.isFinite(c)) {
-        if(max_digits === Infinity)
+  if (c !== null) {
+    if (typeof c === 'number') {
+      if (Number.isFinite(c)) {
+        if (max_digits === Infinity)
           return c;
-        if(Number.isInteger(c)) {
+        if (Number.isInteger(c)) {
           return c;
         }
 
         let c_minround = evalf(c, 14);
         let c_round = evalf(c, max_digits);
-        if(max_digits === 0) {
+        if (max_digits === 0) {
           // interpret 0 max_digits as only accepting integers
           // (even though positive max_digits is number of significant digits)
           c_round = math$19.round(c);
         }
-        if(c_round === c_minround) {
+        if (c_round === c_minround) {
           return c;
         }
 
         // if expression already contained a decimal,
         // and contains only numbers (no constants like pi)
         // return the number
-        if(contains_decimal_number(tree) && contains_only_numbers(tree)) {
+        if (contains_decimal_number(tree) && contains_only_numbers(tree)) {
           return c;
         }
 
         let c_frac = math$19.fraction(c);
         let c_frac_d_round = evalf(c_frac.d, 3);
 
-        if(c_frac.n < 1E4 || (c_frac_d_round === c_frac.d)) {
-          let c_reconstruct = evalf(c_frac.s*c_frac.n/c_frac.d, 14);
-          if(c_reconstruct === c_minround) {
-            if(c_frac.d === 1) {
-              return c_frac.s*c_frac.n;
+        if (c_frac.n < 1E4 || (c_frac_d_round === c_frac.d)) {
+          let c_reconstruct = evalf(c_frac.s * c_frac.n / c_frac.d, 14);
+          if (c_reconstruct === c_minround) {
+            if (c_frac.d === 1) {
+              return c_frac.s * c_frac.n;
             } else {
-              return ['/', c_frac.s*c_frac.n, c_frac.d];
+              return ['/', c_frac.s * c_frac.n, c_frac.d];
             }
           }
         }
       }
-      else if(!Number.isNaN(c)) {
+      else if (!Number.isNaN(c)) {
         return c;
       }
     }
   }
 
-  if(!Array.isArray(tree))
+  if (!Array.isArray(tree))
     return tree;
 
   var operator = tree[0];
   var operands = tree.slice(1).map(v => evaluate_numbers_sub(
     v, assumptions, max_digits, skip_ordering));
 
-  if(operator === '+') {
+  if (operator === '+') {
     let left = operands[0];
     let right = operands[1];
 
-    if(right === undefined)
+    if (right === undefined)
       return left;
 
-    if(typeof left === 'number') {
-      if(left === 0)
+    if (typeof left === 'number') {
+      if (left === 0)
         return right;
-      if(typeof right === 'number')
+      if (typeof right === 'number')
         return left + right;
       // check if right is an addition with that begins with
       // a constant.  If so combine with left
-      if(Array.isArray(right) && right[0] === '+'
-          && (typeof right[1] === 'number')) {
-        return ['+', left+right[1], right[2]];
+      if (Array.isArray(right) && right[0] === '+'
+        && (typeof right[1] === 'number')) {
+        return ['+', left + right[1], right[2]];
       }
       // check if right is an addition with that ends with
       // a constant.  If so combine with left
-      if(!skip_ordering && Array.isArray(right) && right[0] === '+'
-          && (typeof right[2] === 'number')) {
-        return ['+', left+right[2], right[1]];
+      if (!skip_ordering && Array.isArray(right) && right[0] === '+'
+        && (typeof right[2] === 'number')) {
+        return ['+', left + right[2], right[1]];
       }
 
     }
-    if(typeof right === 'number')
-      if(right === 0)
+    if (typeof right === 'number')
+      if (right === 0)
         return left;
 
     return [operator].concat(operands);
   }
-  if(operator === '-') {
-    if(typeof operands[0] === 'number')
+  if (operator === '-') {
+    if (typeof operands[0] === 'number')
       return -operands[0];
     // check if operand is a multiplication with that begins with
     // a constant.  If so combine with constant
-    if(Array.isArray(operands[0]) && operands[0][0] === '*'
-        && (typeof operands[0][1] === 'number')) {
+    if (Array.isArray(operands[0]) && operands[0][0] === '*'
+      && (typeof operands[0][1] === 'number')) {
       return ['*', -operands[0][1]].concat(operands[0].slice(2));
     }
     // check if operand is a division with that begins with
@@ -70841,14 +71003,14 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
     /// (A) a constant or
     //  (B) a multiplication that begins with a constant.
     // If so. combine with constant
-    if(Array.isArray(operands[0]) && operands[0][0] === '/') {
-      if(typeof operands[0][1] === 'number')
+    if (Array.isArray(operands[0]) && operands[0][0] === '/') {
+      if (typeof operands[0][1] === 'number')
         return ['/', -operands[0][1], operands[0][2]];
-      if(Array.isArray(operands[0][1]) && operands[0][1][0] === '*'
-          && (typeof operands[0][1][1] === 'number')) {
+      if (Array.isArray(operands[0][1]) && operands[0][1][0] === '*'
+        && (typeof operands[0][1][1] === 'number')) {
         return ['/', [
           '*', -operands[0][1][1]].concat(operands[0][1].slice(2)),
-        operands[0][2]];
+          operands[0][2]];
 
       }
 
@@ -70856,79 +71018,79 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
 
     return [operator].concat(operands);
   }
-  if(operator === '*') {
+  if (operator === '*') {
     let left = operands[0];
     let right = operands[1];
 
-    if(right === undefined)
+    if (right === undefined)
       return left;
 
-    if(typeof left === 'number') {
-      if(isNaN(left))
+    if (typeof left === 'number') {
+      if (isNaN(left))
         return NaN;
 
-      if(typeof right === 'number')
+      if (typeof right === 'number')
         return left * right;
 
-      if(!isFinite(left)) {
-        if((left === Infinity && is_negative_ast(right))
-            || (left === -Infinity && is_positive_ast(right)))
+      if (!isFinite(left)) {
+        if ((left === Infinity && is_negative_ast(right))
+          || (left === -Infinity && is_positive_ast(right)))
           return -Infinity
-        if(is_nonzero_ast(right) === false)
+        if (is_nonzero_ast(right) === false)
           return NaN;
         return Infinity;
       }
-      if(left === 0) {
+      if (left === 0) {
         return 0;
       }
-      if(left === 1)
+      if (left === 1)
         return right;
 
-      if(left === -1) {
+      if (left === -1) {
         return ['-', right];
       }
       // check if right is a multiplication with that begins with
       // a constant.  If so combine with left
-      if(Array.isArray(right) && right[0] === '*'
-          && (typeof right[1] === 'number')) {
-        left = left*right[1];
+      if (Array.isArray(right) && right[0] === '*'
+        && (typeof right[1] === 'number')) {
+        left = left * right[1];
         right = right[2];
-        if(left === 1)
+        if (left === 1)
           return right;
-        if(left === -1)
+        if (left === -1)
           return ['-', right];
         return ['*', left, right];
       }
 
     }
-    if(typeof right === 'number') {
-      if(isNaN(right))
+    if (typeof right === 'number') {
+      if (isNaN(right))
         return NaN;
-      if(!isFinite(right)) {
-        if((right === Infinity && is_negative_ast(left))
-            || (right === -Infinity && is_positive_ast(left)))
+      if (!isFinite(right)) {
+        if ((right === Infinity && is_negative_ast(left))
+          || (right === -Infinity && is_positive_ast(left)))
           return -Infinity
-        if(is_nonzero_ast(left) === false)
+        if (is_nonzero_ast(left) === false)
           return NaN;
         return Infinity;
       }
-      if(right === 0) {
+      if (right === 0) {
         return 0;
       }
-      if(right === 1)
+      if (right === 1)
         return left;
-      if(right === -1) {
+      if (right === -1) {
         return ['-', left];
       }
       // check if left is a multiplication with that begins with
       // a constant.  If so combine with right
-      if(Array.isArray(left) && left[0] === '*'
-          && (typeof left[1] === 'number')) {
-        right = right*left[1];
+      if (Array.isArray(left) && left[0] === '*'
+        && (typeof left[1] === 'number')) {
+        right = right * left[1];
         left = left[2];
-        if(right === 1)
+        if (right === 1)
           return left;
-        if(right === -1)
+        if (right === -1)
           return ['-', left];
         return ['*', left, right];
       }
@@ -70937,24 +71099,24 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
     return [operator].concat(operands);
   }
 
-  if(operator === '/') {
+  if (operator === '/') {
 
     let numer = operands[0];
     let denom = operands[1];
 
-    if(typeof numer === 'number') {
-      if(numer === 0) {
+    if (typeof numer === 'number') {
+      if (numer === 0) {
         let denom_nonzero = is_nonzero_ast(denom, assumptions);
-        if(denom_nonzero)
+        if (denom_nonzero)
           return 0;
-        if(denom_nonzero === false)
+        if (denom_nonzero === false)
           return NaN;  // 0/0
       }
 
-      if(typeof denom === 'number') {
-        let quotient = numer/denom;
-        if(max_digits === Infinity
-            || math$19.round(quotient, max_digits) === quotient)
+      if (typeof denom === 'number') {
+        let quotient = numer / denom;
+        if (max_digits === Infinity
+          || math$19.round(quotient, max_digits) === quotient)
           return quotient;
         else if (denom < 0)
           return ['/', -numer, -denom];
@@ -70962,39 +71124,39 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
 
       // check if denom is a multiplication with that begins with
       // a constant.  If so combine with numerator
-      if(Array.isArray(denom) && denom[0] === '*'
-          && (typeof denom[1] === 'number')) {
-        let quotient = numer/denom[1];
+      if (Array.isArray(denom) && denom[0] === '*'
+        && (typeof denom[1] === 'number')) {
+        let quotient = numer / denom[1];
 
-        if(max_digits === Infinity
-            || math$19.round(quotient, max_digits) === quotient) {
+        if (max_digits === Infinity
+          || math$19.round(quotient, max_digits) === quotient) {
           return ['/', quotient, denom[2]];
         }
       }
     }
-    else if(typeof denom === 'number') {
+    else if (typeof denom === 'number') {
       // check if numer is a multiplication with that begins with
       // a constant.  If so combine with denominator
-      if(Array.isArray(numer) && numer[0] === '*'
-          && (typeof numer[1] === 'number')) {
-        let quotient = numer[1]/denom;
-        if(max_digits === Infinity
-            || math$19.round(quotient, max_digits) === quotient) {
-          if(quotient === 1)
+      if (Array.isArray(numer) && numer[0] === '*'
+        && (typeof numer[1] === 'number')) {
+        let quotient = numer[1] / denom;
+        if (max_digits === Infinity
+          || math$19.round(quotient, max_digits) === quotient) {
+          if (quotient === 1)
             return numer[2];
           else
             return ['*', quotient, numer[2]];
         }
         // if denom is negative move negative to number
-        if(denom < 0)
+        if (denom < 0)
           return ['/', ['*', -numer[1], numer[2]], -denom];
       }
       // if denonimator is negative, negate whole fraction
-      if(denom < 0) {
-      if(Array.isArray(numer) && numer[0] === '-')
-        return ['/', numer[1], -denom];
-      else
-        return ['-', ['/', numer, -denom]];
+      if (denom < 0) {
+        if (Array.isArray(numer) && numer[0] === '-')
+          return ['/', numer[1], -denom];
+        else
+          return ['-', ['/', numer, -denom]];
 
       }
     }
@@ -71002,32 +71164,32 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
 
   }
 
-  if(operator === '^') {
+  if (operator === '^') {
 
     let base = operands[0];
     let pow = operands[1];
 
-    if(typeof pow === 'number') {
-      if(pow === 0) {
-        if(!math$19.pow_strict)
+    if (typeof pow === 'number') {
+      if (pow === 0) {
+        if (!math$19.pow_strict)
           return 1;
         let base_nonzero = is_nonzero_ast(base, assumptions);
-        if(base_nonzero && (base !== Infinity) && (base !== -Infinity))
+        if (base_nonzero && (base !== Infinity) && (base !== -Infinity))
           return 1;
-        if(base_nonzero === false)
+        if (base_nonzero === false)
           return NaN;   // 0^0
       }
-      else if(pow === 1) {
+      else if (pow === 1) {
         return base;
       }
-      else if(typeof base === 'number') {
+      else if (typeof base === 'number') {
         let result = math$19.pow(base, pow);
-        if(max_digits === Infinity
-            || math$19.round(result, max_digits) === result)
+        if (max_digits === Infinity
+          || math$19.round(result, max_digits) === result)
           return result;
 
       }
-    }else if(base === 1) {
+    } else if (base === 1) {
       return 1;
     }
     return [operator].concat(operands);
@@ -71037,26 +71199,26 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
 }
 
 
-function evaluate_numbers(expr_or_tree, {assumptions, max_digits, skip_ordering=false}={}) {
+function evaluate_numbers(expr_or_tree, { assumptions, max_digits, skip_ordering = false } = {}) {
 
-  if(max_digits === undefined ||
-      !(Number.isInteger(max_digits) || max_digits === Infinity))
+  if (max_digits === undefined ||
+    !(Number.isInteger(max_digits) || max_digits === Infinity))
     max_digits = 0;
 
-  var tree=get_tree(expr_or_tree);
+  var tree = get_tree(expr_or_tree);
 
 
-  if(assumptions===undefined && expr_or_tree.context !== undefined
-      && expr_or_tree.context.get_assumptions !== undefined)
+  if (assumptions === undefined && expr_or_tree.context !== undefined
+    && expr_or_tree.context.get_assumptions !== undefined)
     assumptions = expr_or_tree.context.get_assumptions(
       [expr_or_tree.variables()]);
 
   var result;
-  if(skip_ordering) {
+  if (skip_ordering) {
     tree = unflattenRight(flatten(tree));
     result = evaluate_numbers_sub(
       tree, assumptions, max_digits, skip_ordering);
-  }else {
+  } else {
     tree = unflattenRight(default_order(flatten(tree)));
     result = default_order(evaluate_numbers_sub(
       tree, assumptions, max_digits, skip_ordering));
@@ -71070,295 +71232,341 @@ function evaluate_numbers(expr_or_tree, {assumptions, max_digits, skip_ordering=
 
 function collect_like_terms_factors(expr_or_tree, assumptions, max_digits) {
 
-    function isNumber(s) {
-	if (typeof s === 'number')
-	    return true;
-	if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
-	    return true;
-	return false;
-    }
-    function isNegativeNumber(s) {
-	if (typeof s === 'number' && s < 0)
-	    return true;
-	if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
-	    return true;
-	return false;
-    }
-    function isNumerical(s) {
-	if (typeof s === 'number')
-	    return true;
-	if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
-	    return true;
-	let c = evaluate_to_constant(s);
-	if(typeof c === 'number' && Number.isFinite(c))
-	    return true;
+  function isNumber(s) {
+    if (typeof s === 'number')
+      return true;
+    if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
+      return true;
+    return false;
+  }
+  function isNegativeNumber(s) {
+    if (typeof s === 'number' && s < 0)
+      return true;
+    if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
+      return true;
+    return false;
+  }
+  function isNumerical(s) {
+    if (typeof s === 'number')
+      return true;
+    if (Array.isArray(s) && s[0] === '-' && (typeof s[1] === 'number'))
+      return true;
+    let c = evaluate_to_constant(s);
+    if (typeof c === 'number' && Number.isFinite(c))
+      return true;
 
-	return false;
+    return false;
 
-    }
+  }
 
 
-    var tree=get_tree(expr_or_tree);
+  var tree = get_tree(expr_or_tree);
 
-    if(assumptions===undefined && expr_or_tree.context !== undefined
-       && expr_or_tree.context.get_assumptions !== undefined)
-	assumptions = expr_or_tree.context.get_assumptions(
-	    [expr_or_tree.variables()]);
+  if (assumptions === undefined && expr_or_tree.context !== undefined
+    && expr_or_tree.context.get_assumptions !== undefined)
+    assumptions = expr_or_tree.context.get_assumptions(
+      [expr_or_tree.variables()]);
 
-    var transformations = [];
+  var transformations = [];
 
-    // preliminary transformations
-    transformations.push([textToAst$1.convert("x/y^a"), textToAst$1.convert("x*y^(-a)"),
-			  {evaluate_numbers: true, max_digits: max_digits}]);
-    transformations.push([textToAst$1.convert("x/y"), textToAst$1.convert("x*y^(-1)"),
-			  {evaluate_numbers: true, max_digits: max_digits}]);
-    tree = applyAllTransformations(tree, transformations, 40);
+  // preliminary transformations
+  transformations.push([textToAst$1.convert("x/y^a"), textToAst$1.convert("x*y^(-a)"),
+  { evaluate_numbers: true, max_digits: max_digits }]);
+  transformations.push([textToAst$1.convert("x/y"), textToAst$1.convert("x*y^(-1)"),
+  { evaluate_numbers: true, max_digits: max_digits }]);
+  tree = applyAllTransformations(tree, transformations, 40);
 
-    // collecting like terms and factors
-    transformations = [];
-    transformations.push(
-	[textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
-	 {variables: {x: v => is_nonzero_ast(v, assumptions),
-		      n: isNumber, m: isNumber},
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_implicit_identities: ['m', 'n'],
-	  allow_extended_match: true,
-	  allow_permutations: true,
-	  max_group: 1,
-	 }]
-    );
-    transformations.push(
-	[textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
-	 {variables: {x: true,
-		      n: v => isNumber(v) && is_positive_ast(v, assumptions),
-		      m: v => isNumber(v) && is_positive_ast(v, assumptions)
-		     },
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_implicit_identities: ['m', 'n'],
-	  allow_extended_match: true,
-	  allow_permutations: true,
-	  max_group: 1,
-	 }]
-    );
-    transformations.push(
-	[textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
-	 {variables: {x: true,
-		      n: v => isNumber(v) && is_negative_ast(v, assumptions),
-		      m: v => isNumber(v) && is_negative_ast(v, assumptions)
-		     },
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_extended_match: true,
-	  allow_permutations: true,
-	  max_group: 1,
-	 }]
-    );
-    transformations.push(
-	[textToAst$1.convert("n*x + m*x"), textToAst$1.convert("(n+m)*x"),
-	 {variables: {x: true,
-		      n: isNumber, m: isNumber},
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_implicit_identities: ['m', 'n'],
-	  allow_extended_match: true,
-	  allow_permutations: true,
-	  max_group: 1,
-	 }]
-    );
-    transformations.push(
-    	[textToAst$1.convert("n*x - m*x"), textToAst$1.convert("(n-m)*x"),
-    	 {variables: {x: true,
-    		      n: isNumber, m: isNumber},
-    	  evaluate_numbers: true, max_digits: max_digits,
-    	  allow_implicit_identities: ['m', 'n'],
-    	  allow_extended_match: true,
-    	  allow_permutations: true,
-    	  max_group: 1,
-    	 }]
-    );
-    transformations.push(
-	[textToAst$1.convert("(x*y)^a"), textToAst$1.convert("x^a*y^a"),
-	 { allow_permutations: true,}]
-    );
-    transformations.push(
-	[textToAst$1.convert("(x^n)^m"), textToAst$1.convert("x^(n*m)"),
-	 {variables: {x: true,
-		      n: isNumber, m: isNumber},
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_permutations: true,
-	 }]
-    );
-    transformations.push([textToAst$1.convert("-(a+b)"), textToAst$1.convert("-a-b")]);
+  // collecting like terms and factors
+  transformations = [];
+  transformations.push(
+    [textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
+    {
+      variables: {
+        x: v => is_nonzero_ast(v, assumptions),
+        n: isNumber, m: isNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_implicit_identities: ['m', 'n'],
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
+  transformations.push(
+    [textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
+    {
+      variables: {
+        x: true,
+        n: v => isNumber(v) && is_positive_ast(v, assumptions),
+        m: v => isNumber(v) && is_positive_ast(v, assumptions)
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_implicit_identities: ['m', 'n'],
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
+  transformations.push(
+    [textToAst$1.convert("x^n*x^m"), textToAst$1.convert("x^(n+m)"),
+    {
+      variables: {
+        x: true,
+        n: v => isNumber(v) && is_negative_ast(v, assumptions),
+        m: v => isNumber(v) && is_negative_ast(v, assumptions)
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
+  transformations.push(
+    [textToAst$1.convert("n*x + m*x"), textToAst$1.convert("(n+m)*x"),
+    {
+      variables: {
+        x: true,
+        n: isNumber, m: isNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_implicit_identities: ['m', 'n'],
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
+  transformations.push(
+    [textToAst$1.convert("n*x - m*x"), textToAst$1.convert("(n-m)*x"),
+    {
+      variables: {
+        x: true,
+        n: isNumber, m: isNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_implicit_identities: ['m', 'n'],
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
+  transformations.push(
+    [textToAst$1.convert("(x*y)^a"), textToAst$1.convert("x^a*y^a"),
+    { allow_permutations: true, }]
+  );
+  transformations.push(
+    [textToAst$1.convert("(x^n)^m"), textToAst$1.convert("x^(n*m)"),
+    {
+      variables: {
+        x: true,
+        n: isNumber, m: isNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_permutations: true,
+    }]
+  );
+  transformations.push([textToAst$1.convert("-(a+b)"), textToAst$1.convert("-a-b")]);
 
-    // evaluate any products
-    // (required since evaluate_numbers needs to be applied separately
-    // to complicated products to evaluate them as numbers)
-    transformations.push(
-	[textToAst$1.convert("x*y"), textToAst$1.convert("x*y"),
-	 {variables: {x: isNumerical, y:isNumerical},
-	  evaluate_numbers: true, max_digits: max_digits,
-	  allow_extended_match: true,
-	  allow_permutations: true,
-	  max_group: 1,
-	 }]
-    );
+  // evaluate any products
+  // (required since evaluate_numbers needs to be applied separately
+  // to complicated products to evaluate them as numbers)
+  transformations.push(
+    [textToAst$1.convert("x*y"), textToAst$1.convert("x*y"),
+    {
+      variables: { x: isNumerical, y: isNumerical },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]
+  );
 
-    tree = applyAllTransformations(tree, transformations, 40);
+  tree = applyAllTransformations(tree, transformations, 40);
 
-    transformations = [];
-    // redo as division
-    transformations.push([textToAst$1.convert("x*y^(-a)"),textToAst$1.convert("x/y^a"),
-    			  {allow_extended_match: true,
-    			   allow_permutations: true,
-    			   evaluate_numbers: true, max_digits: max_digits,
-			   max_group: 1,
-    			  }]);
-    transformations.push([textToAst$1.convert("x*y^n"), textToAst$1.convert("x/y^(-n)"),
-    			  {variables: {x: true, y: true,
-    				       n: isNegativeNumber},
-    			   evaluate_numbers: true, max_digits: max_digits,
-    			   allow_extended_match: true,
-    			   allow_permutations: true,
-			   max_group: 1,
-    			  }]);
-    tree = applyAllTransformations(tree, transformations, 40);
+  transformations = [];
+  // redo as division
+  transformations.push([textToAst$1.convert("x*y^(-a)"), textToAst$1.convert("x/y^a"),
+  {
+    allow_extended_match: true,
+    allow_permutations: true,
+    evaluate_numbers: true, max_digits: max_digits,
+    max_group: 1,
+  }]);
+  transformations.push([textToAst$1.convert("x*y^n"), textToAst$1.convert("x/y^(-n)"),
+  {
+    variables: {
+      x: true, y: true,
+      n: isNegativeNumber
+    },
+    evaluate_numbers: true, max_digits: max_digits,
+    allow_extended_match: true,
+    allow_permutations: true,
+    max_group: 1,
+  }]);
+  tree = applyAllTransformations(tree, transformations, 40);
 
-    transformations = [];
-    // redo as division, try 2
-    transformations.push([textToAst$1.convert("y^n"), textToAst$1.convert("1/y^(-n)"),
-    			  {variables: {y: true,
-    				       n: isNegativeNumber},
-    			   evaluate_numbers: true, max_digits: max_digits,
-    			  }]);
-    tree = applyAllTransformations(tree, transformations, 40);
+  transformations = [];
+  // redo as division, try 2
+  transformations.push([textToAst$1.convert("y^n"), textToAst$1.convert("1/y^(-n)"),
+  {
+    variables: {
+      y: true,
+      n: isNegativeNumber
+    },
+    evaluate_numbers: true, max_digits: max_digits,
+  }]);
+  tree = applyAllTransformations(tree, transformations, 40);
 
-    transformations = [];
-    // '*' before '/' and products in denominator
-    transformations.push([textToAst$1.convert("x*(y/z)"), textToAst$1.convert("(x*y)/z"),
-    			  {allow_extended_match: true,
-    			   allow_permutations: true,
-			   max_group: 1,
-    			  }]);
-    transformations.push([textToAst$1.convert("(x/y)/z"), textToAst$1.convert("x/(y*z)"),
-    			  {allow_extended_match: true,
-    			   allow_permutations: true,
-    			  }]);
-    transformations.push([textToAst$1.convert("x/(y/z)"), textToAst$1.convert("xz/y"),
-    			  {allow_extended_match: true,
-    			   allow_permutations: true,
-    			  }]);
-    tree = applyAllTransformations(tree, transformations, 40);
+  transformations = [];
+  // '*' before '/' and products in denominator
+  transformations.push([textToAst$1.convert("x*(y/z)"), textToAst$1.convert("(x*y)/z"),
+  {
+    allow_extended_match: true,
+    allow_permutations: true,
+    max_group: 1,
+  }]);
+  transformations.push([textToAst$1.convert("(x/y)/z"), textToAst$1.convert("x/(y*z)"),
+  {
+    allow_extended_match: true,
+    allow_permutations: true,
+  }]);
+  transformations.push([textToAst$1.convert("x/(y/z)"), textToAst$1.convert("xz/y"),
+  {
+    allow_extended_match: true,
+    allow_permutations: true,
+  }]);
+  tree = applyAllTransformations(tree, transformations, 40);
 
-    tree = evaluate_numbers(tree, {assumptions: assumptions, max_digits: max_digits});
+  tree = evaluate_numbers(tree, { assumptions: assumptions, max_digits: max_digits });
 
-    return tree;
+  return tree;
 
 }
 
 function simplify_ratios(expr_or_tree, assumptions) {
 
-    // TODO: actually factor numerator and denominator
-    // for now, assume factored, other than minus sign
+  // TODO: actually factor numerator and denominator
+  // for now, assume factored, other than minus sign
 
-    function remove_negative_factors(factors) {
+  function remove_negative_factors(factors) {
 
-	var sign_change = 1;
+    var sign_change = 1;
 
-	factors = factors.map(function (v) {
-	    if(typeof v === "number") {
-		if(v<0) {
-		    sign_change *= -1;
-		    return -v;
-		}
-		return v;
-	    }
-	    if(!Array.isArray(v))
-		return v;
+    factors = factors.map(function (v) {
+      if (typeof v === "number") {
+        if (v < 0) {
+          sign_change *= -1;
+          return -v;
+        }
+        return v;
+      }
+      if (!Array.isArray(v))
+        return v;
 
-	    if(v[0] === '-') {
-		sign_change *= -1;
-		return v[1];
-	    }
-	    if(v[0] !== '+')
-		return v;
+      if (v[0] === '-') {
+        sign_change *= -1;
+        return v[1];
+      }
+      if (v[0] !== '+')
+        return v;
 
-	    var negate=false;
-	    if((typeof v[1] === "number") && v[1] < 0)
-		negate = true;
-	    else if(Array.isArray(v[1]) && v[1][0] === '-')
-		negate = true;
+      var negate = false;
+      if ((typeof v[1] === "number") && v[1] < 0)
+        negate = true;
+      else if (Array.isArray(v[1]) && v[1][0] === '-')
+        negate = true;
+      else if (Array.isArray(v[1]) && v[1][0] === '*' && Number(v[1][1]) < 0) {
+        negate = true;
+      }
 
-	    if(negate) {
-		sign_change *= -1 ;
-		var v_ops = v.slice(1).map(x => ['-', x]);
-		return evaluate_numbers(['+'].concat(v_ops));
-	    }
-	    else
-		return v;
-	});
+      if (negate) {
+        sign_change *= -1;
+        var v_ops = v.slice(1).map(x => ['-', x]);
+        return evaluate_numbers(['+'].concat(v_ops));
+      }
+      else
+        return v;
+    });
 
-	return {factors: factors, sign_change: sign_change};
+    return { factors: factors, sign_change: sign_change };
+  }
+
+  function simplify_ratios_sub(tree, negated) {
+
+    if (!Array.isArray(tree)) {
+      if(negated) {
+        return ['-', tree];
+      } else {
+        return tree;
+      }
     }
 
-    function simplify_ratios_sub(tree) {
+    var operator = tree[0];
+    if(operator === "-") {
+      return simplify_ratios_sub(tree[1], negated=true);
+    }
+    var operands = tree.slice(1).map(v => simplify_ratios_sub(v));
 
-	if(!Array.isArray(tree))
-	    return tree;
-
-	var operator = tree[0];
-	var operands = tree.slice(1).map(v => simplify_ratios_sub(v));
-
-	if(operator !== '/')
-	    return [operator].concat(operands);
-
-	var numer = operands[0];
-	var denom = operands[1];
-
-	// factor a minus sign from each factor in numerator and denominator
-	// if it is negative or it is a sum with a negative first term
-	// (when terms are sorted as though they were not negative)
-
-	numer = default_order(numer, {ignore_negatives: true});
-	var numer_factors;
-	if(Array.isArray(numer) && numer[0] === '*')
-	    numer_factors = numer.slice(1);
-	else
-	    numer_factors = [numer];
-	var result_n = remove_negative_factors(numer_factors);
-	numer_factors = result_n["factors"];
-
-	denom = default_order(denom, {ignore_negatives: true});
-	var denom_factors;
-	if(Array.isArray(denom) && denom[0] === '*')
-	    denom_factors = denom.slice(1);
-	else
-	    denom_factors = [denom];
-	var result_d = remove_negative_factors(denom_factors);
-	denom_factors = result_d["factors"];
-
-	if(result_n["sign_change"]*result_d["sign_change"] < 0)
-	    numer_factors[0] = ['-', numer_factors[0]];
-
-	if(numer_factors.length === 1)
-	    numer = numer_factors[0];
-	else
-	    numer = ['*'].concat(numer_factors);
-	if(denom_factors.length === 1)
-	    denom = denom_factors[0];
-	else
-	    denom = ['*'].concat(denom_factors);
-
-	return ['/', numer, denom];
-
+    if (operator !== '/') {
+      if(negated) {
+        return ['-', [operator, ...operands]]
+      } else {
+        return [operator, ...operands];
+      }
     }
 
+    var numer = operands[0];
+    var denom = operands[1];
 
-    var tree = get_tree(expr_or_tree);
+    // factor a minus sign from each factor in numerator and denominator
+    // if it is negative or it is a sum with a negative first term
+    // (when terms are sorted as though they were not negative)
 
-    if(assumptions===undefined && expr_or_tree.context !== undefined
-       && expr_or_tree.context.get_assumptions !== undefined)
-	assumptions = expr_or_tree.context.get_assumptions(
-	    [expr_or_tree.variables()]);
+    numer = default_order(numer, { ignore_negatives: true });
+    var numer_factors;
+    if (Array.isArray(numer) && numer[0] === '*')
+      numer_factors = numer.slice(1);
+    else
+      numer_factors = [numer];
+    var result_n = remove_negative_factors(numer_factors);
+    numer_factors = result_n["factors"];
+    if(negated) {
+      result_n["sign_change"] *= -1;
+    }
 
-    return simplify_ratios_sub(tree);
+    denom = default_order(denom, { ignore_negatives: true });
+    var denom_factors;
+    if (Array.isArray(denom) && denom[0] === '*')
+      denom_factors = denom.slice(1);
+    else
+      denom_factors = [denom];
+    var result_d = remove_negative_factors(denom_factors);
+    denom_factors = result_d["factors"];
+
+    if (result_n["sign_change"] * result_d["sign_change"] < 0)
+      numer_factors[0] = ['-', numer_factors[0]];
+
+    if (numer_factors.length === 1)
+      numer = numer_factors[0];
+    else
+      numer = ['*'].concat(numer_factors);
+    if (denom_factors.length === 1)
+      denom = denom_factors[0];
+    else
+      denom = ['*'].concat(denom_factors);
+
+    return ['/', numer, denom];
+
+  }
+
+
+  var tree = get_tree(expr_or_tree);
+
+  if (assumptions === undefined && expr_or_tree.context !== undefined
+    && expr_or_tree.context.get_assumptions !== undefined)
+    assumptions = expr_or_tree.context.get_assumptions(
+      [expr_or_tree.variables()]);
+
+  return simplify_ratios_sub(tree);
 
 }
 

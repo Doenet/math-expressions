@@ -4,7 +4,7 @@ import * as trees from '../lib/trees/basic';
 describe("evaluate_numbers", function () {
 
   it("addition", function () {
-    expect(me.from("4+x-2").evaluate_numbers().tree).toEqual(['+', 2, 'x']);
+    expect(me.from("4+x-2").evaluate_numbers().tree).toEqual(['+', 'x', 2]);
     expect(me.from("4+x-2").evaluate_numbers({skip_ordering: true}).tree).toEqual(['+', 4, 'x', -2]);
 
     expect(me.from("x+0").evaluate_numbers().tree).toEqual('x');
@@ -17,19 +17,19 @@ describe("evaluate_numbers", function () {
   });
     
   it("collapse unary minus", function () {
-    expect(me.from("x-2").evaluate_numbers().tree).toEqual(['+', -2, 'x']);
+    expect(me.from("x-2").evaluate_numbers().tree).toEqual(['+', 'x', -2 ]);
   });
 
   it("unary minus of product", function() {
     expect(me.from("x-2uv").evaluate_numbers().tree).toEqual(
-      ['+', 'x', ['*', -2, 'u', 'v']]);
+      ['+', ['*', -2, 'u', 'v'], 'x']);
 
   });
   it("unary minus of quotient", function() {
     expect(me.from("x-2/(uv)").evaluate_numbers().tree).toEqual(
         ['+', 'x', ['/', -2, ['*', 'u', 'v']]]);
     expect(me.from("x-2u/v").evaluate_numbers().tree).toEqual(
-        ['+', 'x', ['/', ['*', -2, 'u'], 'v']]);
+        ['+', ['/', ['*', -2, 'u'], 'v'], 'x']);
 
   });
 
@@ -107,7 +107,7 @@ describe("evaluate_numbers", function () {
 
   it("combination", function () {
     expect(me.from("1x^2-3 +0x^2 + 4 -2x^2 -3 + 5x^2").evaluate_numbers().tree).toEqual(
-        [ '+', -2, [ '*', -2, [ '^', 'x', 2 ] ], [ '*', 5, [ '^', 'x', 2 ] ], [ '^', 'x', 2 ] ]
+        [ '+', [ '*', -2, [ '^', 'x', 2 ] ], [ '^', 'x', 2 ], [ '*', 5, [ '^', 'x', 2 ] ], -2 ]
     );
     expect(me.from("1x^2-3 +0x^2 + 4 -2x^2 -3 + 5x^2").evaluate_numbers({skip_ordering: true}).tree).toEqual(
         [ '+', [ '^', 'x', 2 ], 1, [ '*', -2, [ '^', 'x', 2 ] ], -3, [ '*', 5, [ '^', 'x', 2 ] ] ]

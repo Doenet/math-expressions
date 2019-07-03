@@ -15,8 +15,8 @@ describe("solve linear", function () {
 
 	me.add_assumption(me.from("v < 0"));
 	expect(trees.equal(
-	    me.fromText('2uv-v = 3u+q').solve_linear('u').simplify_ratios().tree,
-	    me.fromText("u = (q+v)/(2v-3)").simplify_ratios().tree
+	    me.fromText('2uv-v = 3u+q').solve_linear('u').simplify_ratios().evaluate_numbers().tree,
+	    me.fromText("u = (q+v)/(2v-3)").simplify_ratios().evaluate_numbers().tree
 	)).toBeTruthy();
 	me.clear_assumptions();
 	
