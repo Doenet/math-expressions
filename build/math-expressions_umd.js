@@ -46,90 +46,92 @@
     }
   }
 
-  var is_associative = { '+': true, '*': true, 'and': true, 'or': true, 'union': true, 'intersect': true};
+  var is_associative = { '+': true, '*': true, 'and': true, 'or': true, 'union': true, 'intersect': true };
 
 
-  function flatten( expr ) {
-      // flatten tree with all associative operators
+  function flatten(expr) {
+    // flatten tree with all associative operators
 
-      var tree = get_tree(expr);
+    var tree = get_tree(expr);
 
-      if(!Array.isArray(tree))
-  	return tree;
+    if (!Array.isArray(tree))
+      return tree;
 
-      var operator = tree[0];
-      var operands = tree.slice(1);
+    var operator = tree[0];
+    var operands = tree.slice(1);
 
-      operands = operands.map( function(v,i) {
-  	return flatten(v); } );
+    operands = operands.map(function (v, i) {
+      return flatten(v);
+    });
 
-      if (is_associative[operator]) {
-  	var result = [];
+    if (is_associative[operator]) {
+      var result = [];
 
-  	for( var i=0; i<operands.length; i++ ) {
-  	    if (Array.isArray(operands[i]) && (operands[i][0] === operator)) {
-  		result = result.concat( operands[i].slice(1) );
-  	    } else {
-  		result.push( operands[i] );
-  	    }
-  	}
-
-  	operands = result;
+      for (var i = 0; i < operands.length; i++) {
+        if (Array.isArray(operands[i]) && (operands[i][0] === operator)) {
+          result = result.concat(operands[i].slice(1));
+        } else {
+          result.push(operands[i]);
+        }
       }
 
-      return [operator].concat( operands );
+      operands = result;
+    }
+
+    return [operator].concat(operands);
   }
-  const unflattenRight = function( expr) {
-      // unflatten tree with associate operators
-      // into a right heavy tree;
+  const unflattenRight = function (expr) {
+    // unflatten tree with associate operators
+    // into a right heavy tree;
 
-      var tree = get_tree(expr);
+    var tree = get_tree(expr);
 
-      if(!Array.isArray(tree))
-  	return tree;
+    if (!Array.isArray(tree))
+      return tree;
 
-      var operator = tree[0];
-      var operands = tree.slice(1);
+    var operator = tree[0];
+    var operands = tree.slice(1);
 
-      operands = operands.map( function(v,i) {
-  	return unflattenRight(v); } );
+    operands = operands.map(function (v, i) {
+      return unflattenRight(v);
+    });
 
-      if (operands.length > 2 && is_associative[operator]) {
-  	var result = [operator, operands[0], undefined];
-  	var next = result;
+    if (operands.length > 2 && is_associative[operator]) {
+      var result = [operator, operands[0], undefined];
+      var next = result;
 
-  	for( var i=1; i<operands.length - 1; i++ ) {
-  	    next[2] = [operator, operands[i], undefined];
-  	    next = next[2];
-  	}
-
-  	next[2] = operands[operands.length - 1];
-
-  	return result;
+      for (var i = 1; i < operands.length - 1; i++) {
+        next[2] = [operator, operands[i], undefined];
+        next = next[2];
       }
 
-      return [operator].concat( operands );
+      next[2] = operands[operands.length - 1];
+
+      return result;
+    }
+
+    return [operator].concat(operands);
   };
 
-  const allChildren = function( tree ) {
-      // find all children of operator of tree as though it had been flattened
+  const allChildren = function (tree) {
+    // find all children of operator of tree as though it had been flattened
 
-      if(!Array.isArray(tree))
-  	return [];
+    if (!Array.isArray(tree))
+      return [];
 
-      var operator = tree[0];
-      var operands = tree.slice(1);
+    var operator = tree[0];
+    var operands = tree.slice(1);
 
-      if(!is_associative[operator])
-  	return operands;
+    if (!is_associative[operator])
+      return operands;
 
-      return operands.reduce(function (a,b) {
-  	if(Array.isArray(b) && b[0] === operator) {
-  	    return a.concat(allChildren(b));
-  	}
-  	else
-  	    return a.concat([b]);
-      }, []);
+    return operands.reduce(function (a, b) {
+      if (Array.isArray(b) && b[0] === operator) {
+        return a.concat(allChildren(b));
+      }
+      else
+        return a.concat([b]);
+    }, []);
 
   };
 
@@ -62857,12 +62859,8 @@
     /*
      * Return true if left and right are syntactically equal.
      *
-     * Sorts operands of many operators to a default order before comparing.
      */
 
-    // sort to default order
-    left = default_order(left);
-    right = default_order(right);
 
     if(!(Array.isArray(left) && Array.isArray(right))) {
       if((typeof left) !== (typeof right))

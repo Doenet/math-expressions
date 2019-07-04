@@ -4,7 +4,7 @@ import { equal as tree_equal } from '../lib/trees/basic';
 describe("expand factors", function () {
 
   test("expand polynomial", function () {
-    expect(tree_equal(me.fromText("(a+x)(b-y)").expand().tree, me.fromText("ab-ay+xb-xy").tree)).toBeTruthy();
+    expect(tree_equal(me.fromText("(a+x)(b-y)").expand().tree, me.fromText("ab-ay+xb-xy").evaluate_numbers().tree)).toBeTruthy();
     expect(tree_equal(me.fromText("(a-x)^2").expand().tree, me.fromText("a^2 -2ax + x^2").evaluate_numbers().tree)).toBeTruthy();
     expect(tree_equal(me.fromText("(a-x+c)^2").expand().tree, me.fromText("a^2 +x^2+c^2 -2ax +2ac-2xc").evaluate_numbers().tree)).toBeTruthy();
     expect(tree_equal(me.fromText("(a-x)^3").expand().tree, me.fromText("a^3 -3a^2x + 3ax^2-x^3").evaluate_numbers().tree)).toBeTruthy();

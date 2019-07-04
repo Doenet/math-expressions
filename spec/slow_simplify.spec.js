@@ -187,7 +187,7 @@ describe("collect like terms and factor", function () {
     it("like factors", function () {
 	expect(trees.equal(
 	    me.fromText("3xyx").collect_like_terms_factors().tree,
-	    me.fromText("3x^2y").tree
+	    me.fromText("3x^2y").evaluate_numbers().tree
 	)).toBeTruthy();
 	
 	expect(trees.equal(
@@ -207,7 +207,7 @@ describe("collect like terms and factor", function () {
 	me.clear_assumptions();
 	expect(trees.equal(
 	    me.fromText("y*3x/y*x/z/y^2").collect_like_terms_factors().tree,
-	    me.fromText("3yx^2/(y^3z)").tree
+	    me.fromText("3yx^2/(y^3z)").evaluate_numbers().tree
 	)).toBeTruthy();
 	
 	expect(trees.equal(
@@ -224,7 +224,7 @@ describe("collect like terms and factor", function () {
 
 	expect(trees.equal(
 	    me.fromText("y*3x/y*x/z/y^2").collect_like_terms_factors().tree,
-	    me.fromText("3x^2/(y^2z)").tree
+	    me.fromText("3x^2/(y^2z)").evaluate_numbers().tree
 	)).toBeTruthy();
 
 	expect(trees.equal(

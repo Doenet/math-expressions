@@ -29,18 +29,18 @@ describe("solve linear", function () {
 
     it("inequalities", function () {
 
-	expect(trees.equal(me.fromText('3x-2 != 4x+1').solve_linear('x').tree,
+	expect(trees.equal(me.fromText('3x-2 != 4x+1').solve_linear('x').evaluate_numbers().tree,
 			   me.fromText("x != -3").evaluate_numbers().tree)).toBeTruthy();
 
 	expect(trees.equal(me.fromText('2x-4 < 6').solve_linear('x').tree,
 			   me.fromText("x < 5").tree)).toBeTruthy();
-	expect(trees.equal(me.fromText('2x-4 < 6+4x').solve_linear('x').tree,
+	expect(trees.equal(me.fromText('2x-4 < 6+4x').solve_linear('x').evaluate_numbers().tree,
 			   me.fromText("x > -5").evaluate_numbers().tree)).toBeTruthy();
 	expect(trees.equal(me.fromText('-3y -v <= 2xz+r').solve_linear('y').simplify_ratios().tree,
 			   me.fromText("y >= -(2xz+r+v)/3").simplify_ratios().tree)).toBeTruthy();
 	me.add_assumption(me.from('u < 0'));
-	expect(trees.equal(me.fromText('6uv+5r > 3uv+3r').solve_linear('v').simplify_ratios().tree,
-			   me.fromText("v < -2r/(3u)").simplify_ratios().tree)).toBeTruthy();
+	expect(trees.equal(me.fromText('6uv+5r > 3uv+3r').solve_linear('v').simplify_ratios().evaluate_numbers().tree,
+			   me.fromText("v < -2r/(3u)").simplify_ratios().evaluate_numbers().tree)).toBeTruthy();
 	
 	me.clear_assumptions();
 	

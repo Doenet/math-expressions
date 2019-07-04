@@ -1,5 +1,6 @@
 import * as trees from '../lib/trees/basic.js';
 import * as flatten from '../lib/trees/flatten.js';
+import { default_order } from '../lib/trees/default_order';
 import me from '../lib/math-expressions';
 function TREE(s) {
   return me.fromText(s).tree;
@@ -382,7 +383,7 @@ describe("tree matching", function () {
       { variables: { a: isNumber, b: true }, allow_permutations: true });
 
     expect(match).toBeTruthy();
-    expect(trees.equal(match['b'], TREE('xyz+5a'))
+    expect(trees.equal(default_order(match['b']), default_order(TREE('xyz+5a')))
       && trees.equal(match['a'], TREE('-2'))).toBeTruthy();
 
     pattern = TREE('a+b+c');
@@ -697,8 +698,7 @@ describe("tree transformations", function () {
       ['*', 'b', 'x', 'p', 'q']];
 
     var transformed = trees.applyAllTransformations(factored, transformations);
-
-    expect(trees.equal(expanded, transformed)).toBeTruthy();
+    expect(trees.equal(default_order(expanded), default_order(transformed))).toBeTruthy();
 
   });
 
@@ -791,7 +791,7 @@ describe("tree transformations", function () {
     original = flatten.unflattenLeft(flatten.flatten(original));
     result = trees.applyAllTransformations(
       original, [transformationTrig]);
-    expect(result).toEqual(TREE('q*t+y/2+1'));
+    expect(default_order(result)).toEqual(default_order(TREE('q*t+y/2+1')));
 
 
   });
@@ -823,7 +823,7 @@ describe("tree transformations", function () {
     result = trees.applyAllTransformations(
       TREE('3x+4y-x*2+qx-3x-y+x'), [transformation]);
 
-    expect(trees.equal(result, TREE('-x+3y+qx'))).toBeTruthy();
+    expect(trees.equal(default_order(result), default_order(TREE('-x+3y+qx')))).toBeTruthy();
 
   });
 
