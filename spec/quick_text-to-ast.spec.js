@@ -208,19 +208,19 @@ Object.keys(trees).forEach(function(string) {
 var bad_inputs = {
   '1++1': "Invalid location of '+'",
   ')1++1': "Invalid location of ')'",
-  '(1+1': "Expected )",
+  '(1+1': "Expecting )",
   'x-y-': "Unexpected end of input",
   '|x_|': "Unexpected end of input",
   '_x': "Invalid location of _",
   'x_': "Unexpected end of input",
   'x@2': "Invalid symbol '@'",
-  '|y/v': "Expected |",
+  '|y/v': "Expecting |",
   'x+^2': "Invalid location of ^",
   'x/\'y': "Invalid location of '",
-  '[1,2,3)': "Expected ]",
-  '(1,2,3]': "Expected )",
-  '[x)': "Expected ]",
-  '(x]': "Expected )",
+  '[1,2,3)': "Expecting ]",
+  '(1,2,3]': "Expecting )",
+  '[x)': "Expecting ]",
+  '(x]': "Expecting )",
   'sin': "Unexpected end of input",
   'sin+cos': "Invalid location of '+'",
   '\\cos(x)': "Invalid symbol '\\'",
@@ -305,7 +305,7 @@ test("allow simplified function application", function () {
 
   converter = new textToAst({allowSimplifiedFunctionApplication: false});
   expect(() => {converter.convert('sin x')}).toThrow(
-    "Expected ( after function");
+    "Expecting ( after function");
 
   converter = new textToAst({allowSimplifiedFunctionApplication: true});
   expect(converter.convert('sin x')).toEqual(

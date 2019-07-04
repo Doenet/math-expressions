@@ -70381,7 +70381,7 @@ class textToAst {
           let parameters = this.statement_list();
 
           if (this.token.token_type !== ')') {
-            throw new ParseError('Expected )', this.lexer.location);
+            throw new ParseError('Expecting )', this.lexer.location);
           }
           this.advance();
 
@@ -70396,7 +70396,7 @@ class textToAst {
           // cannot omit argument
           if (must_apply) {
             if (!this.allowSimplifiedFunctionApplication)
-              throw new ParseError("Expected ( after function",
+              throw new ParseError("Expecting ( after function",
                 this.lexer.location);
 
             // if allow simplied function application
@@ -70483,10 +70483,10 @@ class textToAst {
 
       if (this.token.token_type !== expected_right) {
         if (n_elements !== 2 || other_right === null) {
-          throw new ParseError('Expected ' + expected_right,
+          throw new ParseError('Expecting ' + expected_right,
             this.lexer.location);
         } else if (this.token.token_type !== other_right) {
-          throw new ParseError('Expected ) or ]', this.lexer.location);
+          throw new ParseError('Expecting ) or ]', this.lexer.location);
         }
 
         // half-open interval
@@ -70535,7 +70535,7 @@ class textToAst {
       result = ['apply', 'abs', result];
 
       if (this.token.token_type !== '|') {
-        throw new ParseError('Expected |', this.lexer.location);
+        throw new ParseError('Expecting |', this.lexer.location);
       }
 
       this.advance();
@@ -78352,7 +78352,7 @@ class latexToAst {
       this.advance();
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expected {", this.lexer.location);
+	throw new ParseError("Expecting {", this.lexer.location);
       }
       this.advance();
 
@@ -78377,19 +78377,19 @@ class latexToAst {
       let numerator = this.statement({ parse_absolute_value: parse_absolute_value });
 
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expected }", this.lexer.location);
+	throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expected {", this.lexer.location);
+	throw new ParseError("Expecting {", this.lexer.location);
       }
       this.advance();
 
       let denominator = this.statement({ parse_absolute_value: parse_absolute_value });
 
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expected }", this.lexer.location);
+	throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
@@ -78454,7 +78454,7 @@ class latexToAst {
 	// token is ENDENVIRONMENT
 	let environment2 = /\\end\s*{\s*([a-zA-Z0-9]+)\s*}/.exec(this.token.token_text)[1];
 	if(environment2 !== environment) {
-	  throw new ParseError("Expected \\end{" + environment + "}", this.lexer.location);
+	  throw new ParseError("Expecting \\end{" + environment + "}", this.lexer.location);
 	}
 
 	// add last row
@@ -78506,7 +78506,7 @@ class latexToAst {
 	this.advance();
 	let parameter = this.statement({ parse_absolute_value: parse_absolute_value });
 	if (this.token.token_type !== ']') {
-	  throw new ParseError("Expected ]", this.lexer.location);
+	  throw new ParseError("Expecting ]", this.lexer.location);
 	}
 	this.advance();
 
@@ -78514,13 +78514,13 @@ class latexToAst {
       }
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expected {", this.lexer.location);
+	throw new ParseError("Expecting {", this.lexer.location);
       }
 
       this.advance();
       let parameter = this.statement({ parse_absolute_value: parse_absolute_value });
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expected }", this.lexer.location);
+	throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
@@ -78594,7 +78594,7 @@ class latexToAst {
 	  let parameters = this.statement_list();
 
 	  if (this.token.token_type !== expected_right) {
-	    throw new ParseError('Expected ' + expected_right,
+	    throw new ParseError('Expecting ' + expected_right,
 				 this.lexer.location);
 	  }
 	  this.advance();
@@ -78612,7 +78612,7 @@ class latexToAst {
 	  // cannot omit argument
 	  if(must_apply) {
 	    if(!this.allowSimplifiedFunctionApplication)
-	      throw new ParseError("Expected ( after function",
+	      throw new ParseError("Expecting ( after function",
 				   this.lexer.location);
 
 	    // if allow simplied function application
@@ -78656,11 +78656,11 @@ class latexToAst {
 
       if (this.token.token_type !== expected_right) {
 	if(n_elements !== 2 || other_right === null) {
-	  throw new ParseError('Expected ' + expected_right,
+	  throw new ParseError('Expecting ' + expected_right,
 			       this.lexer.location);
 	}
 	else if (this.token.token_type !== other_right) {
-	  throw new ParseError('Expected ) or ]', this.lexer.location);
+	  throw new ParseError('Expecting ) or ]', this.lexer.location);
 	}
 
 	// half-open interval
@@ -78715,7 +78715,7 @@ class latexToAst {
       result = ['apply', 'abs', result];
 
       if (this.token.token_type !== '|') {
-	throw new ParseError('Expected |', this.lexer.location);
+	throw new ParseError('Expecting |', this.lexer.location);
       }
 
       this.advance();
