@@ -70205,7 +70205,17 @@ class textToAst {
     if (this.token.token_type === '+')
       this.advance();
 
+    let negative_begin = false;
+    if (this.token.token_type === '-') {
+      negative_begin = true;
+      this.advance();
+    }
+
     var lhs = this.term(params);
+
+    if(negative_begin) {
+      lhs = ['-', lhs];
+    }
 
     while ((this.token.token_type === '+') || (this.token.token_type === '-')
 	   || (this.token.token_type === 'UNION') ||
@@ -70220,6 +70230,10 @@ class textToAst {
         this.advance();
       } else {
         this.advance();
+        if(operation === '+' && this.token.token_type === '-') {
+          negative = true;
+          this.advance();
+        }
       }
       let rhs = this.term(params);
       if (negative) {
@@ -77947,12 +77961,12 @@ const parseLeibnizNotationDefault$1 = true;
 
 class latexToAst {
   constructor({
-    allowSimplifiedFunctionApplication=allowSimplifiedFunctionApplicationDefault$1,
-    allowedLatexSymbols=allowedLatexSymbolsDefault$1,
-    appliedFunctionSymbols=appliedFunctionSymbolsDefault$1,
-    functionSymbols=functionSymbolsDefault$1,
+    allowSimplifiedFunctionApplication = allowSimplifiedFunctionApplicationDefault$1,
+    allowedLatexSymbols = allowedLatexSymbolsDefault$1,
+    appliedFunctionSymbols = appliedFunctionSymbolsDefault$1,
+    functionSymbols = functionSymbolsDefault$1,
     parseLeibnizNotation = parseLeibnizNotationDefault$1,
-  } = {}){
+  } = {}) {
     this.allowSimplifiedFunctionApplication = allowSimplifiedFunctionApplication;
     this.allowedLatexSymbols = allowedLatexSymbols;
     this.appliedFunctionSymbols = appliedFunctionSymbols;
@@ -77967,13 +77981,15 @@ class latexToAst {
     this.token = this.lexer.advance(params);
     if (this.token.token_type === 'INVALID') {
       throw new ParseError("Invalid symbol '" + this.token.original_text + "'",
-			   this.lexer.location);
+        this.lexer.location);
     }
   }
 
   return_state() {
-    return ({ lexer_state: this.lexer.return_state(),
-	      token: Object.assign({}, this.token) });
+    return ({
+      lexer_state: this.lexer.return_state(),
+      token: Object.assign({}, this.token)
+    });
   }
 
   set_state(state) {
@@ -77982,16 +77998,16 @@ class latexToAst {
   }
 
 
-  convert(input){
+  convert(input) {
 
     this.lexer.set_input(input);
     this.advance();
 
-    var result=this.statement_list();
+    var result = this.statement_list();
 
     if (this.token.token_type !== 'EOF') {
       throw new ParseError("Invalid location of '" + this.token.original_text + "'",
-			   this.lexer.location);
+        this.lexer.location);
     }
 
     return flatten$18(result);
@@ -78002,12 +78018,12 @@ class latexToAst {
 
     var list = [this.statement()];
 
-    while(this.token.token_type === ",") {
+    while (this.token.token_type === ",") {
       this.advance();
       list.push(this.statement());
     }
 
-    if(list.length > 1)
+    if (list.length > 1)
       list = ['list'].concat(list);
     else
       list = list[0];
@@ -78015,10 +78031,10 @@ class latexToAst {
     return list;
   }
 
-  statement({inside_absolute_value = 0} = {}) {
+  statement({ inside_absolute_value = 0 } = {}) {
 
     // \ldots can be a statement by itself
-    if(this.token.token_type === 'LDOTS') {
+    if (this.token.token_type === 'LDOTS') {
       this.advance();
       return ['ldots'];
     }
@@ -78029,16 +78045,16 @@ class latexToAst {
 
       original_state = this.return_state();
 
-      let lhs=this.statement_a({inside_absolute_value: inside_absolute_value});
+      let lhs = this.statement_a({ inside_absolute_value: inside_absolute_value });
 
-      if(this.token.token_type !== ':' && this.token.token_type !== 'MID')
-	return lhs;
+      if (this.token.token_type !== ':' && this.token.token_type !== 'MID')
+        return lhs;
 
       let operator = this.token.token_type === ':' ? ':' : '|';
 
       this.advance();
 
-      let rhs=this.statement_a();
+      let rhs = this.statement_a();
 
       return [operator, lhs, rhs];
 
@@ -78046,36 +78062,38 @@ class latexToAst {
     catch (e) {
       try {
 
-	// if ran into problem parsing statement
-	// then try again with ignoring absolute value
-	// and then interpreting bar as a binary operator
+        // if ran into problem parsing statement
+        // then try again with ignoring absolute value
+        // and then interpreting bar as a binary operator
 
-	// return state to what it was before attempting to parse statement
-	this.set_state(original_state);
+        // return state to what it was before attempting to parse statement
+        this.set_state(original_state);
 
-	let lhs = this.statement_a({ parse_absolute_value: false });
+        let lhs = this.statement_a({ parse_absolute_value: false });
 
-	if(this.token.token_type[0] !== '|') {
-	  throw(e);
-	}
+        if (this.token.token_type[0] !== '|') {
+          throw (e);
+        }
 
-	this.advance();
+        this.advance();
 
-	let rhs = this.statement_a({ parse_absolute_value: false });
+        let rhs = this.statement_a({ parse_absolute_value: false });
 
-	return ['|', lhs, rhs];
+        return ['|', lhs, rhs];
 
       }
-      catch(e2) {
-	throw(e);  // throw original error
+      catch (e2) {
+        throw (e);  // throw original error
       }
     }
   }
 
   statement_a({ inside_absolute_value = 0, parse_absolute_value = true } = {}) {
 
-    var lhs = this.statement_b({ inside_absolute_value: inside_absolute_value,
-				parse_absolute_value: parse_absolute_value });
+    var lhs = this.statement_b({
+      inside_absolute_value: inside_absolute_value,
+      parse_absolute_value: parse_absolute_value
+    });
 
     while (this.token.token_type === 'OR') {
 
@@ -78083,8 +78101,10 @@ class latexToAst {
 
       this.advance();
 
-      let rhs = this.statement_b({ inside_absolute_value: inside_absolute_value,
-				  parse_absolute_value: parse_absolute_value });
+      let rhs = this.statement_b({
+        inside_absolute_value: inside_absolute_value,
+        parse_absolute_value: parse_absolute_value
+      });
 
       lhs = [operation, lhs, rhs];
     }
@@ -78096,7 +78116,7 @@ class latexToAst {
   statement_b(params) {
     // split AND into second statement to give higher precedence than OR
 
-    var lhs=this.relation(params);
+    var lhs = this.relation(params);
 
     while (this.token.token_type === 'AND') {
 
@@ -78115,7 +78135,7 @@ class latexToAst {
 
   relation(params) {
 
-    if(this.token.token_type === 'NOT' || this.token.token_type === '!') {
+    if (this.token.token_type === 'NOT' || this.token.token_type === '!') {
       this.advance();
       return ['not', this.relation(params)];
     }
@@ -78123,91 +78143,91 @@ class latexToAst {
     var lhs = this.expression(params);
 
     while ((this.token.token_type === '=') || (this.token.token_type === 'NE')
-	   || (this.token.token_type === '<') || (this.token.token_type === '>')
-	   || (this.token.token_type === 'LE') || (this.token.token_type === 'GE')
-	   || (this.token.token_type === 'IN') || (this.token.token_type === 'NOTIN')
-	   || (this.token.token_type === 'NI') || (this.token.token_type === 'NOTNI')
-	   || (this.token.token_type === 'SUBSET') || (this.token.token_type === 'NOTSUBSET')
-	   || (this.token.token_type === 'SUPERSET') || (this.token.token_type === 'NOTSUPERSET')) {
+      || (this.token.token_type === '<') || (this.token.token_type === '>')
+      || (this.token.token_type === 'LE') || (this.token.token_type === 'GE')
+      || (this.token.token_type === 'IN') || (this.token.token_type === 'NOTIN')
+      || (this.token.token_type === 'NI') || (this.token.token_type === 'NOTNI')
+      || (this.token.token_type === 'SUBSET') || (this.token.token_type === 'NOTSUBSET')
+      || (this.token.token_type === 'SUPERSET') || (this.token.token_type === 'NOTSUPERSET')) {
 
       let operation = this.token.token_type.toLowerCase();
 
-      let inequality_sequence=0;
+      let inequality_sequence = 0;
 
-      if((this.token.token_type === '<') || (this.token.token_type === 'LE')) {
-	inequality_sequence = -1;
+      if ((this.token.token_type === '<') || (this.token.token_type === 'LE')) {
+        inequality_sequence = -1;
       }
-      else if((this.token.token_type === '>') || (this.token.token_type === 'GE')) {
-	inequality_sequence = 1;
+      else if ((this.token.token_type === '>') || (this.token.token_type === 'GE')) {
+        inequality_sequence = 1;
       }
 
       this.advance();
       let rhs = this.expression(params);
 
-      if(inequality_sequence === -1) {
-	if((this.token.token_type === '<') || this.token.token_type === 'LE') {
-	  // sequence of multiple < or <=
-	  let strict = ['tuple'];
-	  if(operation === '<')
-	    strict.push(true);
-	  else
-	    strict.push(false);
+      if (inequality_sequence === -1) {
+        if ((this.token.token_type === '<') || this.token.token_type === 'LE') {
+          // sequence of multiple < or <=
+          let strict = ['tuple'];
+          if (operation === '<')
+            strict.push(true);
+          else
+            strict.push(false);
 
-	  let args = ['tuple', lhs, rhs];
-	  while((this.token.token_type === '<') || this.token.token_type === 'LE') {
-	    if(this.token.token_type === '<')
-	      strict.push(true);
-	    else
-	      strict.push(false);
+          let args = ['tuple', lhs, rhs];
+          while ((this.token.token_type === '<') || this.token.token_type === 'LE') {
+            if (this.token.token_type === '<')
+              strict.push(true);
+            else
+              strict.push(false);
 
-	    this.advance();
-	    args.push(this.expression(params));
-	  }
-	  lhs = ['lts', args, strict];
-	}
-	else {
-	  lhs = [operation, lhs, rhs];
-	}
-
-      }
-      else if(inequality_sequence === 1) {
-	if((this.token.token_type === '>') || this.token.token_type === 'GE') {
-	  // sequence of multiple > or >=
-	  let strict = ['tuple'];
-	  if(operation === '>')
-	    strict.push(true);
-	  else
-	    strict.push(false);
-
-	  let args = ['tuple', lhs, rhs];
-	  while((this.token.token_type === '>') || this.token.token_type === 'GE') {
-	    if(this.token.token_type === '>')
-	      strict.push(true);
-	    else
-	      strict.push(false);
-
-	    this.advance();
-	    args.push(this.expression(params));
-	  }
-	  lhs = ['gts', args, strict];
-	}
-	else {
-	  lhs = [operation, lhs, rhs];
-	}
+            this.advance();
+            args.push(this.expression(params));
+          }
+          lhs = ['lts', args, strict];
+        }
+        else {
+          lhs = [operation, lhs, rhs];
+        }
 
       }
-      else if(operation === '=') {
-	lhs = ['=', lhs, rhs];
+      else if (inequality_sequence === 1) {
+        if ((this.token.token_type === '>') || this.token.token_type === 'GE') {
+          // sequence of multiple > or >=
+          let strict = ['tuple'];
+          if (operation === '>')
+            strict.push(true);
+          else
+            strict.push(false);
 
-	// check for sequence of multiple =
-	while(this.token.token_type === '=') {
-	  this.advance();
-	  lhs.push(this.expression(params));
-	}
+          let args = ['tuple', lhs, rhs];
+          while ((this.token.token_type === '>') || this.token.token_type === 'GE') {
+            if (this.token.token_type === '>')
+              strict.push(true);
+            else
+              strict.push(false);
+
+            this.advance();
+            args.push(this.expression(params));
+          }
+          lhs = ['gts', args, strict];
+        }
+        else {
+          lhs = [operation, lhs, rhs];
+        }
+
+      }
+      else if (operation === '=') {
+        lhs = ['=', lhs, rhs];
+
+        // check for sequence of multiple =
+        while (this.token.token_type === '=') {
+          this.advance();
+          lhs.push(this.expression(params));
+        }
       }
       else {
 
-	lhs = [operation, lhs, rhs];
+        lhs = [operation, lhs, rhs];
       }
 
     }
@@ -78217,28 +78237,43 @@ class latexToAst {
 
 
   expression(params) {
-    if(this.token.token_type === '+')
+    if (this.token.token_type === '+')
       this.advance();
 
+    let negative_begin = false;
+    if (this.token.token_type === '-') {
+      negative_begin = true;
+      this.advance();
+    }
+
     var lhs = this.term(params);
+
+    if(negative_begin) {
+      lhs = ['-', lhs];
+    }
+
     while ((this.token.token_type === '+') || (this.token.token_type === '-')
-	   || (this.token.token_type === 'UNION')
-	   || (this.token.token_type === 'INTERSECT')) {
+      || (this.token.token_type === 'UNION')
+      || (this.token.token_type === 'INTERSECT')) {
 
       let operation = this.token.token_type.toLowerCase();
       let negative = false;
 
       if (this.token.token_type === '-') {
-	operation = '+';
-	negative = true;
-	this.advance();
+        operation = '+';
+        negative = true;
+        this.advance();
       }
-      else  {
-	this.advance();
+      else {
+        this.advance();
+        if(operation === '+' && this.token.token_type === '-' ) {
+          negative = true;
+          this.advance();
+        }
       }
       let rhs = this.term(params);
-      if(negative) {
-	rhs = ['-', rhs];
+      if (negative) {
+        rhs = ['-', rhs];
       }
 
       lhs = [operation, lhs, rhs];
@@ -78257,24 +78292,24 @@ class latexToAst {
       keepGoing = false;
 
       if (this.token.token_type === '*') {
-	this.advance();
-	lhs = ['*', lhs, this.factor(params)];
-	keepGoing = true;
+        this.advance();
+        lhs = ['*', lhs, this.factor(params)];
+        keepGoing = true;
       } else if (this.token.token_type === '/') {
-	this.advance();
-	lhs = ['/', lhs, this.factor(params)];
-	keepGoing = true;
+        this.advance();
+        lhs = ['/', lhs, this.factor(params)];
+        keepGoing = true;
       } else {
-	// this is the one case where a | could indicate a closing absolute value
-	let params2 = Object.assign({}, params);
-	params2.allow_absolute_value_closing = true;
-	let rhs = this.nonMinusFactor(params2);
-	if (rhs !== false) {
-	  lhs = ['*', lhs, rhs];
-	  keepGoing = true;
-	}
+        // this is the one case where a | could indicate a closing absolute value
+        let params2 = Object.assign({}, params);
+        params2.allow_absolute_value_closing = true;
+        let rhs = this.nonMinusFactor(params2);
+        if (rhs !== false) {
+          lhs = ['*', lhs, rhs];
+          keepGoing = true;
+        }
       }
-    } while( keepGoing );
+    } while (keepGoing);
 
     return lhs;
   }
@@ -78288,13 +78323,13 @@ class latexToAst {
 
     var result = this.nonMinusFactor(params);
 
-    if(result === false) {
+    if (result === false) {
       if (this.token.token_type === "EOF") {
-	throw new ParseError("Unexpected end of input", this.lexer.location);
+        throw new ParseError("Unexpected end of input", this.lexer.location);
       }
       else {
-	throw new ParseError("Invalid location of '" + this.token.original_text + "'",
-			     this.lexer.location);
+        throw new ParseError("Invalid location of '" + this.token.original_text + "'",
+          this.lexer.location);
       }
     }
     else {
@@ -78309,21 +78344,21 @@ class latexToAst {
 
     // allow arbitrary sequence of factorials
     if (this.token.token_type === '!' || this.token.token_type === "'") {
-      if(result === false)
-	throw new ParseError("Invalid location of " + this.token.token_type,
-			     this.lexer.location);
-      while(this.token.token_type === '!' || this.token.token_type === "'") {
-	if(this.token.token_type === '!')
-	  result = ['apply', 'factorial', result];
-	else
-	  result = ['prime', result];
-	this.advance();
+      if (result === false)
+        throw new ParseError("Invalid location of " + this.token.token_type,
+          this.lexer.location);
+      while (this.token.token_type === '!' || this.token.token_type === "'") {
+        if (this.token.token_type === '!')
+          result = ['apply', 'factorial', result];
+        else
+          result = ['prime', result];
+        this.advance();
       }
     }
 
     if (this.token.token_type === '^') {
-      if(result === false) {
-	throw new ParseError("Invalid location of ^", this.lexer.location);
+      if (result === false) {
+        throw new ParseError("Invalid location of ^", this.lexer.location);
       }
       this.advance();
 
@@ -78339,10 +78374,10 @@ class latexToAst {
   }
 
 
-  baseFactor({inside_absolute_value = 0,
-	      parse_absolute_value = true,
-	      allow_absolute_value_closing = false
-	     } = {}) {
+  baseFactor({ inside_absolute_value = 0,
+    parse_absolute_value = true,
+    allow_absolute_value_closing = false
+  } = {}) {
 
     var result = false;
 
@@ -78350,148 +78385,148 @@ class latexToAst {
       this.advance();
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expecting {", this.lexer.location);
+        throw new ParseError("Expecting {", this.lexer.location);
       }
       this.advance();
 
       // determine if may be a derivative in Leibniz notation
-      if(this.parseLeibnizNotation) {
+      if (this.parseLeibnizNotation) {
 
-	let original_state = this.return_state();
+        let original_state = this.return_state();
 
-	let r = this.leibniz_notation();
+        let r = this.leibniz_notation();
 
-	if(r) {
-	  // successfully parsed derivative in Leibniz notation, so return
-	  return r;
-	}
-	else {
-	  // didn't find a properly format Leibniz notation
-	  // so reset state and continue
-	  this.set_state(original_state);
-	}
+        if (r) {
+          // successfully parsed derivative in Leibniz notation, so return
+          return r;
+        }
+        else {
+          // didn't find a properly format Leibniz notation
+          // so reset state and continue
+          this.set_state(original_state);
+        }
       }
 
       let numerator = this.statement({ parse_absolute_value: parse_absolute_value });
 
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expecting }", this.lexer.location);
+        throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expecting {", this.lexer.location);
+        throw new ParseError("Expecting {", this.lexer.location);
       }
       this.advance();
 
       let denominator = this.statement({ parse_absolute_value: parse_absolute_value });
 
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expecting }", this.lexer.location);
+        throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
       return ['/', numerator, denominator];
     }
 
-    if(this.token.token_type === 'BEGINENVIRONMENT') {
+    if (this.token.token_type === 'BEGINENVIRONMENT') {
       let environment = /\\begin\s*{\s*([a-zA-Z0-9]+)\s*}/.exec(this.token.token_text)[1];
 
-      if(['matrix', 'pmatrix', 'bmatrix'].includes(environment)) {
+      if (['matrix', 'pmatrix', 'bmatrix'].includes(environment)) {
 
-	let n_rows = 0;
-	let n_cols = 0;
+        let n_rows = 0;
+        let n_cols = 0;
 
-	let all_rows = [];
-	let row = [];
-	let n_this_row = 0;
-	let last_token = this.token.token_type;
+        let all_rows = [];
+        let row = [];
+        let n_this_row = 0;
+        let last_token = this.token.token_type;
 
-	this.advance();
-
-
-	while(this.token.token_type !== 'ENDENVIRONMENT') {
-	  if(this.token.token_type === '&') {
-	    if(last_token === '&' || last_token === 'LINEBREAK') {
-	      // blank entry, let entry be zero
-	      row.push(0);
-	      n_this_row += 1;
-	    }
-	    last_token = this.token.token_type;
-	    this.advance();
-	  }
-	  else if(this.token.token_type === 'LINEBREAK') {
-	    if(last_token === '&' || last_token === 'LINEBREAK') {
-	      // blank entry, let entry be zero
-	      row.push(0);
-	      n_this_row += 1;
-	    }
-	    all_rows.push(row);
-	    if(n_this_row > n_cols)
-	      n_cols = n_this_row;
-
-	    n_rows += 1;
-	    n_this_row = 0;
-	    row = [];
-	    last_token = this.token.token_type;
-	    this.advance();
-	  }
-	  else {
-	    if(last_token === '&' || last_token === 'LINEBREAK' || 'BEGINENVIRONMENT') {
-	      row.push(this.statement({ parse_absolute_value: parse_absolute_value }));
-	      n_this_row += 1;
-	      last_token = ' ';
-
-	    }
-	    else {
-	      throw new ParseError("Invalid location of " + this.token.original_text, this.lexer.location);
-	    }
-	  }
-	}
-
-	// token is ENDENVIRONMENT
-	let environment2 = /\\end\s*{\s*([a-zA-Z0-9]+)\s*}/.exec(this.token.token_text)[1];
-	if(environment2 !== environment) {
-	  throw new ParseError("Expecting \\end{" + environment + "}", this.lexer.location);
-	}
-
-	// add last row
-	if(last_token === '&') {
-	  // blank entry, let entry be zero
-	  row.push(0);
-	  n_this_row += 1;
-	}
-	all_rows.push(row);
-	if(n_this_row > n_cols)
-	  n_cols = n_this_row;
-	n_rows += 1;
+        this.advance();
 
 
-	this.advance();
+        while (this.token.token_type !== 'ENDENVIRONMENT') {
+          if (this.token.token_type === '&') {
+            if (last_token === '&' || last_token === 'LINEBREAK') {
+              // blank entry, let entry be zero
+              row.push(0);
+              n_this_row += 1;
+            }
+            last_token = this.token.token_type;
+            this.advance();
+          }
+          else if (this.token.token_type === 'LINEBREAK') {
+            if (last_token === '&' || last_token === 'LINEBREAK') {
+              // blank entry, let entry be zero
+              row.push(0);
+              n_this_row += 1;
+            }
+            all_rows.push(row);
+            if (n_this_row > n_cols)
+              n_cols = n_this_row;
 
-	// create matrix
-	result = ["matrix", ["tuple", n_rows, n_cols]];
-	let body = ["tuple"];
-	for(let r of all_rows) {
-	  let new_row = ["tuple"].concat(r);
-	  for(let i=r.length; i<n_cols; i+=1)
-	    new_row.push(0);
+            n_rows += 1;
+            n_this_row = 0;
+            row = [];
+            last_token = this.token.token_type;
+            this.advance();
+          }
+          else {
+            if (last_token === '&' || last_token === 'LINEBREAK' || 'BEGINENVIRONMENT') {
+              row.push(this.statement({ parse_absolute_value: parse_absolute_value }));
+              n_this_row += 1;
+              last_token = ' ';
 
-	  body.push(new_row);
+            }
+            else {
+              throw new ParseError("Invalid location of " + this.token.original_text, this.lexer.location);
+            }
+          }
+        }
 
-	}
-	result.push(body);
+        // token is ENDENVIRONMENT
+        let environment2 = /\\end\s*{\s*([a-zA-Z0-9]+)\s*}/.exec(this.token.token_text)[1];
+        if (environment2 !== environment) {
+          throw new ParseError("Expecting \\end{" + environment + "}", this.lexer.location);
+        }
 
-	return result;
+        // add last row
+        if (last_token === '&') {
+          // blank entry, let entry be zero
+          row.push(0);
+          n_this_row += 1;
+        }
+        all_rows.push(row);
+        if (n_this_row > n_cols)
+          n_cols = n_this_row;
+        n_rows += 1;
+
+
+        this.advance();
+
+        // create matrix
+        result = ["matrix", ["tuple", n_rows, n_cols]];
+        let body = ["tuple"];
+        for (let r of all_rows) {
+          let new_row = ["tuple"].concat(r);
+          for (let i = r.length; i < n_cols; i += 1)
+            new_row.push(0);
+
+          body.push(new_row);
+
+        }
+        result.push(body);
+
+        return result;
       }
       else {
-	throw new ParseError("Unrecognized environment " + environment, this.lexer.location);
+        throw new ParseError("Unrecognized environment " + environment, this.lexer.location);
       }
 
     }
 
     if (this.token.token_type === 'NUMBER') {
-      result = parseFloat( this.token.token_text );
+      result = parseFloat(this.token.token_text);
       this.advance();
     } else if (this.token.token_type === 'INFINITY') {
       result = Infinity;
@@ -78501,202 +78536,202 @@ class latexToAst {
 
       let root = 2;
       if (this.token.token_type === '[') {
-	this.advance();
-	let parameter = this.statement({ parse_absolute_value: parse_absolute_value });
-	if (this.token.token_type !== ']') {
-	  throw new ParseError("Expecting ]", this.lexer.location);
-	}
-	this.advance();
+        this.advance();
+        let parameter = this.statement({ parse_absolute_value: parse_absolute_value });
+        if (this.token.token_type !== ']') {
+          throw new ParseError("Expecting ]", this.lexer.location);
+        }
+        this.advance();
 
-	root = parameter;
+        root = parameter;
       }
 
       if (this.token.token_type !== '{') {
-	throw new ParseError("Expecting {", this.lexer.location);
+        throw new ParseError("Expecting {", this.lexer.location);
       }
 
       this.advance();
       let parameter = this.statement({ parse_absolute_value: parse_absolute_value });
       if (this.token.token_type !== '}') {
-	throw new ParseError("Expecting }", this.lexer.location);
+        throw new ParseError("Expecting }", this.lexer.location);
       }
       this.advance();
 
       if (root === 2)
-	result = ['apply', 'sqrt', parameter];
+        result = ['apply', 'sqrt', parameter];
       else
-	result = ['^', parameter, ['/', 1, root]];
+        result = ['^', parameter, ['/', 1, root]];
     } else if (this.token.token_type === 'VAR' || this.token.token_type === 'LATEXCOMMAND'
-	      || this.token.token_type === 'VARMULTICHAR') {
+      || this.token.token_type === 'VARMULTICHAR') {
       result = this.token.token_text;
 
-      if(this.token.token_type === 'LATEXCOMMAND') {
-	result=result.slice(1);
-	if(!(this.appliedFunctionSymbols.includes(result)
-	     || this.functionSymbols.includes(result)
-	     || this.allowedLatexSymbols.includes(result)
-	    )) {
-	  throw new ParseError("Unrecognized latex command " + this.token.original_text,
-			       this.lexer.location);
-	}
+      if (this.token.token_type === 'LATEXCOMMAND') {
+        result = result.slice(1);
+        if (!(this.appliedFunctionSymbols.includes(result)
+          || this.functionSymbols.includes(result)
+          || this.allowedLatexSymbols.includes(result)
+        )) {
+          throw new ParseError("Unrecognized latex command " + this.token.original_text,
+            this.lexer.location);
+        }
       }
-      else if(this.token.token_type === 'VARMULTICHAR') {
-	// strip out name of variable from \var command
-	result = /\\var\s*\{\s*([a-zA-Z0-9]+)\s*\}/.exec(result)[1];
+      else if (this.token.token_type === 'VARMULTICHAR') {
+        // strip out name of variable from \var command
+        result = /\\var\s*\{\s*([a-zA-Z0-9]+)\s*\}/.exec(result)[1];
       }
 
       if (this.appliedFunctionSymbols.includes(result)
-	  || this.functionSymbols.includes(result))  {
-	let must_apply=false;
-	if(this.appliedFunctionSymbols.includes(result))
-	  must_apply = true;
+        || this.functionSymbols.includes(result)) {
+        let must_apply = false;
+        if (this.appliedFunctionSymbols.includes(result))
+          must_apply = true;
 
-	this.advance();
+        this.advance();
 
-	if(this.token.token_type === '_') {
-	  this.advance();
-	  let subresult =  this.baseFactor({ parse_absolute_value: parse_absolute_value });
+        if (this.token.token_type === '_') {
+          this.advance();
+          let subresult = this.baseFactor({ parse_absolute_value: parse_absolute_value });
 
-	  // since baseFactor could return false, must check
-	  if(subresult === false) {
-	    if (this.token.token_type === "EOF") {
-	      throw new ParseError("Unexpected end of input",
-				   this.lexer.location);
-	    }
-	    else {
-	      throw new ParseError("Invalid location of '" + this.token.original_text
-				   + "'", this.lexer.location) ;
-	    }
-	  }
-	  result = ['_', result, subresult];
-	}
+          // since baseFactor could return false, must check
+          if (subresult === false) {
+            if (this.token.token_type === "EOF") {
+              throw new ParseError("Unexpected end of input",
+                this.lexer.location);
+            }
+            else {
+              throw new ParseError("Invalid location of '" + this.token.original_text
+                + "'", this.lexer.location);
+            }
+          }
+          result = ['_', result, subresult];
+        }
 
-	while(this.token.token_type === "'") {
-	  result = ['prime', result];
-	  this.advance();
-	}
+        while (this.token.token_type === "'") {
+          result = ['prime', result];
+          this.advance();
+        }
 
-	if(this.token.token_type === '^') {
-	  this.advance();
-	  result = ['^', result, this.factor({ parse_absolute_value: parse_absolute_value })];
-	}
+        if (this.token.token_type === '^') {
+          this.advance();
+          result = ['^', result, this.factor({ parse_absolute_value: parse_absolute_value })];
+        }
 
-	if (this.token.token_type === '{' || this.token.token_type === '(') {
-	  let expected_right;
-	  if(this.token.token_type === '{')
-	    expected_right = '}';
-	  else
-	    expected_right = ')';
+        if (this.token.token_type === '{' || this.token.token_type === '(') {
+          let expected_right;
+          if (this.token.token_type === '{')
+            expected_right = '}';
+          else
+            expected_right = ')';
 
-	  this.advance();
-	  let parameters = this.statement_list();
+          this.advance();
+          let parameters = this.statement_list();
 
-	  if (this.token.token_type !== expected_right) {
-	    throw new ParseError('Expecting ' + expected_right,
-				 this.lexer.location);
-	  }
-	  this.advance();
+          if (this.token.token_type !== expected_right) {
+            throw new ParseError('Expecting ' + expected_right,
+              this.lexer.location);
+          }
+          this.advance();
 
-	  if(parameters[0] === 'list') {
-	    // rename from list to tuple
-	    parameters[0] = 'tuple';
-	  }
+          if (parameters[0] === 'list') {
+            // rename from list to tuple
+            parameters[0] = 'tuple';
+          }
 
-	  result = ['apply', result, parameters];
+          result = ['apply', result, parameters];
 
-	}
-	else {
-	  // if was an applied function symbol,
-	  // cannot omit argument
-	  if(must_apply) {
-	    if(!this.allowSimplifiedFunctionApplication)
-	      throw new ParseError("Expecting ( after function",
-				   this.lexer.location);
+        }
+        else {
+          // if was an applied function symbol,
+          // cannot omit argument
+          if (must_apply) {
+            if (!this.allowSimplifiedFunctionApplication)
+              throw new ParseError("Expecting ( after function",
+                this.lexer.location);
 
-	    // if allow simplied function application
-	    // let the argument be the next factor
-	    result = ['apply', result, this.factor({ parse_absolute_value: parse_absolute_value })];
-	  }
-	}
+            // if allow simplied function application
+            // let the argument be the next factor
+            result = ['apply', result, this.factor({ parse_absolute_value: parse_absolute_value })];
+          }
+        }
       }
       else {
-	this.advance();
+        this.advance();
       }
     } else if (this.token.token_type === '(' || this.token.token_type === '['
-	       || this.token.token_type === '{'
-	       || this.token.token_type === 'LBRACE') {
+      || this.token.token_type === '{'
+      || this.token.token_type === 'LBRACE') {
       let token_left = this.token.token_type;
       let expected_right, other_right;
-      if(this.token.token_type === '(') {
-	expected_right = ')';
-	other_right = ']';
+      if (this.token.token_type === '(') {
+        expected_right = ')';
+        other_right = ']';
       }
-      else if(this.token.token_type === '[') {
-	expected_right = ']';
-	other_right = ')';
+      else if (this.token.token_type === '[') {
+        expected_right = ']';
+        other_right = ')';
       }
-      else if(this.token.token_type === '{') {
-	expected_right = '}';
-	other_right = null;
+      else if (this.token.token_type === '{') {
+        expected_right = '}';
+        other_right = null;
       }
       else {
-	expected_right = 'RBRACE';
-	other_right = null;
+        expected_right = 'RBRACE';
+        other_right = null;
       }
 
       this.advance();
       result = this.statement_list();
 
       let n_elements = 1;
-      if(result[0] === "list") {
-	n_elements = result.length-1;
+      if (result[0] === "list") {
+        n_elements = result.length - 1;
       }
 
       if (this.token.token_type !== expected_right) {
-	if(n_elements !== 2 || other_right === null) {
-	  throw new ParseError('Expecting ' + expected_right,
-			       this.lexer.location);
-	}
-	else if (this.token.token_type !== other_right) {
-	  throw new ParseError('Expecting ) or ]', this.lexer.location);
-	}
+        if (n_elements !== 2 || other_right === null) {
+          throw new ParseError('Expecting ' + expected_right,
+            this.lexer.location);
+        }
+        else if (this.token.token_type !== other_right) {
+          throw new ParseError('Expecting ) or ]', this.lexer.location);
+        }
 
-	// half-open interval
-	result[0] = 'tuple';
-	result = ['interval', result];
-	let closed;
-	if(token_left === '(')
-	  closed = ['tuple', false, true];
-	else
-	  closed = ['tuple', true, false];
-	result.push(closed);
+        // half-open interval
+        result[0] = 'tuple';
+        result = ['interval', result];
+        let closed;
+        if (token_left === '(')
+          closed = ['tuple', false, true];
+        else
+          closed = ['tuple', true, false];
+        result.push(closed);
 
       }
       else if (n_elements >= 2) {
-	if(token_left === '(' || token_left === '{') {
-	  result[0]  = 'tuple';
-	}
-	else if(token_left === '[') {
-	  result[0] = 'array';
-	}
-	else {
-	  result[0] = 'set';
-	}
+        if (token_left === '(' || token_left === '{') {
+          result[0] = 'tuple';
+        }
+        else if (token_left === '[') {
+          result[0] = 'array';
+        }
+        else {
+          result[0] = 'set';
+        }
       }
       else if (token_left === 'LBRACE') {
-	if(result[0] === '|' || result[0] === ':') {
-	  result = ['set', result];  // set builder notation
-	}
-	else {
-	  result = ['set'].concat(result);  // singleton set
-	}
+        if (result[0] === '|' || result[0] === ':') {
+          result = ['set', result];  // set builder notation
+        }
+        else {
+          result = ['set'].concat(result);  // singleton set
+        }
       }
 
       this.advance();
 
     } else if (this.token.token_type[0] === '|' && parse_absolute_value &&
-	       (inside_absolute_value === 0 || !allow_absolute_value_closing ||
-		this.token.token_type[1] === 'L')) {
+      (inside_absolute_value === 0 || !allow_absolute_value_closing ||
+        this.token.token_type[1] === 'L')) {
 
       // allow the opening of an absolute value here if either
       // - we aren't already inside an absolute value (inside_absolute_value==0),
@@ -78713,27 +78748,27 @@ class latexToAst {
       result = ['apply', 'abs', result];
 
       if (this.token.token_type !== '|') {
-	throw new ParseError('Expecting |', this.lexer.location);
+        throw new ParseError('Expecting |', this.lexer.location);
       }
 
       this.advance();
     }
 
     if (this.token.token_type === '_') {
-      if(result === false) {
-	throw new ParseError("Invalid location of _", this.lexer.location);
+      if (result === false) {
+        throw new ParseError("Invalid location of _", this.lexer.location);
       }
       this.advance();
-      let subresult =  this.baseFactor({ parse_absolute_value: parse_absolute_value });
+      let subresult = this.baseFactor({ parse_absolute_value: parse_absolute_value });
 
-      if(subresult === false) {
-	if (this.token.token_type === "EOF") {
-	  throw new ParseError("Unexpected end of input", this.lexer.location);
-	}
-	else {
-	  throw new ParseError("Invalid location of '" + this.token.original_text + "'",
-			       this.lexer.location);
-	}
+      if (subresult === false) {
+        if (this.token.token_type === "EOF") {
+          throw new ParseError("Unexpected end of input", this.lexer.location);
+        }
+        else {
+          throw new ParseError("Invalid location of '" + this.token.original_text + "'",
+            this.lexer.location);
+        }
       }
       return ['_', result, subresult];
     }
@@ -78756,9 +78791,9 @@ class latexToAst {
     let var2s = [];
     let var2_exponents = [];
 
-    if(this.token.token_type === "LATEXCOMMAND" && result.slice(1) === "partial")
+    if (this.token.token_type === "LATEXCOMMAND" && result.slice(1) === "partial")
       deriv_symbol = "∂";
-    else if(this.token.token_type === "VAR" && result === "d")
+    else if (this.token.token_type === "VAR" && result === "d")
       deriv_symbol = "d";
     else
       return false;
@@ -78768,36 +78803,36 @@ class latexToAst {
 
     this.advance();
 
-    if(this.token.token_type === '^') {
+    if (this.token.token_type === '^') {
       // so far have d or ∂ followed by ^
       // must be followed by an integer
       this.advance();
 
       let in_braces = false;
-      if(this.token.token_type === '{') {
-	in_braces = true;
+      if (this.token.token_type === '{') {
+        in_braces = true;
 
-	this.advance();
+        this.advance();
       }
 
-      if(this.token.token_type !== 'NUMBER') {
-	return false;
+      if (this.token.token_type !== 'NUMBER') {
+        return false;
       }
 
       n_deriv = parseFloat(this.token.token_text);
-      if(!Number.isInteger(n_deriv)) {
-	return false;
+      if (!Number.isInteger(n_deriv)) {
+        return false;
       }
 
       // found integer,
 
       // if in braces, require }
-      if(in_braces) {
-	this.advance();
+      if (in_braces) {
+        this.advance();
 
-	if(this.token.token_type !== '}') {
-	  return false;
-	}
+        if (this.token.token_type !== '}') {
+          return false;
+        }
       }
 
       this.advance();
@@ -78808,18 +78843,18 @@ class latexToAst {
     // next we must have:
     // a VAR, a VARMULTICHAR, or a LATEXCOMMAND that is in allowedLatexSymbols
 
-    if(this.token.token_type === 'VAR')
+    if (this.token.token_type === 'VAR')
       var1 = this.token.token_text;
-    else if(this.token.token_type === 'VARMULTICHAR') {
+    else if (this.token.token_type === 'VARMULTICHAR') {
       // strip out name of variable from \var command
       var1 = /\\var\s*\{\s*([a-zA-Z0-9]+)\s*\}/.exec(this.token.token_text)[1];
     }
-    else if(this.token.token_type === 'LATEXCOMMAND') {
+    else if (this.token.token_type === 'LATEXCOMMAND') {
       result = this.token.token_text.slice(1);
-      if(this.allowedLatexSymbols.includes(result))
-	var1 = result;
+      if (this.allowedLatexSymbols.includes(result))
+        var1 = result;
       else
-	return false;
+        return false;
     }
 
     // Finished numerator.
@@ -78850,16 +78885,16 @@ class latexToAst {
 
     let exponent_sum = 0;
 
-    while(true) {
+    while (true) {
 
       // next must be
       // - a VAR equal to deriv_symbol="d" or \partial when deriv_symbol = "∂"
 
 
-      if(!((deriv_symbol === "d" && this.token.token_type === "VAR" && this.token.token_text === "d")
-	   || (deriv_symbol === "∂" && this.token.token_type === "LATEXCOMMAND"
-	       && this.token.token_text.slice(1) === "partial"))) {
-	return false;
+      if (!((deriv_symbol === "d" && this.token.token_type === "VAR" && this.token.token_text === "d")
+        || (deriv_symbol === "∂" && this.token.token_type === "LATEXCOMMAND"
+          && this.token.token_text.slice(1) === "partial"))) {
+        return false;
       }
 
       // followed by
@@ -78867,22 +78902,22 @@ class latexToAst {
 
       this.advance();
 
-      if(this.token.token_type === 'VAR')
-	var2s.push(this.token.token_text);
-      else if(this.token.token_type === 'VARMULTICHAR') {
-	// strip out name of variable from \var command
-	var2s.push(/\\var\s*\{\s*([a-zA-Z0-9]+)\s*\}/.exec(this.token.token_text)[1]);
+      if (this.token.token_type === 'VAR')
+        var2s.push(this.token.token_text);
+      else if (this.token.token_type === 'VARMULTICHAR') {
+        // strip out name of variable from \var command
+        var2s.push(/\\var\s*\{\s*([a-zA-Z0-9]+)\s*\}/.exec(this.token.token_text)[1]);
       }
-      else if(this.token.token_type === 'LATEXCOMMAND') {
-	let r = this.token.token_text.slice(1);
-	if(this.allowedLatexSymbols.includes(r))
-	  var2s.push(r);
-	else {
-	  return false;
-	}
+      else if (this.token.token_type === 'LATEXCOMMAND') {
+        let r = this.token.token_text.slice(1);
+        if (this.allowedLatexSymbols.includes(r))
+          var2s.push(r);
+        else {
+          return false;
+        }
       }
       else {
-	return false;
+        return false;
       }
       // have derivative and variable, now check for optional ^ followed by number
 
@@ -78890,82 +78925,82 @@ class latexToAst {
 
       this.advance();
 
-      if(this.token.token_type === '^') {
+      if (this.token.token_type === '^') {
 
-	this.advance();
+        this.advance();
 
-	let in_braces = false;
-	if(this.token.token_type === '{') {
-	  in_braces = true;
+        let in_braces = false;
+        if (this.token.token_type === '{') {
+          in_braces = true;
 
-	  this.advance();
-	}
+          this.advance();
+        }
 
-	if(this.token.token_type !== 'NUMBER') {
-	  return false;
-	}
+        if (this.token.token_type !== 'NUMBER') {
+          return false;
+        }
 
-	this_exponent = parseFloat(this.token.token_text);
-	if(!Number.isInteger(this_exponent)) {
-	  return false;
-	}
+        this_exponent = parseFloat(this.token.token_text);
+        if (!Number.isInteger(this_exponent)) {
+          return false;
+        }
 
-	// if in braces, require }
-	if(in_braces) {
-	  this.advance();
+        // if in braces, require }
+        if (in_braces) {
+          this.advance();
 
-	  if(this.token.token_type !== '}') {
-	    return false;
-	  }
-	}
+          if (this.token.token_type !== '}') {
+            return false;
+          }
+        }
 
-	this.advance();
+        this.advance();
 
       }
 
       var2_exponents.push(this_exponent);
       exponent_sum += this_exponent;
 
-      if(exponent_sum > n_deriv) {
-	return false;
+      if (exponent_sum > n_deriv) {
+        return false;
       }
 
       // possibly found derivative
-      if(exponent_sum === n_deriv) {
+      if (exponent_sum === n_deriv) {
 
-	// next token must be a }
-	if(this.token.token_type !== '}') {
-	  return false;
+        // next token must be a }
+        if (this.token.token_type !== '}') {
+          return false;
 
-	}
+        }
 
-	// found derivative!
+        // found derivative!
 
-	this.advance();
+        this.advance();
 
-	let result_name = "derivative_leibniz";
-	if(deriv_symbol === "∂")
-	  result_name = "partial_" + result_name;
+        let result_name = "derivative_leibniz";
+        if (deriv_symbol === "∂")
+          result_name = "partial_" + result_name;
 
-	result = [result_name];
+        result = [result_name];
 
-	if(n_deriv === 1)
-	  result.push(var1);
-	else
-	  result.push(["tuple", var1, n_deriv]);
+        if (n_deriv === 1)
+          result.push(var1);
+        else
+          result.push(["tuple", var1, n_deriv]);
 
-	let r2 = [];
-	for(let i=0; i<var2s.length; i+=1) {
-	  if(var2_exponents[i] === 1)
-	    r2.push(var2s[i]);
-	  else
-	    r2.push(["tuple", var2s[i], var2_exponents[i]]);
-	}
-	r2 = ["tuple"].concat(r2);
+        let r2 = [];
+        for (let i = 0; i < var2s.length; i += 1) {
+          if (var2_exponents[i] === 1)
+            r2.push(var2s[i]);
+          else
+            r2.push(["tuple", var2s[i], var2_exponents[i]]);
+        }
+        r2 = ["tuple"].concat(r2);
 
-	result.push(r2);
+        result.push(r2);
 
-	return result;
+        return result;
 
       }
     }
