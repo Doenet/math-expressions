@@ -379,7 +379,7 @@
         let base = operands[0];
         let exponent = operands[1];
         let f=[];
-        if(typeof base === "string" && Number.isInteger(exponent) && exponent >= 0) {
+        if(typeof base === "string" && Number.isFinite(exponent)) {
           let ind = string_factors.indexOf(base);
           if(ind === -1) {
             string_factors.push(base);
@@ -62855,16 +62855,26 @@
       handleNaNInfinityParse);
   }
 
-  const equal$2 = function(left, right) {
+  const equal$2 = function(left, right, {
+    allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false
+  }={}) {
     /*
      * Return true if left and right are syntactically equal.
      *
      */
 
-
     if(!(Array.isArray(left) && Array.isArray(right))) {
       if((typeof left) !== (typeof right))
         return false;
+
+      if(typeof left === "number") {
+        let tol = 1E-14;
+        if(allowed_error_in_numbers > tol) {
+          tol = allowed_error_in_numbers;
+        }
+        return Math.abs(left-right) < tol*Math.min(Math.abs(left),Math.abs(right))
+      }
 
       return (left===right);
     }
@@ -62881,9 +62891,25 @@
     if (leftOperands.length !== rightOperands.length)
       return false;
 
+    if(allowed_error_in_numbers > 0 && !include_error_in_number_exponents && leftOperator === "^") {
+      let baseEqual = equal$2(leftOperands[0], rightOperands[0], {
+        allowed_error_in_numbers: allowed_error_in_numbers,
+        include_error_in_number_exponents: include_error_in_number_exponents
+      });
+
+      if(!baseEqual) {
+        return false;
+      }
+      let exponentEqual = equal$2(leftOperands[1], rightOperands[1]);
+      return exponentEqual;
+    }
+
     return underscore.every( underscore.zip( leftOperands, rightOperands ),
           function(pair) {
-            return equal$2(pair[0], pair[1]);
+            return equal$2(pair[0], pair[1], {
+              allowed_error_in_numbers: allowed_error_in_numbers,
+              include_error_in_number_exponents: include_error_in_number_exponents
+            });
           });
   };
 
@@ -67455,7 +67481,7 @@
       // replace "ln" with "log"
       // "arccos" with "acos", etc.
       // e^x with exp(x)
-      // sqrt(x) with x^2
+      // sqrt(x) with x^0.5
 
       var tree=get_tree(expr_or_tree);
 
@@ -75916,15 +75942,10 @@
         try {
           tol = math$19.abs(tolerance_function(bindingsIncludingParameters));
         } catch (e) {
-          console.log("error in tolerance function");
           return { equal_at_start: false, always_zero: false };
         }
         if (!Number.isFinite(tol)) {
-          if (Number.isFinite(math$19.abs(expr_evaluated)) && Number.isFinite(math$19.abs(other.expr_evaluated))) {
-            console.log("non finite tolerance");
-          }
           return { equal_at_start: false, always_zero: false };
-          tol = 0;
         }
       }
 
@@ -76002,13 +76023,9 @@
             try {
               tol = math$19.abs(tolerance_function(bindings2IncludingParameters));
             } catch (e) {
-              console.log("error in tolerance function");
               continue;
             }
             if (!Number.isFinite(tol)) {
-              if (Number.isFinite(math$19.abs(expr_evaluated)) && Number.isFinite(math$19.abs(other.expr_evaluated))) {
-                console.log("non finite tolerance");
-              }
               continue;
             }
           }
@@ -76193,8 +76210,14 @@
     });
   };
 
-  const equals$3 = function (expr, other) {
-      return equal$2( expr.tree, other.tree );
+  const equals$3 = function (expr, other, {
+    allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false
+  } = {}) {
+    return equal$2(expr.tree, other.tree, {
+      allowed_error_in_numbers: allowed_error_in_numbers,
+      include_error_in_number_exponents: include_error_in_number_exponents
+    });
   };
 
   const equals$4 = function(expr, other, { min_elements_match=3 } = {} ) {
@@ -76461,22 +76484,41 @@
 
   //exports.equalsViaFiniteField = equalsViaFiniteField;
 
-  const equals$5 = function(expr, other,
-    { tolerance = 1E-12, allowed_error_in_numbers = 0,
-      include_error_in_number_exponents = false } = {}) {
-    if(expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
+  const equals$5 = function (expr, other, {
+    tolerance = 1E-12, allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false
+  } = {}) {
+    if (expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
       return false;
     }
-    if (expr.equalsViaSyntax(other)) {
-      return true;
-    } else if (expr.equalsViaComplex(other, { tolerance: tolerance,
-      allowed_error_in_numbers: allowed_error_in_numbers,
-      include_error_in_number_exponents: include_error_in_number_exponents})
+
+    // first check with symbolic equality
+    // converting all numbers and numerical quantities to floating point
+    // and normalizing form of each expression
+    let exprNormalized = expr.evaluate_numbers({ max_digits: Infinity })
+    .normalize_function_names()
+    .normalize_applied_functions()
+    .simplify();
+    let otherNormalized = other.evaluate_numbers({ max_digits: Infinity })
+    .normalize_function_names()
+    .normalize_applied_functions()
+    .simplify();
+
+    if (exprNormalized.equalsViaSyntax(otherNormalized, {
+        allowed_error_in_numbers: allowed_error_in_numbers,
+        include_error_in_number_exponents: include_error_in_number_exponents
+      })
     ) {
       return true;
-    // } else if (expr.equalsViaReal(other)) {
-    //   	return true;
-    } else if(equals$4(expr,other)) {
+    } else if (expr.equalsViaComplex(other, {
+      tolerance: tolerance,
+      allowed_error_in_numbers: allowed_error_in_numbers,
+      include_error_in_number_exponents: include_error_in_number_exponents
+    })) {
+      return true;
+      // } else if (expr.equalsViaReal(other)) {
+      //   	return true;
+    } else if (equals$4(expr, other)) {
       return true;
     } else {
       return false;
