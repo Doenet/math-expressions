@@ -88,6 +88,7 @@ var trees = {
   '\\{1,2,x\\}': ['set', 1, 2, 'x'],
   '\\{x, x\\}': ['set', 'x', 'x'],
   '\\{x\\}': ['set', 'x'],
+  '\\{-x\\}': ['set', ['-','x']],
   '(1,2]': ['interval', ['tuple', 1, 2], ['tuple', false, true]],
   '[1,2)': ['interval', ['tuple', 1, 2], ['tuple', true, false]],
   '[1,2]': ['array', 1, 2 ],

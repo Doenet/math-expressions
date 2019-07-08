@@ -15,6 +15,10 @@ describe("tree basics", function () {
     expect(trees.equal(TREE('cos x'), TREE('cos y'))).toBeFalsy();
   });
 
+  it("tree equality doesn't allow order changes", function () {
+    expect(trees.equal(TREE('x+y'), TREE('y+x'))).toBeFalsy();
+  });
+
   it("(1+2+3) unflattens right to (1+(2+3))", function () {
     expect(trees.equal(flatten.unflattenRight(['+', 1, 2, 3]),
       ['+', 1, ['+', 2, 3]])).toBeTruthy();
