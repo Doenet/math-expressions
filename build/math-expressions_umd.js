@@ -62857,7 +62857,8 @@
 
   const equal$2 = function(left, right, {
     allowed_error_in_numbers = 0,
-    include_error_in_number_exponents = false
+    include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
   }={}) {
     /*
      * Return true if left and right are syntactically equal.
@@ -62870,10 +62871,19 @@
 
       if(typeof left === "number" && Number.isFinite(left)) {
         let tol = 1E-14;
-        if(allowed_error_in_numbers > tol) {
-          tol = allowed_error_in_numbers;
+        let minAbs = Math.min(Math.abs(left),Math.abs(right));
+        if(allowed_error_is_absolute) {
+          tol *= minAbs;
+          if(allowed_error_in_numbers > tol) {
+            tol = allowed_error_in_numbers;
+          }
+        }else {
+          if(allowed_error_in_numbers > tol) {
+            tol = allowed_error_in_numbers;
+          }
+          tol *= minAbs;
         }
-        return Math.abs(left-right) <= tol*Math.min(Math.abs(left),Math.abs(right))
+        return Math.abs(left-right) <= tol;
       }
 
       return (left===right);
@@ -62894,8 +62904,9 @@
     if(allowed_error_in_numbers > 0 && !include_error_in_number_exponents && leftOperator === "^") {
       let baseEqual = equal$2(leftOperands[0], rightOperands[0], {
         allowed_error_in_numbers: allowed_error_in_numbers,
-        include_error_in_number_exponents: include_error_in_number_exponents
-      });
+        include_error_in_number_exponents: include_error_in_number_exponents,
+        allowed_error_is_absolute: allowed_error_is_absolute,
+    });
 
       if(!baseEqual) {
         return false;
@@ -62908,7 +62919,8 @@
           function(pair) {
             return equal$2(pair[0], pair[1], {
               allowed_error_in_numbers: allowed_error_in_numbers,
-              include_error_in_number_exponents: include_error_in_number_exponents
+              include_error_in_number_exponents: include_error_in_number_exponents,
+              allowed_error_is_absolute: allowed_error_is_absolute,
             });
           });
   };
@@ -75620,6 +75632,7 @@
     expr_context, other_context,
     tolerance = 1E-12, allowed_error_in_numbers = 0,
     include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
   }) {
 
     if (Array.isArray(expr.tree) && Array.isArray(other.tree)) {
@@ -75650,6 +75663,7 @@
             tolerance: tolerance,
             allowed_error_in_numbers: allowed_error_in_numbers,
             include_error_in_number_exponents: include_error_in_number_exponents,
+            allowed_error_is_absolute: allowed_error_is_absolute,
           }))
             return false;
         }
@@ -75698,6 +75712,7 @@
           tolerance: tolerance,
           allowed_error_in_numbers: allowed_error_in_numbers,
           include_error_in_number_exponents: include_error_in_number_exponents,
+          allowed_error_is_absolute: allowed_error_is_absolute,
         });
 
       }
@@ -75714,6 +75729,7 @@
       tolerance: tolerance,
       allowed_error_in_numbers: allowed_error_in_numbers,
       include_error_in_number_exponents: include_error_in_number_exponents,
+      allowed_error_is_absolute: allowed_error_is_absolute,
     });
 
   };
@@ -75723,6 +75739,7 @@
     expr_context, other_context,
     allow_proportional = false, require_positive_proportion = false,
     tolerance, allowed_error_in_numbers, include_error_in_number_exponents,
+    allowed_error_is_absolute,
   }) {
 
     var max_value = Number.MAX_VALUE * 1E-20;
@@ -75809,14 +75826,18 @@
 
       let parameter_list = Object.keys(parameters_for_numbers);
       if (parameter_list.length > 0) {
-        let derivative_sum = expr_with_params.derivative(parameter_list[0])
-          .multiply(parameters_for_numbers[parameter_list[0]]);
-
+        let derivative_sum = expr_with_params.derivative(parameter_list[0]);
+        if(!allowed_error_is_absolute) {
+          derivative_sum = derivative_sum
+            .multiply(parameters_for_numbers[parameter_list[0]]);
+        }
         if (parameter_list.length > 1) {
           for (let par of parameter_list.slice(1)) {
-            derivative_sum = derivative_sum.add(expr_with_params.derivative(par)
-              .multiply(parameters_for_numbers[par])
-            );
+            let term = expr_with_params.derivative(par);
+            if(!allowed_error_is_absolute) {
+              term = term.multiply(parameters_for_numbers[par]);
+            }
+            derivative_sum = derivative_sum.add(term);
           }
         }
 
@@ -76176,36 +76197,38 @@
   function randomComplexBindings(variables, radius, centers) {
     var result = {};
 
-    if(centers === undefined) {
-      variables.forEach( function(v) {
-      result[v] = math$19.complex( math$19.random()*2*radius - radius,
-                      math$19.random()*2*radius - radius );
+    if (centers === undefined) {
+      variables.forEach(function (v) {
+        result[v] = math$19.complex(math$19.random() * 2 * radius - radius,
+          math$19.random() * 2 * radius - radius);
       });
     }
     else {
-      variables.forEach( function(v) {
+      variables.forEach(function (v) {
         result[v] = math$19.complex(
-        centers[v].re + math$19.random()*2*radius - radius,
-        centers[v].im + math$19.random()*2*radius - radius );
+          centers[v].re + math$19.random() * 2 * radius - radius,
+          centers[v].im + math$19.random() * 2 * radius - radius);
       });
     }
 
     return result;
   }
 
-  const equals$1 = function(expr, other,
+  const equals$1 = function (expr, other,
     { tolerance = 1E-12, allowed_error_in_numbers = 0,
-      include_error_in_number_exponents = false } = {}) {
+      include_error_in_number_exponents = false,
+      allowed_error_is_absolute = false,
+    } = {}) {
 
     //expr = expr.substitute_abs();
     //other = other.substitute_abs();
-    
+
     // don't use complex equality if not analytic expression
     // except abs is OK
-    if((!expr.isAnalytic({allow_abs: true, allow_relation: true})) ||
-        (!other.isAnalytic({allow_abs: true, allow_relation: true})) )
+    if ((!expr.isAnalytic({ allow_abs: true, allow_relation: true })) ||
+      (!other.isAnalytic({ allow_abs: true, allow_relation: true })))
       return false;
-    
+
     return equals({
       expr: expr,
       other: other,
@@ -76215,6 +76238,7 @@
       tolerance: tolerance,
       allowed_error_in_numbers: allowed_error_in_numbers,
       include_error_in_number_exponents: include_error_in_number_exponents,
+      allowed_error_is_absolute: allowed_error_is_absolute,
     });
   };
 
@@ -76257,11 +76281,13 @@
 
   const equals$3 = function (expr, other, {
     allowed_error_in_numbers = 0,
-    include_error_in_number_exponents = false
+    include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
   } = {}) {
     return equal$2(expr.tree, other.tree, {
       allowed_error_in_numbers: allowed_error_in_numbers,
-      include_error_in_number_exponents: include_error_in_number_exponents
+      include_error_in_number_exponents: include_error_in_number_exponents,
+      allowed_error_is_absolute: allowed_error_is_absolute,
     });
   };
 
@@ -76531,7 +76557,8 @@
 
   const equals$5 = function (expr, other, {
     tolerance = 1E-12, allowed_error_in_numbers = 0,
-    include_error_in_number_exponents = false
+    include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
   } = {}) {
     if (expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
       return false;
@@ -76541,24 +76568,26 @@
     // converting all numbers and numerical quantities to floating point
     // and normalizing form of each expression
     let exprNormalized = expr.evaluate_numbers({ max_digits: Infinity })
-    .normalize_function_names()
-    .normalize_applied_functions()
-    .simplify();
+      .normalize_function_names()
+      .normalize_applied_functions()
+      .simplify();
     let otherNormalized = other.evaluate_numbers({ max_digits: Infinity })
-    .normalize_function_names()
-    .normalize_applied_functions()
-    .simplify();
+      .normalize_function_names()
+      .normalize_applied_functions()
+      .simplify();
 
     if (exprNormalized.equalsViaSyntax(otherNormalized, {
-        allowed_error_in_numbers: allowed_error_in_numbers,
-        include_error_in_number_exponents: include_error_in_number_exponents
-      })
+      allowed_error_in_numbers: allowed_error_in_numbers,
+      include_error_in_number_exponents: include_error_in_number_exponents,
+      allowed_error_is_absolute: allowed_error_is_absolute,
+    })
     ) {
       return true;
     } else if (expr.equalsViaComplex(other, {
       tolerance: tolerance,
       allowed_error_in_numbers: allowed_error_in_numbers,
-      include_error_in_number_exponents: include_error_in_number_exponents
+      include_error_in_number_exponents: include_error_in_number_exponents,
+      allowed_error_is_absolute: allowed_error_is_absolute,
     })) {
       return true;
       // } else if (expr.equalsViaReal(other)) {

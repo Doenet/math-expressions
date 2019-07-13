@@ -4,6 +4,7 @@ const allow_error_in_numbers = [
   {
     original: '65.2313',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '65.2313',
@@ -16,8 +17,24 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '65.2313',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '65.2313',
+      '65.2313+.00009',
+      '65.2313-.00009',
+    ],
+    at_least_one_incorrect_answer: [
+      '65.2313+.00011',
+      '65.2313-.00011',
+    ],
+  },
+  {
     original: 'exp(5xy+c)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       'exp(5xy+c)',
@@ -31,7 +48,23 @@ const allow_error_in_numbers = [
   },
   {
     original: 'exp(5xy+c)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      'exp(5xy+c)',
+      'exp((5+.00009)xy+c)',
+      'exp((5-.00009)xy+c)'
+    ],
+    at_least_one_incorrect_answer: [
+      'exp((5+.0005)xy+c)',
+      'exp((5-.0005)xy+c)',
+    ],
+  },
+  {
+    original: 'exp(5xy+c)',
     allowed_error: 0.000001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       'exp(5xy+c)',
@@ -44,8 +77,24 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: 'exp(5xy+c)',
+    allowed_error: 0.000001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      'exp(5xy+c)',
+      'exp((5+.0000009)xy+c)',
+      'exp((5-.0000009)xy+c)'
+    ],
+    at_least_one_incorrect_answer: [
+      'exp((5+.000005)xy+c)',
+      'exp((5-.000005)xy+c)'
+    ],
+  },
+  {
     original: '10exp(5xy+c)',
     allowed_error: 0.000001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '10exp(5xy+c)',
@@ -66,8 +115,32 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '10exp(5xy+c)',
+    allowed_error: 0.000001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '10exp(5xy+c)',
+      '10exp((5+.0000009)xy+c)',
+      '10exp((5-.0000009)xy+c)',
+      '(10+.0000009)exp(5xy+c)',
+      '(10+.0000009)exp((5+.0000009)xy+c)',
+      '(10+.0000009)exp((5-.0000009)xy+c)',
+      '(10-.0000009)exp(5xy+c)',
+      '(10-.0000009)exp((5+.0000009)xy+c)',
+      '(10-.0000009)exp((5-.0000009)xy+c)'
+    ],
+    at_least_one_incorrect_answer: [
+      '(10+.000005)exp((5+.000005)xy+c)',
+      '(10+.000005)exp((5-.000005)xy+c)',
+      '(10-.000005)exp((5+.000005)xy+c)',
+      '(10-.000005)exp((5-.000005)xy+c)'
+    ],
+  },
+  {
     original: '10exp(0.01xy+1000q^2)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '10exp(0.01xy+1000q^2)',
@@ -92,8 +165,36 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '10exp(0.01xy+1000q^2)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '10exp(0.01xy+1000q^2)',
+      '(10+.00002)exp((0.01+.00002)xy+(1000+.00002)q^2)',
+      '(10+.00002)exp((0.01+.00002)xy+(1000-.00002)q^2)',
+      '(10+.00002)exp((0.01-.00002)xy+(1000-.00002)q^2)',
+      '(10+.00002)exp((0.01-.00002)xy+(1000-.00002)q^2)',
+      '(10-.00002)exp((0.01+.00002)xy+(1000+.00002)q^2)',
+      '(10-.00002)exp((0.01+.00002)xy+(1000-.00002)q^2)',
+      '(10-.00002)exp((0.01-.00002)xy+(1000-.00002)q^2)',
+      '(10-.00002)exp((0.01-.00002)xy+(1000-.00002)q^2)',
+    ],
+    at_least_one_incorrect_answer: [
+      '(10+.0005)exp((0.01+.0005)xy+(1000+.0005)q^2)',
+      '(10+.0005)exp((0.01+.0005)xy+(1000-.0005)q^2)',
+      '(10+.0005)exp((0.01-.0005)xy+(1000+.0005)q^2)',
+      '(10+.0005)exp((0.01-.0005)xy+(1000-.0005)q^2)',
+      '(10-.0005)exp((0.01+.0005)xy+(1000+.0005)q^2)',
+      '(10-.0005)exp((0.01+.0005)xy+(1000-.0005)q^2)',
+      '(10-.0005)exp((0.01-.0005)xy+(1000+.0005)q^2)',
+      '(10-.0005)exp((0.01-.0005)xy+(1000-.0005)q^2)',
+    ],
+  },
+  {
     original: 'exp(0.01xy+1000q^2)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: true,
     correct_answers: [
       'exp(0.01xy+1000q^2)',
@@ -120,8 +221,38 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: 'exp(0.01xy+1000q^2)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: true,
+    correct_answers: [
+      'exp(0.01xy+1000q^2)',
+      'exp(0.01xy+1000q^((2+.00002)))',
+      'exp(0.01xy+1000q^((2-.00002)))',
+      'exp((0.01+.00002)xy+(1000+.00002)q^((2+.00002)))',
+      'exp((0.01+.00002)xy+(1000-.00002)q^((2+.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((2+.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((2+.00002)))',
+      'exp((0.01+.00002)xy+(1000+.00002)q^((2-.00002)))',
+      'exp((0.01+.00002)xy+(1000-.00002)q^((2-.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((2-.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((2-.00002)))',
+    ],
+    at_least_one_incorrect_answer: [
+      'exp((0.01+.0005)xy+(1000+.0005)q^((2+.0005)))',
+      'exp((0.01+.0005)xy+(1000-.0005)q^((2+.0005)))',
+      'exp((0.01-.0005)xy+(1000+.0005)q^((2+.0005)))',
+      'exp((0.01-.0005)xy+(1000-.0005)q^((2+.0005)))',
+      'exp((0.01+.0005)xy+(1000+.0005)q^((2-.0005)))',
+      'exp((0.01+.0005)xy+(1000-.0005)q^((2-.0005)))',
+      'exp((0.01-.0005)xy+(1000+.0005)q^((2-.0005)))',
+      'exp((0.01-.0005)xy+(1000-.0005)q^((2-.0005)))',
+    ],
+  },
+  {
     original: 'exp(0.01xy+1000sqrt(q))',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: true,
     correct_answers: [
       'exp(0.01xy+1000sqrt(q))',
@@ -148,8 +279,38 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: 'exp(0.01xy+1000sqrt(q))',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: true,
+    correct_answers: [
+      'exp(0.01xy+1000sqrt(q))',
+      'exp((0.01+.00002)xy+1000sqrt(q))',
+      'exp((0.01-.00002)xy+1000sqrt(q))',
+      'exp((0.01+.00002)xy+(1000+.00002)q^((0.5+.00002)))',
+      'exp((0.01+.00002)xy+(1000-.00002)q^((0.5+.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((0.5+.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((0.5+.00002)))',
+      'exp((0.01+.00002)xy+(1000+.00002)q^((0.5-.00002)))',
+      'exp((0.01+.00002)xy+(1000-.00002)q^((0.5-.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((0.5-.00002)))',
+      'exp((0.01-.00002)xy+(1000-.00002)q^((0.5-.00002)))',
+    ],
+    at_least_one_incorrect_answer: [
+      'exp((0.01+.00011)xy+(1000+.00011)q^((0.5+.00011)))',
+      'exp((0.01+.00011)xy+(1000-.00011)q^((0.5+.00011)))',
+      'exp((0.01-.00011)xy+(1000+.00011)q^((0.5+.00011)))',
+      'exp((0.01-.00011)xy+(1000-.00011)q^((0.5+.00011)))',
+      'exp((0.01+.00011)xy+(1000+.00011)q^((0.5-.00011)))',
+      'exp((0.01+.00011)xy+(1000-.00011)q^((0.5-.00011)))',
+      'exp((0.01-.00011)xy+(1000+.00011)q^((0.5-.00011)))',
+      'exp((0.01-.00011)xy+(1000-.00011)q^((0.5-.00011)))',
+    ],
+  },
+  {
     original: '10log(0.01xy+1000q^2)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '10log(0.01xy+1000q^2)',
@@ -174,8 +335,36 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '10log(0.01xy+1000q^2)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '10log(0.01xy+1000q^2)',
+      '(10+.00009)log((0.01+.00009)xy+(1000+.00009)q^2)',
+      '(10+.00009)log((0.01+.00009)xy+(1000-.00009)q^2)',
+      '(10+.00009)log((0.01-.00009)xy+(1000-.00009)q^2)',
+      '(10+.00009)log((0.01-.00009)xy+(1000-.00009)q^2)',
+      '(10-.00009)log((0.01+.00009)xy+(1000+.00009)q^2)',
+      '(10-.00009)log((0.01+.00009)xy+(1000-.00009)q^2)',
+      '(10-.00009)log((0.01-.00009)xy+(1000-.00009)q^2)',
+      '(10-.00009)log((0.01-.00009)xy+(1000-.00009)q^2)',
+    ],
+    at_least_one_incorrect_answer: [
+      '(10+.00011)log((0.01+.00011)xy+(1000+.00011)q^2)',
+      '(10+.00011)log((0.01+.00011)xy+(1000-.00011)q^2)',
+      '(10+.00011)log((0.01-.00011)xy+(1000+.00011)q^2)',
+      '(10+.00011)log((0.01-.00011)xy+(1000-.00011)q^2)',
+      '(10-.00011)log((0.01+.00011)xy+(1000+.00011)q^2)',
+      '(10-.00011)log((0.01+.00011)xy+(1000-.00011)q^2)',
+      '(10-.00011)log((0.01-.00011)xy+(1000+.00011)q^2)',
+      '(10-.00011)log((0.01-.00011)xy+(1000-.00011)q^2)',
+    ],
+  },
+  {
     original: 'log(0.01xy+1000q^2)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: true,
     correct_answers: [
       'log(0.01xy+1000q^2)',
@@ -200,8 +389,36 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: 'log(0.01xy+1000q^2)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: true,
+    correct_answers: [
+      'log(0.01xy+1000q^2)',
+      'log((0.01+.00009)xy+(1000+.00009)q^((2+.00009)))',
+      'log((0.01+.00009)xy+(1000-.00009)q^((2+.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((2+.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((2+.00009)))',
+      'log((0.01+.00009)xy+(1000+.00009)q^((2-.00009)))',
+      'log((0.01+.00009)xy+(1000-.00009)q^((2-.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((2-.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((2-.00009)))',
+    ],
+    at_least_one_incorrect_answer: [
+      'log((0.01+.00011)xy+(1000+.00011)q^((2+.00011)))',
+      'log((0.01+.00011)xy+(1000-.00011)q^((2+.00011)))',
+      'log((0.01-.00011)xy+(1000+.00011)q^((2+.00011)))',
+      'log((0.01-.00011)xy+(1000-.00011)q^((2+.00011)))',
+      'log((0.01+.00011)xy+(1000+.00011)q^((2-.00011)))',
+      'log((0.01+.00011)xy+(1000-.00011)q^((2-.00011)))',
+      'log((0.01-.00011)xy+(1000+.00011)q^((2-.00011)))',
+      'log((0.01-.00011)xy+(1000-.00011)q^((2-.00011)))',
+    ],
+  },
+  {
     original: 'log(0.01xy+1000sqrt(q))',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: true,
     correct_answers: [
       'log(0.01xy+1000sqrt(q))',
@@ -228,8 +445,38 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: 'log(0.01xy+1000sqrt(q))',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: true,
+    correct_answers: [
+      'log(0.01xy+1000sqrt(q))',
+      'log((0.01+.00009)xy+1000sqrt(q))',
+      'log((0.01-.00009)xy+1000sqrt(q))',
+      'log((0.01+.00009)xy+(1000+.00009)q^((0.5+.00009)))',
+      'log((0.01+.00009)xy+(1000-.00009)q^((0.5+.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((0.5+.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((0.5+.00009)))',
+      'log((0.01+.00009)xy+(1000+.00009)q^((0.5-.00009)))',
+      'log((0.01+.00009)xy+(1000-.00009)q^((0.5-.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((0.5-.00009)))',
+      'log((0.01-.00009)xy+(1000-.00009)q^((0.5-.00009)))',
+    ],
+    at_least_one_incorrect_answer: [
+      'log((0.01+.00011)xy+(1000+.00011)q^((0.5+.00011)))',
+      'log((0.01+.00011)xy+(1000-.00011)q^((0.5+.00011)))',
+      'log((0.01-.00011)xy+(1000+.00011)q^((0.5+.00011)))',
+      'log((0.01-.00011)xy+(1000-.00011)q^((0.5+.00011)))',
+      'log((0.01+.00011)xy+(1000+.00011)q^((0.5-.00011)))',
+      'log((0.01+.00011)xy+(1000-.00011)q^((0.5-.00011)))',
+      'log((0.01-.00011)xy+(1000+.00011)q^((0.5-.00011)))',
+      'log((0.01-.00011)xy+(1000-.00011)q^((0.5-.00011)))',
+    ],
+  },
+  {
     original: '(0.1x^2+90a+b)/(cx^2+d+0.01)',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '(0.1x^2+90a+b)/(cx^2+d+0.01)',
@@ -254,8 +501,36 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '(0.1x^2+90a+b)/(cx^2+d+0.01)',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '(0.1x^2+90a+b)/(cx^2+d+0.01)',
+      '((0.1+.00009)x^2+(90+.00009)a+b)/(cx^2+d+(0.01+.00009))',
+      '((0.1+.00009)x^2+(90+.00009)a+b)/(cx^2+d+(0.01-.00009))',
+      '((0.1+.00009)x^2+(90-.00009)a+b)/(cx^2+d+(0.01+.00009))',
+      '((0.1+.00009)x^2+(90-.00009)a+b)/(cx^2+d+(0.01-.00009))',
+      '((0.1-.00009)x^2+(90+.00009)a+b)/(cx^2+d+(0.01+.00009))',
+      '((0.1-.00009)x^2+(90+.00009)a+b)/(cx^2+d+(0.01-.00009))',
+      '((0.1-.00009)x^2+(90-.00009)a+b)/(cx^2+d+(0.01+.00009))',
+      '((0.1-.00009)x^2+(90-.00009)a+b)/(cx^2+d+(0.01-.00009))',
+    ],
+    at_least_one_incorrect_answer: [
+      '((0.1+.00011)x^2+(90+.00011)a+b)/(cx^2+d+(0.01+.00011))',
+      '((0.1+.00011)x^2+(90+.00011)a+b)/(cx^2+d+(0.01-.00011))',
+      '((0.1+.00011)x^2+(90-.00011)a+b)/(cx^2+d+(0.01+.00011))',
+      '((0.1+.00011)x^2+(90-.00011)a+b)/(cx^2+d+(0.01-.00011))',
+      '((0.1-.00011)x^2+(90+.00011)a+b)/(cx^2+d+(0.01+.00011))',
+      '((0.1-.00011)x^2+(90+.00011)a+b)/(cx^2+d+(0.01-.00011))',
+      '((0.1-.00011)x^2+(90-.00011)a+b)/(cx^2+d+(0.01+.00011))',
+      '((0.1-.00011)x^2+(90-.00011)a+b)/(cx^2+d+(0.01-.00011))',
+    ],
+  },
+  {
     original: '10 exp(7x^2/(3-sqrt(y)))',
     allowed_error: 0.0001,
+    absolute_error: false,
     include_exponents: false,
     correct_answers: [
       '10 exp(7x^2/(3-sqrt(y)))',
@@ -279,6 +554,33 @@ const allow_error_in_numbers = [
       '10*(1-.0002)exp(7*(1-.0002)x^2/(3*(1-.0002)-sqrt(y)))',
     ],
   },
+  {
+    original: '10 exp(7x^2/(3-sqrt(y)))',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '10 exp(7x^2/(3-sqrt(y)))',
+      '(10+.00009)exp((7+.00009)x^2/((3+.00009)-sqrt(y)))',
+      '(10+.00009)exp((7+.00009)x^2/((3-.00009)-sqrt(y)))',
+      '(10+.00009)exp((7-.00009)x^2/((3+.00009)-sqrt(y)))',
+      '(10+.00009)exp((7-.00009)x^2/((3-.00009)-sqrt(y)))',
+      '(10-.00009)exp((7+.00009)x^2/((3+.00009)-sqrt(y)))',
+      '(10-.00009)exp((7+.00009)x^2/((3-.00009)-sqrt(y)))',
+      '(10-.00009)exp((7-.00009)x^2/((3+.00009)-sqrt(y)))',
+      '(10-.00009)exp((7-.00009)x^2/((3-.00009)-sqrt(y)))',
+    ],
+    at_least_one_incorrect_answer: [
+      '(10+.0002)exp((7+.0002)x^2/((3+.0002)-sqrt(y)))',
+      '(10+.0002)exp((7+.0002)x^2/((3-.0002)-sqrt(y)))',
+      '(10+.0002)exp((7-.0002)x^2/((3+.0002)-sqrt(y)))',
+      '(10+.0002)exp((7-.0002)x^2/((3-.0002)-sqrt(y)))',
+      '(10-.0002)exp((7+.0002)x^2/((3+.0002)-sqrt(y)))',
+      '(10-.0002)exp((7+.0002)x^2/((3-.0002)-sqrt(y)))',
+      '(10-.0002)exp((7-.0002)x^2/((3+.0002)-sqrt(y)))',
+      '(10-.0002)exp((7-.0002)x^2/((3-.0002)-sqrt(y)))',
+    ],
+  },
 ]
 
 
@@ -291,9 +593,10 @@ for (let objectToTest of allow_error_in_numbers) {
       let ans = me.fromText(option);
       test(option + " is correct", () => {
 
-        expect(orig.equals(ans, {
+        expect(orig.equalsViaComplex(ans, {
           allowed_error_in_numbers: objectToTest.allowed_error,
-          include_error_in_number_exponents: objectToTest.include_exponents
+          include_error_in_number_exponents: objectToTest.include_exponents,
+          allowed_error_is_absolute: objectToTest.absolute_error,
         })).toBeTruthy();
       });
     }
@@ -301,9 +604,10 @@ for (let objectToTest of allow_error_in_numbers) {
       let found_incorrect = false;
       for (let option of objectToTest.at_least_one_incorrect_answer) {
         let ans = me.fromText(option);
-        let result = orig.equals(ans, {
+        let result = orig.equalsViaComplex(ans, {
           allowed_error_in_numbers: objectToTest.allowed_error,
-          include_error_in_number_exponents: objectToTest.include_exponents
+          include_error_in_number_exponents: objectToTest.include_exponents,
+          allowed_error_is_absolute: objectToTest.absolute_error,
         });
         if (!result) {
           found_incorrect = true;
