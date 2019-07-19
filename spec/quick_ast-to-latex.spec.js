@@ -664,7 +664,18 @@ const objectsToTest = [
     'ast': ['^', ['apply', 'sqrt', 2], 3],
     'latex': '\\left(\\sqrt{2}\\right)^{3}',
   },
-
+  {
+    'ast': 0.0000000000123,
+    'latex': '1.23 \\cdot 10^{-11}',
+  },
+  {
+    'ast': ['^', 0.0000000000123, 5],
+    'latex': '\\left(1.23 \\cdot 10^{-11}\\right)^{5}',
+  },
+  {
+    'ast': ['^', -3, 'x'],
+    'latex': '\\left(-3\\right)^{x}',
+  },
 
 
 ]
