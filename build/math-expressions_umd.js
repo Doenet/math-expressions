@@ -69820,8 +69820,10 @@
 
 
   const text_rules = [
-    ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+)?', 'NUMBER'],
-    ['\\.[0-9]+(E[+\\-]?[0-9]+)?', 'NUMBER'],
+    // in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
+    // it must be at the end or followed a |, or a closing ),}, or ]
+    ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
+    ['\\.[0-9]+(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
     ['\\*\\*', '^'],
     ['\\*', '*'], // there is some variety in multiplication symbols
     ['\\xB7', '*'], // '·'
@@ -73725,7 +73727,7 @@
     simple_factor_or_function_or_parens(tree) {
       // return true if
       // factor(tree) is a single character
-      // or tree is a number
+      // or tree is a non-negative number not in scientific notation
       // or tree is a string
       // or tree is a function call other than sqrt
       // or factor(tree) is in parens
@@ -73733,14 +73735,20 @@
       var result = this.factor(tree);
 
       if (result.toString().length === 1 ||
-        (typeof tree === 'number') ||
         (typeof tree === 'string') ||
         (tree[0] === 'apply' && tree[1] !== "sqrt") ||
         result.toString().match(/^\\left\(.*\\right\)$/)
-      )
+      ) {
         return true;
-      else
+      } else if (typeof tree === "number") {
+        if(tree >= 0 && !tree.toString().includes('e')) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
         return false
+      }
     }
 
     stringConvert(string) {
@@ -73763,8 +73771,17 @@
           return "\\infty";
         else if(tree === -Infinity)
           return "-\\infty";
-        else
-          return tree.toString();
+        else {
+          let numberString = tree.toString();
+          let eIndex = numberString.indexOf('e');
+          if(eIndex === -1) {
+            return numberString;
+          }
+          let num = numberString.substring(0,eIndex);
+          let exponent = numberString.substring(eIndex+1);
+
+          return num + " \\cdot 10^{" + exponent + "}";
+        }
       }
 
       var operator = tree[0];
@@ -74715,10 +74732,10 @@
   	return symbol
   }
 
-   simple_factor_or_function_or_parens(tree) {
+    simple_factor_or_function_or_parens(tree) {
       // return true if
       // factor(tree) is a single character
-      // or tree is a number
+      // or tree is a non-negative number not in scientific notation
       // or tree is a string
       // or tree is a function call
       // or factor(tree) is in parens
@@ -74726,15 +74743,21 @@
       let result = this.factor(tree);
 
       if (result.toString().length === 1
-  	|| (typeof tree === 'number')
-  	|| (typeof tree === 'string')
-  	|| (tree[0] === 'apply')
-  	|| result.toString().match( /^\(.*\)$/)
-         )
-  	return true;
-      else
-  	return false
-  }
+        || (typeof tree === 'string')
+        || (tree[0] === 'apply')
+        || result.toString().match(/^\(.*\)$/)
+      ) {
+        return true;
+      } else if (typeof tree === 'number') {
+        if (tree >= 0 && !tree.toString().includes('e')) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false
+      }
+    }
 
    factor(tree) {
       if (typeof tree === 'string') {
@@ -74758,8 +74781,20 @@
             return '-infinity';
           }
         }
-        else
-          return tree.toString();
+        else {
+          let numberString = tree.toString();
+          let eIndex = numberString.indexOf('e');
+          if(eIndex === -1) {
+            return numberString;
+          }
+          let num = numberString.substring(0,eIndex);
+          let exponent = numberString.substring(eIndex+1);
+          if(exponent[0] === "+") {
+            return num + " * 10^" + exponent.substring(1);
+          } else {
+            return num + " * 10^(" + exponent + ")";
+          }
+        }
       }
 
       let operator = tree[0];
@@ -75138,35 +75173,37 @@
     copy: copy
   });
 
-  var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array','matrix', 'interval'];
+  var analytic_operators = ['+', '-', '*', '/', '^', 'tuple', 'vector', 'list', 'array', 'matrix', 'interval'];
   var analytic_functions = ["exp", "log", "log10", "sqrt", "factorial", "gamma", "erf", "acos", "acosh", "acot", "acoth", "acsc", "acsch", "asec", "asech", "asin", "asinh", "atan", "atanh", "cos", "cosh", "cot", "coth", "csc", "csch", "sec", "sech", "sin", "sinh", "tan", "tanh", 'arcsin', 'arccos', 'arctan', 'arccsc', 'arcsec', 'arccot', 'cosec'];
   var relation_operators = ['=', 'le', 'ge', '<', '>'];
 
-  function isAnalytic(expr_or_tree, {allow_abs=false, allow_relation=false} ={}) {
+  function isAnalytic(expr_or_tree, { allow_abs = false, allow_relation = false } = {}) {
 
     var tree = normalize_applied_functions(
       normalize_function_names(expr_or_tree));
 
+    tree = subscripts_to_strings(tree);
+
     var operators_found = operators$1(tree);
-    for (let i=0; i < operators_found.length; i++ ) {
-  	  let oper = operators_found[i];
-  	  if(analytic_operators.indexOf(oper) === -1) {
-        if(allow_relation) {
-          if(relation_operators.indexOf(oper) === -1) {
+    for (let i = 0; i < operators_found.length; i++) {
+      let oper = operators_found[i];
+      if (analytic_operators.indexOf(oper) === -1) {
+        if (allow_relation) {
+          if (relation_operators.indexOf(oper) === -1) {
             return false;
           }
-        }else {
+        } else {
           return false;
         }
       }
     }
 
     var functions_found = functions(tree);
-    for (let i=0; i < functions_found.length; i++ ) {
+    for (let i = 0; i < functions_found.length; i++) {
       let fun = functions_found[i];
-      if(analytic_functions.indexOf(fun) === -1) {
-  	    if((!allow_abs) || fun !== "abs")
-      		return false;
+      if (analytic_functions.indexOf(fun) === -1) {
+        if ((!allow_abs) || fun !== "abs")
+          return false;
       }
     }
 
@@ -75833,6 +75870,10 @@
     // normalize function names, so in particular, e^x becomes exp(x)
     expr = expr.normalize_function_names();
     other = other.normalize_function_names();
+
+    // convert subscripts to strings so that variables like x_t are considered single variable
+    expr = expr.subscripts_to_strings();
+    other = other.subscripts_to_strings();
 
     // Get set of variables mentioned in at least one of the two expressions
     var variables = [expr.variables(), other.variables()];
@@ -78260,8 +78301,10 @@
   const whitespace_rule = '\\s|\\\\,|\\\\!|\\\\ |\\\\>|\\\\;|\\\\:|\\\\quad\\b|\\\\qquad\\b';
 
   const latex_rules = [
-    ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+)?', 'NUMBER'],
-    ['\\.[0-9]+(E[+\\-]?[0-9]+)?', 'NUMBER'],
+    // in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
+    // it must be at the end or followed a |, or a closing ),}, or ]
+    ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
+    ['\\.[0-9]+(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
     ['\\*', '*'],
     ['\\/', '/'],
     ['-', '-'],

@@ -25,437 +25,438 @@ import Expression from '../lib/math-expressions';
 
 import _ from 'underscore';
 
-describe("expression", function() {
+describe("expression", function () {
 
-    var equivalences = [
-	["3+2", "5"],
-	['-2 sin(t^2)/t', '-2 t sin(t^2)/t^2'],
-	['-2t sin(t^2)/t^2 + 3t^2 sin(t^3)/t^3', '-2 sin(t^2)/t + 3 sin(t^3)/t'],
-	['sin(t^2)*t/t','sin(t^2)'],
-	["(1/3)g^3", "(g^3)/(3)"],
-	["x*log(3)", "log(3^x)"],
-	["e^(e^x+x/x)", "e^(e^x+1)"],
-	["exp(exp(exp(x)))", "exp(exp(exp(x)))"],
-	["(x^5 + 5*x^4 + 20*x^3 + 60*x^2 + 120*x + 120)/120", "1/120*x^5 + 1/24*x^4 + 1/6*x^3 + 1/2*x^2 + x + 1"],
-	["(x^9 - 72*x^7 + 3024*x^5 - 60480*x^3 + 362880*x)/362880", "1/362880*x^9 - 1/5040*x^7 + 1/120*x^5 - 1/6*x^3 + x"],
-	["e^(e^x)", "e^(e^x)"],
-	["1 + x + x^2/2+ x^3/3! + x^4/4!+ x^5/5! + x^6/6!+x^7/7!", "1 + x + x^2/2+ x^3/6 + x^4/24 + x^5/120 + x^6/720 +x^7/5040"],
-	["1/sqrt(4)", "1/2"],
-	["4^(-1/2)", "1/2"],
-	["0.5", "1/2"], // 'Mix of floats and rational numbers'
-	["x^(1/2)", "sqrt(x)"],
-	// ["abs(x)", "sqrt(x^2)"],
-	["1/sqrt(x)", "sqrt(1/x)"],
-	["x-1", "(x^2-1)/(x+1)"],
-	["a^b * a^c", "a^(b+c)"],
-	['2+2*sqrt(3+x)', '2+sqrt(12+4*x)'],
-        ['1/n-1/(n+1)', '1/(n*(n+1))'],
-        ['0.5*x^2+3*x-1', 'x^2/2+3*x-1'],
-        ['cos(x)', 'cos(-x)'],
-        ['cos(x)^2+sin(x)^2', '1'],
-        ['2*cos(x)^2-1', 'cos(2*x)'],
-        ['2*cos(2*x)+x+1', '-sin(x)^2+3*cos(x)^2+x'],
-        ['(2*sec(2*t)^2-2)/2', '-(sin(4*t)^2-2*sin(4*t)+cos(4*t)^2-1)*(sin(4*t)^2+2*sin(4*t)+cos(4*t)^2-1)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)^2'],
-        ['1+cosec(3*x)', '1+csc(3*x)'],
-        ['-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)', '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)'],
-	['log(a^2*b)', '2*log(a)+log(b)'],
-	['sqrt(12)', '2*sqrt(3)'],
-        ['sqrt(11+6*sqrt(2))', '3+sqrt(2)'],
-        // ['(19601-13860*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
-        ['sqrt(2*log(26)+4-2*log(2))', 'sqrt(2*log(13)+4)'],
-        ['1+2*x', 'x*2+1'],
-        ['(x+y)+z', 'z+x+y'],
-        ['(x+5)*x', 'x*(5+x)'],
-        ['x*x', 'x^2'],
-        ['(1-x)^2', '(x-1)^2'],
-        ['x*(x+5)', '5*x+x^2'],
-        ['1+x+x', '2*x+1'],
-        ['2^2', '4'],
-        ['a^2/b^3', 'a^2*b^(-3)'],
-        ['x^(1/2)', 'sqrt(x)'],
-        ['x-1', '(x^2-1)/(x+1)'],
-        ['x+x', '2*x'],
-        ['x+x^2', 'x^2+x'],
-        ['(x-1)^2', 'x^2-2*x+1'],
-        ['(x-1)^(-2)', '1/(x^2-2*x+1)'],
-        ['1/n-1/(n+1)', '1/(n*(n+1))'],
-        ['cos(x)', 'cos(-x)'],
-        ['cos(x)^2+sin(x)^2', '1'],
-        ['cos^2 x+sin^2 x', '1'],
-        ['2*cos(x)^2-1', 'cos(2*x)'],
-	['(1/2)/(3/4)', '2/3'],
-        ['1/n', '1/n'],
-        ['a+1/2', '(2*a+1)/2'],
-        ['1/n +2/(n+1)', '(3*n+1)/(n*(n+1))'],
-        ['2*(1/n)', '2/n'],
-        ['2/n', '2/n'],
-        ['(x-1)/(x^2-1)', '1/(x+1)'],
-        ['(x-2)/4/(2/x^2)', '(x-2)*x^2/8'],
-        ['1/(1-1/x)', 'x/(x-1)'],
-        ['(sqrt(108)+10)^(1/3)-(sqrt(108)-10)^(1/3)', '2'],
-	['(sqrt(2+sqrt(2))+sqrt(2-sqrt(2)))/(2*sqrt(2))', 'sqrt(sqrt(2)+2)/2'],
-	['x^2+1', 'x^2+1'],
-	['(-1)^n*cos(x)^n', '(-cos(x))^n'],
-	['log(abs((x^2-9)))', 'log(abs(x-3))+log(abs(x+3))'],
-	['log(exp(x))', 'x'],
-	['exp(log(x))', 'x'],
-        ['(x-1)^2', 'x^2-2*x+1'],
-        ['(x-1)*(x^2+x+1)', 'x^3-1'],
-        ['(x-1)^(-2)', '1/(x^2-2*x+1)'],
-        ['2/4', '1/2'],
-        ['2^3', '8'],
-        ['3^2', '9'],
-        ['sqrt(3)', '3^(1/2)'],
-        ['2*sqrt(2)', 'sqrt(8)'],
-        ['2*2^(1/2)', 'sqrt(8)'],
-        ['4^(1/2)', '2'],
-        ['sqrt(3)/3', '(1/3)^(1/2)'],
-        ['sqrt(2)/4', '1/sqrt(8)'],
-        ['1/3^(1/2)', '(1/3)^(1/2)'],
-        ['1/sqrt(2)', '2^(1/2)/2'],
-        ['a^2/b^3', 'a^2*b^(-3)'],
-        ['-1+2', '2-1'],
-        ['-1*2+3*4', '3*4-1*2'],
-        ['-1*2+3*4', '3*4-1*2'],
-        ['(-1*2)+3*4', '10'],
-        ['x*(-y)', '-x*y'],
-        ['x*(-y)', '-(x*y)'],
-        ['(-x)*(-x)', 'x*x'],
-        ['(-x)*(-x)', 'x^2'],
-        ['1/2', '3/6'],
-        ['1/(1+2*x)', '1/(2*x+1)'],
-        ['2/(4+2*x)', '1/(x+2)'],
-        ['(a*b)/c', 'a*(b/c)'],
-        ['(-x)/y', '-(x/y)'],
-        ['x/(-y)', '-(x/y)'],
-        ['-1/(1-x)', '1/(x-1)'],
-        ['1/2*1/x', '1/(2*x)'],
-        ['2', '2'],
-        ['1/3', '1/3'],
-        ['3*x^2', '3*x^2'],
-        ['4*x^2', '4*x^2'],
-        ['2*(x-1)', '2*x-2'],
-        ['2*x-2', '2*x-2'],
-        ['2*(x+1)', '2*x+2'],
-        ['2*(x+0.5)', '2*x+1'],
-        ['t*(2*x+1)', 't*(2*x+1)'],
-        ['t*x+t', 't*(x+1)'],
-        ['2*x*(x-3)', '2*x^2-6*x'],
-        ['2*(x^2-3*x)', '2*x*(x-3)'],
-        ['x*(2*x-6)', '2*x*(x-3)'],
-        ['(x+2)*(x+3)', '(x+2)*(x+3)'],
-        ['(x+2)*(2*x+6)', '2*(x+2)*(x+3)'],
-        ['(z*x+z)*(2*x+6)', '2*z*(x+1)*(x+3)'],
-        ['(x+t)*(x-t)', 'x^2-t^2'],
-        ['t^2-1', '(t-1)*(t+1)'],
-        ['(2-x)*(3-x)', '(x-2)*(x-3)'],
-        ['(1-x)^2', '(x-1)^2'],
-        ['-(1-x)^2', '-(x-1)^2'],
-        ['4*(1-x/2)^2', '(x-2)^2'],
-        ['(x-1)*(x^2+x+1)', 'x^3-1'],
-        ['x^3-x+1', 'x^3-x+1'],
-        ['7*x^3-7*x+7', '7*(x^3-x+1)'],
-        ['(1-x)*(2-x)*(3-x)', '-x^3+6*x^2-11*x+6'],
-        ['(2-x)*(2-x)*(3-x)', '-x^3+7*x^2-16*x+12'],
-        ['(2-x)^2*(3-x)', '-x^3+7*x^2-16*x+12'],
-        ['(x^2-4*x+4)*(3-x)', '-x^3+7*x^2-16*x+12'],
-        ['(x^2-3*x+2)*(3-x)', '-x^3+6*x^2-11*x+6'],
-        ['3*y^3-6*y^2-24*y', '3*(y-4)*y*(y+2)'],
-        ['3*(y^3-2*y^2-8*y)', '3*(y-4)*y*(y+2)'],
-        ['3*y*(y^2-2*y-8)', '3*(y-4)*y*(y+2)'],
-        ['3*(y^2-4*y)*(y+2)', '3*(y-4)*y*(y+2)'],
-        ['(y-4)*y*(3*y+6)', '3*(y-4)*y*(y+2)'],
-	['24*(x-1/4)', '24*x-6'],
-	['(x-sqrt(2))*(x+sqrt(2))', 'x^2-2'],
-        ['1/(n+1)-1/n', '1/(n+1)-1/n'],
-        ['1/(n+1)+1/(1-n)', '1/(n+1)-1/(n-1)'],
-        ['1/(2*(n-1))-1/(2*(n+1))', '1/((n-1)*(n+1))'],
-        ['1/(x-1)-(x+1)/(x^2+1)', '2/((x-1)*(x^2+1))'],
-        ['1/(2*x-2)-(x+1)/(2*(x^2+1))', '1/((x-1)*(x^2+1))'],
-        ['3/(x+1) + 3/(x+2)', '3*(2*x+3)/((x+1)*(x+2))'],
-        ['3*(1/(x+1) + 1/(x+2))', '3*(2*x+3)/((x+1)*(x+2))'],
-        ['3*x*(1/(x+1) + 2/(x+2))', '-12/(x+2)-3/(x+1)+9'],
-        ['2*x+1/(x+1)+1/(x-1)', '2*x^3/(x^2-1)'],
-        ['(2*x+1)/(x^2+1)-2/(x-1)', '(2*x+1)/(x^2+1)-2/(x-1)'],
-        ['-1/((s+1)^2) - 2/(s+2) + 2/(s+1)', 's/((s+1)^2*(s+2))'],
-        ['(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4', '(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4'],
-        ['-5/(16*x)+53/(16*(x-4))+43/(4*(x-4)^2)', '(3*x^2-5)/((x-4)^2*x)'],
-	['-1/(16*(x+5))+19/(4*(x+5)^2)+1/(16*(x+1))', '(5*x+6)/((x+1)*(x+5)^2)'],
-        ['-5/(16*x)+1/(2*(x-1))-1/(8*(x-1)^2)', '(3*x^2-5)/((4*x-4)^2*x)'],
-        ['(3*x^2-5)/((x-4)^2*x)', '(3*x^2-5)/((x-4)^2*x)'],
-        ['125/(34*(5*x-2))+5/(51*(x+3))-5/(6*x)', '5/(x*(x+3)*(5*x-2))'],
-        ['10/(x+3) - 2/(x+2) + x -2', '(x^3 + 3*x^2 + 4*x +2)/((x+2)*(x+3))'],
-	['(cos(t)-sqrt(2))^2', 'cos(t)^2-2*sqrt(2)*cos(t)+2'],
-	['(n+1)*n!', '(n+1)!'],
-	['n/n!', '1/(n-1)!'],
-	['(n!)^2', 'n! * n!'],
-	['abs((-x)^(1/3))', '(abs(-x))^(1/3)'],
-	// ['abs(x)' , '(x^4)^(1/4)'],
-	// ['abs(x)' , 'sqrt(sqrt(x^4))'],
-	['arcsin(x)' , 'arcsin(x)'],
-	['arccos(x)' , 'arccos(x)'],
-	['arctan(x)' , 'arctan(x)'],
-	['arcsec(x)' , 'arcsec(x)'],
-	['arccsc(x)' , 'arccsc(x)'],
-	['arccot(x)' , 'arccot(x)'],
-	['arcsinh(x)' , 'arcsinh(x)'],
-	['arccosh(x)' , 'arccosh(x)'],
-	['arctanh(x)' , 'arctanh(x)'],
-	['arcsech(x)' , 'arcsech(x)'],
-	['arccsch(x)' , 'arccsch(x)'],
-	['arccoth(x)' , 'arccoth(x)'],
-	['log(x^2*y/z)' , 'log(x^2*y) - log(z)'],
-	['log(x^2*y/z)' , 'log(x^2) + log(y) - log(z)'],
-	['log(x^2*y/z)' , '2*log(x) + log(y) - log(z)'],
-	['log(x^2*y/exp(1))' , '2*log(x) + log(y) - 1'],
-	['log(sqrt(x^2 + 9) + x) - log(3)' , '(asinh(x/3))'],
-	['sin(x + y)' , 'sin(x)*cos(y) + cos(x)*sin(y)'],
-	['cos(x + y)' , 'cos(x)*cos(y) - sin(x)*sin(y)'],
-	['log(x)/8' , '0.125*log(x)'],
-	['log(x)/8' , '(1/8)*log(x)'],
-	//"x/2-sin(2x)/4-(cos(x))^3/3", "x/2+sin(2x)/4-(cos(x))^3/3"],
-	['(1/8)*log(x)' , '0.125*log(x)'],
-	['1' , '1'],
-	['sqrt(10000 - x)' , 'sqrt(10000 - x)'],
-	['x*log(y)' , 'log(y^x)'],
-	['exp(x^y)' , 'exp(x^y)'],
-	['(exp(x))^y' , 'exp(x*y)'],
-	['0*x', '0*y'],
-	['oo', '+oo'],
-	["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
-        ['(2x,y^2)', '(x+x, y*y)'],
-        ['(2x,y^2]', '(x+x,y*y]'],
-        ['[2x,y^2)', '[x+x,y*y)'],
-        ['[2x,y^2]', '[x+x,y*y]'],
-        ['arcsin(1/2)', 'pi/6'],
-        ['sqrt(e)', 'e^(1/2)'],
-        ['sin(pi)', '0'],
-        ['cos(pi)', '-1'],
-        ['sin(pi/2)', '1'],
-        ['cos(pi/2)', '0'],
-        ['5x + 2y = 3', '6-4y = 10x'],
-        ['5x + 2y = 3', '-(6-4y) = -10x'],
-        ['5q-9z < 2u+9z', '27z -5q > -4u + 5q-9z'],
-        ['5q-9z > 2u+9z', '27z -5q < -4u + 5q-9z'],
-        ['5q-9z <= 2u+9z', '27z -5q >= -4u + 5q-9z'],
-        ['5q-9z >= 2u+9z', '27z -5q <= -4u + 5q-9z'],
-    ];
-    
-    _.each( equivalences, function(equiv) {
-	var lhs = equiv[0]
-	var rhs = equiv[1];
-	it(lhs + " == " + rhs, function() {
-	    Expression.set_to_default();
-	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeTruthy();
-	});
+  var equivalences = [
+    ["3+2", "5"],
+    ['-2 sin(t^2)/t', '-2 t sin(t^2)/t^2'],
+    ['-2t sin(t^2)/t^2 + 3t^2 sin(t^3)/t^3', '-2 sin(t^2)/t + 3 sin(t^3)/t'],
+    ['sin(t^2)*t/t', 'sin(t^2)'],
+    ["(1/3)g^3", "(g^3)/(3)"],
+    ["x*log(3)", "log(3^x)"],
+    ["e^(e^x+x/x)", "e^(e^x+1)"],
+    ["exp(exp(exp(x)))", "exp(exp(exp(x)))"],
+    ["(x^5 + 5*x^4 + 20*x^3 + 60*x^2 + 120*x + 120)/120", "1/120*x^5 + 1/24*x^4 + 1/6*x^3 + 1/2*x^2 + x + 1"],
+    ["(x^9 - 72*x^7 + 3024*x^5 - 60480*x^3 + 362880*x)/362880", "1/362880*x^9 - 1/5040*x^7 + 1/120*x^5 - 1/6*x^3 + x"],
+    ["e^(e^x)", "e^(e^x)"],
+    ["1 + x + x^2/2+ x^3/3! + x^4/4!+ x^5/5! + x^6/6!+x^7/7!", "1 + x + x^2/2+ x^3/6 + x^4/24 + x^5/120 + x^6/720 +x^7/5040"],
+    ["1/sqrt(4)", "1/2"],
+    ["4^(-1/2)", "1/2"],
+    ["0.5", "1/2"], // 'Mix of floats and rational numbers'
+    ["x^(1/2)", "sqrt(x)"],
+    // ["abs(x)", "sqrt(x^2)"],
+    ["1/sqrt(x)", "sqrt(1/x)"],
+    ["x-1", "(x^2-1)/(x+1)"],
+    ["a^b * a^c", "a^(b+c)"],
+    ['2+2*sqrt(3+x)', '2+sqrt(12+4*x)'],
+    ['1/n-1/(n+1)', '1/(n*(n+1))'],
+    ['0.5*x^2+3*x-1', 'x^2/2+3*x-1'],
+    ['cos(x)', 'cos(-x)'],
+    ['cos(x)^2+sin(x)^2', '1'],
+    ['2*cos(x)^2-1', 'cos(2*x)'],
+    ['2*cos(2*x)+x+1', '-sin(x)^2+3*cos(x)^2+x'],
+    ['(2*sec(2*t)^2-2)/2', '-(sin(4*t)^2-2*sin(4*t)+cos(4*t)^2-1)*(sin(4*t)^2+2*sin(4*t)+cos(4*t)^2-1)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)^2'],
+    ['1+cosec(3*x)', '1+csc(3*x)'],
+    ['-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)', '-4*sec(4*z)^2*sin(6*z)-6*tan(4*z)*cos(6*z)'],
+    ['log(a^2*b)', '2*log(a)+log(b)'],
+    ['sqrt(12)', '2*sqrt(3)'],
+    ['sqrt(11+6*sqrt(2))', '3+sqrt(2)'],
+    // ['(19601-13860*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
+    ['sqrt(2*log(26)+4-2*log(2))', 'sqrt(2*log(13)+4)'],
+    ['1+2*x', 'x*2+1'],
+    ['(x+y)+z', 'z+x+y'],
+    ['(x+5)*x', 'x*(5+x)'],
+    ['x*x', 'x^2'],
+    ['(1-x)^2', '(x-1)^2'],
+    ['x*(x+5)', '5*x+x^2'],
+    ['1+x+x', '2*x+1'],
+    ['2^2', '4'],
+    ['a^2/b^3', 'a^2*b^(-3)'],
+    ['x^(1/2)', 'sqrt(x)'],
+    ['x-1', '(x^2-1)/(x+1)'],
+    ['x+x', '2*x'],
+    ['x+x^2', 'x^2+x'],
+    ['(x-1)^2', 'x^2-2*x+1'],
+    ['(x-1)^(-2)', '1/(x^2-2*x+1)'],
+    ['1/n-1/(n+1)', '1/(n*(n+1))'],
+    ['cos(x)', 'cos(-x)'],
+    ['cos(x)^2+sin(x)^2', '1'],
+    ['cos^2 x+sin^2 x', '1'],
+    ['2*cos(x)^2-1', 'cos(2*x)'],
+    ['(1/2)/(3/4)', '2/3'],
+    ['1/n', '1/n'],
+    ['a+1/2', '(2*a+1)/2'],
+    ['1/n +2/(n+1)', '(3*n+1)/(n*(n+1))'],
+    ['2*(1/n)', '2/n'],
+    ['2/n', '2/n'],
+    ['(x-1)/(x^2-1)', '1/(x+1)'],
+    ['(x-2)/4/(2/x^2)', '(x-2)*x^2/8'],
+    ['1/(1-1/x)', 'x/(x-1)'],
+    ['(sqrt(108)+10)^(1/3)-(sqrt(108)-10)^(1/3)', '2'],
+    ['(sqrt(2+sqrt(2))+sqrt(2-sqrt(2)))/(2*sqrt(2))', 'sqrt(sqrt(2)+2)/2'],
+    ['x^2+1', 'x^2+1'],
+    ['(-1)^n*cos(x)^n', '(-cos(x))^n'],
+    ['log(abs((x^2-9)))', 'log(abs(x-3))+log(abs(x+3))'],
+    ['log(exp(x))', 'x'],
+    ['exp(log(x))', 'x'],
+    ['(x-1)^2', 'x^2-2*x+1'],
+    ['(x-1)*(x^2+x+1)', 'x^3-1'],
+    ['(x-1)^(-2)', '1/(x^2-2*x+1)'],
+    ['2/4', '1/2'],
+    ['2^3', '8'],
+    ['3^2', '9'],
+    ['sqrt(3)', '3^(1/2)'],
+    ['2*sqrt(2)', 'sqrt(8)'],
+    ['2*2^(1/2)', 'sqrt(8)'],
+    ['4^(1/2)', '2'],
+    ['sqrt(3)/3', '(1/3)^(1/2)'],
+    ['sqrt(2)/4', '1/sqrt(8)'],
+    ['1/3^(1/2)', '(1/3)^(1/2)'],
+    ['1/sqrt(2)', '2^(1/2)/2'],
+    ['a^2/b^3', 'a^2*b^(-3)'],
+    ['-1+2', '2-1'],
+    ['-1*2+3*4', '3*4-1*2'],
+    ['-1*2+3*4', '3*4-1*2'],
+    ['(-1*2)+3*4', '10'],
+    ['x*(-y)', '-x*y'],
+    ['x*(-y)', '-(x*y)'],
+    ['(-x)*(-x)', 'x*x'],
+    ['(-x)*(-x)', 'x^2'],
+    ['1/2', '3/6'],
+    ['1/(1+2*x)', '1/(2*x+1)'],
+    ['2/(4+2*x)', '1/(x+2)'],
+    ['(a*b)/c', 'a*(b/c)'],
+    ['(-x)/y', '-(x/y)'],
+    ['x/(-y)', '-(x/y)'],
+    ['-1/(1-x)', '1/(x-1)'],
+    ['1/2*1/x', '1/(2*x)'],
+    ['2', '2'],
+    ['1/3', '1/3'],
+    ['3*x^2', '3*x^2'],
+    ['4*x^2', '4*x^2'],
+    ['2*(x-1)', '2*x-2'],
+    ['2*x-2', '2*x-2'],
+    ['2*(x+1)', '2*x+2'],
+    ['2*(x+0.5)', '2*x+1'],
+    ['t*(2*x+1)', 't*(2*x+1)'],
+    ['t*x+t', 't*(x+1)'],
+    ['2*x*(x-3)', '2*x^2-6*x'],
+    ['2*(x^2-3*x)', '2*x*(x-3)'],
+    ['x*(2*x-6)', '2*x*(x-3)'],
+    ['(x+2)*(x+3)', '(x+2)*(x+3)'],
+    ['(x+2)*(2*x+6)', '2*(x+2)*(x+3)'],
+    ['(z*x+z)*(2*x+6)', '2*z*(x+1)*(x+3)'],
+    ['(x+t)*(x-t)', 'x^2-t^2'],
+    ['t^2-1', '(t-1)*(t+1)'],
+    ['(2-x)*(3-x)', '(x-2)*(x-3)'],
+    ['(1-x)^2', '(x-1)^2'],
+    ['-(1-x)^2', '-(x-1)^2'],
+    ['4*(1-x/2)^2', '(x-2)^2'],
+    ['(x-1)*(x^2+x+1)', 'x^3-1'],
+    ['x^3-x+1', 'x^3-x+1'],
+    ['7*x^3-7*x+7', '7*(x^3-x+1)'],
+    ['(1-x)*(2-x)*(3-x)', '-x^3+6*x^2-11*x+6'],
+    ['(2-x)*(2-x)*(3-x)', '-x^3+7*x^2-16*x+12'],
+    ['(2-x)^2*(3-x)', '-x^3+7*x^2-16*x+12'],
+    ['(x^2-4*x+4)*(3-x)', '-x^3+7*x^2-16*x+12'],
+    ['(x^2-3*x+2)*(3-x)', '-x^3+6*x^2-11*x+6'],
+    ['3*y^3-6*y^2-24*y', '3*(y-4)*y*(y+2)'],
+    ['3*(y^3-2*y^2-8*y)', '3*(y-4)*y*(y+2)'],
+    ['3*y*(y^2-2*y-8)', '3*(y-4)*y*(y+2)'],
+    ['3*(y^2-4*y)*(y+2)', '3*(y-4)*y*(y+2)'],
+    ['(y-4)*y*(3*y+6)', '3*(y-4)*y*(y+2)'],
+    ['24*(x-1/4)', '24*x-6'],
+    ['(x-sqrt(2))*(x+sqrt(2))', 'x^2-2'],
+    ['1/(n+1)-1/n', '1/(n+1)-1/n'],
+    ['1/(n+1)+1/(1-n)', '1/(n+1)-1/(n-1)'],
+    ['1/(2*(n-1))-1/(2*(n+1))', '1/((n-1)*(n+1))'],
+    ['1/(x-1)-(x+1)/(x^2+1)', '2/((x-1)*(x^2+1))'],
+    ['1/(2*x-2)-(x+1)/(2*(x^2+1))', '1/((x-1)*(x^2+1))'],
+    ['3/(x+1) + 3/(x+2)', '3*(2*x+3)/((x+1)*(x+2))'],
+    ['3*(1/(x+1) + 1/(x+2))', '3*(2*x+3)/((x+1)*(x+2))'],
+    ['3*x*(1/(x+1) + 2/(x+2))', '-12/(x+2)-3/(x+1)+9'],
+    ['2*x+1/(x+1)+1/(x-1)', '2*x^3/(x^2-1)'],
+    ['(2*x+1)/(x^2+1)-2/(x-1)', '(2*x+1)/(x^2+1)-2/(x-1)'],
+    ['-1/((s+1)^2) - 2/(s+2) + 2/(s+1)', 's/((s+1)^2*(s+2))'],
+    ['(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4', '(-5/(x+3))+(16/(x+3)^2)-(2/(x+2))+4'],
+    ['-5/(16*x)+53/(16*(x-4))+43/(4*(x-4)^2)', '(3*x^2-5)/((x-4)^2*x)'],
+    ['-1/(16*(x+5))+19/(4*(x+5)^2)+1/(16*(x+1))', '(5*x+6)/((x+1)*(x+5)^2)'],
+    ['-5/(16*x)+1/(2*(x-1))-1/(8*(x-1)^2)', '(3*x^2-5)/((4*x-4)^2*x)'],
+    ['(3*x^2-5)/((x-4)^2*x)', '(3*x^2-5)/((x-4)^2*x)'],
+    ['125/(34*(5*x-2))+5/(51*(x+3))-5/(6*x)', '5/(x*(x+3)*(5*x-2))'],
+    ['10/(x+3) - 2/(x+2) + x -2', '(x^3 + 3*x^2 + 4*x +2)/((x+2)*(x+3))'],
+    ['(cos(t)-sqrt(2))^2', 'cos(t)^2-2*sqrt(2)*cos(t)+2'],
+    ['(n+1)*n!', '(n+1)!'],
+    ['n/n!', '1/(n-1)!'],
+    ['(n!)^2', 'n! * n!'],
+    ['abs((-x)^(1/3))', '(abs(-x))^(1/3)'],
+    // ['abs(x)' , '(x^4)^(1/4)'],
+    // ['abs(x)' , 'sqrt(sqrt(x^4))'],
+    ['arcsin(x)', 'arcsin(x)'],
+    ['arccos(x)', 'arccos(x)'],
+    ['arctan(x)', 'arctan(x)'],
+    ['arcsec(x)', 'arcsec(x)'],
+    ['arccsc(x)', 'arccsc(x)'],
+    ['arccot(x)', 'arccot(x)'],
+    ['arcsinh(x)', 'arcsinh(x)'],
+    ['arccosh(x)', 'arccosh(x)'],
+    ['arctanh(x)', 'arctanh(x)'],
+    ['arcsech(x)', 'arcsech(x)'],
+    ['arccsch(x)', 'arccsch(x)'],
+    ['arccoth(x)', 'arccoth(x)'],
+    ['log(x^2*y/z)', 'log(x^2*y) - log(z)'],
+    ['log(x^2*y/z)', 'log(x^2) + log(y) - log(z)'],
+    ['log(x^2*y/z)', '2*log(x) + log(y) - log(z)'],
+    ['log(x^2*y/exp(1))', '2*log(x) + log(y) - 1'],
+    ['log(sqrt(x^2 + 9) + x) - log(3)', '(asinh(x/3))'],
+    ['sin(x + y)', 'sin(x)*cos(y) + cos(x)*sin(y)'],
+    ['cos(x + y)', 'cos(x)*cos(y) - sin(x)*sin(y)'],
+    ['log(x)/8', '0.125*log(x)'],
+    ['log(x)/8', '(1/8)*log(x)'],
+    //"x/2-sin(2x)/4-(cos(x))^3/3", "x/2+sin(2x)/4-(cos(x))^3/3"],
+    ['(1/8)*log(x)', '0.125*log(x)'],
+    ['1', '1'],
+    ['sqrt(10000 - x)', 'sqrt(10000 - x)'],
+    ['x*log(y)', 'log(y^x)'],
+    ['exp(x^y)', 'exp(x^y)'],
+    ['(exp(x))^y', 'exp(x*y)'],
+    ['0*x', '0*y'],
+    ['oo', '+oo'],
+    ["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
+    ['(2x,y^2)', '(x+x, y*y)'],
+    ['(2x,y^2]', '(x+x,y*y]'],
+    ['[2x,y^2)', '[x+x,y*y)'],
+    ['[2x,y^2]', '[x+x,y*y]'],
+    ['arcsin(1/2)', 'pi/6'],
+    ['sqrt(e)', 'e^(1/2)'],
+    ['sin(pi)', '0'],
+    ['cos(pi)', '-1'],
+    ['sin(pi/2)', '1'],
+    ['cos(pi/2)', '0'],
+    ['5x + 2y = 3', '6-4y = 10x'],
+    ['5x + 2y = 3', '-(6-4y) = -10x'],
+    ['5q-9z < 2u+9z', '27z -5q > -4u + 5q-9z'],
+    ['5q-9z > 2u+9z', '27z -5q < -4u + 5q-9z'],
+    ['5q-9z <= 2u+9z', '27z -5q >= -4u + 5q-9z'],
+    ['5q-9z >= 2u+9z', '27z -5q <= -4u + 5q-9z'],
+    ['(k+1)y_t', 'k*y_t + y_t']
+  ];
+
+  _.each(equivalences, function (equiv) {
+    var lhs = equiv[0]
+    var rhs = equiv[1];
+    it(lhs + " == " + rhs, function () {
+      Expression.set_to_default();
+      expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeTruthy();
     });
+  });
 
 
-    var nonequivalences = [
-	["0.33", "1/3"],
-	// ["x", "sqrt(x^2)"],
-	// ['sqrt(x^2)' , 'x'],
-	["-cos(t)+3t", "-cos(t)"],
-	// ["sqrt((x-3)*(x-5))", "sqrt(x-3)*sqrt(x-5)"],
-	['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
-        ['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
-        ['1+x', '2*x+1'],
-	['1/m', '1/n'],
-	['2/(n+1)', '1/(n+1)'],
-	['(2*n+1)/(n+2)', '1/n'],
-        ['(2*n)/(n*(n+2))', '(2*n)/(n*(n+3))'],
-        ['(2*log(2*x)+x)/(2*x)', '(log(2*x)+2)/(2*sqrt(x))'],
-	['2/(x+1)-1/(x+2)', 's/((s+1)*(s+2))'],
-	['1/(n-1)-1/n^2', '1/((n+1)*n)'],
-	['1/(n-1)-1/n', '1/(n-1)+1/n'],
-	['1/(x+1) + 1/(x+2)', '1/(x+1) + 2/(x+2)'],
-	['1/(x+1) + 1/(x+2)', '1/(x+3) + 1/(x+2)'],
-	['1/(x+1)-1/x', '1/(x-1)+1/x'],
-        ['2*x+2', '2*x-2'],
-        ['2*(x+1)', '2*x-2'],
-	['1', '(x-1)^2+1'],
-	['(t-1)^2+1', '(x-1)^2+1'],
-	['X^2+1', 'x^2+1'],
-	["X", "x"], // The system SHOULD be case sensitive, to distinguish say r and R
-	['n!*n!', '(2n)!'],
-	['sin(2*pi*x)' , '0'],
-	['cos((pi*x))' , '(-1)^(x)'],
-	['sin(x)' , 'x - x^3/6 + x^5/120'],
-	['exp(x^2)' , 'exp(x^2 + 1)'],
-	['1000*exp(x/log(2))' , '1000*exp(x/log(3))'],
-	['x' , 'y'],
-	['x + 2*y' , 'y + 2*x'],
-	['abs(x)' , 'x'],
-	['1E-50*sin(x)', '1E-50*cos(x)'],
-	['1-abs(x)', '1+abs(x)'],
-	['1-sqrt(x)', '1+sqrt(x)'],
-	['abs(x+1)-1', 'abs(x+2)-2'],
-	['abs(x+10)-10', 'abs(x+11)-11'],
-	['abs(x+100)-100', 'abs(x+101)-101'],
-	['abs(x+1000)-1000', 'abs(x+1001)-1001'],
-	// ['abs(x+1E5)-1E5', 'abs(x+1E5+1)-(1E5+1)'],
-	// ['abs(x+1E10)-1E10', 'abs(x+1E10+1)-(1E10+1)'],
-	['x > 1000', 'x > 1001'],
-	['x + 1E-8', 'x + 2E-8'],
-	['x + 1E9', '2x + 1E9'],
-	['(8-r sin(theta))r', '(8-r^2 sin(theta))'],
-        ['xy^2/2 + e^y', 'x + e^y'],
-        ['x^(sin(x))', 'x^(cos(x))'],
-        ['(1,2]', '[1,2)'],
-        ['sign(1)', 'sign(-1)'],
-        ['5q < 9z', '5q > 9z'],
-        ['5q < 9z', '-5q < -9z'],
-        ['5q > 9z', '-5q > -9z'],
-        ['5q <= 9z', '5q >= 9z'],
-        ['5q <= 9z', '-5q <= -9z'],
-        ['5q >= 9z', '-5q >= -9z'],
-        ['10^(-30)', '2*10^(-30)'],
-     ];
+  var nonequivalences = [
+    ["0.33", "1/3"],
+    // ["x", "sqrt(x^2)"],
+    // ['sqrt(x^2)' , 'x'],
+    ["-cos(t)+3t", "-cos(t)"],
+    // ["sqrt((x-3)*(x-5))", "sqrt(x-3)*sqrt(x-5)"],
+    ['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
+    ['(19601-13861*sqrt(2))^(7/4)', '(5*sqrt(2)-7)^7'],
+    ['1+x', '2*x+1'],
+    ['1/m', '1/n'],
+    ['2/(n+1)', '1/(n+1)'],
+    ['(2*n+1)/(n+2)', '1/n'],
+    ['(2*n)/(n*(n+2))', '(2*n)/(n*(n+3))'],
+    ['(2*log(2*x)+x)/(2*x)', '(log(2*x)+2)/(2*sqrt(x))'],
+    ['2/(x+1)-1/(x+2)', 's/((s+1)*(s+2))'],
+    ['1/(n-1)-1/n^2', '1/((n+1)*n)'],
+    ['1/(n-1)-1/n', '1/(n-1)+1/n'],
+    ['1/(x+1) + 1/(x+2)', '1/(x+1) + 2/(x+2)'],
+    ['1/(x+1) + 1/(x+2)', '1/(x+3) + 1/(x+2)'],
+    ['1/(x+1)-1/x', '1/(x-1)+1/x'],
+    ['2*x+2', '2*x-2'],
+    ['2*(x+1)', '2*x-2'],
+    ['1', '(x-1)^2+1'],
+    ['(t-1)^2+1', '(x-1)^2+1'],
+    ['X^2+1', 'x^2+1'],
+    ["X", "x"], // The system SHOULD be case sensitive, to distinguish say r and R
+    ['n!*n!', '(2n)!'],
+    ['sin(2*pi*x)', '0'],
+    ['cos((pi*x))', '(-1)^(x)'],
+    ['sin(x)', 'x - x^3/6 + x^5/120'],
+    ['exp(x^2)', 'exp(x^2 + 1)'],
+    ['1000*exp(x/log(2))', '1000*exp(x/log(3))'],
+    ['x', 'y'],
+    ['x + 2*y', 'y + 2*x'],
+    ['abs(x)', 'x'],
+    ['1E-50*sin(x)', '1E-50*cos(x)'],
+    ['1-abs(x)', '1+abs(x)'],
+    ['1-sqrt(x)', '1+sqrt(x)'],
+    ['abs(x+1)-1', 'abs(x+2)-2'],
+    ['abs(x+10)-10', 'abs(x+11)-11'],
+    ['abs(x+100)-100', 'abs(x+101)-101'],
+    ['abs(x+1000)-1000', 'abs(x+1001)-1001'],
+    // ['abs(x+1E5)-1E5', 'abs(x+1E5+1)-(1E5+1)'],
+    // ['abs(x+1E10)-1E10', 'abs(x+1E10+1)-(1E10+1)'],
+    ['x > 1000', 'x > 1001'],
+    ['x + 1E-8', 'x + 2E-8'],
+    ['x + 1E9', '2x + 1E9'],
+    ['(8-r sin(theta))r', '(8-r^2 sin(theta))'],
+    ['xy^2/2 + e^y', 'x + e^y'],
+    ['x^(sin(x))', 'x^(cos(x))'],
+    ['(1,2]', '[1,2)'],
+    ['sign(1)', 'sign(-1)'],
+    ['5q < 9z', '5q > 9z'],
+    ['5q < 9z', '-5q < -9z'],
+    ['5q > 9z', '-5q > -9z'],
+    ['5q <= 9z', '5q >= 9z'],
+    ['5q <= 9z', '-5q <= -9z'],
+    ['5q >= 9z', '-5q >= -9z'],
+    ['10^(-30)', '2*10^(-30)'],
+  ];
 
-    _.each( nonequivalences, function(nonequiv) {
-	var lhs = nonequiv[0]
-	var rhs = nonequiv[1];
-	it(lhs + " != " + rhs, function() {
-	    Expression.set_to_default();
-	    expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
-	});
+  _.each(nonequivalences, function (nonequiv) {
+    var lhs = nonequiv[0]
+    var rhs = nonequiv[1];
+    it(lhs + " != " + rhs, function () {
+      Expression.set_to_default();
+      expect(Expression.fromText(lhs).equals(Expression.fromText(rhs))).toBeFalsy();
     });
+  });
 
 
-    it('integer assumption', function() {
-	Expression.set_to_default();
+  it('integer assumption', function () {
+    Expression.set_to_default();
 
-	var expr1 = Expression.from('(-1)^n * (-1)^n')
-	var expr2 = Expression.from('1');
+    var expr1 = Expression.from('(-1)^n * (-1)^n')
+    var expr2 = Expression.from('1');
 
-	expect(expr1.equals(expr2)).toBeFalsy();
+    expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('n ∈ Z'));
-	expect(expr1.equals(expr2)).toBeTruthy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('n ∈ Z'));
+    expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('Z ∋ n'));
-	expect(expr1.equals(expr2)).toBeTruthy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('Z ∋ n'));
+    expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('x ∈ Z'));
-	expect(expr1.equals(expr2)).toBeFalsy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('x ∈ Z'));
+    expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('n ∈ R'));
-	expect(expr1.equals(expr2)).toBeFalsy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('n ∈ R'));
+    expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('n ∈ Z and 3*x+5 > 3'));
-	expect(expr1.equals(expr2)).toBeTruthy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('n ∈ Z and 3*x+5 > 3'));
+    expect(expr1.equals(expr2)).toBeTruthy();
 
-	Expression.clear_assumptions();
-	Expression.add_assumption(Expression.from('n ∈ Z or 3*x+5 > 3'));
-	expect(expr1.equals(expr2)).toBeFalsy();
+    Expression.clear_assumptions();
+    Expression.add_assumption(Expression.from('n ∈ Z or 3*x+5 > 3'));
+    expect(expr1.equals(expr2)).toBeFalsy();
 
-	Expression.clear_assumptions();
+    Expression.clear_assumptions();
 
+  });
+
+  it('stringify and revive', function () {
+    Expression.set_to_default();
+
+    var expr1 = Expression.fromText('sin(x)')
+    var copy1 = JSON.parse(JSON.stringify(expr1), Expression.reviver);
+
+    expect(expr1.equals(copy1)).toBeTruthy();
+    expect(copy1.equals(expr1)).toBeTruthy();
+
+    let obj2 = { expr: expr1, other: { a: 1, b: "hi" } };
+    let copy2 = JSON.parse(JSON.stringify(obj2), Expression.reviver);
+    expect(obj2.other).toEqual(copy2.other);
+    expect(copy2.expr.equals(expr1)).toBeTruthy();
+
+  });
+
+  var matchDerivatives = [
+    ['x^3/3+c', 'x^3/3+c'],
+    ['x^2/2-2*x+2+c', '(x-2)^2/2+k'],
+    ['exp(x)+c', 'exp(x)'],
+    ['ln(x)+c', 'ln(x)+c'],
+    ['ln(k*x)', 'ln(x)+c'],
+    ['ln(abs(x))+c', 'ln(abs(x))+c'],
+    ['ln(k*abs(x))', 'ln(abs(x))+c'],
+    ['ln(abs(k*x))', 'ln(abs(x))+c'],
+    ['ln(abs(x))+c', 'ln(k*abs(x))'],
+    ['ln(k*abs(x))', 'ln(k*abs(x))'],
+    ['c-(log(2)-log(x))^2/2', '-1/2*log(2/x)^2'],
+    ['2*sin(x)*cos(x)+k', 'sin(2*x)+c'],
+    ['-2*cos(3*x)/3-3*cos(2*x)/2+c', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
+    ['(tan(2*x)-2*x)/2+c', '-(x*sin(4*x)^2-sin(4*x)+x*cos(4*x)^2+2*x*cos(4*x)+x)/(sin(4*x)^2+cos(4*x)^2+2*cos(4*x)+1)'],
+    ['tan(x)-x+c', 'tan(x)-x'],
+    ['2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c', '2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c'],
+    ['x^3/3+c', 'x^3/3'],
+    ['x^3/3+c+1', 'x^3/3'],
+    ['x^3/3+3*c', 'x^3/3'],
+    ['x^3/3-c', 'x^3/3'],
+    ['x^2/2-2*x+2+c', '(x-2)^2/2'],
+    ['(x-1)^5/5+c', '(x-1)^5/5'],
+    ['cos(2*x)/2+1+c', 'cos(2*x)/2'],
+    //'exp(x^y)' , 'exp(x^y + 1)'],
+  ];
+
+  _.each(matchDerivatives, function (deriv) {
+    var lhs = deriv[0]
+    var rhs = deriv[1];
+    it("(d/dx) " + lhs + " == " + "(d/dx) " + rhs, function () {
+      Expression.set_to_default();
+      expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
     });
+  });
 
-    it('stringify and revive', function() {
-	Expression.set_to_default();
+  var derivatives = [
+    ["x^2", "2x"],
+    ["x^3", "3x^2"],
+    ["sin x", "cos x"],
+    ["cos x", "-sin x"],
+    ["sin^2 x", "2 sin x cos x"],
+  ];
 
-	var expr1 = Expression.fromText('sin(x)')
-        var copy1 = JSON.parse(JSON.stringify(expr1), Expression.reviver);
-
-        expect(expr1.equals(copy1)).toBeTruthy();
-        expect(copy1.equals(expr1)).toBeTruthy();
-        
-        let obj2 = {expr: expr1, other: {a: 1, b: "hi"}};
-        let copy2 = JSON.parse(JSON.stringify(obj2), Expression.reviver);
-        expect(obj2.other).toEqual(copy2.other);
-        expect(copy2.expr.equals(expr1)).toBeTruthy();
-
+  _.each(derivatives, function (deriv) {
+    var lhs = deriv[0]
+    var rhs = deriv[1];
+    it("(d/dx) " + lhs + " == " + rhs, function () {
+      Expression.set_to_default();
+      expect(Expression.fromText(lhs).normalize_applied_functions().derivative('x').equals(Expression.fromText(rhs).normalize_applied_functions())).toBeTruthy();
     });
+  });
 
-    var matchDerivatives = [
-        ['x^3/3+c', 'x^3/3+c'],
-        ['x^2/2-2*x+2+c', '(x-2)^2/2+k'],
-        ['exp(x)+c', 'exp(x)'],
-        ['ln(x)+c', 'ln(x)+c'],
-        ['ln(k*x)', 'ln(x)+c'],
-        ['ln(abs(x))+c', 'ln(abs(x))+c'],
-        ['ln(k*abs(x))', 'ln(abs(x))+c'],
-        ['ln(abs(k*x))', 'ln(abs(x))+c'],
-        ['ln(abs(x))+c', 'ln(k*abs(x))'],
-        ['ln(k*abs(x))', 'ln(k*abs(x))'],
-	['c-(log(2)-log(x))^2/2', '-1/2*log(2/x)^2'],
-        ['2*sin(x)*cos(x)+k', 'sin(2*x)+c'],
-        ['-2*cos(3*x)/3-3*cos(2*x)/2+c', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
-	['(tan(2*x)-2*x)/2+c', '-(x*sin(4*x)^2-sin(4*x)+x*cos(4*x)^2+2*x*cos(4*x)+x)/(sin(4*x)^2+cos(4*x)^2+2*cos(4*x)+1)'],
-        ['tan(x)-x+c', 'tan(x)-x'],
-	['2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c', '2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c'],
-	['x^3/3+c', 'x^3/3'],
-        ['x^3/3+c+1', 'x^3/3'],
-        ['x^3/3+3*c', 'x^3/3'],
-	['x^3/3-c', 'x^3/3'],
-	['x^2/2-2*x+2+c', '(x-2)^2/2'],
-        ['(x-1)^5/5+c', '(x-1)^5/5'],
-        ['cos(2*x)/2+1+c', 'cos(2*x)/2'],
-	//'exp(x^y)' , 'exp(x^y + 1)'],
-    ];
+  var dontMatchDerivatives = [
+    ['exp(x)', 'exp(x)'],
+    ['2*x', 'x^3/3'],
+    ['2*x+c', 'x^3/3'],
+    ['ln(x)', 'ln(x)'],
+    ['ln(x)', 'ln(abs(x))+c'],
+    ['ln(x)+c', 'ln(abs(x))+c'],
+    ['ln(abs(x))', 'ln(abs(x))+c'],
+    ['ln(k*x)', 'ln(abs(x))+c'],
+    ['ln(x)', 'ln(k*abs(x))'],
+    ['ln(x)+c', 'ln(k*abs(x))'],
+    ['ln(abs(x))', 'ln(k*abs(x))'],
+    ['ln(k*x)', 'ln(k*abs(x))'],
+    ['ln(x)+ln(a)', 'ln(k*abs(x+a))'],
+    ['log(x)^2-2*log(c)*log(x)+k', 'ln(c/x)^2'],
+    ['log(x)^2-2*log(c)*log(x)+k', 'ln(abs(c/x))^2'],
 
-    _.each( matchDerivatives, function(deriv) {
-	var lhs = deriv[0]
-	var rhs = deriv[1];
-	it("(d/dx) " + lhs + " == " + "(d/dx) " + rhs, function() {
-	    Expression.set_to_default();
-	    expect(Expression.fromText(lhs).derivative('x').equals(Expression.fromText(rhs).derivative('x'))).toBeTruthy();
-	});
-    });
+    ['2*sin(x)*cos(x)', 'sin(2*x)+c'],
+    ['-2*cos(3*x)/3-3*cos(2*x)/2', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
+    ['-2*cos(3*x)/3-3*cos(2*x)/2+1', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
+    ['(tan(2*t)-2*t)/2', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
+    ['(tan(2*t)-2*t)/2+1', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
+  ];
 
-    var derivatives = [
-	["x^2", "2x"],
-	["x^3", "3x^2"],
-	["sin x", "cos x"],
-	["cos x", "-sin x"],
-	["sin^2 x", "2 sin x cos x"],
-    ];
-
-    _.each( derivatives, function(deriv) {
-	var lhs = deriv[0]
-	var rhs = deriv[1];
-	it("(d/dx) " + lhs + " == " + rhs, function() {
-	    Expression.set_to_default();
-	    expect(Expression.fromText(lhs).normalize_applied_functions().derivative('x').equals(Expression.fromText(rhs).normalize_applied_functions())).toBeTruthy();
-	});
-    });
-
-    var dontMatchDerivatives = [
-        ['exp(x)', 'exp(x)'],
-        ['2*x', 'x^3/3'],
-        ['2*x+c', 'x^3/3'],
-        ['ln(x)', 'ln(x)'],
-        ['ln(x)', 'ln(abs(x))+c'],
-        ['ln(x)+c', 'ln(abs(x))+c'],
-        ['ln(abs(x))', 'ln(abs(x))+c'],
-        ['ln(k*x)', 'ln(abs(x))+c'],
-        ['ln(x)', 'ln(k*abs(x))'],
-        ['ln(x)+c', 'ln(k*abs(x))'],
-        ['ln(abs(x))', 'ln(k*abs(x))'],
-        ['ln(k*x)', 'ln(k*abs(x))'],
-        ['ln(x)+ln(a)', 'ln(k*abs(x+a))'],
-        ['log(x)^2-2*log(c)*log(x)+k', 'ln(c/x)^2'],
-        ['log(x)^2-2*log(c)*log(x)+k', 'ln(abs(c/x))^2'],
-
-	['2*sin(x)*cos(x)', 'sin(2*x)+c'],
-        ['-2*cos(3*x)/3-3*cos(2*x)/2', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
-        ['-2*cos(3*x)/3-3*cos(2*x)/2+1', '-2*cos(3*x)/3-3*cos(2*x)/2+c'],
-	['(tan(2*t)-2*t)/2', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
-	['(tan(2*t)-2*t)/2+1', '-(t*sin(4*t)^2-sin(4*t)+t*cos(4*t)^2+2*t*cos(4*t)+t)/(sin(4*t)^2+cos(4*t)^2+2*cos(4*t)+1)'],
-    ];
-
-    var matchForm = [
-	['x^2+y/z', 'a^2+c/b'],
-	['x^2+y', 'a^2+b'],
-	['x^2+1', 'x^3+1'],
-    ];
+  var matchForm = [
+    ['x^2+y/z', 'a^2+c/b'],
+    ['x^2+y', 'a^2+b'],
+    ['x^2+1', 'x^3+1'],
+  ];
 
 
 
