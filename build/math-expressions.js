@@ -69812,12 +69812,16 @@ function flatten$18(tree) {
 
 */
 
+// in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
+// it must be at the end or followed a comma, |, ), }, or ]
+const sci_notat_exp_regex = '(E[+\\-]?[0-9]+\\s*($|(?=\\,|\\||\\)|\\}|\\])))?';
+
 
 const text_rules = [
   // in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
   // it must be at the end or followed a |, or a closing ),}, or ]
-  ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
-  ['\\.[0-9]+(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
+  ['[0-9]+(\\.[0-9]*)?'+sci_notat_exp_regex, 'NUMBER'],
+  ['\\.[0-9]+'+sci_notat_exp_regex, 'NUMBER'],
   ['\\*\\*', '^'],
   ['\\*', '*'], // there is some variety in multiplication symbols
   ['\\xB7', '*'], // '·'
@@ -78294,11 +78298,13 @@ const expression_to_tree$1 = [
 // Some of the latex commands that lead to spacing
 const whitespace_rule = '\\s|\\\\,|\\\\!|\\\\ |\\\\>|\\\\;|\\\\:|\\\\quad\\b|\\\\qquad\\b';
 
+// in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
+// it must be at the end or followed a comma, &, |, \|, ), }, \}, ], \\, or \end
+const sci_notat_exp_regex$1 = '(E[+\\-]?[0-9]+\\s*($|(?=\\,|&|\\||\\\\\\||\\)|\\}|\\\\}|\\]|\\\\\\\\|\\\\end)))?';
+
 const latex_rules = [
-  // in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
-  // it must be at the end or followed a |, or a closing ),}, or ]
-  ['[0-9]+(\\.[0-9]*)?(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
-  ['\\.[0-9]+(E[+\\-]?[0-9]+\\s*($|(?=\\)|\\}|\\]|\\|)))?', 'NUMBER'],
+  ['[0-9]+(\\.[0-9]*)?'+sci_notat_exp_regex$1 , 'NUMBER'],
+  ['\\.[0-9]+'+sci_notat_exp_regex$1, 'NUMBER'],
   ['\\*', '*'],
   ['\\/', '/'],
   ['-', '-'],
