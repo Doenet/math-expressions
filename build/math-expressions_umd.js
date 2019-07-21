@@ -70928,7 +70928,7 @@
       assumptions = expr_or_tree.context.get_assumptions(
         [expr_or_tree.variables()]);
 
-    tree = evaluate_numbers(tree, { assumptions: assumptions, max_digits: max_digits });
+    tree = evaluate_numbers(tree, { assumptions: assumptions, max_digits: max_digits, evaluate_functions: true });
     // if already have it down to a number of variable, no need for more simplification
     if (!Array.isArray(tree)) {
       return tree;
@@ -70986,8 +70986,16 @@
     return tree.slice(1).some(x => contains_decimal_number(x));
   }
 
-  function contains_only_numbers(tree) {
+  function contains_only_numbers(tree, {include_number_symbols=false}={}) {
     if (typeof tree === "string") {
+      if(include_number_symbols) {
+        if(tree === "e" && math$19.define_e) {
+          return true;
+        }
+        if(tree === "pi" && math$19.define_pi) {
+          return true;
+        }
+      }
       return false;
     }
     if (typeof tree === "number") {
@@ -70996,10 +71004,10 @@
     if (!Array.isArray(tree)) {
       return false;
     }
-    return tree.slice(1).every(x => contains_only_numbers(x));
+    return tree.slice(1).every(x => contains_only_numbers(x, {include_number_symbols: include_number_symbols}));
   }
 
-  function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering) {
+  function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering, evaluate_functions) {
     // assume that tree has been sorted to default order (while flattened)
     // and then unflattened_right
     // returns unflattened tree
@@ -71010,45 +71018,48 @@
     if (typeof tree === 'number')
       return tree;
 
-    var c = evaluate_to_constant(tree);
+    if(evaluate_functions || contains_only_numbers(tree, {include_number_symbols: true})) {
 
-    if (c !== null) {
-      if (typeof c === 'number') {
-        if (Number.isFinite(c)) {
-          if (max_digits === Infinity)
-            return c;
-          if (Number.isInteger(c)) {
-            return c;
-          }
+      var c = evaluate_to_constant(tree);
 
-          let c_minround = evalf(c, 14);
-          let c_round = evalf(c, max_digits);
-          if (max_digits === 0) {
-            // interpret 0 max_digits as only accepting integers
-            // (even though positive max_digits is number of significant digits)
-            c_round = math$19.round(c);
-          }
-          if (c_round === c_minround) {
-            return c;
-          }
+      if (c !== null) {
+        if (typeof c === 'number') {
+          if (Number.isFinite(c)) {
+            if (max_digits === Infinity)
+              return c;
+            if (Number.isInteger(c)) {
+              return c;
+            }
 
-          // if expression already contained a decimal,
-          // and contains only numbers (no constants like pi)
-          // return the number
-          if (contains_decimal_number(tree) && contains_only_numbers(tree)) {
-            return c;
-          }
+            let c_minround = evalf(c, 14);
+            let c_round = evalf(c, max_digits);
+            if (max_digits === 0) {
+              // interpret 0 max_digits as only accepting integers
+              // (even though positive max_digits is number of significant digits)
+              c_round = math$19.round(c);
+            }
+            if (c_round === c_minround) {
+              return c;
+            }
 
-          let c_frac = math$19.fraction(c);
-          let c_frac_d_round = evalf(c_frac.d, 3);
+            // if expression already contained a decimal,
+            // and contains only numbers (no constants like pi)
+            // return the number
+            if (contains_decimal_number(tree) && contains_only_numbers(tree)) {
+              return c;
+            }
 
-          if (c_frac.n < 1E4 || (c_frac_d_round === c_frac.d)) {
-            let c_reconstruct = evalf(c_frac.s * c_frac.n / c_frac.d, 14);
-            if (c_reconstruct === c_minround) {
-              if (c_frac.d === 1) {
-                return c_frac.s * c_frac.n;
-              } else {
-                return ['/', c_frac.s * c_frac.n, c_frac.d];
+            let c_frac = math$19.fraction(c);
+            let c_frac_d_round = evalf(c_frac.d, 3);
+
+            if (c_frac.n < 1E4 || (c_frac_d_round === c_frac.d)) {
+              let c_reconstruct = evalf(c_frac.s * c_frac.n / c_frac.d, 14);
+              if (c_reconstruct === c_minround) {
+                if (c_frac.d === 1) {
+                  return c_frac.s * c_frac.n;
+                } else {
+                  return ['/', c_frac.s * c_frac.n, c_frac.d];
+                }
               }
             }
           }
@@ -71061,7 +71072,7 @@
 
     var operator = tree[0];
     var operands = tree.slice(1).map(v => evaluate_numbers_sub(
-      v, assumptions, max_digits, skip_ordering));
+      v, assumptions, max_digits, skip_ordering, evaluate_functions));
 
     if (operator === '+') {
       let left = operands[0];
@@ -71305,7 +71316,7 @@
   }
 
 
-  function evaluate_numbers(expr_or_tree, { assumptions, max_digits, skip_ordering = false } = {}) {
+  function evaluate_numbers(expr_or_tree, { assumptions, max_digits, skip_ordering = false, evaluate_functions = false } = {}) {
 
     if (max_digits === undefined ||
       !(Number.isInteger(max_digits) || max_digits === Infinity))
@@ -71323,14 +71334,14 @@
     if (skip_ordering) {
       tree = unflattenRight(flatten(tree));
       result = evaluate_numbers_sub(
-        tree, assumptions, max_digits, skip_ordering);
+        tree, assumptions, max_digits, skip_ordering, evaluate_functions);
     } else {
       tree = unflattenRight(default_order(flatten(tree)));
       result = default_order(evaluate_numbers_sub(
-        tree, assumptions, max_digits, skip_ordering));
+        tree, assumptions, max_digits, skip_ordering, evaluate_functions));
       // TODO: determine how often have to repeat
       result = default_order(evaluate_numbers_sub(
-        unflattenRight(result), assumptions, max_digits, skip_ordering));
+        unflattenRight(result), assumptions, max_digits, skip_ordering, evaluate_functions));
     }
 
     return flatten(result);
@@ -71372,6 +71383,8 @@
       && expr_or_tree.context.get_assumptions !== undefined)
       assumptions = expr_or_tree.context.get_assumptions(
         [expr_or_tree.variables()]);
+
+    tree = evaluate_numbers(tree, { assumptions: assumptions, max_digits: max_digits, evaluate_functions: true });
 
     var transformations = [];
 

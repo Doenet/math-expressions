@@ -117,25 +117,49 @@ describe("evaluate_numbers", function () {
 
   it("to constant", function () {
 
-    expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual('x');
+    expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual(
+        ["+", ["*", "x", ["apply", "log", "e"]], ["*", "y", ["apply", "log", 1]]]
+    );
+    expect(me.from("log(e)x+log(1)y").evaluate_numbers({evaluate_functions: true}).tree).toEqual('x');
 
     expect(me.from("cos(0)x+sin(pi/2)y").evaluate_numbers().tree).toEqual(
-        ['+', 'x', 'y']);
+        ["+", ["*", "x", ["apply", "cos", 0]], ["*", "y", ["apply", "sin", ["/", "pi", 2]]]]
+    );
+
+    expect(me.from("cos(0)x+sin(pi/2)y").evaluate_numbers({evaluate_functions: true}).tree).toEqual(
+        ['+', 'x', 'y']
+    );
+
+    expect(me.from("log(0.5/0.3)").evaluate_numbers({max_digits: Infinity}).tree).toEqual(
+        ["apply", "log", 5/3 ]
+    );
+
+    expect(me.from("log(0.5/0.3)").evaluate_numbers({max_digits: Infinity, evaluate_functions: true}).tree).toEqual(
+        me.math.log(5/3)
+    );
+
   });
 
   it("to decimals", function () {
 
     expect(me.fromText('pi').evaluate_numbers().tree).toEqual('pi');
+    expect(me.fromText('pi').evaluate_numbers({max_digits: Infinity}).tree).toBeCloseTo(Math.PI);
     expect(me.fromText('0.5 pi').evaluate_numbers().tree).toEqual(['*', 0.5, 'pi']);
+    expect(me.fromText('0.5 pi').evaluate_numbers({max_digits: Infinity}).tree).toBeCloseTo(0.5*Math.PI);
     expect(me.fromText('pi/2').evaluate_numbers().tree).toEqual(['/', 'pi', 2]);
+    expect(me.fromText('pi/2').evaluate_numbers({max_digits: Infinity}).tree).toBeCloseTo(0.5*Math.PI);
     expect(me.fromText('0.5 7').evaluate_numbers().tree).toEqual(3.5);
 
     expect(me.fromAst(1/3).evaluate_numbers().tree).toBeCloseTo(1/3);
     expect(me.fromAst(0.5).evaluate_numbers().tree).toBeCloseTo(1/2);
     expect(me.fromAst(['+', 0.5, 1/3]).evaluate_numbers().tree).toBeCloseTo(0.5+1/3);
     expect(me.fromText("1/3").evaluate_numbers().tree).toEqual(["/", 1, 3]);
+    expect(me.fromText("1/3").evaluate_numbers({max_digits: Infinity}).tree).toBeCloseTo(1/3);
     expect(me.fromText("1/2").evaluate_numbers().tree).toEqual(["/", 1, 2]);
+    expect(me.fromText("1/2").evaluate_numbers({max_digits: 1}).tree).toEqual(1/2);
+    expect(me.fromText("1/2+1/2").evaluate_numbers().tree).toEqual(1);
     expect(me.fromText("1/2+1/3").evaluate_numbers().tree).toEqual(["/", 5, 6]);
+    expect(me.fromText("1/2+1/3").evaluate_numbers({max_digits: Infinity}).tree).toBeCloseTo(5/6);
 
   })
 
