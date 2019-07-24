@@ -163,6 +163,29 @@ describe("evaluate_numbers", function () {
 
   })
 
+
+  it("set small zero", function () {
+
+    expect(me.fromText('10x+5E-15').evaluate_numbers({set_small_zero: true }).tree).toEqual(['*', 10, 'x']);
+    expect(me.fromText('10x+5E-15').evaluate_numbers().tree).toEqual(
+        ['+', ['*', 10, 'x'], 5E-15]);
+    expect(me.fromText('10x+5E-15').evaluate_numbers({set_small_zero: 2E-15 }).tree).toEqual(
+        ['+', ['*', 10, 'x'], 5E-15]);
+    expect(me.fromText('10x+5E-15').evaluate_numbers({set_small_zero: 1E-13 }).tree).toEqual(['*', 10, 'x']);
+    let tree = me.fromText('0.0001^4x').evaluate_numbers().tree;
+    expect(tree.length).toEqual(3);
+    expect(tree[0]).toEqual('*');
+    expect(tree[1]).toBeCloseTo(1E-16);
+    expect(tree[2]).toEqual('x');
+    expect(me.fromText('0.0001^4x').evaluate_numbers({set_small_zero: true }).tree).toEqual(0);
+
+    expect(me.fromText('sin(pi)x').evaluate_numbers(
+        {evaluate_functions: true, max_digits: Infinity, set_small_zero: true}
+    ).tree).toEqual(0);
+
+  })
+
+
 });
 
 describe("evaluate_to_constant", function () {

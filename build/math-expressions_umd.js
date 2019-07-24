@@ -70986,13 +70986,13 @@
     return tree.slice(1).some(x => contains_decimal_number(x));
   }
 
-  function contains_only_numbers(tree, {include_number_symbols=false}={}) {
+  function contains_only_numbers(tree, { include_number_symbols = false } = {}) {
     if (typeof tree === "string") {
-      if(include_number_symbols) {
-        if(tree === "e" && math$19.define_e) {
+      if (include_number_symbols) {
+        if (tree === "e" && math$19.define_e) {
           return true;
         }
-        if(tree === "pi" && math$19.define_pi) {
+        if (tree === "pi" && math$19.define_pi) {
           return true;
         }
       }
@@ -71004,10 +71004,10 @@
     if (!Array.isArray(tree)) {
       return false;
     }
-    return tree.slice(1).every(x => contains_only_numbers(x, {include_number_symbols: include_number_symbols}));
+    return tree.slice(1).every(x => contains_only_numbers(x, { include_number_symbols: include_number_symbols }));
   }
 
-  function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering, evaluate_functions) {
+  function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero) {
     // assume that tree has been sorted to default order (while flattened)
     // and then unflattened_right
     // returns unflattened tree
@@ -71015,16 +71015,23 @@
     if (tree === undefined)
       return tree;
 
-    if (typeof tree === 'number')
+    if (typeof tree === 'number') {
+      if(set_small_zero > 0 && math$19.abs(tree) < set_small_zero) {
+        return 0;
+      }
       return tree;
+    }
 
-    if(evaluate_functions || contains_only_numbers(tree, {include_number_symbols: true})) {
+    if (evaluate_functions || contains_only_numbers(tree, { include_number_symbols: true })) {
 
       var c = evaluate_to_constant(tree);
 
       if (c !== null) {
         if (typeof c === 'number') {
           if (Number.isFinite(c)) {
+            if(set_small_zero > 0 && math$19.abs(c) < set_small_zero) {
+              return 0;
+            }
             if (max_digits === Infinity)
               return c;
             if (Number.isInteger(c)) {
@@ -71072,7 +71079,7 @@
 
     var operator = tree[0];
     var operands = tree.slice(1).map(v => evaluate_numbers_sub(
-      v, assumptions, max_digits, skip_ordering, evaluate_functions));
+      v, assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero));
 
     if (operator === '+') {
       let left = operands[0];
@@ -71316,11 +71323,19 @@
   }
 
 
-  function evaluate_numbers(expr_or_tree, { assumptions, max_digits, skip_ordering = false, evaluate_functions = false } = {}) {
+  function evaluate_numbers(expr_or_tree, {
+    assumptions, max_digits, skip_ordering = false,
+    evaluate_functions = false,
+    set_small_zero = 0,
+  } = {}) {
 
     if (max_digits === undefined ||
       !(Number.isInteger(max_digits) || max_digits === Infinity))
       max_digits = 0;
+
+    if (set_small_zero === true) {
+      set_small_zero = 1E-14;
+    }
 
     var tree = get_tree(expr_or_tree);
 
@@ -71334,14 +71349,14 @@
     if (skip_ordering) {
       tree = unflattenRight(flatten(tree));
       result = evaluate_numbers_sub(
-        tree, assumptions, max_digits, skip_ordering, evaluate_functions);
+        tree, assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero);
     } else {
       tree = unflattenRight(default_order(flatten(tree)));
       result = default_order(evaluate_numbers_sub(
-        tree, assumptions, max_digits, skip_ordering, evaluate_functions));
+        tree, assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero));
       // TODO: determine how often have to repeat
       result = default_order(evaluate_numbers_sub(
-        unflattenRight(result), assumptions, max_digits, skip_ordering, evaluate_functions));
+        unflattenRight(result), assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero));
     }
 
     return flatten(result);
@@ -71612,7 +71627,7 @@
     function simplify_ratios_sub(tree, negated) {
 
       if (!Array.isArray(tree)) {
-        if(negated) {
+        if (negated) {
           return ['-', tree];
         } else {
           return tree;
@@ -71620,13 +71635,13 @@
       }
 
       var operator = tree[0];
-      if(operator === "-") {
-        return simplify_ratios_sub(tree[1], negated=true);
+      if (operator === "-") {
+        return simplify_ratios_sub(tree[1], negated = true);
       }
       var operands = tree.slice(1).map(v => simplify_ratios_sub(v));
 
       if (operator !== '/') {
-        if(negated) {
+        if (negated) {
           return ['-', [operator, ...operands]]
         } else {
           return [operator, ...operands];
@@ -71648,7 +71663,7 @@
         numer_factors = [numer];
       var result_n = remove_negative_factors(numer_factors);
       numer_factors = result_n["factors"];
-      if(negated) {
+      if (negated) {
         result_n["sign_change"] *= -1;
       }
 
