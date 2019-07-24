@@ -71019,6 +71019,9 @@
       if(set_small_zero > 0 && math$19.abs(tree) < set_small_zero) {
         return 0;
       }
+      if(tree === 0) {
+        return 0;  // so that -0 returns 0
+      }
       return tree;
     }
 
@@ -71035,6 +71038,9 @@
             if (max_digits === Infinity)
               return c;
             if (Number.isInteger(c)) {
+              if(c === 0) {
+                return 0;
+              }
               return c;
             }
 

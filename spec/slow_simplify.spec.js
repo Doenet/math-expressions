@@ -186,6 +186,13 @@ describe("evaluate_numbers", function () {
   })
 
 
+  it("negative zero becomes zero", function () {
+
+    expect(Object.is(me.fromText('-0').tree,0)).toBeFalsy();
+    expect(Object.is(me.fromText('-0').evaluate_numbers().tree,0)).toBeTruthy();
+
+  })
+
 });
 
 describe("evaluate_to_constant", function () {
