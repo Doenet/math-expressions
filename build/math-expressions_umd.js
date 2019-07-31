@@ -76481,7 +76481,7 @@
     });
   };
 
-  const equals$4 = function(expr, other, { min_elements_match=3 } = {} ) {
+  const equals$$1 = function(expr, other, { min_elements_match=3, match_partial = false } = {} ) {
 
     // expr must be a discrete infinite set
     if(!is_discrete_infinite_set(expr))
@@ -76503,9 +76503,32 @@
       else
         assumptions = clean_assumptions(['and'].concat(assumptions));
 
-      return contained_in(expr.tree, other.tree, assumptions) &&
-        contained_in(other.tree, expr.tree, assumptions);
+      if(match_partial) {
+        let match1 = contained_in(expr.tree, other.tree, assumptions, match_partial);
+        if(match1 === false) {
+          return 0;
+        }
+        let match2 = contained_in(other.tree, expr.tree, assumptions, match_partial);
+        if(match2 === false) {
+          return 0;
+        }
 
+        if(match1 === true) {
+          if(match2 === true) {
+            return 1;
+          } else {
+            return match2;
+          }
+        } else if(match2 === true) {
+          return match1;
+        } else {
+          return Math.min(match1, match2);
+        }
+
+      } else {
+        return contained_in(expr.tree, other.tree, assumptions, match_partial) &&
+          contained_in(other.tree, expr.tree, assumptions, match_partial);
+      }
     }
     else {
       // check if other is a list than ends in 'ldots'
@@ -76561,13 +76584,36 @@
   }
 
 
-  function contained_in(tree, i_set, assumptions) {
+  function contained_in(tree, i_set, assumptions, match_partial) {
     // true if tree is contained in the discrete infinite set i_set
     // tree is either a discrete infinite set
     // or a tuple of form [offset, period, min_index, max_index]
 
-    if(tree[0] === 'discrete_infinite_set')
-      return tree.slice(1).every(v => contained_in(v, i_set, assumptions));
+    if(tree[0] === 'discrete_infinite_set') {
+      if(match_partial) {
+        let num_matches = 0;
+        for(let piece of tree.slice(1)){
+          let match = contained_in(piece, i_set, assumptions, match_partial);
+          if(match === true) {
+            num_matches++;
+          } else if(match !== false) {
+            num_matches += match;
+          }
+        }
+
+        let num_pieces = tree.length - 1;
+
+        if(num_matches === num_pieces) {
+          return true;
+        }else if(num_matches === 0) {
+          return false;
+        }else {
+          return num_matches/num_pieces;
+        }
+      } else {
+        return tree.slice(1).every(v => contained_in(v, i_set, assumptions));
+      }
+    }
 
     // tree is a tuple of the form [offset, period, min_index, max_index]
 
@@ -76591,7 +76637,7 @@
     var tuples = i_set.slice(1);
 
     // data will be array of form [p, q, offset, period]
-    // where offset are period are normalized by period0
+    // where offset and period are normalized by period0
     // and p/q is fraction form of period
 
     var data = [];
@@ -76653,6 +76699,8 @@
 
     var all_ps = [...new Set(data.map(v => v[0]))];
 
+    let max_fraction_covered = 0;
+
     for(let base_p of all_ps) {
       // find all ps where base_p is a multiple
       let options = data.map(function (v,i) {
@@ -76707,6 +76755,24 @@
           }
         }
       }
+
+      if(match_partial) {
+        let fraction_covered = 0;
+        for(let ind=0; ind < base_p; ind++) {
+          if(covered[ind]) {
+            fraction_covered++;
+          }
+        }
+        fraction_covered /= base_p;
+
+        if(fraction_covered > max_fraction_covered) {
+          max_fraction_covered = fraction_covered;
+        }
+      }
+    }
+
+    if(match_partial && max_fraction_covered > 0) {
+      return max_fraction_covered;
     }
 
     return false;
@@ -76782,7 +76848,7 @@
       return true;
       // } else if (expr.equalsViaReal(other)) {
       //   	return true;
-    } else if (equals$4(expr, other)) {
+    } else if (equals$$1(expr, other)) {
       return true;
     } else {
       return false;
@@ -76793,7 +76859,8 @@
     equals: equals$5,
     equalsViaComplex: equals$1,
     equalsViaReal: equals$2,
-    equalsViaSyntax: equals$3
+    equalsViaSyntax: equals$3,
+    equalsDiscreteInfinite: equals$$1
   });
 
   const integrateNumerically = function(expr, x,a,b) {

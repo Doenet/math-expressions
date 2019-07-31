@@ -1,4 +1,5 @@
 import me from '../lib/math-expressions';
+import { equals as discreteEquals } from '../lib/expression/equality/discrete_infinite_set';
 
 describe("discrete infinite", function () {
 
@@ -31,8 +32,6 @@ describe("discrete infinite", function () {
 
   });
 
-
-
   test("overcounting", function () {
 
     var set1 = me.create_discrete_infinite_set(
@@ -44,6 +43,61 @@ describe("discrete infinite", function () {
     set2 = me.create_discrete_infinite_set(
       { offsets: me.fromText("1, 1, 6, 11, 16, 22"), periods: me.fromText("10")});
     expect(set1.equals(set2)).toBeFalsy();
+  });
+  
+
+  test("match partial", function () {
+
+    var set1 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("1"), periods: me.fromText("5")});
+    var set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("1, 16"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(1);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("1, 15"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.5);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("1, 16, 17"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toBeCloseTo(2/3);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0);
+
+    
+    set1 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("1, 2"), periods: me.fromText("5")});
+ 
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.25);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 17"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.5);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 16, 17"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.75);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 16, 17, 18"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.6);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 16"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.5);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 16, 18"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.5);
+
+    set2 = me.create_discrete_infinite_set(
+      { offsets: me.fromText("2, 15, 16, 18, 19"), periods: me.fromText("10")});
+    expect(discreteEquals(set1, set2, {match_partial: true})).toEqual(0.4);
+
   });
   
   test("variables", function () {
