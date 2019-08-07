@@ -81947,7 +81947,7 @@
     math: math$19,
 
     reviver: function (key, value) {
-      if (value.objectType === "math-expression" && value.tree !== undefined) {
+      if (value && value.objectType === "math-expression" && value.tree !== undefined) {
         let expr = Context.fromAst(value.tree);
         if (value.assumptions !== undefined) {
           expr.assumptions = value.assumptions;
