@@ -107,6 +107,39 @@ const unflattenRight = function (expr) {
   return [operator].concat(operands);
 };
 
+const unflattenLeft = function (expr) {
+  // unflatten tree with associate operator op
+  // into a left heavy tree;
+
+  var tree = get_tree(expr);
+
+  if (!Array.isArray(tree))
+    return tree;
+
+  var operator = tree[0];
+  var operands = tree.slice(1);
+
+  operands = operands.map(function (v, i) {
+    return unflattenLeft(v);
+  });
+
+  if (operands.length > 2 && is_associative[operator]) {
+    var result = [operator, undefined, operands[operands.length-1]];
+    var next = result;
+
+    for (var i = operands.length - 2; i > 0; i--) {
+      next[1] = [operator, undefined, operands[i]];
+      next = next[1];
+    }
+
+    next[1] = operands[0];
+
+    return result;
+  }
+
+  return [operator].concat(operands);
+};
+
 const allChildren = function (tree) {
   // find all children of operator of tree as though it had been flattened
 
@@ -79651,6 +79684,39 @@ class latexToAst {
   }
 }
 
+class latexToGuppy{
+  constructor(){
+   this.latexToAst = new latexToAst();
+   this.astToGuppy = new astToGuppy();
+  }
+
+  convert(latex){
+    return this.astToGuppy.convert(this.latexToAst.convert(latex));
+  }
+}
+
+class latexToMathjs{
+  constructor(){
+   this.latexToAst = new latexToAst();
+   this.astToMathjs = new astToMathjs();
+  }
+
+  convert(latex){
+    return this.astToMathjs.convert(this.latexToAst.convert(latex));
+  }
+}
+
+class latexToText{
+  constructor(){
+   this.latexToAst = new latexToAst();
+   this.astToText = new astToText();
+  }
+
+  convert(latex){
+    return this.astToText.convert(this.latexToAst.convert(latex));
+  }
+}
+
 /*
  * convert math.s tree to AST
  *
@@ -79671,6 +79737,107 @@ class latexToAst {
  * See the GNU General Public License for more details.
  *
  */
+
+
+
+const operators$4 = {
+  "+,add": function(operands) { return ['+'].concat(operands); },
+  "*,multiply": function(operands) { return ['*'].concat(operands); },
+  "/,divide": function(operands) { return ['/', operands[0], operands[1]]; },
+  "-,unaryMinus": function(operands) { return ['-', operands[0]]; },
+  "-,subtract": function(operands) { return ['+', operands[0], ['-', operands[1]]]; },
+  "^,pow": function(operands) { return ['^', operands[0], operands[1]]; },
+  "and,and": function(operands) { return ['and'].concat(operands); },
+  "or,or": function(operands) { return ['or'].concat(operands); },
+  "not,not": function(operands) { return ['not', operands[0]]; },
+  "==,equal": function(operands) { return ['='].concat(operands); },
+  "<,smaller": function(operands) { return ['<', operands[0], operands[1]]; },
+  ">,larger": function(operands) { return ['>', operands[0], operands[1]]; },
+  "<=,smallerEq": function(operands) { return ['le', operands[0], operands[1]]; },
+  ">=,largerEq": function(operands) { return ['ge', operands[0], operands[1]]; },
+  "!=,unequal": function(operands) { return ['ne', operands[0], operands[1]]; },
+  "!,factorial": function(operands) { return ['apply', 'factorial', operands[0]];},
+};
+
+class mathjsToAst {
+
+  convert(mathnode){
+    if(mathnode.isConstantNode)
+      return mathnode.value;
+    if(mathnode.isSymbolNode)
+      return mathnode.name;
+
+    if(mathnode.isOperatorNode) {
+      var key = [mathnode.op, mathnode.fn].join(',');
+      if(key in operators$4)
+	return operators$4[key](
+	  mathnode.args.map( function(v,i) { return this.convert(v); }.bind(this) ) );
+      else
+	throw Error("Unsupported operator: " + mathnode.op
+		    + ", " + mathnode.fn);
+    }
+
+    if(mathnode.isFunctionNode) {
+      var args = mathnode.args.map(
+	function(v,i) { return this.convert(v); }.bind(this) );
+
+      if( args.length > 1)
+	args = ["tuple"].concat(args);
+      else
+	args = args[0];
+
+      var result = ["apply", mathnode.name];
+      result.push(args);
+      return result;
+
+    }
+    
+    if(mathnode.isArrayNode) {
+      return ["vector"].concat(mathnode.args.map(
+	function(v,i) { return this.convert(v); }.bind(this) ) );
+    }
+    
+    if(mathnode.isParenthesisNode)
+      return this.convert(mathnode.content);
+    
+    throw Error("Unsupported node type: " + mathnode.type);
+
+  }
+  
+}
+
+class mathjsToGuppy{
+  constructor(){
+   this.mathjsToAst = new mathjsToAst();
+   this.astToGuppy = new astToGuppy();
+  }
+
+  convert(mathjs){
+    return this.astToGuppy.convert(this.mathjsToAst.convert(mathjs));
+  }
+}
+
+class mathjsToLatex{
+  constructor(){
+   this.mathjsToAst = new mathjsToAst();
+   this.astToLatex = new astToLatex();
+  }
+
+  convert(mathjs){
+    return this.astToLatex.convert(this.mathjsToAst.convert(mathjs));
+  }
+}
+
+class mathjsToText{
+  constructor(){
+   this.mathjsToAst = new mathjsToAst();
+   this.astToText = new astToText();
+  }
+
+  convert(mathjs){
+    return this.astToText.convert(this.mathjsToAst.convert(mathjs));
+  }
+}
 
 /**
  * Helpers.
@@ -81771,10 +81938,107 @@ class mmlToAst{
   }
 }
 
+class mmlToGuppy{
+  constructor(){
+   this.mmlToLatex = new mmlToLatex();
+   this.latexToAst = new latexToAst();
+   this.astToGuppy = new astToGuppy();
+  }
+
+  convert(mml){
+    return this.astToGuppy.convert(this.latexToAst.convert(this.mmlToLatex.convert(mml)));
+  }
+}
+
+class mmlToMathjs{
+  constructor(){
+   this.mmlToLatex = new mmlToLatex();
+   this.latexToAst = new latexToAst();
+   this.astToMathjs = new astToMathjs();
+  }
+
+  convert(mml){
+    return this.astToMathjs.convert(this.latexToAst.convert(this.mmlToLatex.convert(mml)));
+  }
+}
+
+class mmlToText{
+  constructor(){
+   this.mmlToLatex = new mmlToLatex();
+   this.latexToAst = new latexToAst();
+   this.astToText = new astToText();
+  }
+
+  convert(mml){
+    return this.astToText.convert(this.latexToAst.convert(this.mmlToLatex.convert(mml)));
+  }
+}
+
+class textToGuppy{
+  constructor(){
+   this.textToAst = new textToAst();
+   this.astToGuppy = new astToGuppy();
+  }
+
+  convert(text){
+    return this.astToGuppy.convert(this.textToAst.convert(text));
+  }
+}
+
+class textToLatex{
+  constructor(){
+   this.textToAst = new textToAst();
+   this.astToLatex = new astToLatex();
+  }
+
+  convert(text){
+    return this.astToLatex.convert(this.textToAst.convert(text));
+  }
+}
+
+class textToMathjs{
+  constructor(){
+   this.textToAst = new textToAst();
+   this.astToMathjs = new astToMathjs();
+  }
+
+  convert(text){
+    return this.astToMathjs.convert(this.textToAst.convert(text));
+  }
+}
+
+
+
+var converters = /*#__PURE__*/Object.freeze({
+  astToLatexObj: astToLatex,
+  astToTextObj: astToText,
+  astToGuppyObj: astToGuppy,
+  astToMathjsObj: astToMathjs,
+  latexToAstObj: latexToAst,
+  latexToGuppyObj: latexToGuppy,
+  latexToMathjsObj: latexToMathjs,
+  latexToTextObj: latexToText,
+  mathjsToAstObj: mathjsToAst,
+  mathjsToGuppyObj: mathjsToGuppy,
+  mathjsToLatexObj: mathjsToLatex,
+  mathjsToTextObj: mathjsToText,
+  mmlToAstObj: mmlToAst,
+  mmlToGuppyObj: mmlToGuppy,
+  mmlToLatexObj: mmlToLatex,
+  mmlToMathjsObj: mmlToMathjs,
+  mmlToTextObj: mmlToText,
+  textToAstObj: textToAst,
+  textToGuppyObj: textToGuppy,
+  textToLatexObj: textToLatex,
+  textToMathjsObj: textToMathjs,
+  astToGLSL: astToGLSL
+});
+
 var textToAst$4 = new textToAst();
 var latexToAst$1 = new latexToAst();
 var mmlToAst$1 = new mmlToAst();
 
+var utils$2 = { match, flatten, unflattenLeft, unflattenRight };
 
 function Expression(ast, context) {
   this.tree = flatten(ast);
@@ -81909,6 +82173,8 @@ var Context = {
   fromTex: parseLatex,
   fromMml: parseMml,
   parse_tex: parseLatex,
+  converters,
+  utils: utils$2,
   fromAst: function (ast) {
     return new Expression(ast, this);
   },
