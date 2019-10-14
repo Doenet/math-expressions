@@ -75185,46 +75185,2098 @@ var normalization = /*#__PURE__*/Object.freeze({
   strings_to_subscripts: strings_to_subscripts
 });
 
-const equalUpToSign = function(expression, correct) {
-    var root = expression.tree;
-    var stack = [[root]];
-    var pointer = 0;
-    var tree;
-    var i;
+// check for equality by randomly sampling
 
-    /* Unfortunately the root is handled separately */
-    expression.tree = ['-', root];
-    var equals = expression.equals(correct);
-    expression.tree = root;
+function generate_random_integer(minvalue, maxvalue, rng) {
+  minvalue = math$19.ceil(minvalue);
+  maxvalue = math$19.floor(maxvalue);
+  return math$19.floor(rng() * (maxvalue - minvalue + 1)) + minvalue;
+}
 
-    if (equals) return true;
 
-    while (tree = stack[pointer++]) {
-	tree = tree[0];
 
-	if (typeof tree === 'number') {
-	    continue;
-	}
+const equals = function ({ expr, other, randomBindings,
+  expr_context, other_context,
+  tolerance = 1E-12, allowed_error_in_numbers = 0,
+  include_error_in_number_exponents = false,
+  allowed_error_is_absolute = false,
+  rng,
+}) {
 
-	if (typeof tree === 'string') {
-	    continue;
-	}
+  if (Array.isArray(expr.tree) && Array.isArray(other.tree)) {
 
-	for (i = 1; i < tree.length; i++) {
-            stack.push([tree[i]]);
-	    tree[i] = ['-', tree[i]];
-	    equals = expression.equals(correct);
-	    tree[i] = tree[i][1];
+    let expr_operator = expr.tree[0];
+    let expr_operands = expr.tree.slice(1);
+    let other_operator = other.tree[0];
+    let other_operands = other.tree.slice(1);
 
-	    if (equals) return true;
-	}
+    if (expr_operator === 'tuple' || expr_operator === 'vector'
+      || expr_operator === 'list' || expr_operator === 'array'
+      || expr_operator === 'matrix' || expr_operator === 'interval'
+    ) {
+
+      if (other_operator !== expr_operator)
+        return false;
+
+      if (other_operands.length !== expr_operands.length)
+        return false;
+
+      for (let i = 0; i < expr_operands.length; i++) {
+        if (!equals({
+          expr: expr_context.fromAst(expr_operands[i]),
+          other: other_context.fromAst(other_operands[i]),
+          randomBindings: randomBindings,
+          expr_context: expr_context,
+          other_context: other_context,
+          tolerance: tolerance,
+          allowed_error_in_numbers: allowed_error_in_numbers,
+          include_error_in_number_exponents: include_error_in_number_exponents,
+          allowed_error_is_absolute: allowed_error_is_absolute,
+          rng,
+        }))
+          return false;
+      }
+
+      return true;  // each component is equal
     }
 
+    // check if a relation with two operands
+    if (expr_operands.length === 2 && ["=", '>', '<', 'ge', 'le'].includes(expr_operator)) {
+      if (other_operands.length !== 2) {
+        return false;
+      }
+      //normalize operator
+      if (expr_operator === ">") {
+        expr_operator = "<";
+        expr_operands = [expr_operands[1], expr_operands[0]];
+      } else if (expr_operator === "ge") {
+        expr_operator = "le";
+        expr_operands = [expr_operands[1], expr_operands[0]];
+      }
+      if (other_operator === ">") {
+        other_operator = "<";
+        other_operands = [other_operands[1], other_operands[0]];
+      } else if (other_operator === "ge") {
+        other_operator = "le";
+        other_operands = [other_operands[1], other_operands[0]];
+      }
+
+      if (expr_operator !== other_operator) {
+        return false;
+      }
+
+      // put in standard form
+      let expr_rhs = ['+', expr_operands[0], ['-', expr_operands[1]]];
+      let other_rhs = ['+', other_operands[0], ['-', other_operands[1]]];
+      let require_positive_proportion = (expr_operator !== "=");
+
+      return component_equals({
+        expr: expr_context.fromAst(expr_rhs),
+        other: other_context.fromAst(other_rhs),
+        randomBindings: randomBindings,
+        expr_context: expr_context,
+        other_context: other_context,
+        allow_proportional: true,
+        require_positive_proportion: require_positive_proportion,
+        tolerance: tolerance,
+        allowed_error_in_numbers: allowed_error_in_numbers,
+        include_error_in_number_exponents: include_error_in_number_exponents,
+        allowed_error_is_absolute: allowed_error_is_absolute,
+        rng,
+      });
+
+    }
+
+  }
+
+  // if not special case, use standard numerical equality
+  return component_equals({
+    expr: expr,
+    other: other,
+    randomBindings: randomBindings,
+    expr_context: expr_context,
+    other_context: other_context,
+    tolerance: tolerance,
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    allowed_error_is_absolute: allowed_error_is_absolute,
+    rng,
+  });
+
+};
+
+
+const component_equals = function ({ expr, other, randomBindings,
+  expr_context, other_context,
+  allow_proportional = false, require_positive_proportion = false,
+  tolerance, allowed_error_in_numbers, include_error_in_number_exponents,
+  allowed_error_is_absolute,
+  rng
+}) {
+
+  var max_value = Number.MAX_VALUE * 1E-20;
+  var min_nonzero_value = 0;//1E-100; //Number.MIN_VALUE & 1E20;
+
+  var epsilon = tolerance;
+  var minimum_matches = 10;
+  var number_tries = 100;
+  // if (allowed_error_in_numbers > 0) {
+  //   minimum_matches = 400;
+  //   number_tries = 4000;
+  // }
+
+  // normalize function names, so in particular, e^x becomes exp(x)
+  expr = expr.normalize_function_names();
+  other = other.normalize_function_names();
+
+  // convert subscripts to strings so that variables like x_t are considered single variable
+  expr = expr.subscripts_to_strings();
+  other = other.subscripts_to_strings();
+
+  // Get set of variables mentioned in at least one of the two expressions
+  var variables = [expr.variables(), other.variables()];
+  variables = variables.reduce(function (a, b) { return a.concat(b); });
+  variables = variables.reduce(function (p, c) {
+    if (p.indexOf(c) < 0) p.push(c);
+    return p;
+  }, []);
+
+  // pi, e, and i shouldn't be treated as a variable
+  // for the purposes of equality if they are defined as having values
+  if (math$19.define_pi) {
+    variables = variables.filter(function (a) {
+      return (a !== "pi");
+    });
+  }
+  if (math$19.define_i) {
+    variables = variables.filter(function (a) {
+      return (a !== "i");
+    });
+  }
+  if (math$19.define_e) {
+    variables = variables.filter(function (a) {
+      return (a !== "e");
+    });
+  }
+
+  // determine if any of the variables are integers
+  // consider integer if is integer in either expressions' assumptions
+  var integer_variables = [];
+  for (let i = 0; i < variables.length; i++)
+    if (is_integer_ast(variables[i], expr_context.assumptions)
+      || is_integer_ast(variables[i], other_context.assumptions))
+      integer_variables.push(variables[i]);
+
+  // determine if any of the variables are functions
+  var functions = [expr.functions(), other.functions()];
+  functions = functions.reduce(function (a, b) { return a.concat(b); });
+  functions = functions.reduce(function (p, c) {
+    if (p.indexOf(c) < 0) p.push(c);
+    return p;
+  }, []);
+  functions = functions.filter(function (a) {
+    return a.length == 1;
+  });
+
+  try {
+    var expr_f = expr.f();
+    var other_f = other.f();
+  }
+  catch (e) {
+    // Can't convert to mathjs to create function
+    // just check if equal via syntax
+    return expr.equalsViaSyntax(other)
+  }
+
+  let expr_with_params, parameters_for_numbers;
+  let tolerance_function;
+
+  if (allowed_error_in_numbers > 0) {
+    let result = replace_numbers_with_parameters({
+      expr: expr,
+      variables: variables,
+      include_exponents: include_error_in_number_exponents,
+    });
+    expr_with_params = expr_context.fromAst(result.expr_with_params);
+    parameters_for_numbers = result.parameters;
+
+    let parameter_list = Object.keys(parameters_for_numbers);
+    if (parameter_list.length > 0) {
+      let derivative_sum = expr_with_params.derivative(parameter_list[0]);
+      if(!allowed_error_is_absolute) {
+        derivative_sum = derivative_sum
+          .multiply(parameters_for_numbers[parameter_list[0]]);
+      }
+      if (parameter_list.length > 1) {
+        for (let par of parameter_list.slice(1)) {
+          let term = expr_with_params.derivative(par);
+          if(!allowed_error_is_absolute) {
+            term = term.multiply(parameters_for_numbers[par]);
+          }
+          derivative_sum = derivative_sum.add(term);
+        }
+      }
+
+      let tolerance_expression = derivative_sum.multiply(allowed_error_in_numbers);
+
+      try {
+        tolerance_function = tolerance_expression.f();
+      } catch (e) {
+        // can't create function out of derivative
+        // so can't compute tolerance that would correspond
+        // to the allowed error in numbers
+
+        // Leave tolerance_function undefined
+
+      }
+
+    }
+
+  }
+
+
+
+  var noninteger_binding_scale = 1;
+
+  var binding_scales = [10, 1, 100, 0.1, 1000, 0.01];
+  var scale_num = 0;
+
+  // Numerical test of equality
+  // If can find a region of the complex plane where the functions are equal
+  // at minimum_matches points, consider the functions equal
+  // unless the functions were always zero, in which case
+  // test at multiple scales to check for underflow
+
+  // In order to account for possible branch cuts,
+  // finding points where the functions are not equal does not lead to the
+  // conclusion that expression are unequal. Instead, to be consider unequal
+  // the functions must be unequal around many different points.
+
+  let num_at_this_scale = 0;
+
+  let always_zero = true;
+
+  let num_finite_unequal = 0;
+
+  for (let i = 0; i < 10 * number_tries; i++) {
+
+    // Look for a location where the magnitudes of both expressions
+    // are below max_value;
+    try {
+      var result = find_equality_region(binding_scales[scale_num], rng);
+    }
+    catch (e) {
+      continue;
+    }
+
+    if (result.always_zero === false) {
+      always_zero = false;
+    }
+
+
+    if (!result.equal && !result.out_of_bounds && !result.always_zero &&
+      result.sufficient_finite_values !== false
+    ) {
+      num_finite_unequal++;
+      if (num_finite_unequal > number_tries) {
+        return false;
+      }
+    }
+
+    if (result.equal) {
+      if (result.always_zero) {
+        if (!always_zero) {
+          // if found always zero this time, but wasn't zero at a different point
+          // don't count as equal
+          continue;
+        }
+        // functions equal but zero
+        // repeat to make sure (changing if continuing to be zero)
+        num_at_this_scale += 1;
+        if (num_at_this_scale > 5) {
+          scale_num += 1;
+          num_at_this_scale = 0;
+        }
+        if (scale_num >= binding_scales.length) {
+          return true;  // were equal and zero at all scales
+        } else
+          continue
+      }
+      else {
+        return true;
+      }
+    }
+  }
+  return false;
+
+
+
+  function find_equality_region(noninteger_scale, rng) {
+
+    // Check if expr and other are equal in a region as follows
+    // 1. Randomly select bindings (use noninteger scale for non-integer variables)
+    //    and evaluate expr and other at that point
+    // 2. If either value is too large, return { out_of_bounds: true }
+    // 3. If values are not equal (within tolerance), return { equal_at_start: false }
+    // 4. If functions are equal, then
+    //    randomly select binding in neighborhood of that point
+    //    (use non_integer scale/100 for non-integer variables)
+    // 5. If find a point where the functions are not equal,
+    //    then return { equal_in_middle: false }
+    // 6. If find that functions are equal at minimum_matches points
+    //    then return { equality: true, always_zero: always_zero }
+    //    where always_zero is true if both functions were always zero
+    //    and is false otherwise
+    // 7. If were unable to find sufficent points where both functions are finite
+    //    return { sufficient_finite_values: false }
+    // If allow_proportional is true, then instead of return non-equal
+    // in step 3, use the ratio of value of these first evaluations to set
+    // the proportion, and base equality on remaining values having the
+    // same proportion
+
+
+
+    var bindings = randomBindings(rng, variables, noninteger_scale);
+
+    // replace any integer variables with integer
+    for (let i = 0; i < integer_variables.length; i++) {
+      bindings[integer_variables[i]] = generate_random_integer(-10, 10, rng);
+    }
+
+    // replace any function variables with a function
+    for (let i = 0; i < functions.length; i++) {
+      var a = generate_random_integer(-10, 10, rng);
+      var b = generate_random_integer(-10, 10, rng);
+      var c = generate_random_integer(-10, 10, rng);
+      bindings[functions[i]] = function (x) {
+        return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a, x), b), x), c);
+      };
+    }
+
+
+    var bindingsIncludingParameters;
+    if (tolerance_function) {
+      bindingsIncludingParameters = Object.assign({}, bindings, parameters_for_numbers);
+    }
+
+    var expr_evaluated = expr_f(bindings);
+    var other_evaluated = other_f(bindings);
+
+    var expr_abs = math$19.abs(expr_evaluated);
+    var other_abs = math$19.abs(other_evaluated);
+
+    if (!(expr_abs < max_value && other_abs < max_value))
+      return { out_of_bounds: true, always_zero: false };
+
+    if (!((expr_abs === 0 || expr_abs > min_nonzero_value) &&
+      (other_abs === 0 || other_abs > min_nonzero_value)))
+      return { out_of_bounds: true, always_zero: false };
+
+    // now that found a finite point,
+    // check to see if expressions are nearly equal.
+
+    var min_mag = Math.min(expr_abs, other_abs);
+    var max_mag = Math.max(expr_abs, other_abs);
+    var proportion = 1;
+
+    let tol = 0;
+    if (tolerance_function) {
+      try {
+        tol = math$19.abs(tolerance_function(bindingsIncludingParameters));
+      } catch (e) {
+        return { equal_at_start: false, always_zero: false };
+      }
+      if (!Number.isFinite(tol)) {
+        return { equal_at_start: false, always_zero: false };
+      }
+    }
+
+    tol += min_mag * epsilon;
+
+    // never allow tol to get over 10% the min_mag
+    tol = Math.min(tol, 0.1 * min_mag);
+
+    if (!(
+      max_mag === 0 ||
+      math$19.abs(math$19.subtract(expr_evaluated, other_evaluated)) < tol
+    )) {
+      if (!allow_proportional) {
+        return { equal_at_start: false, always_zero: false };
+      }
+      // at this point, know both are not zero
+      if (expr_abs === 0 || other_abs === 0) {
+        return { equal_at_start: false, always_zero: false };
+      }
+
+      proportion = math$19.divide(expr_evaluated, other_evaluated);
+      if (require_positive_proportion && !(proportion > 0)) {
+        return { equal_at_start: false, always_zero: false };
+      }
+    }
+
+
+    var always_zero = (max_mag === 0);
+
+    // Look for a region around point
+    var finite_tries = 0;
+    for (let j = 0; j < 100; j++) {
+      var bindings2 = randomBindings(
+        rng, variables, noninteger_binding_scale / 100, bindings);
+
+      // replace any integer variables with integer
+      for (let k = 0; k < integer_variables.length; k++) {
+        bindings2[integer_variables[k]]
+          = generate_random_integer(-10, 10, rng);
+      }
+
+      // replace any function variables with a function
+      for (let i = 0; i < functions.length; i++) {
+        var a = generate_random_integer(-10, 10, rng);
+        var b = generate_random_integer(-10, 10, rng);
+        var c = generate_random_integer(-10, 10, rng);
+        bindings2[functions[i]] = function (x) {
+          return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a, x), b), x), c);
+        };
+      }
+
+      var bindings2IncludingParameters;
+      if (tolerance_function) {
+        bindings2IncludingParameters = Object.assign({}, bindings2, parameters_for_numbers);
+      }
+
+      try {
+        expr_evaluated = expr_f(bindings2);
+        other_evaluated = math$19.multiply(other_f(bindings2), proportion);
+      }
+      catch (e) {
+        continue;
+      }
+      expr_abs = math$19.abs(expr_evaluated);
+      other_abs = math$19.abs(other_evaluated);
+
+      if (expr_abs < max_value && other_abs < max_value) {
+        min_mag = Math.min(expr_abs, other_abs);
+        max_mag = Math.max(expr_abs, other_abs);
+
+        finite_tries++;
+
+        let tol = 0;
+        if (tolerance_function) {
+          try {
+            tol = math$19.abs(tolerance_function(bindings2IncludingParameters));
+          } catch (e) {
+            continue;
+          }
+          if (!Number.isFinite(tol)) {
+            continue;
+          }
+        }
+        tol += min_mag * epsilon;
+
+        // never allow tol to get over 10% the min_mag
+        tol = Math.min(tol, 0.1 * min_mag);
+
+        if (!(
+          max_mag === 0 ||
+          math$19.abs(math$19.subtract(expr_evaluated, other_evaluated)) < tol
+        )) {
+          return { equality_in_middle: false, always_zero: false };
+        }
+
+        always_zero = always_zero && (max_mag === 0);
+
+        if (finite_tries >= minimum_matches) {
+          return { equal: true, always_zero: always_zero }
+        }
+      }
+    }
+    return { sufficient_finite_values: false, always_zero: always_zero };
+  }
+
+};
+
+function replace_numbers_with_parameters({ expr, variables, include_exponents = false }) {
+
+  // find all numbers, including pi and e, if defined as numerical
+  let parameters = {};
+  let lastParNum = 0;
+
+  function get_new_parameter_name() {
+    lastParNum++;
+    let parName = "par" + lastParNum;
+    while (variables.includes(parName)) {
+      lastParNum++;
+      parName = "par" + lastParNum;
+    }
+
+    // found a new parameter name that isn't a variable
+    return parName;
+
+  }
+
+  function replace_number_sub(tree) {
+    if (typeof tree === 'number') {
+      if (tree === 0) {
+        // since will compute bounds for relative error in numbers
+        // can't include zero
+        return tree;
+      } else {
+        let par = get_new_parameter_name();
+        parameters[par] = tree;
+        return par;
+      }
+    }
+
+    if (typeof tree === "string") {
+      if (tree === "pi") {
+        if (math$19.define_pi) {
+          let par = get_new_parameter_name();
+          parameters[par] = math$19.PI;
+          return par;
+        }
+      } else if (tree === "e") {
+        if (math$19.define_e) {
+          let par = get_new_parameter_name();
+          parameters[par] = math$19.e;
+          return par;
+        }
+      }
+      return tree;
+    }
+
+    if (!Array.isArray(tree)) {
+      return tree;
+    }
+
+    let operator = tree[0];
+    let operands = tree.slice(1);
+    if (operator === "^" && !include_exponents) {
+      return [operator, replace_number_sub(operands[0]), operands[1]]
+    } else {
+      return [operator, ...operands.map(replace_number_sub)];
+    }
+
+  }
+
+  // first evaluate numbers to combine then
+  // and turn any numerical constants to floating points
+  expr = expr.evaluate_numbers({ max_digits: Infinity });
+  return {
+    expr_with_params: replace_number_sub(expr.tree),
+    parameters: parameters
+  }
+
+}
+
+var alea = createCommonjsModule(function (module) {
+// A port of an algorithm by Johannes Baagøe <baagoe@baagoe.com>, 2010
+// http://baagoe.com/en/RandomMusings/javascript/
+// https://github.com/nquinlan/better-random-numbers-for-javascript-mirror
+// Original work is under MIT license -
+
+// Copyright (C) 2010 by Johannes Baagøe <baagoe@baagoe.org>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+
+
+(function(global, module, define) {
+
+function Alea(seed) {
+  var me = this, mash = Mash();
+
+  me.next = function() {
+    var t = 2091639 * me.s0 + me.c * 2.3283064365386963e-10; // 2^-32
+    me.s0 = me.s1;
+    me.s1 = me.s2;
+    return me.s2 = t - (me.c = t | 0);
+  };
+
+  // Apply the seeding algorithm from Baagoe.
+  me.c = 1;
+  me.s0 = mash(' ');
+  me.s1 = mash(' ');
+  me.s2 = mash(' ');
+  me.s0 -= mash(seed);
+  if (me.s0 < 0) { me.s0 += 1; }
+  me.s1 -= mash(seed);
+  if (me.s1 < 0) { me.s1 += 1; }
+  me.s2 -= mash(seed);
+  if (me.s2 < 0) { me.s2 += 1; }
+  mash = null;
+}
+
+function copy(f, t) {
+  t.c = f.c;
+  t.s0 = f.s0;
+  t.s1 = f.s1;
+  t.s2 = f.s2;
+  return t;
+}
+
+function impl(seed, opts) {
+  var xg = new Alea(seed),
+      state = opts && opts.state,
+      prng = xg.next;
+  prng.int32 = function() { return (xg.next() * 0x100000000) | 0; };
+  prng.double = function() {
+    return prng() + (prng() * 0x200000 | 0) * 1.1102230246251565e-16; // 2^-53
+  };
+  prng.quick = prng;
+  if (state) {
+    if (typeof(state) == 'object') copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+function Mash() {
+  var n = 0xefc8249d;
+
+  var mash = function(data) {
+    data = String(data);
+    for (var i = 0; i < data.length; i++) {
+      n += data.charCodeAt(i);
+      var h = 0.02519603282416938 * n;
+      n = h >>> 0;
+      h -= n;
+      h *= n;
+      n = h >>> 0;
+      h -= n;
+      n += h * 0x100000000; // 2^32
+    }
+    return (n >>> 0) * 2.3283064365386963e-10; // 2^-32
+  };
+
+  return mash;
+}
+
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.alea = impl;
+}
+
+})(
+  commonjsGlobal,
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var xor128 = createCommonjsModule(function (module) {
+// A Javascript implementaion of the "xor128" prng algorithm by
+// George Marsaglia.  See http://www.jstatsoft.org/v08/i14/paper
+
+(function(global, module, define) {
+
+function XorGen(seed) {
+  var me = this, strseed = '';
+
+  me.x = 0;
+  me.y = 0;
+  me.z = 0;
+  me.w = 0;
+
+  // Set up generator function.
+  me.next = function() {
+    var t = me.x ^ (me.x << 11);
+    me.x = me.y;
+    me.y = me.z;
+    me.z = me.w;
+    return me.w ^= (me.w >>> 19) ^ t ^ (t >>> 8);
+  };
+
+  if (seed === (seed | 0)) {
+    // Integer seed.
+    me.x = seed;
+  } else {
+    // String seed.
+    strseed += seed;
+  }
+
+  // Mix in string seed, then discard an initial batch of 64 values.
+  for (var k = 0; k < strseed.length + 64; k++) {
+    me.x ^= strseed.charCodeAt(k) | 0;
+    me.next();
+  }
+}
+
+function copy(f, t) {
+  t.x = f.x;
+  t.y = f.y;
+  t.z = f.z;
+  t.w = f.w;
+  return t;
+}
+
+function impl(seed, opts) {
+  var xg = new XorGen(seed),
+      state = opts && opts.state,
+      prng = function() { return (xg.next() >>> 0) / 0x100000000; };
+  prng.double = function() {
+    do {
+      var top = xg.next() >>> 11,
+          bot = (xg.next() >>> 0) / 0x100000000,
+          result = (top + bot) / (1 << 21);
+    } while (result === 0);
+    return result;
+  };
+  prng.int32 = xg.next;
+  prng.quick = prng;
+  if (state) {
+    if (typeof(state) == 'object') copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.xor128 = impl;
+}
+
+})(
+  commonjsGlobal,
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var xorwow = createCommonjsModule(function (module) {
+// A Javascript implementaion of the "xorwow" prng algorithm by
+// George Marsaglia.  See http://www.jstatsoft.org/v08/i14/paper
+
+(function(global, module, define) {
+
+function XorGen(seed) {
+  var me = this, strseed = '';
+
+  // Set up generator function.
+  me.next = function() {
+    var t = (me.x ^ (me.x >>> 2));
+    me.x = me.y; me.y = me.z; me.z = me.w; me.w = me.v;
+    return (me.d = (me.d + 362437 | 0)) +
+       (me.v = (me.v ^ (me.v << 4)) ^ (t ^ (t << 1))) | 0;
+  };
+
+  me.x = 0;
+  me.y = 0;
+  me.z = 0;
+  me.w = 0;
+  me.v = 0;
+
+  if (seed === (seed | 0)) {
+    // Integer seed.
+    me.x = seed;
+  } else {
+    // String seed.
+    strseed += seed;
+  }
+
+  // Mix in string seed, then discard an initial batch of 64 values.
+  for (var k = 0; k < strseed.length + 64; k++) {
+    me.x ^= strseed.charCodeAt(k) | 0;
+    if (k == strseed.length) {
+      me.d = me.x << 10 ^ me.x >>> 4;
+    }
+    me.next();
+  }
+}
+
+function copy(f, t) {
+  t.x = f.x;
+  t.y = f.y;
+  t.z = f.z;
+  t.w = f.w;
+  t.v = f.v;
+  t.d = f.d;
+  return t;
+}
+
+function impl(seed, opts) {
+  var xg = new XorGen(seed),
+      state = opts && opts.state,
+      prng = function() { return (xg.next() >>> 0) / 0x100000000; };
+  prng.double = function() {
+    do {
+      var top = xg.next() >>> 11,
+          bot = (xg.next() >>> 0) / 0x100000000,
+          result = (top + bot) / (1 << 21);
+    } while (result === 0);
+    return result;
+  };
+  prng.int32 = xg.next;
+  prng.quick = prng;
+  if (state) {
+    if (typeof(state) == 'object') copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.xorwow = impl;
+}
+
+})(
+  commonjsGlobal,
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var xorshift7 = createCommonjsModule(function (module) {
+// A Javascript implementaion of the "xorshift7" algorithm by
+// François Panneton and Pierre L'ecuyer:
+// "On the Xorgshift Random Number Generators"
+// http://saluc.engr.uconn.edu/refs/crypto/rng/panneton05onthexorshift.pdf
+
+(function(global, module, define) {
+
+function XorGen(seed) {
+  var me = this;
+
+  // Set up generator function.
+  me.next = function() {
+    // Update xor generator.
+    var X = me.x, i = me.i, t, v;
+    t = X[i]; t ^= (t >>> 7); v = t ^ (t << 24);
+    t = X[(i + 1) & 7]; v ^= t ^ (t >>> 10);
+    t = X[(i + 3) & 7]; v ^= t ^ (t >>> 3);
+    t = X[(i + 4) & 7]; v ^= t ^ (t << 7);
+    t = X[(i + 7) & 7]; t = t ^ (t << 13); v ^= t ^ (t << 9);
+    X[i] = v;
+    me.i = (i + 1) & 7;
+    return v;
+  };
+
+  function init(me, seed) {
+    var j, w, X = [];
+
+    if (seed === (seed | 0)) {
+      // Seed state array using a 32-bit integer.
+      w = X[0] = seed;
+    } else {
+      // Seed state using a string.
+      seed = '' + seed;
+      for (j = 0; j < seed.length; ++j) {
+        X[j & 7] = (X[j & 7] << 15) ^
+            (seed.charCodeAt(j) + X[(j + 1) & 7] << 13);
+      }
+    }
+    // Enforce an array length of 8, not all zeroes.
+    while (X.length < 8) X.push(0);
+    for (j = 0; j < 8 && X[j] === 0; ++j);
+    if (j == 8) w = X[7] = -1; else w = X[j];
+
+    me.x = X;
+    me.i = 0;
+
+    // Discard an initial 256 values.
+    for (j = 256; j > 0; --j) {
+      me.next();
+    }
+  }
+
+  init(me, seed);
+}
+
+function copy(f, t) {
+  t.x = f.x.slice();
+  t.i = f.i;
+  return t;
+}
+
+function impl(seed, opts) {
+  if (seed == null) seed = +(new Date);
+  var xg = new XorGen(seed),
+      state = opts && opts.state,
+      prng = function() { return (xg.next() >>> 0) / 0x100000000; };
+  prng.double = function() {
+    do {
+      var top = xg.next() >>> 11,
+          bot = (xg.next() >>> 0) / 0x100000000,
+          result = (top + bot) / (1 << 21);
+    } while (result === 0);
+    return result;
+  };
+  prng.int32 = xg.next;
+  prng.quick = prng;
+  if (state) {
+    if (state.x) copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.xorshift7 = impl;
+}
+
+})(
+  commonjsGlobal,
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var xor4096 = createCommonjsModule(function (module) {
+// A Javascript implementaion of Richard Brent's Xorgens xor4096 algorithm.
+//
+// This fast non-cryptographic random number generator is designed for
+// use in Monte-Carlo algorithms. It combines a long-period xorshift
+// generator with a Weyl generator, and it passes all common batteries
+// of stasticial tests for randomness while consuming only a few nanoseconds
+// for each prng generated.  For background on the generator, see Brent's
+// paper: "Some long-period random number generators using shifts and xors."
+// http://arxiv.org/pdf/1004.3115v1.pdf
+//
+// Usage:
+//
+// var xor4096 = require('xor4096');
+// random = xor4096(1);                        // Seed with int32 or string.
+// assert.equal(random(), 0.1520436450538547); // (0, 1) range, 53 bits.
+// assert.equal(random.int32(), 1806534897);   // signed int32, 32 bits.
+//
+// For nonzero numeric keys, this impelementation provides a sequence
+// identical to that by Brent's xorgens 3 implementaion in C.  This
+// implementation also provides for initalizing the generator with
+// string seeds, or for saving and restoring the state of the generator.
+//
+// On Chrome, this prng benchmarks about 2.1 times slower than
+// Javascript's built-in Math.random().
+
+(function(global, module, define) {
+
+function XorGen(seed) {
+  var me = this;
+
+  // Set up generator function.
+  me.next = function() {
+    var w = me.w,
+        X = me.X, i = me.i, t, v;
+    // Update Weyl generator.
+    me.w = w = (w + 0x61c88647) | 0;
+    // Update xor generator.
+    v = X[(i + 34) & 127];
+    t = X[i = ((i + 1) & 127)];
+    v ^= v << 13;
+    t ^= t << 17;
+    v ^= v >>> 15;
+    t ^= t >>> 12;
+    // Update Xor generator array state.
+    v = X[i] = v ^ t;
+    me.i = i;
+    // Result is the combination.
+    return (v + (w ^ (w >>> 16))) | 0;
+  };
+
+  function init(me, seed) {
+    var t, v, i, j, w, X = [], limit = 128;
+    if (seed === (seed | 0)) {
+      // Numeric seeds initialize v, which is used to generates X.
+      v = seed;
+      seed = null;
+    } else {
+      // String seeds are mixed into v and X one character at a time.
+      seed = seed + '\0';
+      v = 0;
+      limit = Math.max(limit, seed.length);
+    }
+    // Initialize circular array and weyl value.
+    for (i = 0, j = -32; j < limit; ++j) {
+      // Put the unicode characters into the array, and shuffle them.
+      if (seed) v ^= seed.charCodeAt((j + 32) % seed.length);
+      // After 32 shuffles, take v as the starting w value.
+      if (j === 0) w = v;
+      v ^= v << 10;
+      v ^= v >>> 15;
+      v ^= v << 4;
+      v ^= v >>> 13;
+      if (j >= 0) {
+        w = (w + 0x61c88647) | 0;     // Weyl.
+        t = (X[j & 127] ^= (v + w));  // Combine xor and weyl to init array.
+        i = (0 == t) ? i + 1 : 0;     // Count zeroes.
+      }
+    }
+    // We have detected all zeroes; make the key nonzero.
+    if (i >= 128) {
+      X[(seed && seed.length || 0) & 127] = -1;
+    }
+    // Run the generator 512 times to further mix the state before using it.
+    // Factoring this as a function slows the main generator, so it is just
+    // unrolled here.  The weyl generator is not advanced while warming up.
+    i = 127;
+    for (j = 4 * 128; j > 0; --j) {
+      v = X[(i + 34) & 127];
+      t = X[i = ((i + 1) & 127)];
+      v ^= v << 13;
+      t ^= t << 17;
+      v ^= v >>> 15;
+      t ^= t >>> 12;
+      X[i] = v ^ t;
+    }
+    // Storing state as object members is faster than using closure variables.
+    me.w = w;
+    me.X = X;
+    me.i = i;
+  }
+
+  init(me, seed);
+}
+
+function copy(f, t) {
+  t.i = f.i;
+  t.w = f.w;
+  t.X = f.X.slice();
+  return t;
+}
+function impl(seed, opts) {
+  if (seed == null) seed = +(new Date);
+  var xg = new XorGen(seed),
+      state = opts && opts.state,
+      prng = function() { return (xg.next() >>> 0) / 0x100000000; };
+  prng.double = function() {
+    do {
+      var top = xg.next() >>> 11,
+          bot = (xg.next() >>> 0) / 0x100000000,
+          result = (top + bot) / (1 << 21);
+    } while (result === 0);
+    return result;
+  };
+  prng.int32 = xg.next;
+  prng.quick = prng;
+  if (state) {
+    if (state.X) copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.xor4096 = impl;
+}
+
+})(
+  commonjsGlobal,                                     // window object or global
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var tychei = createCommonjsModule(function (module) {
+// A Javascript implementaion of the "Tyche-i" prng algorithm by
+// Samuel Neves and Filipe Araujo.
+// See https://eden.dei.uc.pt/~sneves/pubs/2011-snfa2.pdf
+
+(function(global, module, define) {
+
+function XorGen(seed) {
+  var me = this, strseed = '';
+
+  // Set up generator function.
+  me.next = function() {
+    var b = me.b, c = me.c, d = me.d, a = me.a;
+    b = (b << 25) ^ (b >>> 7) ^ c;
+    c = (c - d) | 0;
+    d = (d << 24) ^ (d >>> 8) ^ a;
+    a = (a - b) | 0;
+    me.b = b = (b << 20) ^ (b >>> 12) ^ c;
+    me.c = c = (c - d) | 0;
+    me.d = (d << 16) ^ (c >>> 16) ^ a;
+    return me.a = (a - b) | 0;
+  };
+
+  /* The following is non-inverted tyche, which has better internal
+   * bit diffusion, but which is about 25% slower than tyche-i in JS.
+  me.next = function() {
+    var a = me.a, b = me.b, c = me.c, d = me.d;
+    a = (me.a + me.b | 0) >>> 0;
+    d = me.d ^ a; d = d << 16 ^ d >>> 16;
+    c = me.c + d | 0;
+    b = me.b ^ c; b = b << 12 ^ d >>> 20;
+    me.a = a = a + b | 0;
+    d = d ^ a; me.d = d = d << 8 ^ d >>> 24;
+    me.c = c = c + d | 0;
+    b = b ^ c;
+    return me.b = (b << 7 ^ b >>> 25);
+  }
+  */
+
+  me.a = 0;
+  me.b = 0;
+  me.c = 2654435769 | 0;
+  me.d = 1367130551;
+
+  if (seed === Math.floor(seed)) {
+    // Integer seed.
+    me.a = (seed / 0x100000000) | 0;
+    me.b = seed | 0;
+  } else {
+    // String seed.
+    strseed += seed;
+  }
+
+  // Mix in string seed, then discard an initial batch of 64 values.
+  for (var k = 0; k < strseed.length + 20; k++) {
+    me.b ^= strseed.charCodeAt(k) | 0;
+    me.next();
+  }
+}
+
+function copy(f, t) {
+  t.a = f.a;
+  t.b = f.b;
+  t.c = f.c;
+  t.d = f.d;
+  return t;
+}
+function impl(seed, opts) {
+  var xg = new XorGen(seed),
+      state = opts && opts.state,
+      prng = function() { return (xg.next() >>> 0) / 0x100000000; };
+  prng.double = function() {
+    do {
+      var top = xg.next() >>> 11,
+          bot = (xg.next() >>> 0) / 0x100000000,
+          result = (top + bot) / (1 << 21);
+    } while (result === 0);
+    return result;
+  };
+  prng.int32 = xg.next;
+  prng.quick = prng;
+  if (state) {
+    if (typeof(state) == 'object') copy(state, xg);
+    prng.state = function() { return copy(xg, {}); };
+  }
+  return prng;
+}
+
+if (module && module.exports) {
+  module.exports = impl;
+} else if (define && define.amd) {
+  define(function() { return impl; });
+} else {
+  this.tychei = impl;
+}
+
+})(
+  commonjsGlobal,
+  ('object') == 'object' && module,    // present in node.js
+  (typeof undefined) == 'function' && undefined   // present with an AMD loader
+);
+});
+
+var require$$2 = {};
+
+var seedrandom$1 = createCommonjsModule(function (module) {
+/*
+Copyright 2019 David Bau.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*/
+
+(function (global, pool, math) {
+//
+// The following constants are related to IEEE 754 limits.
+//
+
+var width = 256,        // each RC4 output is 0 <= x < 256
+    chunks = 6,         // at least six RC4 outputs for each double
+    digits = 52,        // there are 52 significant digits in a double
+    rngname = 'random', // rngname: name for Math.random and Math.seedrandom
+    startdenom = math.pow(width, chunks),
+    significance = math.pow(2, digits),
+    overflow = significance * 2,
+    mask = width - 1,
+    nodecrypto;         // node.js crypto module, initialized at the bottom.
+
+//
+// seedrandom()
+// This is the seedrandom function described above.
+//
+function seedrandom(seed, options, callback) {
+  var key = [];
+  options = (options == true) ? { entropy: true } : (options || {});
+
+  // Flatten the seed string or build one from local entropy if needed.
+  var shortseed = mixkey(flatten(
+    options.entropy ? [seed, tostring(pool)] :
+    (seed == null) ? autoseed() : seed, 3), key);
+
+  // Use the seed to initialize an ARC4 generator.
+  var arc4 = new ARC4(key);
+
+  // This function returns a random double in [0, 1) that contains
+  // randomness in every bit of the mantissa of the IEEE 754 value.
+  var prng = function() {
+    var n = arc4.g(chunks),             // Start with a numerator n < 2 ^ 48
+        d = startdenom,                 //   and denominator d = 2 ^ 48.
+        x = 0;                          //   and no 'extra last byte'.
+    while (n < significance) {          // Fill up all significant digits by
+      n = (n + x) * width;              //   shifting numerator and
+      d *= width;                       //   denominator and generating a
+      x = arc4.g(1);                    //   new least-significant-byte.
+    }
+    while (n >= overflow) {             // To avoid rounding up, before adding
+      n /= 2;                           //   last byte, shift everything
+      d /= 2;                           //   right using integer math until
+      x >>>= 1;                         //   we have exactly the desired bits.
+    }
+    return (n + x) / d;                 // Form the number within [0, 1).
+  };
+
+  prng.int32 = function() { return arc4.g(4) | 0; };
+  prng.quick = function() { return arc4.g(4) / 0x100000000; };
+  prng.double = prng;
+
+  // Mix the randomness into accumulated entropy.
+  mixkey(tostring(arc4.S), pool);
+
+  // Calling convention: what to return as a function of prng, seed, is_math.
+  return (options.pass || callback ||
+      function(prng, seed, is_math_call, state) {
+        if (state) {
+          // Load the arc4 state from the given state if it has an S array.
+          if (state.S) { copy(state, arc4); }
+          // Only provide the .state method if requested via options.state.
+          prng.state = function() { return copy(arc4, {}); };
+        }
+
+        // If called as a method of Math (Math.seedrandom()), mutate
+        // Math.random because that is how seedrandom.js has worked since v1.0.
+        if (is_math_call) { math[rngname] = prng; return seed; }
+
+        // Otherwise, it is a newer calling convention, so return the
+        // prng directly.
+        else return prng;
+      })(
+  prng,
+  shortseed,
+  'global' in options ? options.global : (this == math),
+  options.state);
+}
+
+//
+// ARC4
+//
+// An ARC4 implementation.  The constructor takes a key in the form of
+// an array of at most (width) integers that should be 0 <= x < (width).
+//
+// The g(count) method returns a pseudorandom integer that concatenates
+// the next (count) outputs from ARC4.  Its return value is a number x
+// that is in the range 0 <= x < (width ^ count).
+//
+function ARC4(key) {
+  var t, keylen = key.length,
+      me = this, i = 0, j = me.i = me.j = 0, s = me.S = [];
+
+  // The empty key [] is treated as [0].
+  if (!keylen) { key = [keylen++]; }
+
+  // Set up S using the standard key scheduling algorithm.
+  while (i < width) {
+    s[i] = i++;
+  }
+  for (i = 0; i < width; i++) {
+    s[i] = s[j = mask & (j + key[i % keylen] + (t = s[i]))];
+    s[j] = t;
+  }
+
+  // The "g" method returns the next (count) outputs as one number.
+  (me.g = function(count) {
+    // Using instance members instead of closure state nearly doubles speed.
+    var t, r = 0,
+        i = me.i, j = me.j, s = me.S;
+    while (count--) {
+      t = s[i = mask & (i + 1)];
+      r = r * width + s[mask & ((s[i] = s[j = mask & (j + t)]) + (s[j] = t))];
+    }
+    me.i = i; me.j = j;
+    return r;
+    // For robust unpredictability, the function call below automatically
+    // discards an initial batch of values.  This is called RC4-drop[256].
+    // See http://google.com/search?q=rsa+fluhrer+response&btnI
+  })(width);
+}
+
+//
+// copy()
+// Copies internal state of ARC4 to or from a plain object.
+//
+function copy(f, t) {
+  t.i = f.i;
+  t.j = f.j;
+  t.S = f.S.slice();
+  return t;
+}
+//
+// flatten()
+// Converts an object tree to nested arrays of strings.
+//
+function flatten(obj, depth) {
+  var result = [], typ = (typeof obj), prop;
+  if (depth && typ == 'object') {
+    for (prop in obj) {
+      try { result.push(flatten(obj[prop], depth - 1)); } catch (e) {}
+    }
+  }
+  return (result.length ? result : typ == 'string' ? obj : obj + '\0');
+}
+
+//
+// mixkey()
+// Mixes a string seed into a key that is an array of integers, and
+// returns a shortened string seed that is equivalent to the result key.
+//
+function mixkey(seed, key) {
+  var stringseed = seed + '', smear, j = 0;
+  while (j < stringseed.length) {
+    key[mask & j] =
+      mask & ((smear ^= key[mask & j] * 19) + stringseed.charCodeAt(j++));
+  }
+  return tostring(key);
+}
+
+//
+// autoseed()
+// Returns an object for autoseeding, using window.crypto and Node crypto
+// module if available.
+//
+function autoseed() {
+  try {
+    var out;
+    if (nodecrypto && (out = nodecrypto.randomBytes)) {
+      // The use of 'out' to remember randomBytes makes tight minified code.
+      out = out(width);
+    } else {
+      out = new Uint8Array(width);
+      (global.crypto || global.msCrypto).getRandomValues(out);
+    }
+    return tostring(out);
+  } catch (e) {
+    var browser = global.navigator,
+        plugins = browser && browser.plugins;
+    return [+new Date, global, plugins, global.screen, tostring(pool)];
+  }
+}
+
+//
+// tostring()
+// Converts an array of charcodes to a string
+//
+function tostring(a) {
+  return String.fromCharCode.apply(0, a);
+}
+
+//
+// When seedrandom.js is loaded, we immediately mix a few bits
+// from the built-in RNG into the entropy pool.  Because we do
+// not want to interfere with deterministic PRNG state later,
+// seedrandom will not call math.random on its own again after
+// initialization.
+//
+mixkey(math.random(), pool);
+
+//
+// Nodejs and AMD support: export the implementation as a module using
+// either convention.
+//
+if (('object') == 'object' && module.exports) {
+  module.exports = seedrandom;
+  // When in node.js, try using crypto package for autoseeding.
+  try {
+    nodecrypto = require$$2;
+  } catch (ex) {}
+} else if ((typeof undefined) == 'function' && undefined.amd) {
+  undefined(function() { return seedrandom; });
+} else {
+  // When included as a plain script, set up Math.seedrandom global.
+  math['seed' + rngname] = seedrandom;
+}
+
+
+// End anonymous scope, and pass initial values.
+})(
+  // global: `self` in browsers (including strict mode and web workers),
+  // otherwise `this` in Node and other environments
+  (typeof self !== 'undefined') ? self : commonjsGlobal,
+  [],     // pool: entropy pool starts empty
+  Math    // math: package containing random, pow, and seedrandom
+);
+});
+
+// A library of seedable RNGs implemented in Javascript.
+//
+// Usage:
+//
+// var seedrandom = require('seedrandom');
+// var random = seedrandom(1); // or any seed.
+// var x = random();       // 0 <= x < 1.  Every bit is random.
+// var x = random.quick(); // 0 <= x < 1.  32 bits of randomness.
+
+// alea, a 53-bit multiply-with-carry generator by Johannes Baagøe.
+// Period: ~2^116
+// Reported to pass all BigCrush tests.
+
+
+// xor128, a pure xor-shift generator by George Marsaglia.
+// Period: 2^128-1.
+// Reported to fail: MatrixRank and LinearComp.
+
+
+// xorwow, George Marsaglia's 160-bit xor-shift combined plus weyl.
+// Period: 2^192-2^32
+// Reported to fail: CollisionOver, SimpPoker, and LinearComp.
+
+
+// xorshift7, by François Panneton and Pierre L'ecuyer, takes
+// a different approach: it adds robustness by allowing more shifts
+// than Marsaglia's original three.  It is a 7-shift generator
+// with 256 bits, that passes BigCrush with no systmatic failures.
+// Period 2^256-1.
+// No systematic BigCrush failures reported.
+
+
+// xor4096, by Richard Brent, is a 4096-bit xor-shift with a
+// very long period that also adds a Weyl generator. It also passes
+// BigCrush with no systematic failures.  Its long period may
+// be useful if you have many generators and need to avoid
+// collisions.
+// Period: 2^4128-2^32.
+// No systematic BigCrush failures reported.
+
+
+// Tyche-i, by Samuel Neves and Filipe Araujo, is a bit-shifting random
+// number generator derived from ChaCha, a modern stream cipher.
+// https://eden.dei.uc.pt/~sneves/pubs/2011-snfa2.pdf
+// Period: ~2^127
+// No systematic BigCrush failures reported.
+
+
+// The original ARC4-based prng included in this library.
+// Period: ~2^1600
+
+
+seedrandom$1.alea = alea;
+seedrandom$1.xor128 = xor128;
+seedrandom$1.xorwow = xorwow;
+seedrandom$1.xorshift7 = xorshift7;
+seedrandom$1.xor4096 = xor4096;
+seedrandom$1.tychei = tychei;
+
+var seedrandom$2 = seedrandom$1;
+
+//import { substitute_abs } from '../normalization/standard_form';
+
+function randomComplexBindings(rng, variables, radius, centers) {
+  var result = {};
+
+  if (centers === undefined) {
+    variables.forEach(function (v) {
+      result[v] = math$19.complex(rng() * 2 * radius - radius,
+        rng() * 2 * radius - radius);
+    });
+  }
+  else {
+    variables.forEach(function (v) {
+      result[v] = math$19.complex(
+        centers[v].re + rng() * 2 * radius - radius,
+        centers[v].im + rng() * 2 * radius - radius);
+    });
+  }
+
+  return result;
+}
+
+const equals$1 = function (expr, other,
+  { tolerance = 1E-12, allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
+  } = {}) {
+
+  let rng = seedrandom$2('complex_seed');
+
+  //expr = expr.substitute_abs();
+  //other = other.substitute_abs();
+
+  // don't use complex equality if not analytic expression
+  // except abs is OK
+  if ((!expr.isAnalytic({ allow_abs: true, allow_relation: true })) ||
+    (!other.isAnalytic({ allow_abs: true, allow_relation: true })))
     return false;
+
+  return equals({
+    expr: expr,
+    other: other,
+    randomBindings: randomComplexBindings,
+    expr_context: expr.context,
+    other_context: other.context,
+    tolerance: tolerance,
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    allowed_error_is_absolute: allowed_error_is_absolute,
+    rng
+  });
+};
+
+function randomRealBindings(rng, variables, radius, centers) {
+  var result = {};
+
+  if (centers === undefined) {
+    variables.forEach(function (v) {
+      result[v] = rng() * 2 * radius - radius;
+    });
+  }
+  else {
+    variables.forEach(function (v) {
+      result[v] = centers[v] + rng() * 2 * radius - radius;
+    });
+  }
+
+  return result;
+}
+
+const equals$2 = function (expr, other,
+  { tolerance = 1E-12, allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false } = {}) {
+
+  // don't use real equality if not analytic expression
+  if ((!expr.isAnalytic()) || (!other.isAnalytic()))
+    return false;
+
+  let rng = seedrandom('real_seed');
+
+  return equals({
+    expr: expr,
+    other: other,
+    randomBindings: randomRealBindings,
+    expr_context: expr.context,
+    other_content: other.context,
+    tolerance: tolerance,
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    rng
+  });
+};
+
+const equals$3 = function (expr, other, {
+  allowed_error_in_numbers = 0,
+  include_error_in_number_exponents = false,
+  allowed_error_is_absolute = false,
+} = {}) {
+  return equal$2(expr.tree, other.tree, {
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    allowed_error_is_absolute: allowed_error_is_absolute,
+  });
+};
+
+const equals$$1 = function(expr, other, { min_elements_match=3, match_partial = false } = {} ) {
+
+  // expr must be a discrete infinite set
+  if(!is_discrete_infinite_set(expr))
+    return false;
+
+  // other must be a discrete infinite set or a list
+  if(is_discrete_infinite_set(other)) {
+    var assumptions = [];
+    let a = expr.context.get_assumptions(expr);
+    if(a !== undefined)
+      assumptions.push(a);
+    a = other.context.get_assumptions(other);
+    if(a !== undefined)
+      assumptions.push(a);
+    if(assumptions.length === 0)
+      assumptions = undefined;
+    else if(assumptions.length === 1)
+      assumptions=assumptions[0];
+    else
+      assumptions = clean_assumptions(['and'].concat(assumptions));
+
+    if(match_partial) {
+      let match1 = contained_in(expr.tree, other.tree, assumptions, match_partial);
+      if(match1 === false) {
+        return 0;
+      }
+      let match2 = contained_in(other.tree, expr.tree, assumptions, match_partial);
+      if(match2 === false) {
+        return 0;
+      }
+
+      if(match1 === true) {
+        if(match2 === true) {
+          return 1;
+        } else {
+          return match2;
+        }
+      } else if(match2 === true) {
+        return match1;
+      } else {
+        return Math.min(match1, match2);
+      }
+
+    } else {
+      return contained_in(expr.tree, other.tree, assumptions, match_partial) &&
+        contained_in(other.tree, expr.tree, assumptions, match_partial);
+    }
+  }
+  else {
+    // check if other is a list than ends in 'ldots'
+    let other_tree = other.tree;
+
+    if(other_tree[0] !== 'list')
+      return false;
+
+    let n_in_list = other_tree.length-2;
+
+    if(other_tree[n_in_list+1][0] !== 'ldots')
+      return false;
+
+    if(n_in_list < min_elements_match)
+      return false;
+
+    let the_list = other_tree.slice(0,n_in_list+1);
+
+    // get list of same size from
+    let generated_list = sequence_from_discrete_infinite(expr, n_in_list);
+
+    if(!generated_list)
+      return false;
+
+    generated_list = ['list'].concat(generated_list);
+
+    return equals$5(expr.context.from(generated_list), other.context.from(the_list));
+
+  }
+
+};
+
+
+function is_discrete_infinite_set(expr) {
+
+  var tree = expr.tree;
+  if(!Array.isArray(tree))
+    return false;
+  if(tree[0] !== 'discrete_infinite_set')
+    return false;
+  var operands = tree.slice(1);
+
+  for(var v of operands) {
+    if(!Array.isArray(v))
+      return false;
+    if(v[0] !== 'tuple')
+      return false;
+    if(v.length !== 5)
+      return false;
+  }
+
+  return true;
+}
+
+
+function contained_in(tree, i_set, assumptions, match_partial) {
+  // true if tree is contained in the discrete infinite set i_set
+  // tree is either a discrete infinite set
+  // or a tuple of form [offset, period, min_index, max_index]
+
+  if(tree[0] === 'discrete_infinite_set') {
+    if(match_partial) {
+      let num_matches = 0;
+      for(let piece of tree.slice(1)){
+        let match = contained_in(piece, i_set, assumptions, match_partial);
+        if(match === true) {
+          num_matches++;
+        } else if(match !== false) {
+          num_matches += match;
+        }
+      }
+
+      let num_pieces = tree.length - 1;
+
+      if(num_matches === num_pieces) {
+        return true;
+      }else if(num_matches === 0) {
+        return false;
+      }else {
+        return num_matches/num_pieces;
+      }
+    } else {
+      return tree.slice(1).every(v => contained_in(v, i_set, assumptions));
+    }
+  }
+
+  // tree is a tuple of the form [offset, period, min_index, max_index]
+
+  var offset0 = tree[1];
+  var period0 = tree[2];
+  var min_index = tree[3];
+  var max_index = tree[4];
+
+  // implemented only if min_index === -infinity and max_index === infinity
+  if(!Array.isArray(min_index) || min_index[0] !== '-' || min_index[1] !== Infinity
+     || max_index !== Infinity)
+    return false;
+
+  // normalize to period 1
+  offset0 = simplify$2(
+    ['/', offset0, period0], assumptions, Infinity);
+
+  // if(!(typeof offset0 === 'number'))
+  //   return false;
+
+  var tuples = i_set.slice(1);
+
+  // data will be array of form [p, q, offset, period]
+  // where offset and period are normalized by period0
+  // and p/q is fraction form of period
+
+  var data = [];
+  for(let i=0; i<tuples.length; i++) {
+
+    // implemented only if min_index === -infinity and max_index === infinity
+    let this_min_index = tuples[i][3];
+    let this_max_index = tuples[i][4];
+    if(!Array.isArray(this_min_index) || this_min_index[0] !== '-'
+       || this_min_index[1] !== Infinity
+       || this_max_index !== Infinity)
+      return false;
+
+
+    let offset = simplify$2(
+      ['/', tuples[i][1], period0], assumptions, Infinity);
+    let period = simplify$2(
+      ['/', tuples[i][2], period0], assumptions, Infinity);
+
+    if(typeof period !== 'number')
+      return false;
+
+    let frac = math$19.fraction(period);
+    let p = frac.n;
+    let q = frac.d;
+    data.push([p,q,offset,period]);
+  }
+
+  // sort by p
+  data.sort();
+
+  // check any with period for which original period is a multiple
+  while(true) {
+    let p = data[0][0];
+    if(p !== 1)
+      break;
+
+    let offset = data[0][2];
+    let period = data[0][3];
+
+    // offsets match, then we've covered all of tree
+    let offset_diff =  simplify$2(
+      expand(
+        ['+', offset, ['-', offset0]]),
+      assumptions, Infinity);
+
+    if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
+      // use math.mod rather than % so it always non-negative
+      offset_diff = math$19.mod(offset_diff, period);
+
+      if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period)
+        return true;
+    }
+    data.splice(0,1);  // remove first entry from data
+    if(data.length === 0)
+      return false;
+
+  }
+
+  var all_ps = [...new Set(data.map(v => v[0]))];
+
+  let max_fraction_covered = 0;
+
+  for(let base_p of all_ps) {
+    // find all ps where base_p is a multiple
+    let options = data.map(function (v,i) {
+      let m = base_p/v[0];
+      if(Number.isInteger(m))
+        return [v[0], m, i];
+      else
+        return undefined;
+    }).filter(v=>v);
+
+    let covered = [];
+
+    for(let opt of options) {
+      let p = opt[0];
+      let m = opt[1];
+      let i = opt[2];
+      let offset = data[i][2];
+      let period = data[i][3];
+
+
+      for(let j=0; j < p; j++) {
+
+        let offset_diff =  simplify$2(
+          expand(
+            ['+', offset, ['-', ['+', offset0, j]]]),
+          assumptions, Infinity);
+
+        // use math.mod rather than % so it always non-negative
+        if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
+          offset_diff = math$19.mod(offset_diff, period);
+
+          if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period) {
+
+            for(let k=0; k<m; k++) {
+              covered[j+k*p] = true;
+            }
+
+            // check to see if covered all;
+            let covered_all = true;
+            for(let ind=0; ind < base_p; ind++) {
+              if(!covered[ind]) {
+                covered_all = false;
+                break;
+              }
+            }
+
+            if(covered_all)
+              return true;
+
+            break;
+          }
+        }
+      }
+    }
+
+    if(match_partial) {
+      let fraction_covered = 0;
+      for(let ind=0; ind < base_p; ind++) {
+        if(covered[ind]) {
+          fraction_covered++;
+        }
+      }
+      fraction_covered /= base_p;
+
+      if(fraction_covered > max_fraction_covered) {
+        max_fraction_covered = fraction_covered;
+      }
+    }
+  }
+
+  if(match_partial && max_fraction_covered > 0) {
+    return max_fraction_covered;
+  }
+
+  return false;
+
+}
+
+
+function sequence_from_discrete_infinite(expr, n_elements) {
+
+  // assuming without checking that expr is discrete infinite set
+
+  var tree = expr.tree;
+  var operands = tree.slice(1);
+
+  // implemented only if have just one tuple defining set
+  if(operands.length > 1)
+    return;
+
+  let offset = operands[0][1];
+  let period = operands[0][2];
+  let min_index = evaluate_numbers(operands[0][3]);
+  let max_index = operands[0][4];
+
+  // implemented only if min_index is defined and an integer and max_index is infinity
+  if(!Number.isInteger(min_index) || max_index !== Infinity)
+    return;
+
+  let result = [];
+
+  for(let i=0; i < n_elements; i++) {
+    result.push(evaluate_numbers(['+', ['*', period, min_index+i], offset]));
+  }
+
+  return result;
+}
+
+//exports.equalsViaFiniteField = equalsViaFiniteField;
+
+const equals$5 = function (expr, other, {
+  tolerance = 1E-12, allowed_error_in_numbers = 0,
+  include_error_in_number_exponents = false,
+  allowed_error_is_absolute = false,
+} = {}) {
+  if (expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
+    return false;
+  }
+
+  // first check with symbolic equality
+  // converting all numbers and numerical quantities to floating point
+  // and normalizing form of each expression
+  let exprNormalized = expr.evaluate_numbers({ max_digits: Infinity })
+    .normalize_function_names()
+    .normalize_applied_functions()
+    .simplify();
+  let otherNormalized = other.evaluate_numbers({ max_digits: Infinity })
+    .normalize_function_names()
+    .normalize_applied_functions()
+    .simplify();
+
+  if (exprNormalized.equalsViaSyntax(otherNormalized, {
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    allowed_error_is_absolute: allowed_error_is_absolute,
+  })
+  ) {
+    return true;
+  } else if (expr.equalsViaComplex(other, {
+    tolerance: tolerance,
+    allowed_error_in_numbers: allowed_error_in_numbers,
+    include_error_in_number_exponents: include_error_in_number_exponents,
+    allowed_error_is_absolute: allowed_error_is_absolute,
+  })) {
+    return true;
+    // } else if (expr.equalsViaReal(other)) {
+    //   	return true;
+  } else if (equals$$1(expr, other)) {
+    return true;
+  } else {
+    return false;
+  }
+};
+
+var equality = /*#__PURE__*/Object.freeze({
+  equals: equals$5,
+  equalsViaComplex: equals$1,
+  equalsViaReal: equals$2,
+  equalsViaSyntax: equals$3,
+  equalsDiscreteInfinite: equals$$1
+});
+
+const equalWithSignErrors = function (expr, other,
+  { equalityFunction = equals$5, max_sign_errors = 1 } = {}
+) {
+
+  if (equalityFunction(expr, other)) {
+    return { matched: true, n_sign_errors: 0 };
+  }
+
+  for (let i = 1; i <= max_sign_errors; i++) {
+    if (equalSpecifiedSignErrors(expr, other, { equalityFunction, n_sign_errors: i })) {
+      return { matched: true, n_sign_errors: i };
+    }
+  }
+
+  return { matched: false };
+};
+
+const equalSpecifiedSignErrors = function (expr, other,
+  { equalityFunction = equals$5, n_sign_errors = 1 } = {}
+) {
+
+  if (n_sign_errors === 0) {
+    return equalityFunction(expr, other);
+  } else if (!(Number.isInteger(n_sign_errors) && n_sign_errors > 0)) {
+    throw Error(`Have not implemented equality check with ${n_sign_errors} sign errors.`)
+  }
+
+  if (n_sign_errors > 1) {
+    let oldEqualityFunction = equalityFunction;
+    equalityFunction = function (expr, other) {
+      return equalSpecifiedSignErrors(expr, other, { equalityFunction: oldEqualityFunction, n_sign_errors: n_sign_errors - 1});
+    };
+  }
+
+  var root = expr.tree;
+  var stack = [[root]];
+  var pointer = 0;
+  var tree;
+  var i;
+
+  /* Unfortunately the root is handled separately */
+  expr.tree = ['-', root];
+  var equals$$2 = equalityFunction(expr, other);
+  expr.tree = root;
+
+  if (equals$$2) return true;
+
+  while (tree = stack[pointer++]) {
+    tree = tree[0];
+
+    if (!Array.isArray(tree)) {
+      continue;
+    }
+
+    for (i = 1; i < tree.length; i++) {
+      stack.push([tree[i]]);
+      tree[i] = ['-', tree[i]];
+      equals$$2 = equalityFunction(expr, other);
+      tree[i] = tree[i][1];
+
+      if (equals$$2) return true;
+    }
+  }
+
+  return false;
 };
 
 var sign_error = /*#__PURE__*/Object.freeze({
-  equalUpToSign: equalUpToSign
+  equalSpecifiedSignErrors: equalSpecifiedSignErrors,
+  equalWithSignErrors: equalWithSignErrors
 });
 
 function add$2(expr_or_tree1, expr_or_tree2) {
@@ -75829,1065 +77881,6 @@ var printing = /*#__PURE__*/Object.freeze({
   toString: toString,
   toXML: toXML,
   toGLSL: toGLSL
-});
-
-// check for equality by randomly sampling
-
-function generate_random_integer(minvalue, maxvalue) {
-  minvalue = math$19.ceil(minvalue);
-  maxvalue = math$19.floor(maxvalue);
-  return math$19.floor(math$19.random() * (maxvalue - minvalue + 1)) + minvalue;
-}
-
-
-
-const equals = function ({ expr, other, randomBindings,
-  expr_context, other_context,
-  tolerance = 1E-12, allowed_error_in_numbers = 0,
-  include_error_in_number_exponents = false,
-  allowed_error_is_absolute = false,
-}) {
-
-  if (Array.isArray(expr.tree) && Array.isArray(other.tree)) {
-
-    let expr_operator = expr.tree[0];
-    let expr_operands = expr.tree.slice(1);
-    let other_operator = other.tree[0];
-    let other_operands = other.tree.slice(1);
-
-    if (expr_operator === 'tuple' || expr_operator === 'vector'
-      || expr_operator === 'list' || expr_operator === 'array'
-      || expr_operator === 'matrix' || expr_operator === 'interval'
-    ) {
-
-      if (other_operator !== expr_operator)
-        return false;
-
-      if (other_operands.length !== expr_operands.length)
-        return false;
-
-      for (let i = 0; i < expr_operands.length; i++) {
-        if (!equals({
-          expr: expr_context.fromAst(expr_operands[i]),
-          other: other_context.fromAst(other_operands[i]),
-          randomBindings: randomBindings,
-          expr_context: expr_context,
-          other_context: other_context,
-          tolerance: tolerance,
-          allowed_error_in_numbers: allowed_error_in_numbers,
-          include_error_in_number_exponents: include_error_in_number_exponents,
-          allowed_error_is_absolute: allowed_error_is_absolute,
-        }))
-          return false;
-      }
-
-      return true;  // each component is equal
-    }
-
-    // check if a relation with two operands
-    if (expr_operands.length === 2 && ["=", '>', '<', 'ge', 'le'].includes(expr_operator)) {
-      if (other_operands.length !== 2) {
-        return false;
-      }
-      //normalize operator
-      if (expr_operator === ">") {
-        expr_operator = "<";
-        expr_operands = [expr_operands[1], expr_operands[0]];
-      } else if (expr_operator === "ge") {
-        expr_operator = "le";
-        expr_operands = [expr_operands[1], expr_operands[0]];
-      }
-      if (other_operator === ">") {
-        other_operator = "<";
-        other_operands = [other_operands[1], other_operands[0]];
-      } else if (other_operator === "ge") {
-        other_operator = "le";
-        other_operands = [other_operands[1], other_operands[0]];
-      }
-
-      if (expr_operator !== other_operator) {
-        return false;
-      }
-
-      // put in standard form
-      let expr_rhs = ['+', expr_operands[0], ['-', expr_operands[1]]];
-      let other_rhs = ['+', other_operands[0], ['-', other_operands[1]]];
-      let require_positive_proportion = (expr_operator !== "=");
-
-      return component_equals({
-        expr: expr_context.fromAst(expr_rhs),
-        other: other_context.fromAst(other_rhs),
-        randomBindings: randomBindings,
-        expr_context: expr_context,
-        other_context: other_context,
-        allow_proportional: true,
-        require_positive_proportion: require_positive_proportion,
-        tolerance: tolerance,
-        allowed_error_in_numbers: allowed_error_in_numbers,
-        include_error_in_number_exponents: include_error_in_number_exponents,
-        allowed_error_is_absolute: allowed_error_is_absolute,
-      });
-
-    }
-
-  }
-
-  // if not special case, use standard numerical equality
-  return component_equals({
-    expr: expr,
-    other: other,
-    randomBindings: randomBindings,
-    expr_context: expr_context,
-    other_context: other_context,
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
-  });
-
-};
-
-
-const component_equals = function ({ expr, other, randomBindings,
-  expr_context, other_context,
-  allow_proportional = false, require_positive_proportion = false,
-  tolerance, allowed_error_in_numbers, include_error_in_number_exponents,
-  allowed_error_is_absolute,
-}) {
-
-  var max_value = Number.MAX_VALUE * 1E-20;
-  var min_nonzero_value = 0;//1E-100; //Number.MIN_VALUE & 1E20;
-
-  var epsilon = tolerance;
-  var minimum_matches = 10;
-  var number_tries = 100;
-  // if (allowed_error_in_numbers > 0) {
-  //   minimum_matches = 400;
-  //   number_tries = 4000;
-  // }
-
-  // normalize function names, so in particular, e^x becomes exp(x)
-  expr = expr.normalize_function_names();
-  other = other.normalize_function_names();
-
-  // convert subscripts to strings so that variables like x_t are considered single variable
-  expr = expr.subscripts_to_strings();
-  other = other.subscripts_to_strings();
-
-  // Get set of variables mentioned in at least one of the two expressions
-  var variables = [expr.variables(), other.variables()];
-  variables = variables.reduce(function (a, b) { return a.concat(b); });
-  variables = variables.reduce(function (p, c) {
-    if (p.indexOf(c) < 0) p.push(c);
-    return p;
-  }, []);
-
-  // pi, e, and i shouldn't be treated as a variable
-  // for the purposes of equality if they are defined as having values
-  if (math$19.define_pi) {
-    variables = variables.filter(function (a) {
-      return (a !== "pi");
-    });
-  }
-  if (math$19.define_i) {
-    variables = variables.filter(function (a) {
-      return (a !== "i");
-    });
-  }
-  if (math$19.define_e) {
-    variables = variables.filter(function (a) {
-      return (a !== "e");
-    });
-  }
-
-  // determine if any of the variables are integers
-  // consider integer if is integer in either expressions' assumptions
-  var integer_variables = [];
-  for (let i = 0; i < variables.length; i++)
-    if (is_integer_ast(variables[i], expr_context.assumptions)
-      || is_integer_ast(variables[i], other_context.assumptions))
-      integer_variables.push(variables[i]);
-
-  // determine if any of the variables are functions
-  var functions = [expr.functions(), other.functions()];
-  functions = functions.reduce(function (a, b) { return a.concat(b); });
-  functions = functions.reduce(function (p, c) {
-    if (p.indexOf(c) < 0) p.push(c);
-    return p;
-  }, []);
-  functions = functions.filter(function (a) {
-    return a.length == 1;
-  });
-
-  try {
-    var expr_f = expr.f();
-    var other_f = other.f();
-  }
-  catch (e) {
-    // Can't convert to mathjs to create function
-    // just check if equal via syntax
-    return expr.equalsViaSyntax(other)
-  }
-
-  let expr_with_params, parameters_for_numbers;
-  let tolerance_function;
-
-  if (allowed_error_in_numbers > 0) {
-    let result = replace_numbers_with_parameters({
-      expr: expr,
-      variables: variables,
-      include_exponents: include_error_in_number_exponents,
-    });
-    expr_with_params = expr_context.fromAst(result.expr_with_params);
-    parameters_for_numbers = result.parameters;
-
-    let parameter_list = Object.keys(parameters_for_numbers);
-    if (parameter_list.length > 0) {
-      let derivative_sum = expr_with_params.derivative(parameter_list[0]);
-      if(!allowed_error_is_absolute) {
-        derivative_sum = derivative_sum
-          .multiply(parameters_for_numbers[parameter_list[0]]);
-      }
-      if (parameter_list.length > 1) {
-        for (let par of parameter_list.slice(1)) {
-          let term = expr_with_params.derivative(par);
-          if(!allowed_error_is_absolute) {
-            term = term.multiply(parameters_for_numbers[par]);
-          }
-          derivative_sum = derivative_sum.add(term);
-        }
-      }
-
-      let tolerance_expression = derivative_sum.multiply(allowed_error_in_numbers);
-
-      try {
-        tolerance_function = tolerance_expression.f();
-      } catch (e) {
-        // can't create function out of derivative
-        // so can't compute tolerance that would correspond
-        // to the allowed error in numbers
-
-        // Leave tolerance_function undefined
-
-      }
-
-    }
-
-  }
-
-
-
-  var noninteger_binding_scale = 1;
-
-  var binding_scales = [10, 1, 100, 0.1, 1000, 0.01];
-  var scale_num = 0;
-
-  // Numerical test of equality
-  // If can find a region of the complex plane where the functions are equal
-  // at minimum_matches points, consider the functions equal
-  // unless the functions were always zero, in which case
-  // test at multiple scales to check for underflow
-
-  // In order to account for possible branch cuts,
-  // finding points where the functions are not equal does not lead to the
-  // conclusion that expression are unequal. Instead, to be consider unequal
-  // the functions must be unequal around many different points.
-
-  let num_at_this_scale = 0;
-
-  let always_zero = true;
-
-  let num_finite_unequal = 0;
-
-  for (let i = 0; i < 10 * number_tries; i++) {
-
-    // Look for a location where the magnitudes of both expressions
-    // are below max_value;
-    try {
-      var result = find_equality_region(binding_scales[scale_num]);
-    }
-    catch (e) {
-      continue;
-    }
-
-    if (result.always_zero === false) {
-      always_zero = false;
-    }
-
-
-    if (!result.equal && !result.out_of_bounds && !result.always_zero &&
-      result.sufficient_finite_values !== false
-    ) {
-      num_finite_unequal++;
-      if (num_finite_unequal > number_tries) {
-        return false;
-      }
-    }
-
-    if (result.equal) {
-      if (result.always_zero) {
-        if (!always_zero) {
-          // if found always zero this time, but wasn't zero at a different point
-          // don't count as equal
-          continue;
-        }
-        // functions equal but zero
-        // repeat to make sure (changing if continuing to be zero)
-        num_at_this_scale += 1;
-        if (num_at_this_scale > 5) {
-          scale_num += 1;
-          num_at_this_scale = 0;
-        }
-        if (scale_num >= binding_scales.length) {
-          return true;  // were equal and zero at all scales
-        } else
-          continue
-      }
-      else {
-        return true;
-      }
-    }
-  }
-  return false;
-
-
-
-  function find_equality_region(noninteger_scale) {
-
-    // Check if expr and other are equal in a region as follows
-    // 1. Randomly select bindings (use noninteger scale for non-integer variables)
-    //    and evaluate expr and other at that point
-    // 2. If either value is too large, return { out_of_bounds: true }
-    // 3. If values are not equal (within tolerance), return { equal_at_start: false }
-    // 4. If functions are equal, then
-    //    randomly select binding in neighborhood of that point
-    //    (use non_integer scale/100 for non-integer variables)
-    // 5. If find a point where the functions are not equal,
-    //    then return { equal_in_middle: false }
-    // 6. If find that functions are equal at minimum_matches points
-    //    then return { equality: true, always_zero: always_zero }
-    //    where always_zero is true if both functions were always zero
-    //    and is false otherwise
-    // 7. If were unable to find sufficent points where both functions are finite
-    //    return { sufficient_finite_values: false }
-    // If allow_proportional is true, then instead of return non-equal
-    // in step 3, use the ratio of value of these first evaluations to set
-    // the proportion, and base equality on remaining values having the
-    // same proportion
-
-
-
-    var bindings = randomBindings(variables, noninteger_scale);
-
-    // replace any integer variables with integer
-    for (let i = 0; i < integer_variables.length; i++) {
-      bindings[integer_variables[i]] = generate_random_integer(-10, 10);
-    }
-
-    // replace any function variables with a function
-    for (let i = 0; i < functions.length; i++) {
-      var a = generate_random_integer(-10, 10);
-      var b = generate_random_integer(-10, 10);
-      var c = generate_random_integer(-10, 10);
-      bindings[functions[i]] = function (x) {
-        return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a, x), b), x), c);
-      };
-    }
-
-
-    var bindingsIncludingParameters;
-    if (tolerance_function) {
-      bindingsIncludingParameters = Object.assign({}, bindings, parameters_for_numbers);
-    }
-
-    var expr_evaluated = expr_f(bindings);
-    var other_evaluated = other_f(bindings);
-
-    var expr_abs = math$19.abs(expr_evaluated);
-    var other_abs = math$19.abs(other_evaluated);
-
-    if (!(expr_abs < max_value && other_abs < max_value))
-      return { out_of_bounds: true, always_zero: false };
-
-    if (!((expr_abs === 0 || expr_abs > min_nonzero_value) &&
-      (other_abs === 0 || other_abs > min_nonzero_value)))
-      return { out_of_bounds: true, always_zero: false };
-
-    // now that found a finite point,
-    // check to see if expressions are nearly equal.
-
-    var min_mag = Math.min(expr_abs, other_abs);
-    var max_mag = Math.max(expr_abs, other_abs);
-    var proportion = 1;
-
-    let tol = 0;
-    if (tolerance_function) {
-      try {
-        tol = math$19.abs(tolerance_function(bindingsIncludingParameters));
-      } catch (e) {
-        return { equal_at_start: false, always_zero: false };
-      }
-      if (!Number.isFinite(tol)) {
-        return { equal_at_start: false, always_zero: false };
-      }
-    }
-
-    tol += min_mag * epsilon;
-
-    // never allow tol to get over 10% the min_mag
-    tol = Math.min(tol, 0.1 * min_mag);
-
-    if (!(
-      max_mag === 0 ||
-      math$19.abs(math$19.subtract(expr_evaluated, other_evaluated)) < tol
-    )) {
-      if (!allow_proportional) {
-        return { equal_at_start: false, always_zero: false };
-      }
-      // at this point, know both are not zero
-      if (expr_abs === 0 || other_abs === 0) {
-        return { equal_at_start: false, always_zero: false };
-      }
-
-      proportion = math$19.divide(expr_evaluated, other_evaluated);
-      if (require_positive_proportion && !(proportion > 0)) {
-        return { equal_at_start: false, always_zero: false };
-      }
-    }
-
-
-    var always_zero = (max_mag === 0);
-
-    // Look for a region around point
-    var finite_tries = 0;
-    for (let j = 0; j < 100; j++) {
-      var bindings2 = randomBindings(
-        variables, noninteger_binding_scale / 100, bindings);
-
-      // replace any integer variables with integer
-      for (let k = 0; k < integer_variables.length; k++) {
-        bindings2[integer_variables[k]]
-          = generate_random_integer(-10, 10);
-      }
-
-      // replace any function variables with a function
-      for (let i = 0; i < functions.length; i++) {
-        var a = generate_random_integer(-10, 10);
-        var b = generate_random_integer(-10, 10);
-        var c = generate_random_integer(-10, 10);
-        bindings2[functions[i]] = function (x) {
-          return math$19.add(math$19.multiply(math$19.add(math$19.multiply(a, x), b), x), c);
-        };
-      }
-
-      var bindings2IncludingParameters;
-      if (tolerance_function) {
-        bindings2IncludingParameters = Object.assign({}, bindings2, parameters_for_numbers);
-      }
-
-      try {
-        expr_evaluated = expr_f(bindings2);
-        other_evaluated = math$19.multiply(other_f(bindings2), proportion);
-      }
-      catch (e) {
-        continue;
-      }
-      expr_abs = math$19.abs(expr_evaluated);
-      other_abs = math$19.abs(other_evaluated);
-
-      if (expr_abs < max_value && other_abs < max_value) {
-        min_mag = Math.min(expr_abs, other_abs);
-        max_mag = Math.max(expr_abs, other_abs);
-
-        finite_tries++;
-
-        let tol = 0;
-        if (tolerance_function) {
-          try {
-            tol = math$19.abs(tolerance_function(bindings2IncludingParameters));
-          } catch (e) {
-            continue;
-          }
-          if (!Number.isFinite(tol)) {
-            continue;
-          }
-        }
-        tol += min_mag * epsilon;
-
-        // never allow tol to get over 10% the min_mag
-        tol = Math.min(tol, 0.1 * min_mag);
-
-        if (!(
-          max_mag === 0 ||
-          math$19.abs(math$19.subtract(expr_evaluated, other_evaluated)) < tol
-        )) {
-          return { equality_in_middle: false, always_zero: false };
-        }
-
-        always_zero = always_zero && (max_mag === 0);
-
-        if (finite_tries >= minimum_matches) {
-          return { equal: true, always_zero: always_zero }
-        }
-      }
-    }
-    return { sufficient_finite_values: false, always_zero: always_zero };
-  }
-
-};
-
-function replace_numbers_with_parameters({ expr, variables, include_exponents = false }) {
-
-  // find all numbers, including pi and e, if defined as numerical
-  let parameters = {};
-  let lastParNum = 0;
-
-  function get_new_parameter_name() {
-    lastParNum++;
-    let parName = "par" + lastParNum;
-    while (variables.includes(parName)) {
-      lastParNum++;
-      parName = "par" + lastParNum;
-    }
-
-    // found a new parameter name that isn't a variable
-    return parName;
-
-  }
-
-  function replace_number_sub(tree) {
-    if (typeof tree === 'number') {
-      if (tree === 0) {
-        // since will compute bounds for relative error in numbers
-        // can't include zero
-        return tree;
-      } else {
-        let par = get_new_parameter_name();
-        parameters[par] = tree;
-        return par;
-      }
-    }
-
-    if (typeof tree === "string") {
-      if (tree === "pi") {
-        if (math$19.define_pi) {
-          let par = get_new_parameter_name();
-          parameters[par] = math$19.PI;
-          return par;
-        }
-      } else if (tree === "e") {
-        if (math$19.define_e) {
-          let par = get_new_parameter_name();
-          parameters[par] = math$19.e;
-          return par;
-        }
-      }
-      return tree;
-    }
-
-    if (!Array.isArray(tree)) {
-      return tree;
-    }
-
-    let operator = tree[0];
-    let operands = tree.slice(1);
-    if (operator === "^" && !include_exponents) {
-      return [operator, replace_number_sub(operands[0]), operands[1]]
-    } else {
-      return [operator, ...operands.map(replace_number_sub)];
-    }
-
-  }
-
-  // first evaluate numbers to combine then
-  // and turn any numerical constants to floating points
-  expr = expr.evaluate_numbers({ max_digits: Infinity });
-  return {
-    expr_with_params: replace_number_sub(expr.tree),
-    parameters: parameters
-  }
-
-}
-
-//import { substitute_abs } from '../normalization/standard_form';
-
-function randomComplexBindings(variables, radius, centers) {
-  var result = {};
-
-  if (centers === undefined) {
-    variables.forEach(function (v) {
-      result[v] = math$19.complex(math$19.random() * 2 * radius - radius,
-        math$19.random() * 2 * radius - radius);
-    });
-  }
-  else {
-    variables.forEach(function (v) {
-      result[v] = math$19.complex(
-        centers[v].re + math$19.random() * 2 * radius - radius,
-        centers[v].im + math$19.random() * 2 * radius - radius);
-    });
-  }
-
-  return result;
-}
-
-const equals$1 = function (expr, other,
-  { tolerance = 1E-12, allowed_error_in_numbers = 0,
-    include_error_in_number_exponents = false,
-    allowed_error_is_absolute = false,
-  } = {}) {
-
-  //expr = expr.substitute_abs();
-  //other = other.substitute_abs();
-
-  // don't use complex equality if not analytic expression
-  // except abs is OK
-  if ((!expr.isAnalytic({ allow_abs: true, allow_relation: true })) ||
-    (!other.isAnalytic({ allow_abs: true, allow_relation: true })))
-    return false;
-
-  return equals({
-    expr: expr,
-    other: other,
-    randomBindings: randomComplexBindings,
-    expr_context: expr.context,
-    other_context: other.context,
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
-  });
-};
-
-function randomRealBindings(variables, radius, centers) {
-    var result = {};
-
-    if(centers === undefined) {
-	variables.forEach( function(v) {
-	    result[v] = math$19.random()*2*radius - radius;
-	});
-    }
-    else {
-	variables.forEach( function(v) {
-	    result[v] =centers[v] + math$19.random()*2*radius - radius;
-	});
-    }
-
-    return result;
-}
-
-const equals$2 = function(expr, other,
-    { tolerance = 1E-12, allowed_error_in_numbers = 0,
-      include_error_in_number_exponents = false } = {}) {
-
-  // don't use real equality if not analytic expression
-  if((!expr.isAnalytic()) || (!other.isAnalytic()))
-    return false;
-
-  return equals({
-    expr: expr,
-    other: other,
-    randomBindings: randomRealBindings,
-    expr_context: expr.context,
-    other_content: other.context,
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-  });
-};
-
-const equals$3 = function (expr, other, {
-  allowed_error_in_numbers = 0,
-  include_error_in_number_exponents = false,
-  allowed_error_is_absolute = false,
-} = {}) {
-  return equal$2(expr.tree, other.tree, {
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
-  });
-};
-
-const equals$$1 = function(expr, other, { min_elements_match=3, match_partial = false } = {} ) {
-
-  // expr must be a discrete infinite set
-  if(!is_discrete_infinite_set(expr))
-    return false;
-
-  // other must be a discrete infinite set or a list
-  if(is_discrete_infinite_set(other)) {
-    var assumptions = [];
-    let a = expr.context.get_assumptions(expr);
-    if(a !== undefined)
-      assumptions.push(a);
-    a = other.context.get_assumptions(other);
-    if(a !== undefined)
-      assumptions.push(a);
-    if(assumptions.length === 0)
-      assumptions = undefined;
-    else if(assumptions.length === 1)
-      assumptions=assumptions[0];
-    else
-      assumptions = clean_assumptions(['and'].concat(assumptions));
-
-    if(match_partial) {
-      let match1 = contained_in(expr.tree, other.tree, assumptions, match_partial);
-      if(match1 === false) {
-        return 0;
-      }
-      let match2 = contained_in(other.tree, expr.tree, assumptions, match_partial);
-      if(match2 === false) {
-        return 0;
-      }
-
-      if(match1 === true) {
-        if(match2 === true) {
-          return 1;
-        } else {
-          return match2;
-        }
-      } else if(match2 === true) {
-        return match1;
-      } else {
-        return Math.min(match1, match2);
-      }
-
-    } else {
-      return contained_in(expr.tree, other.tree, assumptions, match_partial) &&
-        contained_in(other.tree, expr.tree, assumptions, match_partial);
-    }
-  }
-  else {
-    // check if other is a list than ends in 'ldots'
-    let other_tree = other.tree;
-
-    if(other_tree[0] !== 'list')
-      return false;
-
-    let n_in_list = other_tree.length-2;
-
-    if(other_tree[n_in_list+1][0] !== 'ldots')
-      return false;
-
-    if(n_in_list < min_elements_match)
-      return false;
-
-    let the_list = other_tree.slice(0,n_in_list+1);
-
-    // get list of same size from
-    let generated_list = sequence_from_discrete_infinite(expr, n_in_list);
-
-    if(!generated_list)
-      return false;
-
-    generated_list = ['list'].concat(generated_list);
-
-    return equals$5(expr.context.from(generated_list), other.context.from(the_list));
-
-  }
-
-};
-
-
-function is_discrete_infinite_set(expr) {
-
-  var tree = expr.tree;
-  if(!Array.isArray(tree))
-    return false;
-  if(tree[0] !== 'discrete_infinite_set')
-    return false;
-  var operands = tree.slice(1);
-
-  for(var v of operands) {
-    if(!Array.isArray(v))
-      return false;
-    if(v[0] !== 'tuple')
-      return false;
-    if(v.length !== 5)
-      return false;
-  }
-
-  return true;
-}
-
-
-function contained_in(tree, i_set, assumptions, match_partial) {
-  // true if tree is contained in the discrete infinite set i_set
-  // tree is either a discrete infinite set
-  // or a tuple of form [offset, period, min_index, max_index]
-
-  if(tree[0] === 'discrete_infinite_set') {
-    if(match_partial) {
-      let num_matches = 0;
-      for(let piece of tree.slice(1)){
-        let match = contained_in(piece, i_set, assumptions, match_partial);
-        if(match === true) {
-          num_matches++;
-        } else if(match !== false) {
-          num_matches += match;
-        }
-      }
-
-      let num_pieces = tree.length - 1;
-
-      if(num_matches === num_pieces) {
-        return true;
-      }else if(num_matches === 0) {
-        return false;
-      }else {
-        return num_matches/num_pieces;
-      }
-    } else {
-      return tree.slice(1).every(v => contained_in(v, i_set, assumptions));
-    }
-  }
-
-  // tree is a tuple of the form [offset, period, min_index, max_index]
-
-  var offset0 = tree[1];
-  var period0 = tree[2];
-  var min_index = tree[3];
-  var max_index = tree[4];
-
-  // implemented only if min_index === -infinity and max_index === infinity
-  if(!Array.isArray(min_index) || min_index[0] !== '-' || min_index[1] !== Infinity
-     || max_index !== Infinity)
-    return false;
-
-  // normalize to period 1
-  offset0 = simplify$2(
-    ['/', offset0, period0], assumptions, Infinity);
-
-  // if(!(typeof offset0 === 'number'))
-  //   return false;
-
-  var tuples = i_set.slice(1);
-
-  // data will be array of form [p, q, offset, period]
-  // where offset and period are normalized by period0
-  // and p/q is fraction form of period
-
-  var data = [];
-  for(let i=0; i<tuples.length; i++) {
-
-    // implemented only if min_index === -infinity and max_index === infinity
-    let this_min_index = tuples[i][3];
-    let this_max_index = tuples[i][4];
-    if(!Array.isArray(this_min_index) || this_min_index[0] !== '-'
-       || this_min_index[1] !== Infinity
-       || this_max_index !== Infinity)
-      return false;
-
-
-    let offset = simplify$2(
-      ['/', tuples[i][1], period0], assumptions, Infinity);
-    let period = simplify$2(
-      ['/', tuples[i][2], period0], assumptions, Infinity);
-
-    if(typeof period !== 'number')
-      return false;
-
-    let frac = math$19.fraction(period);
-    let p = frac.n;
-    let q = frac.d;
-    data.push([p,q,offset,period]);
-  }
-
-  // sort by p
-  data.sort();
-
-  // check any with period for which original period is a multiple
-  while(true) {
-    let p = data[0][0];
-    if(p !== 1)
-      break;
-
-    let offset = data[0][2];
-    let period = data[0][3];
-
-    // offsets match, then we've covered all of tree
-    let offset_diff =  simplify$2(
-      expand(
-        ['+', offset, ['-', offset0]]),
-      assumptions, Infinity);
-
-    if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
-      // use math.mod rather than % so it always non-negative
-      offset_diff = math$19.mod(offset_diff, period);
-
-      if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period)
-        return true;
-    }
-    data.splice(0,1);  // remove first entry from data
-    if(data.length === 0)
-      return false;
-
-  }
-
-  var all_ps = [...new Set(data.map(v => v[0]))];
-
-  let max_fraction_covered = 0;
-
-  for(let base_p of all_ps) {
-    // find all ps where base_p is a multiple
-    let options = data.map(function (v,i) {
-      let m = base_p/v[0];
-      if(Number.isInteger(m))
-        return [v[0], m, i];
-      else
-        return undefined;
-    }).filter(v=>v);
-
-    let covered = [];
-
-    for(let opt of options) {
-      let p = opt[0];
-      let m = opt[1];
-      let i = opt[2];
-      let offset = data[i][2];
-      let period = data[i][3];
-
-
-      for(let j=0; j < p; j++) {
-
-        let offset_diff =  simplify$2(
-          expand(
-            ['+', offset, ['-', ['+', offset0, j]]]),
-          assumptions, Infinity);
-
-        // use math.mod rather than % so it always non-negative
-        if(Number.isFinite(offset_diff) && Number.isFinite(period)) {
-          offset_diff = math$19.mod(offset_diff, period);
-
-          if(math$19.min(offset_diff, period-offset_diff) < 1E-10*period) {
-
-            for(let k=0; k<m; k++) {
-              covered[j+k*p] = true;
-            }
-
-            // check to see if covered all;
-            let covered_all = true;
-            for(let ind=0; ind < base_p; ind++) {
-              if(!covered[ind]) {
-                covered_all = false;
-                break;
-              }
-            }
-
-            if(covered_all)
-              return true;
-
-            break;
-          }
-        }
-      }
-    }
-
-    if(match_partial) {
-      let fraction_covered = 0;
-      for(let ind=0; ind < base_p; ind++) {
-        if(covered[ind]) {
-          fraction_covered++;
-        }
-      }
-      fraction_covered /= base_p;
-
-      if(fraction_covered > max_fraction_covered) {
-        max_fraction_covered = fraction_covered;
-      }
-    }
-  }
-
-  if(match_partial && max_fraction_covered > 0) {
-    return max_fraction_covered;
-  }
-
-  return false;
-
-}
-
-
-function sequence_from_discrete_infinite(expr, n_elements) {
-
-  // assuming without checking that expr is discrete infinite set
-
-  var tree = expr.tree;
-  var operands = tree.slice(1);
-
-  // implemented only if have just one tuple defining set
-  if(operands.length > 1)
-    return;
-
-  let offset = operands[0][1];
-  let period = operands[0][2];
-  let min_index = evaluate_numbers(operands[0][3]);
-  let max_index = operands[0][4];
-
-  // implemented only if min_index is defined and an integer and max_index is infinity
-  if(!Number.isInteger(min_index) || max_index !== Infinity)
-    return;
-
-  let result = [];
-
-  for(let i=0; i < n_elements; i++) {
-    result.push(evaluate_numbers(['+', ['*', period, min_index+i], offset]));
-  }
-
-  return result;
-}
-
-//exports.equalsViaFiniteField = equalsViaFiniteField;
-
-const equals$5 = function (expr, other, {
-  tolerance = 1E-12, allowed_error_in_numbers = 0,
-  include_error_in_number_exponents = false,
-  allowed_error_is_absolute = false,
-} = {}) {
-  if (expr.variables().includes('\uFF3F') || other.variables().includes('\uFF3F')) {
-    return false;
-  }
-
-  // first check with symbolic equality
-  // converting all numbers and numerical quantities to floating point
-  // and normalizing form of each expression
-  let exprNormalized = expr.evaluate_numbers({ max_digits: Infinity })
-    .normalize_function_names()
-    .normalize_applied_functions()
-    .simplify();
-  let otherNormalized = other.evaluate_numbers({ max_digits: Infinity })
-    .normalize_function_names()
-    .normalize_applied_functions()
-    .simplify();
-
-  if (exprNormalized.equalsViaSyntax(otherNormalized, {
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
-  })
-  ) {
-    return true;
-  } else if (expr.equalsViaComplex(other, {
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
-  })) {
-    return true;
-    // } else if (expr.equalsViaReal(other)) {
-    //   	return true;
-  } else if (equals$$1(expr, other)) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
-var equality = /*#__PURE__*/Object.freeze({
-  equals: equals$5,
-  equalsViaComplex: equals$1,
-  equalsViaReal: equals$2,
-  equalsViaSyntax: equals$3,
-  equalsDiscreteInfinite: equals$$1
 });
 
 const integrateNumerically = function(expr, x,a,b) {
@@ -78209,26 +79202,26 @@ var round$2 = /*#__PURE__*/Object.freeze({
 });
 
 const expression_to_tree = [
-    simplify$3,
-    differentiation,
-    normalization,
-    sign_error,
-    arithmetic$1,
-    transformation,
-    solve,
-    sets,
-    matrix$5,
-    rational,
-    round$2,
+  simplify$3,
+  differentiation,
+  normalization,
+  arithmetic$1,
+  transformation,
+  solve,
+  sets,
+  matrix$5,
+  rational,
+  round$2,
 ];
 
 const expression_to_other = [
-    variables$1,
-    printing,
-    equality,
+  variables$1,
+  printing,
+  equality,
   integration,
   evaluation,
   analytic,
+  sign_error,
 ];
 
 // standard functions
@@ -81224,8 +82217,6 @@ var util$1 = {
   format: format$10,
   debuglog: debuglog
 }
-
-var require$$2 = {};
 
 var node$2 = createCommonjsModule(function (module, exports) {
 /**
