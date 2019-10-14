@@ -72,8 +72,8 @@ const allow_error_in_numbers = [
       'exp(5*0.9999991xy+c)'
     ],
     at_least_one_incorrect_answer: [
-      'exp(5*1.000005xy+c)',
-      'exp(5*0.999995xy+c)'
+      'exp(5*1.0001xy+c)',
+      'exp(5*0.9999xy+c)'
     ],
   },
   {
@@ -87,8 +87,8 @@ const allow_error_in_numbers = [
       'exp((5-.0000009)xy+c)'
     ],
     at_least_one_incorrect_answer: [
-      'exp((5+.000005)xy+c)',
-      'exp((5-.000005)xy+c)'
+      'exp((5+.001)xy+c)',
+      'exp((5-.001)xy+c)'
     ],
   },
   {
@@ -108,10 +108,10 @@ const allow_error_in_numbers = [
       '10*0.9999991exp(5*0.9999991xy+c)'
     ],
     at_least_one_incorrect_answer: [
-      '10*1.000005exp(5*1.000005xy+c)',
-      '10*1.000005exp(5*0.999995xy+c)',
-      '10*0.999995exp(5*1.000005xy+c)',
-      '10*0.999995exp(5*0.999995xy+c)'
+      '10*1.00001exp(5*1.00001xy+c)',
+      '10*1.00001exp(5*0.99999xy+c)',
+      '10*0.99999exp(5*1.00001xy+c)',
+      '10*0.99999exp(5*0.99999xy+c)'
     ],
   },
   {
@@ -131,10 +131,10 @@ const allow_error_in_numbers = [
       '(10-.0000009)exp((5-.0000009)xy+c)'
     ],
     at_least_one_incorrect_answer: [
-      '(10+.000005)exp((5+.000005)xy+c)',
-      '(10+.000005)exp((5-.000005)xy+c)',
-      '(10-.000005)exp((5+.000005)xy+c)',
-      '(10-.000005)exp((5-.000005)xy+c)'
+      '(10+.0001)exp((5+.0001)xy+c)',
+      '(10+.0001)exp((5-.0001)xy+c)',
+      '(10-.0001)exp((5+.0001)xy+c)',
+      '(10-.0001)exp((5-.0001)xy+c)'
     ],
   },
   {
