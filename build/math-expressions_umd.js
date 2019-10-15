@@ -70862,8 +70862,8 @@
   const text_rules = [
     // in order to parse as scientific notation, e.g., 3.2E-12 or .7E+3,
     // it must be at the end or followed a |, or a closing ),}, or ]
-    ['[0-9]+(\\.[0-9]*)?'+sci_notat_exp_regex, 'NUMBER'],
-    ['\\.[0-9]+'+sci_notat_exp_regex, 'NUMBER'],
+    ['[0-9]+(\\.[0-9]*)?' + sci_notat_exp_regex, 'NUMBER'],
+    ['\\.[0-9]+' + sci_notat_exp_regex, 'NUMBER'],
     ['\\*\\*', '^'],
     ['\\*', '*'], // there is some variety in multiplication symbols
     ['\\xB7', '*'], // '·'
@@ -71736,10 +71736,11 @@
       else { // result is length 1
 
         // since have just a d or ∂
-        // must be followed by a ^ or a VARMULTICHAR
-        this.advance({ remove_initial_space: false });
-
-        if (this.token.token_type === 'VARMULTICHAR') {
+        // must be followed by a ^ or a VARMULTICHAR/VAR with no ∂
+        this.advance();
+        if (this.token.token_type === 'VARMULTICHAR' ||
+          (this.token.token_type === 'VAR' && !this.token.token_text.includes('∂'))
+        ) {
           var1 = this.token.token_text;
         }
 
@@ -71751,7 +71752,7 @@
 
           // so far have d or ∂ followed by ^
           // must be followed by an integer
-          this.advance({ remove_initial_space: false });
+          this.advance();
 
           if (this.token.token_type !== 'NUMBER') {
             return false;
@@ -71763,11 +71764,11 @@
           }
 
           // see if next character is single character
-          this.advance({ remove_initial_space: false });
+          this.advance();
 
-          // either a single letter from VAR
+          // either a VAR with no ∂
           // or a VARMULTICHAR
-          if ((this.token.token_type === 'VAR' && (/^[a-zA-Z]$/.exec(this.token.token_text)))
+          if ((this.token.token_type === 'VAR' && !this.token.token_text.includes('∂'))
             || this.token.token_type === 'VARMULTICHAR') {
             var1 = this.token.token_text;
           }
@@ -71800,7 +71801,7 @@
         // - a VAR whose first character matches derivative symbol
         //   and whose second character is a letter, or
         // - a single character VAR that matches derivative symbol
-        //   which must be followed by a VARMULTICHAR (with no space)
+        //   which must be followed by a VARMULTICHAR/VAR with no ∂
 
         if (this.token.token_type !== 'VAR' || this.token.token_text[0] !== deriv_symbol) {
           return false;
@@ -71826,9 +71827,10 @@
           }
         }
         else { // token text was just the derivative symbol
-          this.advance({ remove_initial_space: false });
+          this.advance();
 
-          if (this.token.token_type !== 'VARMULTICHAR') {
+          if (!((this.token.token_type === 'VAR' && !this.token.token_text.includes('∂'))
+            || this.token.token_type === 'VARMULTICHAR')) {
             return false;
           }
           var2s.push(this.token.token_text);
@@ -71838,11 +71840,18 @@
 
         let this_exponent = 1;
 
+        let lastWasSpace = false;
+
         this.advance({ remove_initial_space: false });
+        // if last token was a space advance to next non-space token
+        if (this.token.token_type === "SPACE") {
+          lastWasSpace = true;
+          this.advance();
+        }
 
         if (this.token.token_type === '^') {
 
-          this.advance({ remove_initial_space: false });
+          this.advance();
 
           if (this.token.token_type !== 'NUMBER') {
             return false;
@@ -71853,7 +71862,14 @@
             return false;
           }
 
+          lastWasSpace = false;
+
           this.advance({ remove_initial_space: false });
+          // if last token was a space advance to next non-space token
+          if (this.token.token_type === "SPACE") {
+            lastWasSpace = true;
+            this.advance();
+          }
 
         }
         var2_exponents.push(this_exponent);
@@ -71868,7 +71884,7 @@
 
           // check to make sure next token isn't another VAR or VARMULTICHAR
           // in this case, the derivative isn't separated from what follows
-          if (this.token.token_type === "VAR" || this.token.token_type === "VARMULTICHAR") {
+          if (!lastWasSpace && (this.token.token_type === "VAR" || this.token.token_type === "VARMULTICHAR")) {
             return false;
           }
 
