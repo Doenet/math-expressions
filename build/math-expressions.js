@@ -75213,7 +75213,8 @@ function generate_random_integer(minvalue, maxvalue, rng) {
 
 const equals = function ({ expr, other, randomBindings,
   expr_context, other_context,
-  tolerance = 1E-12, allowed_error_in_numbers = 0,
+  relative_tolerance = 1E-12, absolute_tolerance = 0, tolerance_for_zero = 1E-15,
+  allowed_error_in_numbers = 0,
   include_error_in_number_exponents = false,
   allowed_error_is_absolute = false,
   rng,
@@ -75244,7 +75245,7 @@ const equals = function ({ expr, other, randomBindings,
           randomBindings: randomBindings,
           expr_context: expr_context,
           other_context: other_context,
-          tolerance: tolerance,
+          relative_tolerance, absolute_tolerance, tolerance_for_zero,
           allowed_error_in_numbers: allowed_error_in_numbers,
           include_error_in_number_exponents: include_error_in_number_exponents,
           allowed_error_is_absolute: allowed_error_is_absolute,
@@ -75294,7 +75295,7 @@ const equals = function ({ expr, other, randomBindings,
         other_context: other_context,
         allow_proportional: true,
         require_positive_proportion: require_positive_proportion,
-        tolerance: tolerance,
+        relative_tolerance, absolute_tolerance, tolerance_for_zero,
         allowed_error_in_numbers: allowed_error_in_numbers,
         include_error_in_number_exponents: include_error_in_number_exponents,
         allowed_error_is_absolute: allowed_error_is_absolute,
@@ -75312,7 +75313,7 @@ const equals = function ({ expr, other, randomBindings,
     randomBindings: randomBindings,
     expr_context: expr_context,
     other_context: other_context,
-    tolerance: tolerance,
+    relative_tolerance, absolute_tolerance, tolerance_for_zero,
     allowed_error_in_numbers: allowed_error_in_numbers,
     include_error_in_number_exponents: include_error_in_number_exponents,
     allowed_error_is_absolute: allowed_error_is_absolute,
@@ -75325,7 +75326,8 @@ const equals = function ({ expr, other, randomBindings,
 const component_equals = function ({ expr, other, randomBindings,
   expr_context, other_context,
   allow_proportional = false, require_positive_proportion = false,
-  tolerance, allowed_error_in_numbers, include_error_in_number_exponents,
+  relative_tolerance, absolute_tolerance, tolerance_for_zero,
+  allowed_error_in_numbers, include_error_in_number_exponents,
   allowed_error_is_absolute,
   rng
 }) {
@@ -75333,7 +75335,6 @@ const component_equals = function ({ expr, other, randomBindings,
   var max_value = Number.MAX_VALUE * 1E-20;
   var min_nonzero_value = 0;//1E-100; //Number.MIN_VALUE & 1E20;
 
-  var epsilon = tolerance;
   var minimum_matches = 10;
   var number_tries = 100;
   // if (allowed_error_in_numbers > 0) {
@@ -75419,14 +75420,14 @@ const component_equals = function ({ expr, other, randomBindings,
     let parameter_list = Object.keys(parameters_for_numbers);
     if (parameter_list.length > 0) {
       let derivative_sum = expr_with_params.derivative(parameter_list[0]);
-      if(!allowed_error_is_absolute) {
+      if (!allowed_error_is_absolute) {
         derivative_sum = derivative_sum
           .multiply(parameters_for_numbers[parameter_list[0]]);
       }
       if (parameter_list.length > 1) {
         for (let par of parameter_list.slice(1)) {
           let term = expr_with_params.derivative(par);
-          if(!allowed_error_is_absolute) {
+          if (!allowed_error_is_absolute) {
             term = term.multiply(parameters_for_numbers[par]);
           }
           derivative_sum = derivative_sum.add(term);
@@ -75607,10 +75608,19 @@ const component_equals = function ({ expr, other, randomBindings,
       }
     }
 
-    tol += min_mag * epsilon;
+    tol += min_mag * relative_tolerance;
 
     // never allow tol to get over 10% the min_mag
     tol = Math.min(tol, 0.1 * min_mag);
+
+
+    // don't use min_mag to check for zero as mag will be zero
+    // for very small complex numbers
+    if (tol === 0 && (expr_evaluated === 0 || other_evaluated === 0)) {
+      tol += tolerance_for_zero;
+    } else {
+      tol += absolute_tolerance;
+    }
 
     if (!(
       max_mag === 0 ||
@@ -75687,10 +75697,18 @@ const component_equals = function ({ expr, other, randomBindings,
             continue;
           }
         }
-        tol += min_mag * epsilon;
+        tol += min_mag * relative_tolerance;
 
         // never allow tol to get over 10% the min_mag
         tol = Math.min(tol, 0.1 * min_mag);
+
+        // don't use min_mag to check for zero as mag will be zero
+        // for very small complex numbers
+        if (tol === 0 && (expr_evaluated === 0 || other_evaluated === 0)) {
+          tol += tolerance_for_zero;
+        } else {
+          tol += absolute_tolerance;
+        }
 
         if (!(
           max_mag === 0 ||
@@ -76759,7 +76777,8 @@ function randomComplexBindings(rng, variables, radius, centers) {
 }
 
 const equals$1 = function (expr, other,
-  { tolerance = 1E-12, allowed_error_in_numbers = 0,
+  { relative_tolerance = 1E-12, absolute_tolerance = 0, tolerance_for_zero = 1E-15,
+    allowed_error_in_numbers = 0,
     include_error_in_number_exponents = false,
     allowed_error_is_absolute = false,
   } = {}) {
@@ -76781,10 +76800,10 @@ const equals$1 = function (expr, other,
     randomBindings: randomComplexBindings,
     expr_context: expr.context,
     other_context: other.context,
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
+    relative_tolerance, absolute_tolerance, tolerance_for_zero,
+    allowed_error_in_numbers,
+    include_error_in_number_exponents,
+    allowed_error_is_absolute,
     rng
   });
 };
@@ -76807,8 +76826,11 @@ function randomRealBindings(rng, variables, radius, centers) {
 }
 
 const equals$2 = function (expr, other,
-  { tolerance = 1E-12, allowed_error_in_numbers = 0,
-    include_error_in_number_exponents = false } = {}) {
+  { relative_tolerance = 1E-12, absolute_tolerance = 0, tolerance_for_zero = 1E-15,
+    allowed_error_in_numbers = 0,
+    include_error_in_number_exponents = false,
+    allowed_error_is_absolute = false,
+  } = {}) {
 
   // don't use real equality if not analytic expression
   if ((!expr.isAnalytic()) || (!other.isAnalytic()))
@@ -76822,9 +76844,10 @@ const equals$2 = function (expr, other,
     randomBindings: randomRealBindings,
     expr_context: expr.context,
     other_content: other.context,
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
+    relative_tolerance, absolute_tolerance, tolerance_for_zero,
+    allowed_error_in_numbers,
+    include_error_in_number_exponents,
+    allowed_error_is_absolute,
     rng
   });
 };
@@ -77172,7 +77195,8 @@ function sequence_from_discrete_infinite(expr, n_elements) {
 //exports.equalsViaFiniteField = equalsViaFiniteField;
 
 const equals$5 = function (expr, other, {
-  tolerance = 1E-12, allowed_error_in_numbers = 0,
+  relative_tolerance = 1E-12, absolute_tolerance = 0, tolerance_for_zero = 1E-15,
+  allowed_error_in_numbers = 0,
   include_error_in_number_exponents = false,
   allowed_error_is_absolute = false,
 } = {}) {
@@ -77193,17 +77217,17 @@ const equals$5 = function (expr, other, {
     .simplify();
 
   if (exprNormalized.equalsViaSyntax(otherNormalized, {
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
+    allowed_error_in_numbers,
+    include_error_in_number_exponents,
+    allowed_error_is_absolute,
   })
   ) {
     return true;
   } else if (expr.equalsViaComplex(other, {
-    tolerance: tolerance,
-    allowed_error_in_numbers: allowed_error_in_numbers,
-    include_error_in_number_exponents: include_error_in_number_exponents,
-    allowed_error_is_absolute: allowed_error_is_absolute,
+    relative_tolerance, absolute_tolerance, tolerance_for_zero,
+    allowed_error_in_numbers,
+    include_error_in_number_exponents,
+    allowed_error_is_absolute,
   })) {
     return true;
     // } else if (expr.equalsViaReal(other)) {
