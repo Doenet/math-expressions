@@ -82,6 +82,14 @@ describe("evaluate_numbers", function () {
     me.add_assumption(me.from('x > 0'));
     expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(0);
     me.clear_assumptions();
+
+    expect(me.fromText('x/2').evaluate_numbers().tree).toEqual(['/', 'x', 2]);
+    expect(me.fromText('x/2').evaluate_numbers({max_digits: 3}).tree).toEqual(['*', 0.5, 'x']);
+
+    expect(me.fromText('x/3').evaluate_numbers().tree).toEqual(['/', 'x', 3]);
+    expect(me.fromText('x/3').evaluate_numbers({max_digits: 5}).tree).toEqual(['/', 'x', 3]);
+    expect(me.fromText('x/3').evaluate_numbers({max_digits: Infinity}).tree).toEqual(['*', 1/3, 'x']);
+
   });
 
   it("power", function () {

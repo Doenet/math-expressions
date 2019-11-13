@@ -69937,7 +69937,12 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering, eval
         if (denom < 0)
           return ['/', ['*', -numer[1], numer[2]], -denom];
       }
-      // if denonimator is negative, negate whole fraction
+      let reciprocal = 1/denom;
+      if (max_digits === Infinity
+        || math$19.round(reciprocal, max_digits) === reciprocal) {
+          return ['*', reciprocal, numer];
+      }
+      // if denominator is negative, negate whole fraction
       if (denom < 0) {
         if (Array.isArray(numer) && numer[0] === '-')
           return ['/', numer[1], -denom];
