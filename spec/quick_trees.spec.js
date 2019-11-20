@@ -67,6 +67,13 @@ describe("tree basics", function () {
       TREE('(y+1)*(x+2)/((y+1)^(x+2))'))).toBeTruthy();
   });
 
+  
+  it("substituting with tree that includes booleans", function () {
+    expect(trees.equal(trees.substitute(TREE('x < y < z'), { x: TREE('a'), y: TREE('b'), z:TREE('c') }),
+      TREE('a < b < c'))).toBeTruthy();
+    expect(trees.equal(trees.substitute(TREE('x < y <= z'), { x: TREE('a'), y: TREE('b'), z:TREE('c') }),
+      TREE('a < b <= c'))).toBeTruthy();
+  });
 
 });
 

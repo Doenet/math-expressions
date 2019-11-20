@@ -63366,7 +63366,7 @@ function matchImplicitIdentity(tree, pattern, params) {
 
 
 const substitute = function( pattern, bindings ) {
-  if (typeof pattern === 'number') {
+  if (typeof pattern === 'number' || typeof pattern === "boolean") {
   	return pattern;
   }
 
