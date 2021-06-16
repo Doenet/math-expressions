@@ -203,7 +203,7 @@ function clean(text) {
 }
 
 inputs.forEach(function(input) {
-  test(input, function () {
+  test(input.toString(), function () {
     if(Array.isArray(input))
       expect(clean(round_trip(input[0]))).toEqual(clean(input[1]));
     else
@@ -215,7 +215,7 @@ inputs.forEach(function(input) {
 
 // Additional round trips to ast should not alter the strings at all
 inputs.forEach(function(input) {
-  test(input, function () {
+  test(input.toString(), function () {
     if(Array.isArray(input))
       expect(round_trip(round_trip(input[0]))).toEqual(round_trip(input[0]));
     else

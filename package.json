@@ -39,13 +39,17 @@
     "babel-loader": "^8.0.0",
     "jest": "^27.0.4",
     "jshint": "^2.10.2",
+    "regenerator-runtime": "^0.13.7",
     "rollup": "^0.57.1",
     "rollup-plugin-commonjs": "^9.3.4",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-node-resolve": "^3.4.0"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "./spec/setup.js"
+    ]
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }

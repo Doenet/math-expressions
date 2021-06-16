@@ -29,7 +29,7 @@ describe("pt reduce rational expression", function () {
                           ]
          
          poly_sets.forEach(function(example) {
-                           it(example, function() {
+                           it(example.toString(), function() {
                               let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
                               let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
                               let new_top = poly.expression_to_polynomial(me.fromText(example[1][0]));
@@ -63,7 +63,7 @@ describe("reduce rational expression", function () {
                           ]
          
          poly_sets.forEach(function(example) {
-                           it(example, function() {
+                           it(example.toString(), function() {
                               let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
                               let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
                               let new_top = poly.expression_to_polynomial(me.fromText(example[1][0]));
@@ -79,7 +79,7 @@ describe("gcd", function () {
                           ]
          
          poly_sets.forEach(function(example) {
-                           it(example, function() {
+                           it(example.toString(), function() {
                               let top = poly.expression_to_polynomial(me.fromText(example[0][0]));
                               let bottom = poly.expression_to_polynomial(me.fromText(example[0][1]));
                               let gcd = poly.expression_to_polynomial(me.fromText(example[1]));
@@ -101,7 +101,7 @@ describe("gcd", function () {
                           ]
          
          poly_sets.forEach(function(example) {
-                           it(example, function() {
+                           it(example.toString(), function() {
                               expect(poly.poly_gcd(example[0],example[1])).toEqual(example[2]);
                               });
                            });
@@ -120,7 +120,7 @@ describe("lcm", function () {
          ]
          
          poly_sets.forEach(function(example) {
-                           it(example, function() {
+                           it(example.toString(), function() {
                               expect(poly.poly_lcm(example[0],example[1])).toEqual(example[2]);
                               });
                            });
