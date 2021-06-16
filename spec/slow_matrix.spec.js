@@ -21,7 +21,7 @@ describe("vector addition", function() {
          ]
          
          vectors.forEach(function(example) {
-                             it(example, function() {
+                             it(example.toString(), function() {
                                 let first_vector = me.fromText(example[0]);
                                 let second_vector = me.fromText(example[1]);
                                 let sum_vector = me.fromText(example[2]).tuples_to_vectors();
@@ -39,7 +39,7 @@ describe("scalar times vector", function() {
                         ]
          
          vectors.forEach(function(example) {
-                         it(example, function() {
+                         it(example.toString(), function() {
                             let vector = me.fromText(example[0]);
                             let scalar = me.fromText(example[1]);
                             let prod_vector = me.fromText(example[2]).tuples_to_vectors().simplify();
@@ -58,7 +58,7 @@ describe("vector subtraction", function() {
                         ]
          
          vectors.forEach(function(example) {
-                         it(example, function() {
+                         it(example.toString(), function() {
                             let first_vector = me.fromText(example[0]);
                             let second_vector = me.fromText(example[1]);
                             let sum_vector = me.fromText(example[2]).tuples_to_vectors().simplify();
@@ -76,7 +76,7 @@ describe("dot product", function() {
                         ]
          
          vectors.forEach(function(example) {
-                         it(example, function() {
+                         it(example.toString(), function() {
                             let first_vector = me.fromText(example[0]);
                             let second_vector = me.fromText(example[1]);
                             let dot = me.fromText(example[2]).simplify();
@@ -96,7 +96,7 @@ describe("cross product", function(){
                         ['(0,0,1)', '(1,0,0)', '(0,1,0)']
                         ]
          vectors.forEach(function(example) {
-                         it(example, function() {
+                         it(example.toString(), function() {
                             let first_vector = me.fromText(example[0]);
                             let second_vector = me.fromText(example[1]);
                             let cross_vector = me.fromText(example[2]).tuples_to_vectors().simplify();

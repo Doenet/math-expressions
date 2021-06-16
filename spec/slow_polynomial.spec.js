@@ -139,7 +139,7 @@ describe("grobner", function () {
                           ]
          
          poly_sets.forEach(function(red) {
-                           it(red, function() {
+           it(red.toString(), function() {
                               expect(poly.reduced_grobner(red[0])).toEqual(red[1]);
                               });
                            });
@@ -156,7 +156,7 @@ describe("reduce", function () {
          ]
          
          poly_sets.forEach(function(red) {
-                           it(red, function() {
+           it(red.toString(), function() {
                               expect(poly.reduce(red[0])).toEqual(red[1]);
                               });
                            });
@@ -178,7 +178,7 @@ describe("division algorithm", function () {
          
          
          divisions.forEach(function(divs) {
-                           it(divs, function() {
+           it(divs.toString(), function() {
                               expect(poly.poly_div(divs[0], divs[1])).toEqual(divs[2]);
                               });
                            });
@@ -204,7 +204,7 @@ describe("find maximum term divisible by one of the monomials", function () {
                            [["polynomial", "x", [[0, 1], [1, ["polynomial", "y", [[1, 1], [2, 1]]]], [2, ["polynomial", "y", [[1,1]]]], [3, 1]]], [["monomial", 1, [["x", 4]]], ["monomial", 1, [["x", 2], ["y", 2]]], ["monomial", 1, [["x", 1], ["y", 1]]]], [["monomial", 1, [["x", 2], ["y", 1]]], 2]]
                           ];
          poly_monos.forEach(function(monos) {
-                           it(monos, function() {
+           it(monos.toString(), function() {
                               expect(poly.max_div_init(monos[0], monos[1])).toEqual(monos[2]);
                               });
                            });
@@ -218,7 +218,7 @@ describe("monomial to polynomial", function () {
                           [7, 7]
                               ];
          mono_poly.forEach(function(monos) {
-                               it(monos, function() {
+           it(monos.toString(), function() {
                                   expect(poly.mono_to_poly(monos[0])).toEqual(monos[1]);
                                   });
                                });
@@ -239,7 +239,7 @@ describe("monomial division", function () {
                               [["monomial", 5, [["x", 3],["y", 2]]], ["monomial", 2, [["x", 1],["y", 1]]], ["monomial", ["/", 5, 2], [["x", 2],["y", 1]]]]
                               ];
          mono_mono_div.forEach(function(monos) {
-                                            it(monos, function() {
+           it(monos.toString(), function() {
                                                expect(poly.mono_div(monos[0],monos[1])).toEqual(monos[2]);
                                                expect(poly.mono_is_div(monos[0],monos[1])).toBeTruthy();
                                                expect(poly.mono_is_div(monos[0],monos[2])).toBeTruthy();
@@ -255,7 +255,7 @@ describe("monomial division", function () {
                             [["monomial", 1, [["x", 3]]], ["monomial", 1, [["x", 2], ["y", 2]]]]
                             ];
          mono_nondiv.forEach(function(monos) {
-                               it(monos, function() {
+           it(monos.toString(), function() {
                                   expect(poly.mono_is_div(monos[0],monos[1])).toBeFalsy();
                                   });
                                });
@@ -271,7 +271,7 @@ describe("monomial gcd", function () {
                               [["monomial", 1, [["x", 2],["y", 5]]], ["monomial", 1, [["a", 5], ["b", 2], ["c", 7]]], 1]
                               ];
          mono_mono_gcd.forEach(function(monos) {
-                                            it(monos, function() {
+           it(monos.toString(), function() {
                                                expect(poly.mono_gcd(monos[0],monos[1])).toEqual(monos[2]);
                                                expect(poly.mono_gcd(monos[1],monos[0])).toEqual(monos[2]);
                                                });
@@ -289,7 +289,7 @@ describe("monomial order", function () {
                           ];
     
     inc_mono_pairs.forEach(function(pair) {
-        it(pair, function() {
+      it(pair.toString(), function() {
            expect(poly.mono_less_than( pair[0], pair[1] )).toBeTruthy();
            expect(poly.mono_less_than( pair[1], pair[0] )).toBeFalsy();
                              });
@@ -301,7 +301,7 @@ describe("monomial order", function () {
          ]
          
     equal_mono_pairs.forEach(function(pair) {
-        it(pair, function() {
+      it(pair.toString(), function() {
             expect(poly.mono_less_than( pair[0], pair[1] )).toBeFalsy();
             expect(poly.mono_less_than( pair[1], pair[0] )).toBeFalsy();
                                    });
@@ -384,7 +384,7 @@ describe("text to polynomial", function () {
     // expression should be equal after converting to polynomial and back
     // (if an array, then first element should be converted to second)
     expressions.forEach(function(expr) {
-	it(expr, function() {
+      it(expr.toString(), function() {
 	    if(Array.isArray(expr)) {
 		expect(trees.equal(
 		    round_trip(expr[0]),
@@ -402,7 +402,7 @@ describe("text to polynomial", function () {
 
     // additional round trips should leave expression unchanged
     expressions.forEach(function(expr) {
-	it(expr, function() {
+      it(expr.toString(), function() {
 	    if(Array.isArray(expr)) {
 		expect(trees.equal(
 		    round_trip(round_trip(expr[0])),
