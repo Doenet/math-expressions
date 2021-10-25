@@ -76059,6 +76059,10 @@ const component_equals = function ({ expr, other, randomBindings,
     var expr_evaluated = expr_f(bindings);
     var other_evaluated = other_f(bindings);
 
+    if (typeof expr_evaluated === "boolean" || typeof other_evaluated === "boolean") {
+      return { out_of_bounds: true, always_zero: false };
+    }
+
     var expr_abs = math$19.abs(expr_evaluated);
     var other_abs = math$19.abs(other_evaluated);
 

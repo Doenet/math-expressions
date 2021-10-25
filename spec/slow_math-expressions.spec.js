@@ -311,6 +311,7 @@ describe("expression", function () {
     ['5q <= 9z', '-5q <= -9z'],
     ['5q >= 9z', '-5q >= -9z'],
     ['10^(-30)', '2*10^(-30)'],
+    ['0', 't=4'],
   ];
 
   _.each(nonequivalences, function (nonequiv) {
