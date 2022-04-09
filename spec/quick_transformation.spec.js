@@ -97,6 +97,14 @@ test("substitution", function () {
   let expr7 = me.fromAst("x").substitute({x: -Infinity});
   expect(expr7.tree).toBe(-Infinity);
 
+  let expr8 = me.fromAst(["+", "x", "y"]).substitute({y: -0});
+  let expr8a = me.fromText('x-0')
+  expect(tree_equal(expr8.tree, expr8a.tree)).toBeTruthy();
+
+  let expr9 = me.fromAst(["+", "x", ["-", "y"]]).substitute({y: -0});
+  let expr9a = me.fromText('x--0')
+  expect(tree_equal(expr9.tree, expr9a.tree)).toBeTruthy();
+
 });
 
 test("substitute component", function () {

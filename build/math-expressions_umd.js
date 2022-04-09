@@ -63325,7 +63325,7 @@
 
   // ESM Exports
 
-  function handleNaNInfinityStringify(key, value) {
+  function handleNaNInfinityNegZeroStringify(key, value) {
     if (value !== value) {
       return '0/0';
     }
@@ -63338,10 +63338,14 @@
       return '-1/0';
     }
 
+    if(Object.is(value, -0)) {
+      return "-0";
+    }
+
     return value;
   }
 
-  function handleNaNInfinityParse(key, value) {
+  function handleNaNInfinityNegZeroParse(key, value) {
     if (value === '0/0') {
       return 0/0;
     }
@@ -63354,13 +63358,17 @@
       return -1/0;
     }
 
+    if (value === '-0') {
+      return -0;
+    }
+
     return value;
   }
 
   function deepClone(s) {
     return JSON.parse(
-      JSON.stringify(s, handleNaNInfinityStringify),
-      handleNaNInfinityParse);
+      JSON.stringify(s, handleNaNInfinityNegZeroStringify),
+      handleNaNInfinityNegZeroParse);
   }
 
   const equal$2 = function(left, right, {
@@ -74045,7 +74053,7 @@
       return operands.join(' ');
     },
     "-": function(operands) {
-      return "- " + operands[0];
+      return "-" + operands[0];
     },
     "*": function(operands) {
       return operands.join(" ");
@@ -74388,7 +74396,7 @@
         else if(tree === -Infinity)
           return "-\\infty";
         else {
-          let numberString = tree.toString();
+          let numberString = Object.is(tree, -0) ? "-0" : tree.toString();
           let eIndex = numberString.indexOf('e');
           if(eIndex === -1) {
             return numberString;
@@ -75048,7 +75056,7 @@
 
   const unicode_operators = {
       "+": function(operands) { return operands.join( ' ' ); },
-      "-": function(operands) { return "- " + operands[0]; },
+      "-": function(operands) { return "-" + operands[0]; },
       "*": function(operands) { return operands.join( " " ); },
       "/": function(operands) { return operands[0] + "/" + operands[1]; },
       "_": function(operands) { return operands[0]  + "_" + operands[1]; },
@@ -75092,7 +75100,7 @@
 
   const nonunicode_operators = {
       "+": function(operands) { return operands.join( ' ' ); },
-      "-": function(operands) { return "- " + operands[0]; },
+      "-": function(operands) { return "-" + operands[0]; },
       "*": function(operands) { return operands.join( " " ); },
       "/": function(operands) { return operands[0] + "/" + operands[1]; },
       "_": function(operands) { return operands[0]  + "_" + operands[1]; },
@@ -75403,7 +75411,7 @@
           }
         }
         else {
-          let numberString = tree.toString();
+          let numberString = Object.is(tree, -0) ? "-0" : tree.toString();
           let eIndex = numberString.indexOf('e');
           if(eIndex === -1) {
             return numberString;
