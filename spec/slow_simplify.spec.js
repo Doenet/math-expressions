@@ -364,3 +364,15 @@ describe("collect like terms and factor", function () {
 	})
 
 });
+
+
+describe("expand", function () {
+
+    it("expand polynomials", function () {
+      expect(me.from("(x-1)(x+2)").expand().tree).toEqual(me.from("x^2+x-2").tree)
+      expect(me.from("2(1-x)(1+x)(-2)").expand().tree).toEqual(me.from("4x^2-4").tree)
+      expect(me.from("-9(-y+3z)8(z-2)(-3)").expand().tree).toEqual(me.from("-216 y z + 432 y + 648 z^2 - 1296 z").evaluate_numbers().tree)
+  
+    });
+  });
+  

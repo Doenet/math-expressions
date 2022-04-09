@@ -72438,6 +72438,7 @@
     transformations.push([textToAst$1.convert("(-a)^2"), textToAst$1.convert("a^2")]);
     transformations.push([textToAst$1.convert("(-a)^3"), textToAst$1.convert("-a^3")]);
     transformations.push([textToAst$1.convert("(-a)^4"), textToAst$1.convert("a^4")]);
+    transformations.push([textToAst$1.convert("a*(b+c)*d"), textToAst$1.convert("(a*b+a*c)*d")]);
 
     tree = applyAllTransformations(tree, transformations, 20);
 
