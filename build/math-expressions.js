@@ -61295,7 +61295,7 @@ var variables$1 = /*#__PURE__*/Object.freeze({
 });
 
 // Current version.
-var VERSION = '1.13.1';
+var VERSION = '1.13.2';
 
 // Establish the root object, `window` (`self`) in the browser, `global`
 // on the server, or `this` in some virtual machines. We use `self`
@@ -61531,7 +61531,7 @@ function emulatedSet(keys) {
   var hash = {};
   for (var l = keys.length, i = 0; i < l; ++i) hash[keys[i]] = true;
   return {
-    contains: function(key) { return hash[key]; },
+    contains: function(key) { return hash[key] === true; },
     push: function(key) {
       hash[key] = true;
       return keys.push(key);
@@ -62795,6 +62795,19 @@ function min$2(obj, iteratee, context) {
   return result;
 }
 
+// Safely create a real, live array from anything iterable.
+var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff][\udc00-\udfff]|[\ud800-\udfff]/g;
+function toArray(obj) {
+  if (!obj) return [];
+  if (isArray$5(obj)) return slice.call(obj);
+  if (isString$6(obj)) {
+    // Keep surrogate pair characters together.
+    return obj.match(reStrSymbol);
+  }
+  if (isArrayLike(obj)) return map$8(obj, identity);
+  return values(obj);
+}
+
 // Sample **n** random values from a collection using the modern version of the
 // [Fisher-Yates shuffle](https://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
 // If **n** is not specified, returns a single random element.
@@ -62804,7 +62817,7 @@ function sample(obj, n, guard) {
     if (!isArrayLike(obj)) obj = values(obj);
     return obj[random$2(obj.length - 1)];
   }
-  var sample = isArrayLike(obj) ? clone$11(obj) : values(obj);
+  var sample = toArray(obj);
   var length = getLength(sample);
   n = Math.max(Math.min(n, length), 0);
   var last = length - 1;
@@ -62880,19 +62893,6 @@ var countBy = group(function(result, value, key) {
 var partition = group(function(result, value, pass) {
   result[pass ? 0 : 1].push(value);
 }, true);
-
-// Safely create a real, live array from anything iterable.
-var reStrSymbol = /[^\ud800-\udfff]|[\ud800-\udbff][\udc00-\udfff]|[\ud800-\udfff]/g;
-function toArray(obj) {
-  if (!obj) return [];
-  if (isArray$5(obj)) return slice.call(obj);
-  if (isString$6(obj)) {
-    // Keep surrogate pair characters together.
-    return obj.match(reStrSymbol);
-  }
-  if (isArrayLike(obj)) return map$8(obj, identity);
-  return values(obj);
-}
 
 // Return the number of elements in a collection.
 function size$7(obj) {
@@ -70150,9 +70150,6 @@ function evaluate_numbers_sub(tree, assumptions, max_digits, skip_ordering, eval
     if(set_small_zero > 0 && math$19.abs(tree) < set_small_zero) {
       return 0;
     }
-    if(tree === 0) {
-      return 0;  // so that -0 returns 0
-    }
     return tree;
   }
 
@@ -70501,6 +70498,10 @@ function evaluate_numbers(expr_or_tree, {
       unflattenRight(result), assumptions, max_digits, skip_ordering, evaluate_functions, set_small_zero));
   }
 
+  if(result === 0) {
+    result = 0;  // so that -0 returns 0
+  }
+  
   return flatten(result);
 }
 
@@ -74599,9 +74600,14 @@ class astToLatex {
   termWithPlusIfNotNegated(tree) {
     var result = this.term(tree);
 
-    if (!result.toString().match(/^-/))
-      return '+ ' + result.toString();
+    let str = result.toString();
 
+    if (!str.match(/^-/))
+      return '+ ' + str;
+
+    if (str.match(/^-[^ ]/))
+      return '- ' + str.slice(1);
+      
     // else
     return result;
   }
@@ -75611,9 +75617,14 @@ class astToText {
  termWithPlusIfNotNegated(tree){
     let result = this.term(tree);
 
-    if (!result.toString().match( /^-/ ))
-	return '+ ' + result.toString();
+    let str = result.toString();
 
+    if (!str.match(/^-/))
+      return '+ ' + str;
+
+    if (str.match(/^-[^ ]/))
+      return '- ' + str.slice(1);
+      
     // else
     return result;
 }

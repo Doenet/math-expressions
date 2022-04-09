@@ -33,6 +33,12 @@ describe("evaluate_numbers", function () {
 
   });
 
+  it("negative zero", function() {
+    expect(me.from("6/-0").evaluate_numbers().tree).toEqual(-Infinity);
+    expect(me.from("-6/-0").evaluate_numbers().tree).toEqual(Infinity);
+    expect(Object.is(me.from("-0").evaluate_numbers().tree, 0)).toEqual(true);
+  });
+
   it("multiplication", function () {
     expect(me.from("3*2*x*4").evaluate_numbers().tree).toEqual(
         ['*', 24, 'x']);
