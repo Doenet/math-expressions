@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "2.0.0-alpha27",
+  "version": "2.0.0-alpha28",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@babel/cli": "^7.0.0",
     "@babel/core": "^7.14.6",
+    "@babel/node": "^7.16.8",
     "@babel/preset-env": "^7.14.5",
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^27.0.2",

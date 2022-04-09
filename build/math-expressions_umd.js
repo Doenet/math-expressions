@@ -71236,7 +71236,7 @@
       statement_a
       **** statement_a '|' statement_a
            used with turning off '|' statement '|' in baseFactor
-  	 tried only after parse error encountered
+     tried only after parse error encountered
 
      statement_a =
       statement_a 'OR' statement_b |
@@ -71826,7 +71826,11 @@
       var lhs = this.term(params);
 
       if (negative_begin) {
-        lhs = ['-', lhs];
+        if (lhs > 0 || Object.is(lhs, 0)) {
+          lhs = -lhs;
+        } else {
+          lhs = ['-', lhs];
+        }
       }
 
       while ((this.token.token_type === '+') || (this.token.token_type === '-')
@@ -71849,7 +71853,11 @@
         }
         let rhs = this.term(params);
         if (negative) {
-          rhs = ['-', rhs];
+          if (rhs > 0 || Object.is(rhs, 0)) {
+            rhs = -rhs;
+          } else {
+            rhs = ['-', rhs];
+          }
         }
 
         lhs = [operation, lhs, rhs];
@@ -71895,7 +71903,12 @@
 
       if (this.token.token_type === '-') {
         this.advance();
-        return ['-', this.factor(params)];
+        let factor = this.factor(params);
+        if (factor > 0 || Object.is(factor, 0)) {
+          return -factor;
+        } else {
+          return ['-', factor];
+        }
       }
 
       var result = this.nonMinusFactor(params);
@@ -79994,8 +80007,8 @@
   const sci_notat_exp_regex$1 = '(E[+\\-]?[0-9]+\\s*($|(?=\\,|&|\\||\\\\\\||\\)|\\}|\\\\}|\\]|\\\\\\\\|\\\\end)))?';
 
   const latex_rules = [
-    ['[0-9]+(\\.[0-9]*)?'+sci_notat_exp_regex$1 , 'NUMBER'],
-    ['\\.[0-9]+'+sci_notat_exp_regex$1, 'NUMBER'],
+    ['[0-9]+(\\.[0-9]*)?' + sci_notat_exp_regex$1, 'NUMBER'],
+    ['\\.[0-9]+' + sci_notat_exp_regex$1, 'NUMBER'],
     ['\\*', '*'],
     ['\\/', '/'],
     ['-', '-'],
@@ -80449,7 +80462,11 @@
       var lhs = this.term(params);
 
       if (negative_begin) {
-        lhs = ['-', lhs];
+        if (lhs > 0 || Object.is(lhs, 0)) {
+          lhs = -lhs;
+        } else {
+          lhs = ['-', lhs];
+        }
       }
 
       while ((this.token.token_type === '+') || (this.token.token_type === '-')
@@ -80473,7 +80490,11 @@
         }
         let rhs = this.term(params);
         if (negative) {
-          rhs = ['-', rhs];
+          if (rhs > 0 || Object.is(rhs, 0)) {
+            rhs = -rhs;
+          } else {
+            rhs = ['-', rhs];
+          }
         }
 
         lhs = [operation, lhs, rhs];
@@ -80518,7 +80539,12 @@
     factor(params) {
       if (this.token.token_type === '-') {
         this.advance();
-        return ['-', this.factor(params)];
+        let factor = this.factor(params);
+        if (factor > 0 || Object.is(factor, 0)) {
+          return -factor;
+        } else {
+          return ['-', factor];
+        }
       }
 
       var result = this.nonMinusFactor(params);
@@ -80561,6 +80587,16 @@
           throw new ParseError("Invalid location of ^", this.lexer.location);
         }
         this.advance();
+
+        if (this.token.token_type === "NUMBER"
+          && this.token.token_text.length > 1
+          && this.token.token_text[0] !== "."
+        ) {
+          let exponent = Number(this.token.token_text[0]);
+          this.lexer.unput(this.token.token_text.slice(1));
+          this.advance();
+          return ['^', result, exponent]
+        }
 
         // do not allow absolute value closing here
         let params2 = Object.assign({}, params);

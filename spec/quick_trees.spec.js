@@ -57,9 +57,9 @@ describe("tree basics", function () {
       TREE('y^2 + x^2'))).toBeTruthy();
   });
 
-  it("substituting cos(x+y)/sin(x-y) with x:=1 and y:=2", function () {
-    expect(trees.equal(trees.substitute(TREE('cos(x+y)/sin(x-y)'), { x: 1, y: 2 }),
-      TREE('cos(1+2)/sin(1-2)'))).toBeTruthy();
+  it("substituting cos(x+y)/sin(x*y) with x:=1 and y:=2", function () {
+    expect(trees.equal(trees.substitute(TREE('cos(x+y)/sin(x*y)'), { x: 1, y: 2 }),
+      TREE('cos(1+2)/sin(1*2)'))).toBeTruthy();
   });
 
   it("substituting x*y/(x^y) with x := (y+1) and y := (x+2)", function () {
