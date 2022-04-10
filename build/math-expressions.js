@@ -63319,7 +63319,7 @@ _$1._ = _$1;
 
 // ESM Exports
 
-function handleNaNInfinityNegZeroStringify(key, value) {
+function handleNaNInfinityStringify(key, value) {
   if (value !== value) {
     return '0/0';
   }
@@ -63332,14 +63332,10 @@ function handleNaNInfinityNegZeroStringify(key, value) {
     return '-1/0';
   }
 
-  if(Object.is(value, -0)) {
-    return "-0";
-  }
-
   return value;
 }
 
-function handleNaNInfinityNegZeroParse(key, value) {
+function handleNaNInfinityParse(key, value) {
   if (value === '0/0') {
     return 0/0;
   }
@@ -63352,17 +63348,13 @@ function handleNaNInfinityNegZeroParse(key, value) {
     return -1/0;
   }
 
-  if (value === '-0') {
-    return -0;
-  }
-
   return value;
 }
 
 function deepClone(s) {
   return JSON.parse(
-    JSON.stringify(s, handleNaNInfinityNegZeroStringify),
-    handleNaNInfinityNegZeroParse);
+    JSON.stringify(s, handleNaNInfinityStringify),
+    handleNaNInfinityParse);
 }
 
 const equal$2 = function(left, right, {
@@ -71881,7 +71873,7 @@ class textToAst {
     var lhs = this.term(params);
 
     if (negative_begin) {
-      if (lhs > 0 || Object.is(lhs, 0)) {
+      if (lhs > 0) {
         lhs = -lhs;
       } else {
         lhs = ['-', lhs];
@@ -71908,7 +71900,7 @@ class textToAst {
       }
       let rhs = this.term(params);
       if (negative) {
-        if (rhs > 0 || Object.is(rhs, 0)) {
+        if (rhs > 0) {
           rhs = -rhs;
         } else {
           rhs = ['-', rhs];
@@ -71959,7 +71951,7 @@ class textToAst {
     if (this.token.token_type === '-') {
       this.advance();
       let factor = this.factor(params);
-      if (factor > 0 || Object.is(factor, 0)) {
+      if (factor > 0) {
         return -factor;
       } else {
         return ['-', factor];
@@ -74442,7 +74434,7 @@ class astToLatex {
       else if(tree === -Infinity)
         return "-\\infty";
       else {
-        let numberString = Object.is(tree, -0) ? "-0" : tree.toString();
+        let numberString = tree.toString();
         let eIndex = numberString.indexOf('e');
         if(eIndex === -1) {
           return numberString;
@@ -75457,7 +75449,7 @@ class astToText {
         }
       }
       else {
-        let numberString = Object.is(tree, -0) ? "-0" : tree.toString();
+        let numberString = tree.toString();
         let eIndex = numberString.indexOf('e');
         if(eIndex === -1) {
           return numberString;
@@ -80528,7 +80520,7 @@ class latexToAst {
     var lhs = this.term(params);
 
     if (negative_begin) {
-      if (lhs > 0 || Object.is(lhs, 0)) {
+      if (lhs > 0) {
         lhs = -lhs;
       } else {
         lhs = ['-', lhs];
@@ -80556,7 +80548,7 @@ class latexToAst {
       }
       let rhs = this.term(params);
       if (negative) {
-        if (rhs > 0 || Object.is(rhs, 0)) {
+        if (rhs > 0) {
           rhs = -rhs;
         } else {
           rhs = ['-', rhs];
@@ -80606,7 +80598,7 @@ class latexToAst {
     if (this.token.token_type === '-') {
       this.advance();
       let factor = this.factor(params);
-      if (factor > 0 || Object.is(factor, 0)) {
+      if (factor > 0) {
         return -factor;
       } else {
         return ['-', factor];
