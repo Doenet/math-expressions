@@ -70566,6 +70566,10 @@
       [ '*', 'x', [ '^', 'y', [ '-', 'a' ] ] ],
     { evaluate_numbers: true, max_digits: max_digits }]);
     transformations.push([
+      [ '/', 'x', [ 'apply', 'exp', 'a' ] ],
+      [ '*', 'x', [ 'apply', 'exp', [ '-', 'a' ] ] ],
+    { evaluate_numbers: true, max_digits: max_digits, variables: {x: true, a: true} }]);
+    transformations.push([
       [ '/', 'x', 'y' ],
       [ '*', 'x', [ '^', 'y', [ '-', 1 ] ] ],
     { evaluate_numbers: true, max_digits: max_digits }]);
@@ -70617,6 +70621,21 @@
           m: v => isNumber(v) && is_negative_ast(v, assumptions)
         },
         evaluate_numbers: true, max_digits: max_digits,
+        allow_extended_match: true,
+        allow_permutations: true,
+        max_group: 1,
+      }]
+    );
+    transformations.push(
+      [
+        [ '*', [ 'apply', 'exp', 'n' ], [ 'apply', 'exp', 'm' ] ], 
+        [ 'apply', 'exp', [ '+', 'n', 'm' ] ],
+      {
+        variables: {
+          n: isNumber, m: isNumber
+        },
+        evaluate_numbers: true, max_digits: max_digits,
+        allow_implicit_identities: ['m', 'n'],
         allow_extended_match: true,
         allow_permutations: true,
         max_group: 1,
@@ -70708,12 +70727,36 @@
       evaluate_numbers: true, max_digits: max_digits,
       max_group: 1,
     }]);
+    transformations.push(
+      [
+        [ '*', 'x', [ 'apply', 'exp', [ '-', 'a' ] ] ],
+        [ '/', 'x', [ 'apply', 'exp', 'a' ] ],
+    {
+      allow_extended_match: true,
+      allow_permutations: true,
+      evaluate_numbers: true, max_digits: max_digits,
+      max_group: 1,
+      variables: {x: true, a: true}
+    }]);
     transformations.push([
       [ '*', 'x', [ '^', 'y', 'n' ] ],
       [ '/', 'x', [ '^', 'y', [ '-', 'n' ] ] ],
     {
       variables: {
         x: true, y: true,
+        n: isNegativeNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+      allow_extended_match: true,
+      allow_permutations: true,
+      max_group: 1,
+    }]);
+    transformations.push([
+      [ '*', 'x', [ 'apply', 'exp', 'n' ] ],
+      [ '/', 'x', [ 'apply', 'exp', [ '-', 'n' ] ] ],
+    {
+      variables: {
+        x: true,
         n: isNegativeNumber
       },
       evaluate_numbers: true, max_digits: max_digits,
@@ -70731,6 +70774,15 @@
     {
       variables: {
         y: true,
+        n: isNegativeNumber
+      },
+      evaluate_numbers: true, max_digits: max_digits,
+    }]);
+    transformations.push([
+      [ 'apply', 'exp', 'n' ],
+      [ '/', 1, [ 'apply', 'exp', [ '-', 'n' ] ] ],
+    {
+      variables: {
         n: isNegativeNumber
       },
       evaluate_numbers: true, max_digits: max_digits,

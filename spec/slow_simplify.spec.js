@@ -363,6 +363,48 @@ describe("collect like terms and factor", function () {
 	
 	})
 
+    it("treat exp like power", function () {
+        expect(trees.equal(
+            me.fromText("e^3 e^5").collect_like_terms_factors().tree,
+            me.fromText("e^8").evaluate_numbers().tree
+        )).toBeTruthy();
+        
+        expect(trees.equal(
+            me.fromText("exp(3) exp(5)").collect_like_terms_factors().tree,
+            me.fromText("exp(8)").evaluate_numbers().tree
+        )).toBeTruthy();
+
+        expect(trees.equal(
+            me.fromText("-5e^(-t)").collect_like_terms_factors().tree,
+            me.fromText("-5/e^t").evaluate_numbers().tree
+        )).toBeTruthy();
+    
+        expect(trees.equal(
+            me.fromText("-5exp(-t)").collect_like_terms_factors().tree,
+            me.fromText("-5/exp(t)").evaluate_numbers().tree
+        )).toBeTruthy();
+    
+        expect(trees.equal(
+            me.fromText("e^(3)/e^(-5)").collect_like_terms_factors().tree,
+            me.fromText("e^8").evaluate_numbers().tree
+        )).toBeTruthy();
+    
+        expect(trees.equal(
+            me.fromText("exp(3)/exp(-5)").collect_like_terms_factors().tree,
+            me.fromText("exp(8)").evaluate_numbers().tree
+        )).toBeTruthy();
+        
+        expect(trees.equal(
+            me.fromText("e^(3)/e^(5)").collect_like_terms_factors().tree,
+            me.fromText("1/e^2").evaluate_numbers().tree
+        )).toBeTruthy();
+    
+        expect(trees.equal(
+            me.fromText("exp(3)/exp(5)").collect_like_terms_factors().tree,
+            me.fromText("1/exp(2)").evaluate_numbers().tree
+        )).toBeTruthy();
+    
+    })
 });
 
 
