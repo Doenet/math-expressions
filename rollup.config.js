@@ -2,6 +2,7 @@
 import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import builtins from 'rollup-plugin-node-builtins';
+import { terser } from "rollup-plugin-terser";
 
 export default {
   input: 'lib/math-expressions.js',
@@ -16,6 +17,7 @@ export default {
   plugins: [
     resolve(),
     commonjs(),
-    builtins()
+    builtins(),
+    terser(),
   ]
 };

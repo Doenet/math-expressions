@@ -41,10 +41,11 @@
     "jest": "^27.0.4",
     "jshint": "^2.10.2",
     "regenerator-runtime": "^0.13.7",
-    "rollup": "^0.57.1",
+    "rollup": "^2.70.1",
     "rollup-plugin-commonjs": "^9.3.4",
     "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-node-resolve": "^3.4.0"
+    "rollup-plugin-node-resolve": "^3.4.0",
+    "rollup-plugin-terser": "^7.0.2"
   },
   "jest": {
     "testEnvironment": "node",
