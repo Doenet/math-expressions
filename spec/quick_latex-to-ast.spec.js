@@ -4,8 +4,9 @@ import { ParseError } from '../lib/converters/error';
 var converter = new latexToAst();
 
 var trees = {
-  
+  '1 * 3\\text{eggs}' : ['*', 1, 3], 
   '\\frac{1}{2} x': ['*',['/',1,2],'x'],
+  '\\frac{1}{2\\text{foo}} x': ['*',['/',1,2],'x'],
   '1+x+3': ['+',1,'x',3],
   '1-x-3': ['+',1,['-','x'],-3],
   "1 + - x": ['+',1,['-','x']],
