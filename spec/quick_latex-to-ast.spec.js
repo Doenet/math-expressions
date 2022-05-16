@@ -16,6 +16,7 @@ var trees = {
   'x^2': ['^', 'x', 2],
   '\\log x': ['apply', 'log', 'x'],
   '\\ln x': ['apply', 'ln', 'x'],
+  '\\log_{10} x': ['apply', 'log10', 'x'],
   '-x^2': ['-',['^', 'x', 2]],
   '|x|': ['apply', 'abs','x'],
   '|\\sin|x||': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],

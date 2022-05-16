@@ -62,6 +62,10 @@ const objectsToTest = [
     'latex': '\\ln\\left(x\\right)'
   },
   {
+    'ast': ['apply', 'log10', 'x'],
+    'latex': '\\log_{10}\\left(x\\right)'
+  },
+  {
     'ast': ['apply', 'abs', 'x'],
     'latex': '\\left|x\\right|'
   },

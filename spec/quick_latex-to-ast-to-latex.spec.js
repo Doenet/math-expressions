@@ -67,6 +67,7 @@ var inputs = [
   ['\\log 3', '\\log(3)'],
   ['\\ln x', '\\ln(x)'],
   ['\\log e^{x}','\\log\\left(e^{x}\\right)'],
+  ['\\log_{10} 3', '\\log_{10}(3)'],
   'e^{x}',
   '\\exp(x)',
   ['\\var{blah}(x)', '\\var{blah} x'],
