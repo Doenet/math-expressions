@@ -252,6 +252,27 @@ describe("collect like terms and factor", function () {
 	    .toEqual(0);
     });
 
+    expect(trees.equal(
+	    me.fromText("x+x/2").collect_like_terms_factors().tree,
+	    me.fromText("3x/2").tree
+	)).toBeTruthy();
+
+    expect(trees.equal(
+	    me.fromText("x-x/2").collect_like_terms_factors().tree,
+	    me.fromText("x/2").tree
+	)).toBeTruthy();
+
+    expect(trees.equal(
+	    me.fromText("3x/4+x/2").collect_like_terms_factors().tree,
+	    me.fromText("5x/4").tree
+	)).toBeTruthy();
+
+    expect(trees.equal(
+	    me.fromText("3x/4-x/2").collect_like_terms_factors().tree,
+	    me.fromText("x/4").tree
+	)).toBeTruthy();
+
+
     it("like factors", function () {
 	expect(trees.equal(
 	    me.fromText("3xyx").collect_like_terms_factors().tree,
