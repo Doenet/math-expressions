@@ -726,6 +726,52 @@ for (let objectToTest of objectsToTest) {
 }
 
 
+test("pad to digits", function () {
+
+  let converter = new astToText({padToDigits: 5 });
+
+  expect(converter.convert(123E28)).toEqual("1.2300 * 10^30")
+  expect(converter.convert(123E14)).toEqual("12300000000000000")
+  expect(converter.convert(123E8)).toEqual("12300000000")
+  expect(converter.convert(123000)).toEqual("123000")
+  expect(converter.convert(12300)).toEqual("12300")
+  expect(converter.convert(1230)).toEqual("1230.0")
+  expect(converter.convert(123)).toEqual("123.00")
+  expect(converter.convert(12.3)).toEqual("12.300")
+  expect(converter.convert(1.23)).toEqual("1.2300")
+  expect(converter.convert(.123)).toEqual("0.12300")
+  expect(converter.convert(.0123)).toEqual("0.012300")
+  expect(converter.convert(.00123)).toEqual("0.0012300")
+  expect(converter.convert(.000123)).toEqual("0.00012300")
+  expect(converter.convert(123E-8)).toEqual("0.0000012300")
+  expect(converter.convert(123E-14)).toEqual("1.2300 * 10^(-12)")
+  expect(converter.convert(123E-28)).toEqual("1.2300 * 10^(-26)")
+
+});
+
+test("pad to decimals", function () {
+
+  let converter = new astToText({padToDecimals: 5 });
+
+  expect(converter.convert(123E28)).toEqual("1230000000000000000000000000000.00000")
+  expect(converter.convert(123E14)).toEqual("12300000000000000.00000")
+  expect(converter.convert(123E8)).toEqual("12300000000.00000")
+  expect(converter.convert(123000)).toEqual("123000.00000")
+  expect(converter.convert(12300)).toEqual("12300.00000")
+  expect(converter.convert(1230)).toEqual("1230.00000")
+  expect(converter.convert(123)).toEqual("123.00000")
+  expect(converter.convert(12.3)).toEqual("12.30000")
+  expect(converter.convert(1.23)).toEqual("1.23000")
+  expect(converter.convert(.123)).toEqual("0.12300")
+  expect(converter.convert(.0123)).toEqual("0.01230")
+  expect(converter.convert(.00123)).toEqual("0.00123")
+  expect(converter.convert(.000123)).toEqual("0.000123")
+  expect(converter.convert(123E-8)).toEqual("0.00000123")
+  expect(converter.convert(123E-14)).toEqual("1.23 * 10^(-12)")
+  expect(converter.convert(123E-28)).toEqual("1.23 * 10^(-26)")
+
+});
+
 //
 // describe("ast to text", function() {
 //     it("sum of two numbers", function() {
