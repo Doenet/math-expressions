@@ -765,6 +765,9 @@ test("pad to digits", function () {
   expect(converter.convert(123E-14)).toEqual("1.2300 \\cdot 10^{-12}")
   expect(converter.convert(123E-28)).toEqual("1.2300 \\cdot 10^{-26}")
 
+  expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.00 \\cdot 10^{28}")
+  expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.00 \\cdot 10^{-28}")
+
 });
 
 test("pad to decimals", function () {
@@ -787,5 +790,8 @@ test("pad to decimals", function () {
   expect(converter.convert(123E-8)).toEqual("0.00000123")
   expect(converter.convert(123E-14)).toEqual("1.23 \\cdot 10^{-12}")
   expect(converter.convert(123E-28)).toEqual("1.23 \\cdot 10^{-26}")
+
+  expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.00000 \\cdot 10^{28}")
+  expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.00000 \\cdot 10^{-28}")
 
 });
