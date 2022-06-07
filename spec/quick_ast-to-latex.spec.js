@@ -767,6 +767,8 @@ test("pad to digits", function () {
 
   expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.00 \\cdot 10^{28}")
   expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.00 \\cdot 10^{-28}")
+  
+  expect(converter.convert(NaN)).toEqual("NaN")
 
 });
 
@@ -793,5 +795,7 @@ test("pad to decimals", function () {
 
   expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.00000 \\cdot 10^{28}")
   expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.00000 \\cdot 10^{-28}")
+
+  expect(converter.convert(NaN)).toEqual("NaN")
 
 });
