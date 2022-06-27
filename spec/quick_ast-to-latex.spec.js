@@ -722,6 +722,15 @@ const objectsToTest = [
     'ast': ['^', -3, 'x'],
     'latex': '\\left(-3\\right)^{x}',
   },
+  {
+    'ast': ['^', -3, 2],
+    'latex': '\\left(-3\\right)^{2}',
+  },
+  {
+    'ast': ['^', ['-', 3], 2],
+    'latex': '\\left(-3\\right)^{2}',
+  },
+
 
 
 ]
