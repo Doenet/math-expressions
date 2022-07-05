@@ -1,7 +1,7 @@
 // rollup.config.js
-import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
-import builtins from 'rollup-plugin-node-builtins';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import polyfill from 'rollup-plugin-polyfill-node';
 import { terser } from "rollup-plugin-terser";
 
 export default {
@@ -15,9 +15,14 @@ export default {
     format: 'es'
   }],
   plugins: [
-    resolve(),
-    commonjs(),
-    builtins(),
+    commonjs({
+      transformMixedEsModules:true,
+    }),
+    nodeResolve({
+      preferBuiltins:true,
+      browser:true,
+    }),
+    polyfill(),
     terser(),
   ]
 };
