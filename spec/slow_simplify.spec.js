@@ -207,6 +207,13 @@ describe("evaluate_numbers", function () {
 
   })
 
+  it("can get negative infinity by reciprocal of negative zero", function () {
+
+    expect(me.fromText("1/((-1)(0))").evaluate_numbers().tree).toEqual(-Infinity);
+
+  })
+
+
 });
 
 describe("evaluate_to_constant", function () {
@@ -250,7 +257,6 @@ describe("collect like terms and factor", function () {
 
 	expect(me.fromText("u/v-u/v").collect_like_terms_factors().tree)
 	    .toEqual(0);
-    });
 
     expect(trees.equal(
 	    me.fromText("x+x/2").collect_like_terms_factors().tree,
@@ -272,6 +278,9 @@ describe("collect like terms and factor", function () {
 	    me.fromText("x/4").tree
 	)).toBeTruthy();
 
+    expect(me.fromText("1/((-1)(0))").collect_like_terms_factors().tree).toEqual(-Infinity);
+
+    });
 
     it("like factors", function () {
 	expect(trees.equal(
