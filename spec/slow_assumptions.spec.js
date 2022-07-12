@@ -3021,7 +3021,10 @@ describe("assumptions", function () {
 	
     });
 
-    it("define constants", function () {
+
+		// although this passes, skip test as setting define_i, etc.,
+		// no longer changes mathjs, so doesn't change it everywhere.
+    it.skip("define constants", function () {
 	me.clear_assumptions();
 	me.add_assumption(me.from('x elementof R'));
 	expect(is_nonzero(me.from('i'))).toEqual(true);

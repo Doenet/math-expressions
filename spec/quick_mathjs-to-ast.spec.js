@@ -1,5 +1,5 @@
 import mathjsToAst from '../lib/converters/mathjs-to-ast';
-import math from 'mathjs';
+import math from '../lib/mathjs';
 import flatten from '../lib/converters/flatten';
 var converter = new mathjsToAst();
 

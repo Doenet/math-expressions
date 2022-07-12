@@ -1,8 +1,8 @@
 import astToMathjs from '../lib/converters/ast-to-mathjs';
-import math from 'mathjs';
+import math from '../lib/mathjs';
 import _ from 'underscore';
 var converter = new astToMathjs();
-let reviver = math.json.reviver;
+let reviver = math.reviver;
 
 
 const objectsToTest = [
