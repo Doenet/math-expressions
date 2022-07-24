@@ -239,7 +239,10 @@ describe("expression", function () {
     ['5q-9z > 2u+9z', '27z -5q < -4u + 5q-9z'],
     ['5q-9z <= 2u+9z', '27z -5q >= -4u + 5q-9z'],
     ['5q-9z >= 2u+9z', '27z -5q <= -4u + 5q-9z'],
-    ['(k+1)y_t', 'k*y_t + y_t']
+    ['(k+1)y_t', 'k*y_t + y_t'],
+    ['2+', '2+'],
+    ['5C^(4+)-2C^(4+)', '3C^(4+)'],
+    ['5C_(4+)-2C_(4+)', '3C_(4+)'],
   ];
 
   _.each(equivalences, function (equiv) {
@@ -312,6 +315,7 @@ describe("expression", function () {
     ['5q >= 9z', '-5q >= -9z'],
     ['10^(-30)', '2*10^(-30)'],
     ['0', 't=4'],
+    ["/4", "/4"],
   ];
 
   _.each(nonequivalences, function (nonequiv) {
@@ -323,6 +327,22 @@ describe("expression", function () {
     });
   });
 
+
+  it('allow blanks', function () {
+
+    var expr1 = Expression.fromText('/4')
+    var expr2 = Expression.fromText('/4');
+
+    expect(expr1.equals(expr2)).toBeFalsy();
+    expect(expr1.equals(expr2, { allow_blanks: true })).toBeTruthy();
+
+    var expr1 = Expression.fromText('_6^14C')
+    var expr2 = Expression.fromText('_6^14C');
+
+    expect(expr1.equals(expr2)).toBeFalsy();
+    expect(expr1.equals(expr2, { allow_blanks: true })).toBeTruthy();
+
+  });
 
   it('integer assumption', function () {
     Expression.set_to_default();
