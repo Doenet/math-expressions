@@ -3,8 +3,11 @@ import astToText from '../lib/converters/ast-to-text';
 
 var converter_text_to_ast = new textToAst();
 var converter_ast_to_text = new astToText();
+var converter_ast_to_text_no_blanks = new astToText({ showBlanks: false });
 
 var round_trip = input => converter_ast_to_text.convert(
+  converter_text_to_ast.convert(input));
+var round_trip_no_blanks = input => converter_ast_to_text_no_blanks.convert(
   converter_text_to_ast.convert(input));
 
 
@@ -45,7 +48,7 @@ var inputs = [
   'tan(3)',
   'sec(x)',
   'sec(3)',
-  ['theta','θ'],
+  ['theta', 'θ'],
   'csc(x)',
   'csc(3)',
   'arcsin(x)',
@@ -84,7 +87,7 @@ var inputs = [
   '|sin(||x||)|',
   '||x|+|y|+|z||',
   '|x+y < z|',
-  ['infinity','∞'],
+  ['infinity', '∞'],
   "sin(x)'",
   "sin(x)''",
   'f(x)',
@@ -143,8 +146,8 @@ var inputs = [
   ['x<=y', 'x≤y'],
   'x<y<z',
   ['x<y<=z', 'x<y≤z'],
-  ['x<=y<z','x≤y<z'],
-  ['x<=y<=z','x≤y≤z'],
+  ['x<=y<z', 'x≤y<z'],
+  ['x<=y<=z', 'x≤y≤z'],
   ['A union B', 'A ∪ B'],
   ['A intersect B', 'A ∩ B'],
   'C = A ∩ B',
@@ -231,32 +234,32 @@ var inputs = [
   'a--',
   'a---',
   'a----',
-  'a/b+',
+  ['a/b+', 'a/b+\uff3f'],
   'a/b++',
   'a/b+++',
   'a/b++++',
-  'a/b-',
+  ['a/b-', 'a/b-\uff3f'],
   'a/b--',
   'a/b---',
   'a/b----',
   '1++1',
   'x+++y',
-  'x-y-',
-  '_x',
-  'x_',
-  '|y/v',
-  'x+^2',
-  ['x/\'y','(x/\')y'],
-  ['sin', 'sin()'],
-  ['sin + cos', 'sin(cos())'],
-  '/a',
-  'a/',
+  ['x-y-', 'x-y-\uff3f'],
+  ['_x', '\uff3f_x'],
+  ['x_', 'x_\uff3f'],
+  ['|y/v', '\uff3f|y/v'],
+  ['x+^2', 'x+\uff3f^2'],
+  ['x/\'y', '(x/(\uff3f\'))y'],
+  ['sin', 'sin(\uff3f)'],
+  ['sin + cos', 'sin(cos(\uff3f))'],
+  ['/a', '\uff3f/a'],
+  ['a/', 'a/\uff3f'],
   'C^+',
   'C^-',
   'C^+x',
   'C^-x',
-  ['C^+2','C^+*2'],
-  ['C^-2','C^-*2'],
+  ['C^+2', 'C^+*2'],
+  ['C^-2', 'C^-*2'],
   'C^(++)',
   'C^(--)',
   'C^(+++)',
@@ -271,8 +274,53 @@ var inputs = [
   'C_-',
   'C_+x',
   'C_-x',
-  ['C_+2','C_+*2'],
-  ['C_-2','C_-*2'],
+  ['C_+2', 'C_+*2'],
+  ['C_-2', 'C_-*2'],
+  ['_6^14C', '\uff3f_6^14C'],
+  ['^+', '\uff3f^+'],
+  ['^-', '\uff3f^-'],
+  ['x^/(3-)', '(x^\uff3f)/(3-)'],
+  ['x^/3-', '(x^\uff3f)/3-\uff3f'],
+  ['1+++x^2+', '1+++x^2+\uff3f'],
+  ['1+2+', '1+2+\uff3f'],
+];
+
+
+inputs.forEach(function (input) {
+  test(input.toString(), function () {
+    if (Array.isArray(input))
+      expect(round_trip(input[0]).replace(/ /g, '')).toEqual(input[1].replace(/ /g, ''));
+    else
+      expect(round_trip(input).replace(/ /g, '')).toEqual(input.replace(/ /g, ''));
+  });
+
+});
+
+
+// Additional round trips to ast should not alter the strings at all
+inputs.forEach(function (input) {
+  test(input.toString(), function () {
+    if (Array.isArray(input))
+      expect(round_trip(round_trip(input[0]))).toEqual(round_trip(input[0]));
+    else
+      expect(round_trip(round_trip(input))).toEqual(round_trip(input));
+  });
+
+});
+
+var inputs_no_show_blanks = [
+  'a/b+',
+  'a/b-',
+  'x-y-',
+  '_x',
+  'x_',
+  '|y/v',
+  'x+^2',
+  ['x/\'y', '(x/\')y'],
+  ['sin', 'sin()'],
+  ['sin + cos', 'sin(cos())'],
+  '/a',
+  'a/',
   '_6^14C',
   '^+',
   '^-',
@@ -283,24 +331,24 @@ var inputs = [
 ];
 
 
-inputs.forEach(function(input) {
+inputs_no_show_blanks.forEach(function (input) {
   test(input.toString(), function () {
-    if(Array.isArray(input))
-      expect(round_trip(input[0]).replace(/ /g,'')).toEqual(input[1].replace(/ /g,''));
+    if (Array.isArray(input))
+      expect(round_trip_no_blanks(input[0]).replace(/ /g, '')).toEqual(input[1].replace(/ /g, ''));
     else
-      expect(round_trip(input).replace(/ /g,'')).toEqual(input.replace(/ /g,''));
+      expect(round_trip_no_blanks(input).replace(/ /g, '')).toEqual(input.replace(/ /g, ''));
   });
 
 });
 
 
 // Additional round trips to ast should not alter the strings at all
-inputs.forEach(function(input) {
+inputs_no_show_blanks.forEach(function (input) {
   test(input.toString(), function () {
-    if(Array.isArray(input))
-      expect(round_trip(round_trip(input[0]))).toEqual(round_trip(input[0]));
+    if (Array.isArray(input))
+      expect(round_trip_no_blanks(round_trip_no_blanks(input[0]))).toEqual(round_trip_no_blanks(input[0]));
     else
-      expect(round_trip(round_trip(input))).toEqual(round_trip(input));
+      expect(round_trip_no_blanks(round_trip_no_blanks(input))).toEqual(round_trip_no_blanks(input));
   });
 
 });

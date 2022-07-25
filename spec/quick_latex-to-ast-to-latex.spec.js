@@ -3,8 +3,11 @@ import astToLatex from '../lib/converters/ast-to-latex';
 
 var converter_latex_to_ast = new latexToAst();
 var converter_ast_to_latex = new astToLatex();
+var converter_ast_to_latex_no_blanks = new astToLatex({ showBlanks: false });
 
 var round_trip = input => converter_ast_to_latex.convert(
+  converter_latex_to_ast.convert(input));
+var round_trip_no_blanks = input => converter_ast_to_latex_no_blanks.convert(
   converter_latex_to_ast.convert(input));
 
 
@@ -26,9 +29,9 @@ var inputs = [
   'x+y-z+w',
   '-x-y+z-w',
   'x^{2}(x-3)',
-  ['x^2(x-3)-z^3e^{2x+1}+x/(x-1)','x^{2}(x-3)-z^{3}e^{2x+1}+\\frac{x}{x-1}'],
-  ['-1/x+((x-3)x)/((x-3)(x+4))','-\\frac{1}{x}+\\frac{(x-3)x}{(x-3)(x+4)}'],
-  ['(x/y)/(z/w)','\\frac{\\frac{x}{y}}{\\frac{z}{w}}'],
+  ['x^2(x-3)-z^3e^{2x+1}+x/(x-1)', 'x^{2}(x-3)-z^{3}e^{2x+1}+\\frac{x}{x-1}'],
+  ['-1/x+((x-3)x)/((x-3)(x+4))', '-\\frac{1}{x}+\\frac{(x-3)x}{(x-3)(x+4)}'],
+  ['(x/y)/(z/w)', '\\frac{\\frac{x}{y}}{\\frac{z}{w}}'],
   'x!',
   'n!',
   '17!',
@@ -66,7 +69,7 @@ var inputs = [
   ['\\log x', '\\log(x)'],
   ['\\log 3', '\\log(3)'],
   ['\\ln x', '\\ln(x)'],
-  ['\\log e^{x}','\\log\\left(e^{x}\\right)'],
+  ['\\log e^{x}', '\\log\\left(e^{x}\\right)'],
   ['\\log_{10} 3', '\\log_{10}(3)'],
   'e^{x}',
   '\\exp(x)',
@@ -78,8 +81,8 @@ var inputs = [
   '\\sin\\left(3\\,x\\right)',
   '\\sin\\left (3\\,x\\right )',  // this really gets written...
   '\\sin^{2}\\left(3\\,x\\right)',
-  ['\\sin^{2}x+\\cos^{2}x','\\sin^{2}\\left(x\\right)+\\cos^{2}\\left(x\\right)'],
-  ['\\frac{\\sin^{2}x}{\\cos^{2}x}','\\frac{\\sin^{2}\\left(x\\right)}{\\cos^{2}\\left(x\\right)}'],
+  ['\\sin^{2}x+\\cos^{2}x', '\\sin^{2}\\left(x\\right)+\\cos^{2}\\left(x\\right)'],
+  ['\\frac{\\sin^{2}x}{\\cos^{2}x}', '\\frac{\\sin^{2}\\left(x\\right)}{\\cos^{2}\\left(x\\right)}'],
   '\\sin^{3}\\left(x+y\\right)',
   '\\sin^{3}\\left  (x+y\\right  )',
   '\\sqrt{x+y}',
@@ -88,8 +91,8 @@ var inputs = [
   '\\log(-x^{2})',
   '\\left|3\\right|',
   ['\\sin\\left|x\\right|', '\\sin\\left(\\left|x\\right|\\right)'],
-  ['\\left|\\sin\\left|x\\right|\\right|','\\left|\\sin\\left(\\left|x\\right|\\right)\\right|'],
-  ['|\\sin||x|||','|\\sin(||x||)|'],
+  ['\\left|\\sin\\left|x\\right|\\right|', '\\left|\\sin\\left(\\left|x\\right|\\right)\\right|'],
+  ['|\\sin||x|||', '|\\sin(||x||)|'],
   '||x|+|y|+|z||',
   '|x+y < z|',
   '\\infty',
@@ -108,9 +111,9 @@ var inputs = [
   ['x^22', 'x^{2}\\cdot2'],
   ['x^ab', 'x^{a}b'],
   ['x^y^z', 'x^{y^{z}}'],
-  ['(x^y)^z','(x^{y})^{z}'],
+  ['(x^y)^z', '(x^{y})^{z}'],
   ['x_y_z', 'x_{y_{z}}'],
-  ['(x_y)_z','(x_{y})_{z}'],
+  ['(x_y)_z', '(x_{y})_{z}'],
   ['x_y^z', 'x_{y}^{z}'],
   ['x^y_z', 'x^{y_{z}}'],
   ['f^2', 'f^{2}'],
@@ -125,8 +128,8 @@ var inputs = [
   ['f_(s+t)\'\'^2(x)', 'f_{s+t}\'\'^{2}(x)'],
   ['f_{s+t}\'\'^2(x)', 'f_{s+t}\'\'^{2}(x)'],
   '\\sin(x)\'',
-  ['x_(s+t)\'\'','x_{s+t}\'\''],
-  ['(x-1-2)^2','(x-1-2)^{2}'],
+  ['x_(s+t)\'\'', 'x_{s+t}\'\''],
+  ['(x-1-2)^2', '(x-1-2)^{2}'],
   '(a,b)',
   '(a,b]',
   '[a,b)',
@@ -187,7 +190,7 @@ var inputs = [
   '\\frac{dx}{dt}',
   '\\frac{d x}{d t}',
   ['\\frac{d^2x}{dt^2}', '\\frac{d^{2}x}{dt^{2}}'],
-  ['\\frac{d^2 x}{d t^2}','\\frac{d^{2} x}{d t^{2}}'],
+  ['\\frac{d^2 x}{d t^2}', '\\frac{d^{2} x}{d t^{2}}'],
   'a |x|',
   ['|a|b|c|', '\\left|a\\right| b \\left|c\\right|'],
   '\\left|a \\left|b\\right| c\\right|',
@@ -220,26 +223,26 @@ var inputs = [
   ['a--', '\\var{a--}'],
   ['a---', '\\var{a---}'],
   ['a----', '\\var{a----}'],
-  ['a/b+', '\\frac{a}{b}+'],
+  ['a/b+', '\\frac{a}{b}+\uff3f'],
   ['a/b++', '\\frac{a}{b}++'],
   ['a/b+++', '\\frac{a}{b}+\\var{++}'],
   ['a/b++++', '\\frac{a}{b}+\\var{+++}'],
-  ['a/b-', '\\frac{a}{b}-'],
+  ['a/b-', '\\frac{a}{b}-\uff3f'],
   ['a/b--', '\\frac{a}{b}--'],
   ['a/b---', '\\frac{a}{b}-\\var{--}'],
   ['a/b----', '\\frac{a}{b}-\\var{---}'],
   '1++1',
   'x+++y',
-  'x-y-',
-  ['_x', '_{x}'],
-  ['x_', 'x_{}'],
-  ['|y/v', '\\mid\\frac{y}{v}'],
-  ['x+^2', 'x+^{2}'],
-  ['x/\'y', '(\\frac{x}{\'})y'],
-  ['\\sin', '\\sin()'],
-  ['\\sin+\\cos', '\\sin(\\cos())'],
-  ['/a', '\\frac{}{a}'],
-  ['a/', '\\frac{a}{}'],
+  ['x-y-', 'x-y-\uff3f'],
+  ['_x', '\uff3f_{x}'],
+  ['x_', 'x_{\uff3f}'],
+  ['|y/v', '\uff3f\\mid\\frac{y}{v}'],
+  ['x+^2', 'x+\uff3f^{2}'],
+  ['x/\'y', '(\\frac{x}{\uff3f\'})y'],
+  ['\\sin', '\\sin(\uff3f)'],
+  ['\\sin+\\cos', '\\sin(\\cos(\uff3f))'],
+  ['/a', '\\frac{\uff3f}{a}'],
+  ['a/', '\\frac{a}{\uff3f}'],
   ['C^+', 'C^{+}'],
   ['C^-', 'C^{-}'],
   ['C^+x', 'C^{+}x'],
@@ -262,28 +265,28 @@ var inputs = [
   ['C_-x', 'C_{-}x'],
   ['C_+2', 'C_{+}\\cdot 2'],
   ['C_-2', 'C_{-}\\cdot 2'],
-  ['_6^{14}C','_{6}^{14}C'],
-  ['^+', '^{+}'],
-  ['^-', '^{-}'],
-  ['\\frac{x^{}}{3-}', '\\frac{x^{}}{\\var{3-}}'],
-  ['\\frac{x^{}+}{{}^{}-}', '\\frac{x^{}+}{^{}-}'],
-  ['x^/(3-)', '\\frac{x^{}}{\\var{3-}}'],
-  ['x^/3-', '\\frac{x^{}}{3}-'],
-  ['1+++x^2+','1+++x^{2}+'],
-  '1+2+',
+  ['_6^{14}C', '\uff3f_{6}^{14}C'],
+  ['^+', '\uff3f^{+}'],
+  ['^-', '\uff3f^{-}'],
+  ['\\frac{x^{}}{3-}', '\\frac{x^{\uff3f}}{\\var{3-}}'],
+  ['\\frac{x^{}+}{{}^{}-}', '\\frac{x^{\uff3f}+\uff3f}{\uff3f^{\uff3f}-\uff3f}'],
+  ['x^/(3-)', '\\frac{x^{\uff3f}}{\\var{3-}}'],
+  ['x^/3-', '\\frac{x^{\uff3f}}{3}-\uff3f'],
+  ['1+++x^2+', '1+++x^{2}+\uff3f'],
+  '1+2+\uff3f',
 ];
 
 function clean(text) {
   return text
-    .replace(/\\left/g,'')
-    .replace(/\\right/g,'')
-    .replace(/\\,/g,'')
-    .replace(/ /g,'');
+    .replace(/\\left/g, '')
+    .replace(/\\right/g, '')
+    .replace(/\\,/g, '')
+    .replace(/ /g, '');
 }
 
-inputs.forEach(function(input) {
+inputs.forEach(function (input) {
   test(input.toString(), function () {
-    if(Array.isArray(input))
+    if (Array.isArray(input))
       expect(clean(round_trip(input[0]))).toEqual(clean(input[1]));
     else
       expect(clean(round_trip(input))).toEqual(clean(input));
@@ -293,12 +296,59 @@ inputs.forEach(function(input) {
 
 
 // Additional round trips to ast should not alter the strings at all
-inputs.forEach(function(input) {
+inputs.forEach(function (input) {
   test(input.toString(), function () {
-    if(Array.isArray(input))
+    if (Array.isArray(input))
       expect(round_trip(round_trip(input[0]))).toEqual(round_trip(input[0]));
     else
       expect(round_trip(round_trip(input))).toEqual(round_trip(input));
+  });
+
+});
+
+
+var inputs_no_show_blanks = [
+  ['a/b+', '\\frac{a}{b}+'],
+  ['a/b-', '\\frac{a}{b}-'],
+  'x-y-',
+  ['_x', '_{x}'],
+  ['x_', 'x_{}'],
+  ['|y/v', '\\mid\\frac{y}{v}'],
+  ['x+^2', 'x+^{2}'],
+  ['x/\'y', '(\\frac{x}{\'})y'],
+  ['\\sin', '\\sin()'],
+  ['\\sin+\\cos', '\\sin(\\cos())'],
+  ['/a', '\\frac{}{a}'],
+  ['a/', '\\frac{a}{}'],
+  ['_6^{14}C', '_{6}^{14}C'],
+  ['^+', '^{+}'],
+  ['^-', '^{-}'],
+  ['\\frac{x^{}}{3-}', '\\frac{x^{}}{\\var{3-}}'],
+  ['\\frac{x^{}+}{{}^{}-}', '\\frac{x^{}+}{^{}-}'],
+  ['x^/(3-)', '\\frac{x^{}}{\\var{3-}}'],
+  ['x^/3-', '\\frac{x^{}}{3}-'],
+  ['1+++x^2+', '1+++x^{2}+'],
+  '1+2+',
+];
+
+inputs_no_show_blanks.forEach(function (input) {
+  test(input.toString(), function () {
+    if (Array.isArray(input))
+      expect(clean(round_trip_no_blanks(input[0]))).toEqual(clean(input[1]));
+    else
+      expect(clean(round_trip_no_blanks(input))).toEqual(clean(input));
+  });
+
+});
+
+
+// Additional round trips to ast should not alter the strings at all
+inputs_no_show_blanks.forEach(function (input) {
+  test(input.toString(), function () {
+    if (Array.isArray(input))
+      expect(round_trip_no_blanks(round_trip_no_blanks(input[0]))).toEqual(round_trip_no_blanks(input[0]));
+    else
+      expect(round_trip_no_blanks(round_trip_no_blanks(input))).toEqual(round_trip_no_blanks(input));
   });
 
 });
