@@ -67,11 +67,11 @@ describe("tree basics", function () {
       TREE('(y+1)*(x+2)/((y+1)^(x+2))'))).toBeTruthy();
   });
 
-  
+
   it("substituting with tree that includes booleans", function () {
-    expect(trees.equal(trees.substitute(TREE('x < y < z'), { x: TREE('a'), y: TREE('b'), z:TREE('c') }),
+    expect(trees.equal(trees.substitute(TREE('x < y < z'), { x: TREE('a'), y: TREE('b'), z: TREE('c') }),
       TREE('a < b < c'))).toBeTruthy();
-    expect(trees.equal(trees.substitute(TREE('x < y <= z'), { x: TREE('a'), y: TREE('b'), z:TREE('c') }),
+    expect(trees.equal(trees.substitute(TREE('x < y <= z'), { x: TREE('a'), y: TREE('b'), z: TREE('c') }),
       TREE('a < b <= c'))).toBeTruthy();
   });
 
@@ -80,14 +80,17 @@ describe("tree basics", function () {
 describe("tree matching", function () {
   it("x+y matches the pattern a+b", function () {
     expect(trees.match(TREE('x+y'), TREE('a+b'))).toEqual({ a: 'x', b: 'y' });
+    expect(me.fromText('x+y').match(me.fromText('a+b'))).toEqual({ a: 'x', b: 'y' });
   });
 
   it("x+y does not match the pattern a*b", function () {
     expect(trees.match(TREE('x+y'), TREE('a*b'))).toBeFalsy();
+    expect(me.fromText('x+y').match(me.fromText('a*b'))).toBeFalsy();
   });
 
   it("match must match entire tree", function () {
     expect(trees.match(TREE('x+y/z'), TREE('a/b'))).toBeFalsy();
+    expect(me.fromText('x+y/y').match(me.fromText('a/b'))).toBeFalsy();
   });
 
   it("match must be consistent", function () {
@@ -118,6 +121,10 @@ describe("tree matching", function () {
     expect(trees.match(TREE('x+y'), TREE('a+b'), { variables: { a: true, b: true } })).toBeTruthy();
     expect(trees.match(TREE('x+y'), TREE('a+b'), { variables: { a: true } })).toBeFalsy();
     expect(trees.match(TREE('x+y'), TREE('a+b'), { variables: { b: true } })).toBeFalsy();
+    expect(me.fromText('x+y').match(me.fromText('a+b'))).toBeTruthy();
+    expect(me.fromText('x+y').match(me.fromText('a+b'), { variables: { a: true, b: true } })).toBeTruthy();
+    expect(me.fromText('x+y').match(me.fromText('a+b'), { variables: { a: true } })).toBeFalsy();
+    expect(me.fromText('x+y').match(me.fromText('a+b'), { variables: { b: true } })).toBeFalsy();
   });
 
   it("matching with function conditions", function () {
@@ -189,6 +196,36 @@ describe("tree matching", function () {
     )).toBeFalsy();
 
     expect(trees.match(TREE('e^(7+3s+s^2*0.3)'), pattern,
+      {
+        variables: {
+          a: isNumber, b: isNumber, c: isNumber,
+          x: /^[a-zA-Z]$/
+        },
+        allow_permutations: true
+      }
+    )).toBeTruthy();
+
+
+
+    expect(me.fromText('e^(0.3s^2+3s+7)').match(pattern,
+      {
+        variables: {
+          a: isNumber, b: isNumber, c: isNumber,
+          x: /^[a-zA-Z]$/
+        }
+      }
+    )).toBeTruthy();
+
+    expect(me.fromText('e^(7+3s+s^2*0.3)').match(pattern,
+      {
+        variables: {
+          a: isNumber, b: isNumber, c: isNumber,
+          x: /^[a-zA-Z]$/
+        }
+      }
+    )).toBeFalsy();
+
+    expect(me.fromText('e^(7+3s+s^2*0.3)').match(pattern,
       {
         variables: {
           a: isNumber, b: isNumber, c: isNumber,
