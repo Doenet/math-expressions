@@ -243,6 +243,8 @@ describe("expression", function () {
     ['2+', '2+'],
     ['5C^(4+)-2C^(4+)', '3C^(4+)'],
     ['5C_(4+)-2C_(4+)', '3C_(4+)'],
+    ['re(3-5i)', '3'],
+    ['im(3-5i)', '-5'],
   ];
 
   _.each(equivalences, function (equiv) {

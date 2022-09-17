@@ -332,6 +332,8 @@ var trees = {
   '3C^-x': ["*", 3, ["^", "C", "-"], "x"],
   '5+()': ['+', 5, '\uff3f'],
   '5+()+2': ['+', 5, '\uff3f', 2],
+  're(x)': ["apply", "re", "x"],
+  'im(x)': ["apply", "im", "x"],
 };
 
 Object.keys(trees).forEach(function(string) {

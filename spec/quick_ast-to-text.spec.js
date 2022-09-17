@@ -723,6 +723,14 @@ const objectsToTest = [
     'ast': ['^', ['-', 3], 2],
     'text': '(-3)^2',
   },
+  {
+    'ast': ['apply', 're', 'x'],
+    'text': 're(x)',
+  },
+  {
+    'ast': ['apply', 'im', 'x'],
+    'text': 'im(x)',
+  },
 ]
 
 
