@@ -570,6 +570,12 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, "g", vector]).expand().tree).toEqual(product_vector_g)
     expect(me.fromAst(["*", matrix1, vector, "g"]).expand().tree).toEqual(product_vector_g)
 
+    // TODO: not sure if this is right behavior for multiplying vectors
+    // Also, at some point, we want a way to represent dot/cross products of vectors
+    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual(["^", tuple, 2])
+    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual(["*", tuple, vector])
+    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual(["*", vector, tuple])
+    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual(["^", vector, 2])
 
     let matrix3 = me.fromLatex("\\begin{pmatrix}1 & -2\\\\3&-4\\end{pmatrix}").tree;
     let product13 = me.fromLatex("\\begin{pmatrix}a + 3b & -2a-4b\\\\c + 3d & -2c-4d\\end{pmatrix}").evaluate_numbers().tree
@@ -603,6 +609,18 @@ describe("expand", function () {
     expect(me.from("(i+ix)(i-x)").expand().tree).toEqual(me.from("-ix^2 -ix -x -1").tree)
   });
 
+  it("multiply vector, matrix by scalar", function () {
+    expect(me.from("(a,b)c").expand().tree).toEqual(me.from("(ac,bc)").default_order().tree)
+    expect(me.from("c(a,b)").expand().tree).toEqual(me.from("(ca,cb)").default_order().tree)
+    expect(me.from("(a,b)c").tuples_to_vectors().expand().tree).toEqual(me.from("(ac,bc)").tuples_to_vectors().default_order().tree)
+    expect(me.from("c(a,b)").tuples_to_vectors().expand().tree).toEqual(me.from("(ca,cb)").tuples_to_vectors().default_order().tree)
+
+    expect(me.fromLatex("\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}e").expand().tree)
+      .toEqual(me.fromLatex("\\begin{pmatrix}ae & be\\\\ce&de\\end{pmatrix}").tree)
+    expect(me.fromLatex("e\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}").expand().tree)
+      .toEqual(me.fromLatex("\\begin{pmatrix}ea & eb\\\\ec&ed\\end{pmatrix}").default_order().tree)
+
+  });
 
 });
 
