@@ -526,6 +526,28 @@ describe("other simplify", function () {
     expect(me.fromText("(a,b)+(c,d)").to_intervals().simplify().tree).toEqual(me.fromText("(a,b)+(c,d)").to_intervals().tree);
   })
 
+  it("add matrices", function () {
+    let matrix22a = me.fromLatex("\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}").tree
+    let matrix22b = me.fromLatex("\\begin{bmatrix}e & f\\\\g &h\\end{bmatrix}").tree
+    let matrix21a = me.fromLatex("\\begin{bmatrix}i \\\\j\\end{bmatrix}").tree
+    let matrix21b = me.fromLatex("\\begin{bmatrix}k \\\\l\\end{bmatrix}").tree
+    let matrix12a = me.fromLatex("\\begin{bmatrix}m & n\\end{bmatrix}").tree
+    let matrix12b = me.fromLatex("\\begin{bmatrix}o & p\\end{bmatrix}").tree
+
+    expect(me.fromAst(["+", matrix22a, matrix22b]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}a+e & b+f\\\\c+g &d+h\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", matrix21a, matrix21b]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}i+k\\\\j+l\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", matrix12a, matrix12b]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}m+o & n+p\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", matrix22a, matrix21a]).simplify().tree).toEqual(
+      me.fromAst(["+", matrix22a, matrix21a]).default_order().tree);
+    expect(me.fromAst(["+", matrix22a, matrix12a]).simplify().tree).toEqual(
+      me.fromAst(["+", matrix22a, matrix12a]).default_order().tree);
+    expect(me.fromAst(["+", matrix21a, matrix12a]).simplify().tree).toEqual(
+      me.fromAst(["+", matrix21a, matrix12a]).default_order().tree);
+  })
+
 })
 
 describe("expand", function () {
