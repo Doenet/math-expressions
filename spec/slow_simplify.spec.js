@@ -489,6 +489,29 @@ describe("collect like terms and factor", function () {
 
 });
 
+describe("other simplify", function () {
+
+  it("add tuples", function () {
+    expect(me.fromText("(a,b)+(c,d)").simplify().tree).toEqual(me.fromText("(a+c, b+d)").tree);
+    expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").simplify().tree).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tree);
+    expect(me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").simplify().tree).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tree);
+  })
+
+  it("add vectors", function () {
+    expect(me.fromText("(a,b)+(c,d)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tuples_to_vectors().tree);
+  })
+
+  it("add tuples and vectors", function () {
+    expect(me.fromAst(["+", ["vector", "a", "b"], ["tuple", "c", "d"]]).simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
+  })
+
+  it("don't add intervals", function () {
+    expect(me.fromText("(a,b)+(c,d)").to_intervals().simplify().tree).toEqual(me.fromText("(a,b)+(c,d)").to_intervals().tree);
+  })
+
+})
 
 describe("expand", function () {
 
@@ -498,5 +521,67 @@ describe("expand", function () {
     expect(me.from("-9(-y+3z)8(z-2)(-3)").expand().tree).toEqual(me.from("-216 y z + 432 y + 648 z^2 - 1296 z").evaluate_numbers().tree)
 
   });
+
+
+  it("expand matrix multiplication", function () {
+
+    let matrix1 = me.fromLatex("\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}").tree;
+    let matrix2 = me.fromLatex("\\begin{pmatrix}e\\\\f\\end{pmatrix}").tree;
+    let product = me.fromLatex("\\begin{pmatrix}ae + bf\\\\ce + df\\end{pmatrix}").tree
+    let product_g = me.fromLatex("\\begin{pmatrix}aeg + bfg\\\\ceg + dfg\\end{pmatrix}").tree
+
+    let tuple = ["tuple", "e", "f"]
+    let product_tuple = me.fromLatex("(ae + bf, ce + df)").tree
+    let product_tuple_g = me.fromLatex("(aeg + bfg, ceg + dfg)").tree
+    let vector = ["vector", "e", "f"]
+    let product_vector = me.fromLatex("(ae + bf, ce + df)").tuples_to_vectors().tree
+    let product_vector_g = me.fromLatex("(aeg + bfg, ceg + dfg)").tuples_to_vectors().tree
+
+    expect(me.fromAst(["*", matrix1, matrix2]).expand().tree).toEqual(product)
+    expect(me.fromAst(["*", matrix2, matrix1]).expand().tree).toEqual(["*", matrix2, matrix1])
+    expect(me.fromAst(["*", matrix1, matrix2, "g"]).expand().tree).toEqual(product_g)
+    expect(me.fromAst(["*", "g", matrix1, matrix2]).expand().tree).toEqual(product_g)
+    expect(me.fromAst(["*", matrix1, "g", matrix2]).expand().tree).toEqual(product_g)
+
+    expect(me.fromAst(["*", matrix1, tuple]).expand().tree).toEqual(product_tuple)
+    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual(["*", tuple, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, tuple]).expand().tree).toEqual(product_tuple_g)
+    expect(me.fromAst(["*", matrix1, "g", tuple]).expand().tree).toEqual(product_tuple_g)
+    expect(me.fromAst(["*", matrix1, tuple, "g"]).expand().tree).toEqual(product_tuple_g)
+
+    expect(me.fromAst(["*", matrix1, vector]).expand().tree).toEqual(product_vector)
+    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual(["*", vector, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, vector]).expand().tree).toEqual(product_vector_g)
+    expect(me.fromAst(["*", matrix1, "g", vector]).expand().tree).toEqual(product_vector_g)
+    expect(me.fromAst(["*", matrix1, vector, "g"]).expand().tree).toEqual(product_vector_g)
+
+
+    let matrix3 = me.fromLatex("\\begin{pmatrix}1 & -2\\\\3&-4\\end{pmatrix}").tree;
+    let product13 = me.fromLatex("\\begin{pmatrix}a + 3b & -2a-4b\\\\c + 3d & -2c-4d\\end{pmatrix}").evaluate_numbers().tree
+    let product31 = me.fromLatex("\\begin{pmatrix}a -2c & b - 2d\\\\3a -4c & 3b -4d\\end{pmatrix}").evaluate_numbers().tree
+
+    expect(me.fromAst(["*", matrix1, matrix3]).expand().tree).toEqual(product13)
+    expect(me.fromAst(["*", matrix3, matrix1]).expand().tree).toEqual(product31)
+
+    let product132 = me.fromLatex("\\begin{pmatrix}ae + 3be -2af-4bf\\\\ce + 3de -2cf-4df\\end{pmatrix}").evaluate_numbers().tree
+    let product312 = me.fromLatex("\\begin{pmatrix}ae -2ce + bf - 2df\\\\3ae -4ce + 3bf -4df\\end{pmatrix}").evaluate_numbers().tree
+    let product132_g = me.fromLatex("\\begin{pmatrix}aeg + 3beg -2afg-4bfg\\\\ceg + 3deg -2cfg-4dfg\\end{pmatrix}").evaluate_numbers().tree
+    let product312_g = me.fromLatex("\\begin{pmatrix}aeg -2ceg + bfg - 2dfg\\\\3aeg -4ceg + 3bfg -4dfg\\end{pmatrix}").evaluate_numbers().tree
+
+    expect(me.fromAst(["*", matrix1, matrix3, matrix2]).expand().tree).toEqual(product132)
+    expect(me.fromAst(["*", matrix3, matrix1, matrix2]).expand().tree).toEqual(product312)
+
+    expect(me.fromAst(["*", "g", matrix1, matrix3, matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, "g", matrix3, matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, matrix3, "g", matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, matrix3, matrix2, "g"]).expand().tree).toEqual(product132_g)
+
+    expect(me.fromAst(["*", "g", matrix3, matrix1, matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, "g", matrix1, matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, matrix1, "g", matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, matrix1, matrix2, "g"]).expand().tree).toEqual(product312_g)
+
+  });
+
 });
 
