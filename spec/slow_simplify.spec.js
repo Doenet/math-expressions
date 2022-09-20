@@ -70,6 +70,15 @@ describe("evaluate_numbers", function () {
     expect(me.from("2*2*2*2*2*2*2*2*2*2*2*2*2*2").evaluate_numbers().tree)
       .toEqual(16384);
 
+    expect(me.from("i*i").evaluate_numbers().tree).toEqual(-1);
+    expect(me.from("i*i*i").evaluate_numbers().tree).toEqual(['-', 'i']);
+
+    expect(me.from("3*i*2*i*x*4").evaluate_numbers().evaluate_numbers().tree).toEqual(
+      ['*', -24, 'x']);
+
+    expect(me.from("3*i*2*i*x*4*i").evaluate_numbers().evaluate_numbers().tree).toEqual(
+      ['*', -24, 'i', 'x']);
+
   });
 
   it("division", function () {
@@ -101,6 +110,8 @@ describe("evaluate_numbers", function () {
     expect(me.fromText('x/3').evaluate_numbers({ max_digits: 5 }).tree).toEqual(['/', 'x', 3]);
     expect(me.fromText('x/3').evaluate_numbers({ max_digits: Infinity }).tree).toEqual(['*', 1 / 3, 'x']);
 
+    expect(me.fromText('3/i').evaluate_numbers().tree).toEqual(['*', -3, "i"]);
+
   });
 
   it("power", function () {
@@ -120,6 +131,10 @@ describe("evaluate_numbers", function () {
     expect(me.from("1^t").evaluate_numbers().tree).toEqual(1);
 
     expect(me.from("1^t 5^x").evaluate_numbers().tree).toEqual(['^', 5, 'x']);
+
+    expect(me.from("i^2").evaluate_numbers().tree).toEqual(-1);
+    expect(me.from("i^3").evaluate_numbers().tree).toEqual(['-', 'i']);
+    expect(me.from("i^4").evaluate_numbers().tree).toEqual(1);
 
   });
 
@@ -422,7 +437,7 @@ describe("collect like terms and factor", function () {
     expect(trees.equal(
       me.fromText('abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabc')
         .collect_like_terms_factors().tree,
-      me.fromText('a^3b^3c^3d^2e^2f^2g^2h^2i^2j^2k^2l^2m^2n^2o^2p^2q^2r^2s^2t^2u^2v^2w^2x^2y^2z^2').tree
+      me.fromText('-a^3b^3c^3d^2e^2f^2g^2h^2j^2k^2l^2m^2n^2o^2p^2q^2r^2s^2t^2u^2v^2w^2x^2y^2z^2').tree
     )).toBeTruthy();
 
     expect(trees.equal(
@@ -582,6 +597,12 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix3, matrix1, matrix2, "g"]).expand().tree).toEqual(product312_g)
 
   });
+
+  it("expand with complex numbers", function () {
+    expect(me.from("(x-i)(x+i)").expand().tree).toEqual(me.from("x^2+1").tree)
+    expect(me.from("(i+ix)(i-x)").expand().tree).toEqual(me.from("-ix^2 -ix -x -1").tree)
+  });
+
 
 });
 
