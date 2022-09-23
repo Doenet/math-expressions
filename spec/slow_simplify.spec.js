@@ -194,7 +194,11 @@ describe("evaluate_numbers", function () {
     expect(me.fromText("1/2+1/2").evaluate_numbers().tree).toEqual(1);
     expect(me.fromText("1/2+1/3").evaluate_numbers().tree).toEqual(["/", 5, 6]);
     expect(me.fromText("1/2+1/3").evaluate_numbers({ max_digits: Infinity }).tree).toBeCloseTo(5 / 6);
+    expect(me.fromText("1/3").evaluate_numbers().tree).toEqual(["/", 1, 3]);
 
+    expect(me.fromText("0.5i+0.75").evaluate_numbers().tree).toEqual(['+', ["*", 0.5, 'i'], 0.75])
+    expect(me.fromText("(1/2)i+3/4").evaluate_numbers().tree).toEqual(['+', ['*', 'i', ['/', 1, 2]], ['/', 3, 4]])
+    expect(me.fromText("(1/2)i+3/4").evaluate_numbers({ max_digits: 2 }).tree).toEqual(['+', ["*", 0.5, 'i'], 0.75])
   })
 
 
