@@ -178,7 +178,8 @@ describe("evaluate_numbers", function () {
 
     expect(me.fromText('pi').evaluate_numbers().tree).toEqual('pi');
     expect(me.fromText('pi').evaluate_numbers({ max_digits: Infinity }).tree).toBeCloseTo(Math.PI);
-    expect(me.fromText('0.5 pi').evaluate_numbers().tree).toEqual(['*', 0.5, 'pi']);
+    // expect(me.fromText('0.5 pi').evaluate_numbers().tree).toEqual(['*', 0.5, 'pi']);
+    expect(me.fromText('0.5 pi').evaluate_numbers().tree).toBeCloseTo(0.5 * Math.PI);
     expect(me.fromText('0.5 pi').evaluate_numbers({ max_digits: Infinity }).tree).toBeCloseTo(0.5 * Math.PI);
     expect(me.fromText('pi/2').evaluate_numbers().tree).toEqual(['/', 'pi', 2]);
     expect(me.fromText('pi/2').evaluate_numbers({ max_digits: Infinity }).tree).toBeCloseTo(0.5 * Math.PI);
