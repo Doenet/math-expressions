@@ -508,29 +508,36 @@ describe("collect like terms and factor", function () {
 
 });
 
-describe("other simplify", function () {
+describe("matrix and vector simplify", function () {
 
-  it("add tuples", function () {
+  it("add and subtract tuples", function () {
     expect(me.fromText("(a,b)+(c,d)").simplify().tree).toEqual(me.fromText("(a+c, b+d)").tree);
     expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").simplify().tree).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tree);
     expect(me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").simplify().tree).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tree);
+    expect(me.fromText("(a,b)-(c,d)").simplify().tree).toEqual(me.fromText("(a-c, b-d)").tree);
+    expect(me.fromText("(a,b)+(c,d)-(e,f)+(g,h)").simplify().tree).toEqual(me.fromText("(a+c-e+g, b+d-f+h)").tree);
+    expect(me.fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9").simplify().tree).toEqual(me.fromText("(a-e, b-f) + (c-g, d-h, -1)+9").default_order().tree);
   })
 
-  it("add vectors", function () {
+  it("add and vectors", function () {
     expect(me.fromText("(a,b)+(c,d)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
     expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tuples_to_vectors().tree);
     expect(me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)-(c,d)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)+(c,d)-(e,f)+(g,h)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c-e+g, b+d-f+h)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a-e, b-f) + (c-g, d-h, -1)+9").tuples_to_vectors().default_order().tree);
   })
 
-  it("add tuples and vectors", function () {
+  it("add and subtract tuples and vectors", function () {
     expect(me.fromAst(["+", ["vector", "a", "b"], ["tuple", "c", "d"]]).simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
+    expect(me.fromAst(["+", ["vector", "a", "b"], ['-', ["tuple", "c", "d"]]]).simplify().tree).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
   })
 
   it("don't add intervals", function () {
     expect(me.fromText("(a,b)+(c,d)").to_intervals().simplify().tree).toEqual(me.fromText("(a,b)+(c,d)").to_intervals().tree);
   })
 
-  it("add matrices", function () {
+  it("add and subtract matrices", function () {
     let matrix22a = me.fromLatex("\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}").tree
     let matrix22b = me.fromLatex("\\begin{bmatrix}e & f\\\\g &h\\end{bmatrix}").tree
     let matrix21a = me.fromLatex("\\begin{bmatrix}i \\\\j\\end{bmatrix}").tree
@@ -550,6 +557,91 @@ describe("other simplify", function () {
       me.fromAst(["+", matrix22a, matrix12a]).default_order().tree);
     expect(me.fromAst(["+", matrix21a, matrix12a]).simplify().tree).toEqual(
       me.fromAst(["+", matrix21a, matrix12a]).default_order().tree);
+    expect(me.fromAst(["+", matrix22a, ['-', matrix22b]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}a-e & b-f\\\\c-g &d-h\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", matrix21a, ['-', matrix21b]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}i-k\\\\j-l\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", matrix12a, ['-', matrix12b]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}m-o & n-p\\end{bmatrix}").tree);
+  })
+
+  it("expand scalar multiples of tuples", function () {
+    expect(me.fromText("c(a,b)").simplify().tree).toEqual(me.fromText("(ac, bc)").tree);
+    expect(me.fromText("(a,b)c").simplify().tree).toEqual(me.fromText("(ac, bc)").tree);
+    expect(me.fromText("c(a,b)d").simplify().tree).toEqual(me.fromText("(acd, bcd)").tree);
+    expect(me.fromText("c(a,b)d(e+f)").simplify().tree).toEqual(me.fromText("(acd(e+f), bcd(e+f))").tree);
+
+    expect(me.fromText("e(a,b,c,d)").simplify().tree).toEqual(me.fromText("(ae, be, ce, de)").tree);
+    expect(me.fromText("(a,b,c,d)e").simplify().tree).toEqual(me.fromText("(ae, be, ce, de)").tree);
+    expect(me.fromText("e(a,b,c,d)f").simplify().tree).toEqual(me.fromText("(aef, bef, cef, def)").tree);
+  })
+
+  it("expand scalar multiples of vectors", function () {
+    expect(me.fromText("c(a,b)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ac, bc)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b)c").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ac, bc)").tuples_to_vectors().tree);
+    expect(me.fromText("c(a,b)d").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(acd, bcd)").tuples_to_vectors().tree);
+    expect(me.fromText("c(a,b)d(e+f)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(acd(e+f), bcd(e+f))").tuples_to_vectors().tree);
+
+    expect(me.fromText("e(a,b,c,d)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ae, be, ce, de)").tuples_to_vectors().tree);
+    expect(me.fromText("(a,b,c,d)e").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ae, be, ce, de)").tuples_to_vectors().tree);
+    expect(me.fromText("e(a,b,c,d)f").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(aef, bef, cef, def)").tuples_to_vectors().tree);
+  })
+
+  it("expand scalar multiples of matrices", function () {
+    let matrix22 = me.fromLatex("\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}").tree
+    let matrix21 = me.fromLatex("\\begin{bmatrix}e \\\\f\\end{bmatrix}").tree
+    let matrix12 = me.fromLatex("\\begin{bmatrix}g & h\\end{bmatrix}").tree
+
+    expect(me.fromAst(["*", 'i', matrix22]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}ai & bi\\\\ci &di\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", matrix22, 'i']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}ai & bi\\\\ci &di\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix22, 'j']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}aij & bij\\\\cij &dij\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix22, 'j', ["+", "k", "l"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}aij(k+l) & bij(k+l)\\\\cij(k+l) &dij(k+l)\\end{bmatrix}").tree);
+
+    expect(me.fromAst(["*", 'i', matrix21]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}ei\\\\fi\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", matrix21, 'i']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}ei\\\\fi\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix21, 'j']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}eij\\\\fij\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix21, 'j', ["+", "k", "l"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}eij(k+l)\\\\fij(k+l)\\end{bmatrix}").tree);
+
+    expect(me.fromAst(["*", 'i', matrix12]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}gi & hi\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", matrix12, 'i']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}gi & hi\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix12, 'j']).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}gij & hij\\end{bmatrix}").tree);
+    expect(me.fromAst(["*", 'i', matrix12, 'j', ["+", "k", "l"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}gij(k+l) & hij(k+l)\\end{bmatrix}").tree);
+
+  })
+
+  it("add scalar multiples of tuples and vectors", function () {
+    expect(me.fromText("g*(a,b)+(c,d)h+i(e,f)j").simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tree);
+    expect(me.fromText("g*(a,b)+(c,d)h+i(e,f)j").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    expect(me.fromAst(["+", ["*", "g", ["vector", "a", "b"]], ["*", ["tuple", "c", "d"], "h"], ["*", "i", ["tuple", "e", "f"], "j"]]).simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+  })
+
+  it("add scalar multiples of matrices", function () {
+    let matrix22a = me.fromLatex("\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}").tree
+    let matrix22b = me.fromLatex("\\begin{bmatrix}e & f\\\\g &h\\end{bmatrix}").tree
+    let matrix21a = me.fromLatex("\\begin{bmatrix}i \\\\j\\end{bmatrix}").tree
+    let matrix21b = me.fromLatex("\\begin{bmatrix}k \\\\l\\end{bmatrix}").tree
+    let matrix12a = me.fromLatex("\\begin{bmatrix}m & n\\end{bmatrix}").tree
+    let matrix12b = me.fromLatex("\\begin{bmatrix}o & p\\end{bmatrix}").tree
+
+    expect(me.fromAst(["+", ["*", "q", matrix22a], ["*", matrix22b, "r"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}aq+er & bq+fr\\\\cq+gr &dq+hr\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", ["*", "q", matrix21a], ["*", matrix21b, "r"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}iq+kr\\\\jq+lr\\end{bmatrix}").tree);
+    expect(me.fromAst(["+", ["*", "q", matrix12a], ["*", matrix12b, "r"]]).simplify().tree).toEqual(
+      me.fromLatex("\\begin{bmatrix}mq+or & nq+pr\\end{bmatrix}").tree);
+
   })
 
 })
