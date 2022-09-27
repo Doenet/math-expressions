@@ -265,6 +265,16 @@ describe("evaluate_to_constant", function () {
     expect(me.fromText("1-+-2").evaluate_to_constant()).toEqual(3);
   })
 
+  it("determinant of numerical matrix", function () {
+    expect(me.fromLatex("\\det(\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix})").evaluate_to_constant()).toEqual(-2);
+    expect(me.fromLatex("\\det(\\begin{bmatrix}1&-2&3\\\\-4&5&-6\\\\7&-8&-9\\end{bmatrix})").evaluate_to_constant()).toEqual(54);
+  })
+
+  it("trace of numerical matrix", function () {
+    expect(me.fromLatex("\\trace(\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix})").evaluate_to_constant()).toEqual(5);
+    expect(me.fromLatex("\\trace(\\begin{bmatrix}1&-2&3\\\\-4&5&-6\\\\7&-8&-9\\end{bmatrix})").evaluate_to_constant()).toEqual(-3);
+  })
+
 });
 
 describe("collect like terms and factor", function () {

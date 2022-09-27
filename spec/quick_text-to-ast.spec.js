@@ -334,6 +334,8 @@ var trees = {
   '5+()+2': ['+', 5, '\uff3f', 2],
   're(x)': ["apply", "re", "x"],
   'im(x)': ["apply", "im", "x"],
+  'det(A)': ["apply", "det", "A"],
+  'trace(A)': ["apply", "trace", "A"],
 };
 
 Object.keys(trees).forEach(function(string) {

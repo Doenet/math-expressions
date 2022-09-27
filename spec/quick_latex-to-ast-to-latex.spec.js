@@ -274,6 +274,8 @@ var inputs = [
   ['x^/3-', '\\frac{x^{\uff3f}}{3}-\uff3f'],
   ['1+++x^2+', '1+++x^{2}+\uff3f'],
   '1+2+\uff3f',
+  '\\det(A)',
+  '\\trace(A)',
 ];
 
 function clean(text) {

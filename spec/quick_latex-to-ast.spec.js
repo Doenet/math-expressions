@@ -352,6 +352,8 @@ var trees = {
   '5+{}+2': ['+', 5, '\uff3f', 2],
   '\\Re(x)': ["apply", "re" ,"x"],
   '\\Im(x)': ["apply", "im" ,"x"],
+  '\\det(A)': ["apply", "det", "A"],
+  '\\trace(A)': ["apply", "trace", "A"],
 };
 
 
