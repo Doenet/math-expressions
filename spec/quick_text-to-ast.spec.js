@@ -471,6 +471,23 @@ test("parse Leibniz notation", function () {
 
 });
 
+test("parse scientific notation", function () {
+
+  let converter = new textToAst();
+  expect(converter.convert('2E^2-3E+2')).toEqual(
+    ['+', ['*', 2, ["^", "E", 2]], -300]);
+
+  converter = new textToAst({parseScientificNotation: false});
+  expect(converter.convert('2E^2-3E+2')).toEqual(
+    ['+', ['*', 2, ["^", "E", 2]], ['-', ['*', 3, "E"]], 2]);
+
+  converter = new textToAst({parseScientificNotation: true});
+  expect(converter.convert('2E^2-3E+2')).toEqual(
+    ['+', ['*', 2, ["^", "E", 2]], -300]);
+
+});
+
+
 
 test("conditional probability", function () {
 
