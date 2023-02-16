@@ -5,7 +5,7 @@ var converter = new astToLatex();
 const objectsToTest = [
   {
     'ast': ['*', ['/', 1, 2], 'x'],
-    'latex': '\\left(\\frac{1}{2}\\right) \\, x'
+    'latex': '\\left(\\frac{1}{2}\\right) x'
   },
   {
     'ast': ['+', 1, 'x', 3],
@@ -91,7 +91,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', ['^', 'x', 'a'], 'b'],
-    'latex': 'x^{a} \\, b'
+    'latex': 'x^{a} b'
   },
   {
     'ast': ['^', 'x', ['apply', 'factorial', 'a']],
@@ -99,15 +99,15 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'x', 'y', 'z'],
-    'latex': 'x \\, y \\, z'
+    'latex': 'x y z'
   },
   {
     'ast': ['*', 'c', ['+', 'a', 'b']],
-    'latex': 'c \\, \\left(a + b\\right)'
+    'latex': 'c \\left(a + b\\right)'
   },
   {
     'ast': ['*', ['+', 'a', 'b'], 'c'],
-    'latex': '\\left(a + b\\right) \\, c'
+    'latex': '\\left(a + b\\right) c'
   },
   {
     'ast': ['apply', 'factorial', 'a'],
@@ -119,7 +119,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 't', 'h', 'e', 't', 'a'],
-    'latex': 't \\, h \\, e \\, t \\, a'
+    'latex': 't h e t a'
   },
   {
     'ast': ['apply', 'cos', 'theta'],
@@ -127,7 +127,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'c', 'o', 's', 'x'],
-    'latex': 'c \\, o \\, s \\, x'
+    'latex': 'c o s x'
   },
   {
     'ast': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],
@@ -135,7 +135,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'blah', 'x'],
-    'latex': '\\var{blah} \\, x'
+    'latex': '\\var{blah} x'
   },
   {
     'ast': ['apply', 'abs', ['=', ['+', 'x', 3], 2]],
@@ -175,7 +175,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'x', 'y', ['apply', 'factorial', 'z']],
-    'latex': 'x \\, y \\, z!'
+    'latex': 'x y z!'
   },
   {
     'ast': 'x',
@@ -187,7 +187,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'f', 'g'],
-    'latex': 'f \\, g'
+    'latex': 'f g'
   },
   {
     'ast': ['+', 'f', 'g'],
@@ -203,15 +203,15 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'f', ['apply', 'g', 'x']],
-    'latex': 'f \\, g\\left(x\\right)'
+    'latex': 'f g\\left(x\\right)'
   },
   {
     'ast': ['*', 'f', 'p', 'x'],
-    'latex': 'f \\, p \\, x'
+    'latex': 'f p x'
   },
   {
     'ast': ['*', 'f', 'x'],
-    'latex': 'f \\, x'
+    'latex': 'f x'
   },
   {
     'ast': ['prime', 'f'],
@@ -219,17 +219,17 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'f', ['prime', 'g']],
-    'latex': "f \\, g'"
+    'latex': "f g'"
   },
   {
     'ast': ['*', ['prime', 'f'], 'g'],
-    'latex': "f' \\, g"
+    'latex': "f' g"
   },
   {
     'ast': ['*', ['prime', 'f'],
       ['prime', ['prime', 'g']]
     ],
-    'latex': "f' \\, g''"
+    'latex': "f' g''"
   },
   {
     'ast': ['prime', 'x'],
@@ -305,11 +305,11 @@ const objectsToTest = [
   },
   {
     'ast': ['*', ['apply', ['^', 'sin', 'x'], 'y'], 'z'],
-    'latex': '\\sin^{x}\\left(y\\right) \\, z'
+    'latex': '\\sin^{x}\\left(y\\right) z'
   },
   {
     'ast': ['*', ['apply', 'sin', 'x'], 'y'],
-    'latex': '\\sin\\left(x\\right) \\, y'
+    'latex': '\\sin\\left(x\\right) y'
   },
   {
     'ast': ['apply', ['^', 'sin', 2], 'x'],
@@ -359,7 +359,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 2, ['+', 'z', ['-', ['+', 'x', 1]]]],
-    'latex': '2 \\, \\left(z - \\left(x + 1\\right)\\right)'
+    'latex': '2 \\left(z - \\left(x + 1\\right)\\right)'
   },
   {
     'ast': ['set', 1, 2, 'x'],
@@ -581,13 +581,13 @@ const objectsToTest = [
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],
-    'latex': '1.2 \\, e - 3'
+    'latex': '1.2 e - 3'
   },
   {
     'ast': ['+', ['*', 1.2, 'e'],
       -3
     ],
-    'latex': '1.2 \\, e - 3'
+    'latex': '1.2 e - 3'
   },
   {
     'ast': Infinity,
@@ -595,7 +595,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-    'latex': 'a \\, b \\, c \\, d \\, e \\, f \\, g \\, h \\, i \\, j'
+    'latex': 'a b c d e f g h i j'
   },
   {
     'ast': 2,
@@ -612,7 +612,7 @@ const objectsToTest = [
   },
   {
     'ast': ['matrix', ['tuple', 1, 2], ['tuple', ['tuple', ['+', 'a', ['*', 3, 'y']], ['*', 2, ['apply', 'sin', 'theta']]]]],
-    'latex': '\\begin{bmatrix} a + 3 \\, y & 2 \\, \\sin\\left(\\theta\\right) \\end{bmatrix}'
+    'latex': '\\begin{bmatrix} a + 3 y & 2 \\sin\\left(\\theta\\right) \\end{bmatrix}'
   },
   {
     'ast': ['matrix', ['tuple', 2, 3], ['tuple', ['tuple', 8, 0, 0], ['tuple', 1, 2, 3]]],
@@ -660,15 +660,15 @@ const objectsToTest = [
   },
   {
     'ast': ["*","a",["apply","abs","x"]],
-    'latex': 'a \\, \\left|x\\right|',
+    'latex': 'a \\left|x\\right|',
   },
   {
     'ast': ["*",["apply","abs","a"],"b",["apply","abs","c"]],
-    'latex': '\\left|a\\right| \\, b \\, \\left|c\\right|',
+    'latex': '\\left|a\\right| b \\left|c\\right|',
   },
   {
     'ast': ["apply","abs",["*","a",["apply","abs","b"],"c"]],
-    'latex': '\\left|a \\, \\left|b\\right| \\, c\\right|',
+    'latex': '\\left|a \\left|b\\right| c\\right|',
   },
   {
     'ast': ['|', 'A', 'B'],
