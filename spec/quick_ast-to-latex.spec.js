@@ -126,6 +126,54 @@ const objectsToTest = [
     'latex': '\\cos\\left(\\theta\\right)'
   },
   {
+    'ast': ['apply', 'acos', 'theta'],
+    'latex': '\\arccos\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arccos', 'theta'],
+    'latex': '\\arccos\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'acot', 'theta'],
+    'latex': '\\arccot\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arccot', 'theta'],
+    'latex': '\\arccot\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'acsc', 'theta'],
+    'latex': '\\arccsc\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arccsc', 'theta'],
+    'latex': '\\arccsc\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'asec', 'theta'],
+    'latex': '\\arcsec\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arcsec', 'theta'],
+    'latex': '\\arcsec\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'asin', 'theta'],
+    'latex': '\\arcsin\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arcsin', 'theta'],
+    'latex': '\\arcsin\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'atan', 'theta'],
+    'latex': '\\arctan\\left(\\theta\\right)'
+  },
+  {
+    'ast': ['apply', 'arctan', 'theta'],
+    'latex': '\\arctan\\left(\\theta\\right)'
+  },
+  {
     'ast': ['*', 'c', 'o', 's', 'x'],
     'latex': 'c o s x'
   },
