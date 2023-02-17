@@ -183,7 +183,7 @@ const objectsToTest = [
   },
   {
     'ast': ['*', 'blah', 'x'],
-    'latex': '\\var{blah} x'
+    'latex': '\\operatorname{blah} x'
   },
   {
     'ast': ['apply', 'abs', ['=', ['+', 'x', 3], 2]],

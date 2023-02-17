@@ -285,6 +285,8 @@ var inputs = [
   ['1+2+', '1+2+\uff3f'],
   'det(A)',
   'trace(A)',
+  'nCr(x,y)',
+  'nPr(x,y)',
 ];
 
 

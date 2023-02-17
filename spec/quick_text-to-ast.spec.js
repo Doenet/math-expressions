@@ -336,6 +336,8 @@ var trees = {
   'im(x)': ["apply", "im", "x"],
   'det(A)': ["apply", "det", "A"],
   'trace(A)': ["apply", "trace", "A"],
+  'nPr(x,y)': ["apply", "nPr", ["tuple", "x", "y"]],
+  'nCr(x,y)': ["apply", "nCr", ["tuple", "x", "y"]],
 };
 
 Object.keys(trees).forEach(function(string) {

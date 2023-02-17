@@ -299,6 +299,8 @@ describe("expression", function () {
     ['log_10(100000)', '5'],
     ['log_2(8)', '3'],
     ['log_a(b)', 'log(b)/log(a)'],
+    ['nCr(8,3)', '56'],
+    ['nPr(8,3)', '336'],
   ];
 
   _.each(equivalences, function (equiv) {
