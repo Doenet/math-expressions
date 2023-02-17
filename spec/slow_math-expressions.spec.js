@@ -82,7 +82,7 @@ describe("expression", function () {
     ['cos(x)', 'cos(-x)'],
     ['cos(x)^2+sin(x)^2', '1'],
     ['cos^2 x+sin^2 x', '1'],
-    ['tan^2 x', '(tan x)(tan(x))']
+    ['tan^2 x', '(tan x)(tan(x))'],
     ['2*cos(x)^2-1', 'cos(2*x)'],
     ['(1/2)/(3/4)', '2/3'],
     ['1/n', '1/n'],
@@ -296,6 +296,9 @@ describe("expression", function () {
     ['(f(a)f(b)-f(c)f(d)f(g))(g(x)g(y)-g(f))', '(f(c)f(d)f(g)-f(a)f(b))(g(f)-g(y)g(x))'],
     ['arg(1+4i)', 'arg(5+20i)'],
     ['arg(x)', 'arg(5x)'],
+    ['log_10(100000)', '5'],
+    ['log_2(8)', '3'],
+    ['log_a(b)', 'log(b)/log(a)'],
   ];
 
   _.each(equivalences, function (equiv) {
@@ -504,6 +507,7 @@ describe("expression", function () {
     ['cos(x)', 'cos(-x)'],
     ['cos(x)^2+sin(x)^2', '1'],
     ['cos^2 x+sin^2 x', '1'],
+    ['tan^2 x', '(tan x)(tan(x))'],
     ['2*cos(x)^2-1', 'cos(2*x)'],
     ['2*cos(2*x)+x+1', '-sin(x)^2+3*cos(x)^2+x'],
     ['log(a^2*b)', '2*log(a)+log(b)'],
@@ -659,6 +663,9 @@ describe("expression", function () {
     ['(f(a)f(b)-f(c)f(d)f(g))(g(x)g(y)-g(f))', '(f(c)f(d)f(g)-f(a)f(b))(g(f)-g(y)g(x))'],
     ['arg(1+4i)', 'arg(5+20i)'],
     ['arg(x)', 'arg(5x)'],
+    ['log_10(100000)', '5'],
+    ['log_2(8)', '3'],
+    ['log_a(b)', 'log(b)/log(a)'],
   ];
 
   _.each(symbolic_nonequivalences, function (nonequiv) {
