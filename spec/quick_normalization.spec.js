@@ -8,7 +8,6 @@ describe("normalize function names", function () {
     'e^x': ['apply', 'exp', 'x'],
     'arccsc(x)': ['apply', 'acsc', 'x'],
     'arctan^2(x)': ['apply', ['^', 'atan', 2], 'x'],
-    '1+cosec(3*x)': ['+', 1, ['apply', 'csc', ['*', 3, 'x']]],
     '1-e^(x/y)': ['+', 1, ['-', ['apply', 'exp', ['/', 'x', 'y']]]],
     '5/sqrt(2y)': ['/', 5, ['^', ['*', 2, 'y'], 0.5]],
     'ln(e^x)': ['apply', 'log', ['apply', 'exp', 'x']],
@@ -54,14 +53,34 @@ describe("normalize applied functions", function () {
     expect(me.from('f(x)^2').tree).toEqual(['^', ['apply', 'f', 'x'], 2]);
   });
 
-  it("exponent normalized outside", function () {
+  it("exponent not normalized outside", function () {
     expect(me.from('f^2(x)').normalize_applied_functions().tree).toEqual(
-      me.from('f(x)^2').tree);
+      me.from('f^2(x)').tree);
   });
 
-  it("exponent normalized outside b", function () {
+  it("exponent not normalized outside b", function () {
     expect(me.normalize_applied_functions(me.from('f^2(x)')).tree).toEqual(
-      me.from('f(x)^2').tree);
+      me.from('f^2(x)').tree);
+  });
+
+  it("exponent normalized outside for trig", function () {
+    expect(me.from('\\sin^2(x)').normalize_applied_functions().tree).toEqual(
+      me.from('\\sin(x)^2').tree);
+  });
+
+  it("exponent normalized outside for trig b", function () {
+    expect(me.normalize_applied_functions(me.from('\\sin^2(x)')).tree).toEqual(
+      me.from('\\sin(x)^2').tree);
+  });
+
+  it("neg 1 exponent not normalized outside for trig", function () {
+    expect(me.from('\\sin^(-1)(x)').normalize_applied_functions().tree).toEqual(
+      me.from('\\sin^(-1)(x)').tree);
+  });
+
+  it("neg 1 exponent not normalized outside for trig b", function () {
+    expect(me.normalize_applied_functions(me.from('\\sin^(-1)(x)')).tree).toEqual(
+      me.from('\\sin^(-1)(x)').tree);
   });
 
   it("derivative exponent inside", function () {
@@ -72,14 +91,14 @@ describe("normalize applied functions", function () {
     expect(me.from('f(x)\'^2').tree).toEqual(['^', ['prime', ['apply', 'f', 'x']], 2]);
   });
 
-  it("derivative exponent normalized outside", function () {
+  it("derivative exponent not normalized outside", function () {
     expect(me.from('f\'^2(x)').normalize_applied_functions().tree).toEqual(
-      me.from('f(x)\'^2').tree);
+      me.from('f\'^2(x)').tree);
   });
 
-  it("derivative exponent normalized outside b", function () {
+  it("derivative exponent not normalized outside b", function () {
     expect(me.normalize_applied_functions(me.from('f\'^2(x)')).tree).toEqual(
-      me.from('f(x)\'^2').tree);
+      me.from('f\'^2(x)').tree);
   });
 });
 

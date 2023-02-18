@@ -786,6 +786,34 @@ const objectsToTest = [
     'ast': ['apply', 'im', 'x'],
     'latex': '\\Im\\left(x\\right)',
   },
+  {
+    'ast': ['apply', 'nCr', ['tuple', 'x', 'y']],
+    'latex': '\\operatorname{nCr}\\left( x, y \\right)',
+  },
+  {
+    'ast': ['apply', 'nPr', ['tuple', 'x', 'y']],
+    'latex': '\\operatorname{nPr}\\left( x, y \\right)',
+  },
+  {
+    'ast': ['binom', 'x', 'y'],
+    'latex': '\\binom{x}{y}',
+  },
+  {
+    'ast': ['vec', 'a'],
+    'latex': '\\vec{a}',
+  },
+  {
+    'ast': ['apply', 'floor', 'a'],
+    'latex': '\\left\\lfloor a \\right\\rfloor',
+  },
+  {
+    'ast': ['apply', 'ceil', 'a'],
+    'latex': '\\left\\lceil a \\right\\rceil',
+  },
+  {
+    'ast': ['apply', 'round', 'a'],
+    'latex': '\\operatorname{round}\\left(a\\right)',
+  },
 
 
 

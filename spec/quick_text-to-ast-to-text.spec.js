@@ -287,6 +287,12 @@ var inputs = [
   'trace(A)',
   'nCr(x,y)',
   'nPr(x,y)',
+  'binom(x,y)',
+  'vec(a)',
+  'floor(a)',
+  'ceil(a)',
+  'round(a)',
+  'angle ABC',
 ];
 
 

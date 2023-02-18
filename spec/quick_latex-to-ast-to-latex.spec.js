@@ -275,9 +275,16 @@ var inputs = [
   ['1+++x^2+', '1+++x^{2}+\uff3f'],
   '1+2+\uff3f',
   '\\det(A)',
-  '\\trace(A)',
+  '\\operatorname{trace}(A)',
   '\\operatorname{nPr}(x,y)',
   '\\operatorname{nCr}(x,y)',
+  '\\binom{x}{y}',
+  '\\vec{a}',
+  ['\\vec a', '\\vec{a}'],
+  ['\\lfloor a \\rfloor', '\\left\\lfloor a \\right\\rfloor'],
+  ['\\lceil a \\rceil', '\\left\\lceil a \\right\\rceil'],
+  '\\operatorname{round}(a)',
+  '\\angle ABC',
 ];
 
 function clean(text) {

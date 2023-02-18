@@ -731,6 +731,37 @@ const objectsToTest = [
     'ast': ['apply', 'im', 'x'],
     'text': 'im(x)',
   },
+  {
+    'ast': ['apply', 'nCr', ['tuple', 'x', 'y']],
+    'text': 'nCr( x, y )',
+  },
+  {
+    'ast': ['apply', 'nPr', ['tuple', 'x', 'y']],
+    'text': 'nPr( x, y )',
+  },
+  {
+    'ast': ['binom', 'x', 'y'],
+    'text': 'binom( x, y )',
+  },
+  {
+    'ast': ['vec', 'a'],
+    'text': 'vec(a)',
+  },
+  {
+    'ast': ['apply', 'floor', 'a'],
+    'text': 'floor(a)',
+  },
+  {
+    'ast': ['apply', 'ceil', 'a'],
+    'text': 'ceil(a)',
+  },
+  {
+    'ast': ['apply', 'round', 'a'],
+    'text': 'round(a)',
+  },
+
+
+
 ]
 
 

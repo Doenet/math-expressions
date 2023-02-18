@@ -366,6 +366,11 @@ var trees = {
   '\\trace(A)': ["apply", "trace", "A"],
   '\\operatorname{nCr}(x,y)': ["apply", "nCr", ["tuple", "x", "y"]],
   '\\operatorname{nPr}(x,y)': ["apply", "nPr", ["tuple", "x", "y"]],
+  '\\binom{x}{y}': ["binom", "x", "y"],
+  '\\vec{a}': ["vec", "a"],
+  '\\lfloor a \\rfloor': ["apply", "floor", "a"],
+  '\\lceil a \\rceil': ["apply", "ceil", "a"],
+  '\\operatorname{round}(a)': ["apply", "round", "a"],
 };
 
 

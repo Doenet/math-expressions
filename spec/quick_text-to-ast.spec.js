@@ -338,6 +338,11 @@ var trees = {
   'trace(A)': ["apply", "trace", "A"],
   'nPr(x,y)': ["apply", "nPr", ["tuple", "x", "y"]],
   'nCr(x,y)': ["apply", "nCr", ["tuple", "x", "y"]],
+  'binom(x,y)': ["binom", "x", "y"],
+  'vec(a)': ["vec", "a"],
+  'floor(a)': ["apply", "floor", "a"],
+  'ceil(a)': ["apply", "ceil", "a"],
+  'round(a)': ["apply", "round", "a"],
 };
 
 Object.keys(trees).forEach(function(string) {
