@@ -864,6 +864,24 @@ describe("expression", function () {
 
   });
 
+  it('tuples, vectors, intervals, altvectors', function () {
+    let tuple = Expression.fromLatex("(a,b)");
+    let vector = Expression.fromLatex("(a,b)").tuples_to_vectors();
+    let altvector = Expression.fromLatex("\\langle a, b \\rangle");
+    let interval = Expression.fromLatex("(a,b)").to_intervals();
+
+    expect(tuple.equals(vector)).toBeFalsy();
+    expect(tuple.equals(altvector)).toBeFalsy();
+    expect(tuple.equals(interval)).toBeFalsy();
+    expect(vector.equals(altvector)).toBeFalsy();
+    expect(vector.equals(interval)).toBeFalsy();
+    expect(altvector.equals(interval)).toBeFalsy();
+    expect(vector.equals(altvector.altvectors_to_vectors())).toBeTruthy();
+    expect(interval.equals(altvector).altvectors_to_vectors).toBeFalsy();
+
+
+  })
+
   var matchDerivatives = [
     ['x^3/3+c', 'x^3/3+c'],
     ['x^2/2-2*x+2+c', '(x-2)^2/2+k'],

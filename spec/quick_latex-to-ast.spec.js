@@ -371,6 +371,7 @@ var trees = {
   '\\lfloor a \\rfloor': ["apply", "floor", "a"],
   '\\lceil a \\rceil': ["apply", "ceil", "a"],
   '\\operatorname{round}(a)': ["apply", "round", "a"],
+  '\\langle x, y \\rangle': ["altvector", "x", "y"],
 };
 
 

@@ -530,7 +530,7 @@ describe("matrix and vector simplify", function () {
     expect(me.fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9").simplify().tree).toEqual(me.fromText("(a-e, b-f) + (c-g, d-h, -1)+9").default_order().tree);
   })
 
-  it("add and vectors", function () {
+  it("add and subtract vectors", function () {
     expect(me.fromText("(a,b)+(c,d)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
     expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tuples_to_vectors().tree);
     expect(me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tuples_to_vectors().tree);
@@ -539,9 +539,23 @@ describe("matrix and vector simplify", function () {
     expect(me.fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(a-e, b-f) + (c-g, d-h, -1)+9").tuples_to_vectors().default_order().tree);
   })
 
+  it("add and subtract altvectors", function () {
+    expect(me.fromLatex("\\langle a,b \\rangle+\\langle c,d \\rangle ").simplify().tree).toEqual(me.fromLatex("\\langle a+c, b+d \\rangle ").tree);
+    expect(me.fromLatex("\\langle a,b \\rangle+\\langle c,d \\rangle +\\langle e,f \\rangle+\\langle g,h \\rangle").simplify().tree).toEqual(me.fromLatex("\\langle a+c+e+g, b+d+f+h \\rangle").tree);
+    expect(me.fromLatex("\\langle a,b \\rangle+\\langle c,d,2 \\rangle+\\langle e,f \\rangle+\\langle g,h,3 \\rangle+9").simplify().tree).toEqual(me.fromLatex("\\langle a+e, b+f \\rangle + \\langle c+g, d+h, 5 \\rangle+9").default_order().tree);
+    expect(me.fromLatex("\\langle a,b \\rangle-\\langle c,d \\rangle ").simplify().tree).toEqual(me.fromLatex("\\langle a-c, b-d \\rangle ").tree);
+    expect(me.fromLatex("\\langle a,b \\rangle+\\langle c,d \\rangle -\\langle e,f \\rangle+\\langle g,h \\rangle").simplify().tree).toEqual(me.fromLatex("\\langle a+c-e+g, b+d-f+h \\rangle").tree);
+    expect(me.fromLatex("\\langle a,b \\rangle+\\langle c,d,2 \\rangle-\\langle e,f \\rangle-\\langle g,h,3 \\rangle+9").simplify().tree).toEqual(me.fromLatex("\\langle a-e, b-f \\rangle + \\langle c-g, d-h, -1 \\rangle +9").default_order().tree);
+  })
+
   it("add and subtract tuples and vectors", function () {
     expect(me.fromAst(["+", ["vector", "a", "b"], ["tuple", "c", "d"]]).simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
     expect(me.fromAst(["+", ["vector", "a", "b"], ['-', ["tuple", "c", "d"]]]).simplify().tree).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
+  })
+
+  it("add and subtract tuples and altvectors", function () {
+    expect(me.fromLatex("\\langle a, b \\rangle + (c,d)").simplify().tree).toEqual(me.fromLatex("( a+c, b+d )").tuples_to_vectors().tree);
+    expect(me.fromLatex("\\langle a, b \\rangle - (c,d)").simplify().tree).toEqual(me.fromLatex("( a-c, b-d )").tuples_to_vectors().tree);
   })
 
   it("don't add intervals", function () {
@@ -598,6 +612,17 @@ describe("matrix and vector simplify", function () {
     expect(me.fromText("e(a,b,c,d)f").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(aef, bef, cef, def)").tuples_to_vectors().tree);
   })
 
+  it("expand scalar multiples of altvectors", function () {
+    expect(me.fromLatex("c\\langle a,b \\rangle ").simplify().tree).toEqual(me.fromLatex("\\langle ac, bc \\rangle").tree);
+    expect(me.fromLatex("\\langle a,b \\rangle c").simplify().tree).toEqual(me.fromLatex("\\langle ac, bc \\rangle").tree);
+    expect(me.fromLatex("c\\langle a,b \\rangle d").simplify().tree).toEqual(me.fromLatex("\\langle acd, bcd \\rangle").tree);
+    expect(me.fromLatex("c\\langle a,b \\rangle d(e+f)").simplify().tree).toEqual(me.fromLatex("\\langle acd (e+f), bcd (e+f)\\rangle").tree);
+
+    expect(me.fromLatex("e\\langle a,b,c,d \\rangle").simplify().tree).toEqual(me.fromLatex("\\langle ae, be, ce, de\\rangle").tree);
+    expect(me.fromLatex("\\langle a,b,c,d \\rangle e").simplify().tree).toEqual(me.fromLatex("\\langle ae, be, ce, de\\rangle").tree);
+    expect(me.fromLatex("e\\langle a,b,c,d \\rangle f").simplify().tree).toEqual(me.fromLatex("\\langle aef, bef, cef, def\\rangle").tree);
+  })
+
   it("expand scalar multiples of matrices", function () {
     let matrix22 = me.fromLatex("\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}").tree
     let matrix21 = me.fromLatex("\\begin{bmatrix}e \\\\f\\end{bmatrix}").tree
@@ -632,10 +657,14 @@ describe("matrix and vector simplify", function () {
 
   })
 
-  it("add scalar multiples of tuples and vectors", function () {
+  it("add scalar multiples of tuples, vectors and altvectors", function () {
     expect(me.fromText("g*(a,b)+(c,d)h+i(e,f)j").simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tree);
     expect(me.fromText("g*(a,b)+(c,d)h+i(e,f)j").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    expect(me.fromLatex("g*\\langle a,b\\rangle +\\langle c,d\\rangle h+i\\langle e,f\\rangle j").simplify().tree).toEqual(me.fromLatex("\\langle ag+ch+eij, bg+dh+fij\\rangle").tree);
     expect(me.fromAst(["+", ["*", "g", ["vector", "a", "b"]], ["*", ["tuple", "c", "d"], "h"], ["*", "i", ["tuple", "e", "f"], "j"]]).simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    expect(me.fromLatex("g*\\langle a,b\\rangle + (c,d) h+i(e,f) j").tuples_to_vectors().simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    expect(me.fromLatex("g*\\langle a,b\\rangle + (c,d) h+i(e,f) j").simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    expect(me.fromAst(["+", ["*", "g", ["vector", "a", "b"]], ["*", ["altvector", "c", "d"], "h"], ["*", "i", ["tuple", "e", "f"], "j"]]).simplify().tree).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
   })
 
   it("add scalar multiples of matrices", function () {
@@ -680,6 +709,9 @@ describe("expand", function () {
     let vector = ["vector", "e", "f"]
     let product_vector = me.fromLatex("(ae + bf, ce + df)").tuples_to_vectors().tree
     let product_vector_g = me.fromLatex("(aeg + bfg, ceg + dfg)").tuples_to_vectors().tree
+    let altvector = ["altvector", "e", "f"]
+    let product_altvector = me.fromLatex("\\langle ae + bf, ce + df\\rangle").tree
+    let product_altvector_g = me.fromLatex("\\langle aeg + bfg, ceg + dfg \\rangle").tree
 
     expect(me.fromAst(["*", matrix1, matrix2]).expand().tree).toEqual(product)
     expect(me.fromAst(["*", matrix2, matrix1]).expand().tree).toEqual(["*", matrix2, matrix1])
@@ -698,6 +730,12 @@ describe("expand", function () {
     expect(me.fromAst(["*", "g", matrix1, vector]).expand().tree).toEqual(product_vector_g)
     expect(me.fromAst(["*", matrix1, "g", vector]).expand().tree).toEqual(product_vector_g)
     expect(me.fromAst(["*", matrix1, vector, "g"]).expand().tree).toEqual(product_vector_g)
+
+    expect(me.fromAst(["*", matrix1, altvector]).expand().tree).toEqual(product_altvector)
+    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual(["*", altvector, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, altvector]).expand().tree).toEqual(product_altvector_g)
+    expect(me.fromAst(["*", matrix1, "g", altvector]).expand().tree).toEqual(product_altvector_g)
+    expect(me.fromAst(["*", matrix1, altvector, "g"]).expand().tree).toEqual(product_altvector_g)
 
     // TODO: not sure if this is right behavior for multiplying vectors
     // Also, at some point, we want a way to represent dot/cross products of vectors
@@ -738,11 +776,13 @@ describe("expand", function () {
     expect(me.from("(i+ix)(i-x)").expand().tree).toEqual(me.from("-ix^2 -ix -x -1").tree)
   });
 
-  it("multiply vector, matrix by scalar", function () {
+  it("multiply vector, altvector, matrix by scalar", function () {
     expect(me.from("(a,b)c").expand().tree).toEqual(me.from("(ac,bc)").default_order().tree)
     expect(me.from("c(a,b)").expand().tree).toEqual(me.from("(ca,cb)").default_order().tree)
     expect(me.from("(a,b)c").tuples_to_vectors().expand().tree).toEqual(me.from("(ac,bc)").tuples_to_vectors().default_order().tree)
     expect(me.from("c(a,b)").tuples_to_vectors().expand().tree).toEqual(me.from("(ca,cb)").tuples_to_vectors().default_order().tree)
+    expect(me.fromLatex("\\langle a,b\\rangle c").expand().tree).toEqual(me.fromLatex("\\langle ac,bc\\rangle").default_order().tree)
+    expect(me.fromLatex("c\\langle a,b\\rangle ").expand().tree).toEqual(me.fromLatex("\\langle ca,cb\\rangle ").default_order().tree)
 
     expect(me.fromLatex("\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}e").expand().tree)
       .toEqual(me.fromLatex("\\begin{pmatrix}ae & be\\\\ce&de\\end{pmatrix}").tree)

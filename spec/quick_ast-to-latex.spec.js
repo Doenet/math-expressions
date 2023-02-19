@@ -440,6 +440,10 @@ const objectsToTest = [
     'latex': '\\left( 1, 2 \\right)'
   },
   {
+    'ast': ['altvector', 'x', 'y'],
+    'latex': '\\left\\langle x, y \\right\\rangle',
+  },
+  {
     'ast': ['list', 1, 2, 3],
     'latex': '1, 2, 3'
   },

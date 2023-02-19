@@ -285,6 +285,7 @@ var inputs = [
   ['\\lceil a \\rceil', '\\left\\lceil a \\right\\rceil'],
   '\\operatorname{round}(a)',
   '\\angle ABC',
+  '\\langle x,y \\rangle',
 ];
 
 function clean(text) {

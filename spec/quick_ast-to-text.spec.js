@@ -99,6 +99,10 @@ const objectsToTest = [
     'text': '( 1, 2 )'
   },
   {
+    'ast': ['altvector', 'x', 'y'],
+    'text': '⟨ x, y ⟩', // langle and rangle delimiters
+  },
+  {
     'ast': ['*', 'x', 'y', 'z'],
     'text': 'x y z'
   },

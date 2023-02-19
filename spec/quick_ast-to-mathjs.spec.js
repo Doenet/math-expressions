@@ -66,6 +66,10 @@ const objectsToTest = [
     'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}', reviver)
   },
   {
+    'ast': ['altvector', 1, 2],
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}', reviver)
+  },
+  {
     'ast': ['*', 'x', 'y', 'z'],
     'mathjs': JSON.parse('{"mathjs":"OperatorNode","op":"*","fn":"multiply","args":[{"mathjs":"SymbolNode","name":"x"},{"mathjs":"SymbolNode","name":"y"},{"mathjs":"SymbolNode","name":"z"}],"implicit":false}', reviver)
   },
