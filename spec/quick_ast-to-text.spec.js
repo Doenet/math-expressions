@@ -779,6 +779,10 @@ const objectsToTest = [
     'ast': ['parallel', 'x', 'y'],
     'text': 'x ∥ y',
   },
+  {
+    'ast': ['*', 'x', ["+", 'y']],
+    'text': 'x (+ y)',
+  },
 
 
 

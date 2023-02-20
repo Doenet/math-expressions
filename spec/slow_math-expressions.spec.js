@@ -363,6 +363,17 @@ describe("expression", function () {
     ["f'(x)", "f(x)'"],
     ["f''(x)", "f(x)''"],
     ["f'''(x)", "f(x)'''"],
+    ['+2', '2'],
+    ['++2', '2'],
+    ['+x', 'x'],
+    ['++x', 'x'],
+    ['x++y', 'x+y'],
+    ['x(+y)', 'xy'],
+    ['x(++y)', 'xy'],
+    ['x+-y', 'x-y'],
+    ['x++-y', 'x-y'],
+    ['x++--y', 'x+y'],
+    ['x--y', 'x+y'],
   ];
 
   _.each(equivalences, function (equiv) {
@@ -583,7 +594,6 @@ describe("expression", function () {
     ['1', '1'],
     ['sqrt(10000 - x)', 'sqrt(10000 - x)'],
     ['exp(x^y)', 'exp(x^y)'],
-    ['oo', '+oo'],
     ['2+', '2+'],
     ['(f(a)-f(b))(x)', '(f(a)-f(b))(x)'],
     ['exp(x)', 'e^(x)'],
@@ -591,6 +601,7 @@ describe("expression", function () {
     ["f'(x)", "f(x)'"],
     ["f''(x)", "f(x)''"],
     ["f'''(x)", "f(x)'''"],
+    ['x+-y', 'x-y'],
   ];
 
   _.each(symbolic_equivalences, function (equiv) {
@@ -744,6 +755,7 @@ describe("expression", function () {
     ['x*log(y)', 'log(y^x)'],
     ['(exp(x))^y', 'exp(x*y)'],
     ['0*x', '0*y'],
+    ['oo', '+oo'],
     ["-2 cos(t)^2 sin(t)", "-cos t sin(2 t)"],
     ['(2x,y^2)', '(x+x, y*y)'],
     ['(2x,y^2]', '(x+x,y*y]'],
@@ -783,6 +795,16 @@ describe("expression", function () {
     ['log_10(100000)', '5'],
     ['log_2(8)', '3'],
     ['log_a(b)', 'log(b)/log(a)'],
+    ['+2', '2'],
+    ['++2', '2'],
+    ['+x', 'x'],
+    ['++x', 'x'],
+    ['x++y', 'x+y'],
+    ['x(+y)', 'xy'],
+    ['x(++y)', 'xy'],
+    ['x++-y', 'x-y'],
+    ['x++--y', 'x+y'],
+    ['x--y', 'x+y'],
   ];
 
   _.each(symbolic_nonequivalences, function (nonequiv) {
