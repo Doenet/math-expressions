@@ -838,6 +838,22 @@ const objectsToTest = [
     'ast': ['*', 'x', ["+", 'y']],
     'latex': 'x \\left(+ y\\right)',
   },
+  {
+    'ast': ['angle', 'A', 'B', 'C'],
+    'latex': '\\angle ABC',
+  },
+  {
+    'ast': ['angle', ['^', 'A', 2], ['_', 'B', 'n'], ['prime', 'C']],
+    'latex': '\\angle A^{2}B_{n}C\'',
+  },
+  {
+    'ast': ['angle', ['+', 'A', 'B'], ['*', 'B', 'D'], ['/', 'x', 'y']],
+    'latex': '\\angle\\left( A + B, B D, \\frac{x}{y} \\right)',
+  },
+  {
+    'ast': ["*", ['angle', 'A', 'B', 'C'], 'x'],
+    'latex': '\\left( \\angle ABC \\right) x',
+  },
 
 
 

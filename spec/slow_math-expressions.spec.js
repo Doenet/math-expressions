@@ -374,6 +374,7 @@ describe("expression", function () {
     ['x++-y', 'x-y'],
     ['x++--y', 'x+y'],
     ['x--y', 'x+y'],
+    ['∠ABC', '∠CBA'],
   ];
 
   _.each(equivalences, function (equiv) {
@@ -466,6 +467,7 @@ describe("expression", function () {
     ['f^2(x)', 'f(x)^2'],
     ['log^2(x)', 'log(x)^2'],
     ['ln^2(x)', 'ln(x)^2'],
+    ['∠ABC', '∠ACB'],
   ];
 
   _.each(nonequivalences, function (nonequiv) {
@@ -602,6 +604,7 @@ describe("expression", function () {
     ["f''(x)", "f(x)''"],
     ["f'''(x)", "f(x)'''"],
     ['x+-y', 'x-y'],
+    ['∠ABC', '∠CBA'],
   ];
 
   _.each(symbolic_equivalences, function (equiv) {
@@ -805,6 +808,7 @@ describe("expression", function () {
     ['x++-y', 'x-y'],
     ['x++--y', 'x+y'],
     ['x--y', 'x+y'],
+    ['∠ABC', '∠ACB'],
   ];
 
   _.each(symbolic_nonequivalences, function (nonequiv) {

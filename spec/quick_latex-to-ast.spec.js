@@ -432,6 +432,15 @@ var trees = {
   'f_\\bot': ["_", "f", "perp"],
   'f \\parallel y': ["parallel", "f", "y"],
   'x \\| y': ["parallel", "x", "y"],
+  '\\angle': "angle",
+  '\\angle ABC': ["angle", "A", "B", "C"],
+  '\\angle A_1B_xC_+': ["angle", ["_", "A", 1], ["_", "B", "x"], ["_", "C", "+"]],
+  '\\angle A^1B^xC^+': ["angle", ["^", "A", 1], ["^", "B", "x"], ["^", "C", "+"]],
+  '\\angle A\'B\'\'C\'\'\'': ["angle", ["prime", "A"], ["prime", ["prime", "B"]], ["prime", ["prime", ["prime", "C"]]]],
+  '\\angle A+B': ["+", ["angle", "A"], "B"],
+  '\\angle A*B': ["*", ["angle", "A"], "B"],
+  '\\angle (ABC)': ["angle", ["*", "A", "B", "C"]],
+  '\\angle (A,B,C)': ["angle", "A", "B", "C"],
 };
 
 

@@ -783,6 +783,22 @@ const objectsToTest = [
     'ast': ['*', 'x', ["+", 'y']],
     'text': 'x (+ y)',
   },
+  {
+    'ast': ['angle', 'A', 'B', 'C'],
+    'text': '∠ABC',
+  },
+  {
+    'ast': ['angle', ['^', 'A', 2], ['_', 'B', 'n'], ['prime', 'C']],
+    'text': '∠A^2B_nC\'',
+  },
+  {
+    'ast': ['angle', ['+', 'A', 'B'], ['*', 'B', 'D'], ['/', 'x', 'y']],
+    'text': '∠( A + B, B D, x/y )',
+  },
+  {
+    'ast': ["*", ['angle', 'A', 'B', 'C'], 'x'],
+    'text': '( ∠ABC ) x',
+  },
 
 
 

@@ -297,13 +297,16 @@ var inputs = [
   'floor(a)',
   'ceil(a)',
   'round(a)',
-  'angle ABC',
   ['x perp y', 'x ⟂ y'],
   ['x^(perp)', 'x^⟂'],
   ['x^perp', 'x^⟂'],
   ['x_(perp)', 'x_⟂'],
   ['x_perp', 'x_⟂'],
   ['x parallel y', 'x ∥ y'],
+  ['angle ABC', '∠ABC'],
+  ['angle(A,B,C)', '∠ABC'],
+  ['angle(A,B,C)x', '(∠ABC)x'],
+  ['(angle ABC)x', '(∠ABC)x'],
 ];
 
 

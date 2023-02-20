@@ -284,10 +284,11 @@ var inputs = [
   '\\binom{x}{y}',
   '\\vec{a}',
   ['\\vec a', '\\vec{a}'],
+  '\\lfloor a \\rfloor',
+  '\\lceil a \\rceil',
   ['\\lfloor a \\rfloor', '\\left\\lfloor a \\right\\rfloor'],
   ['\\lceil a \\rceil', '\\left\\lceil a \\right\\rceil'],
   '\\operatorname{round}(a)',
-  '\\angle ABC',
   '\\langle x,y \\rangle',
   'x \\perp y',
   ['x \\bot y', 'x \\perp y'],
@@ -301,6 +302,10 @@ var inputs = [
   ['x_\\bot', 'x_{\\perp}'],
   'x \\parallel y',
   ['x \\| y', 'x \\parallel y'],
+  '\\angle ABC',
+  ['\\angle(A,B,C)', '\\angle ABC'],
+  ['\\angle(A,B,C)x', '(\\angle ABC)x'],
+  ['(\\angle ABC)x', '(\\angle ABC)x'],
 ];
 
 function clean(text) {
