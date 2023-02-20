@@ -297,6 +297,8 @@ var inputs = [
   ['x perp y', 'x ⟂ y'],
   ['x^(perp)', 'x^⟂'],
   ['x^perp', 'x^⟂'],
+  ['x_(perp)', 'x_⟂'],
+  ['x_perp', 'x_⟂'],
   ['x parallel y', 'x ∥ y'],
 ];
 
