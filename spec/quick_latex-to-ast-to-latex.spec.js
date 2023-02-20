@@ -292,6 +292,8 @@ var inputs = [
   ['x^{\\bot}', 'x^{\\perp}'],
   ['x^\\perp', 'x^{\\perp}'],
   ['x^\\bot', 'x^{\\perp}'],
+  'x \\parallel y',
+  ['x \\| y', 'x \\parallel y'],
 ];
 
 function clean(text) {

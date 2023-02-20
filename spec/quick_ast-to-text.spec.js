@@ -771,6 +771,10 @@ const objectsToTest = [
     'ast': ['^', 'x', 'perp'],
     'text': 'x^⟂',
   },
+  {
+    'ast': ['parallel', 'x', 'y'],
+    'text': 'x ∥ y',
+  },
 
 
 

@@ -351,6 +351,8 @@ var trees = {
   'x^(⟂)': ["^", "x", "perp"],
   'x^perp': ["^", "x", "perp"],
   'x^⟂': ["^", "x", "perp"],
+  'x parallel y': ["parallel", "x", "y"],
+  'x ∥ y': ["parallel", "x", "y"],
 };
 
 Object.keys(trees).forEach(function (string) {

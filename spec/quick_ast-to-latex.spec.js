@@ -826,6 +826,10 @@ const objectsToTest = [
     'ast': ['^', 'x', 'perp'],
     'latex': 'x^{\\perp}',
   },
+  {
+    'ast': ['parallel', 'x', 'y'],
+    'latex': 'x \\parallel y',
+  },
 
 
 

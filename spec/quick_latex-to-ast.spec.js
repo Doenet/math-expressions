@@ -378,6 +378,8 @@ var trees = {
   'x^{\\bot}': ["^", "x", "perp"],
   'x^\\perp': ["^", "x", "perp"],
   'x^\\bot': ["^", "x", "perp"],
+  'x \\parallel y': ["parallel", "x", "y"],
+  'x \\| y': ["parallel", "x", "y"],
 };
 
 
