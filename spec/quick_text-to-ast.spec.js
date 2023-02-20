@@ -345,6 +345,12 @@ var trees = {
   'floor(a)': ["apply", "floor", "a"],
   'ceil(a)': ["apply", "ceil", "a"],
   'round(a)': ["apply", "round", "a"],
+  'x perp y': ["perp", "x", "y"],
+  'x ⟂ y': ["perp", "x", "y"],
+  'x^(perp)': ["^", "x", "perp"],
+  'x^(⟂)': ["^", "x", "perp"],
+  'x^perp': ["^", "x", "perp"],
+  'x^⟂': ["^", "x", "perp"],
 };
 
 Object.keys(trees).forEach(function (string) {

@@ -372,6 +372,12 @@ var trees = {
   '\\lceil a \\rceil': ["apply", "ceil", "a"],
   '\\operatorname{round}(a)': ["apply", "round", "a"],
   '\\langle x, y \\rangle': ["altvector", "x", "y"],
+  'x \\perp y': ["perp", "x", "y"],
+  'x \\bot y': ["perp", "x", "y"],
+  'x^{\\perp}': ["^", "x", "perp"],
+  'x^{\\bot}': ["^", "x", "perp"],
+  'x^\\perp': ["^", "x", "perp"],
+  'x^\\bot': ["^", "x", "perp"],
 };
 
 

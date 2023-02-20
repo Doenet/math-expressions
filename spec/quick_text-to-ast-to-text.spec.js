@@ -294,6 +294,9 @@ var inputs = [
   'ceil(a)',
   'round(a)',
   'angle ABC',
+  ['x perp y', 'x ⟂ y'],
+  ['x^(perp)', 'x^⟂'],
+  ['x^perp', 'x^⟂'],
 ];
 
 

@@ -763,6 +763,14 @@ const objectsToTest = [
     'ast': ['apply', 'round', 'a'],
     'text': 'round(a)',
   },
+  {
+    'ast': ['perp', 'x', 'y'],
+    'text': 'x ⟂ y',
+  },
+  {
+    'ast': ['^', 'x', 'perp'],
+    'text': 'x^⟂',
+  },
 
 
 

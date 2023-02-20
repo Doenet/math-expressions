@@ -818,6 +818,14 @@ const objectsToTest = [
     'ast': ['apply', 'round', 'a'],
     'latex': '\\operatorname{round}\\left(a\\right)',
   },
+  {
+    'ast': ['perp', 'x', 'y'],
+    'latex': 'x \\perp y',
+  },
+  {
+    'ast': ['^', 'x', 'perp'],
+    'latex': 'x^{\\perp}',
+  },
 
 
 

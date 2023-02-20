@@ -286,6 +286,12 @@ var inputs = [
   '\\operatorname{round}(a)',
   '\\angle ABC',
   '\\langle x,y \\rangle',
+  'x \\perp y',
+  ['x \\bot y', 'x \\perp y'],
+  'x^{\\perp}',
+  ['x^{\\bot}', 'x^{\\perp}'],
+  ['x^\\perp', 'x^{\\perp}'],
+  ['x^\\bot', 'x^{\\perp}'],
 ];
 
 function clean(text) {
