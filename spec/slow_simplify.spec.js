@@ -252,6 +252,18 @@ describe("evaluate_numbers", function () {
     expect(me.fromText("1+2+").evaluate_numbers().tree).toEqual(['+', 1, 2, '\uff3f']);
   })
 
+  it("with units", function () {
+    expect(me.fromText("50% + 75%").evaluate_numbers().tree).toEqual(me.fromText("125%").tree);
+    expect(me.fromText("$50 + $75").evaluate_numbers().tree).toEqual(me.fromText("$125").tree);
+    expect(me.fromText("50deg * 3").evaluate_numbers().tree).toEqual(me.fromText("150deg").tree);
+    expect(me.fromText("3 *50deg").evaluate_numbers().tree).toEqual(me.fromText("150deg").tree);
+    expect(me.fromText("$50 * 3").evaluate_numbers().tree).toEqual(me.fromText("$150").tree);
+    expect(me.fromText("3$50").evaluate_numbers().tree).toEqual(me.fromText("$150").tree);
+    expect(me.fromText("x$50y/10").evaluate_numbers().tree).toEqual(me.fromText("$5xy").tree);
+    expect(me.fromText("x%50y/10").evaluate_numbers().tree).toEqual(me.fromText("5xy%").tree);
+
+  })
+
 });
 
 describe("evaluate_to_constant", function () {
@@ -283,6 +295,24 @@ describe("evaluate_to_constant", function () {
   it("trace of numerical matrix", function () {
     expect(me.fromLatex("\\trace(\\begin{bmatrix}1&2\\\\3&4\\end{bmatrix})").evaluate_to_constant()).toEqual(5);
     expect(me.fromLatex("\\trace(\\begin{bmatrix}1&-2&3\\\\-4&5&-6\\\\7&-8&-9\\end{bmatrix})").evaluate_to_constant()).toEqual(-3);
+  })
+
+  it("with units", function () {
+    expect(me.fromText("50%").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("50%").evaluate_to_constant()).toEqual(0.5);
+    expect(me.fromText("50%").evaluate_to_constant(true, false)).toEqual(50);
+    expect(me.fromText("50%").remove_units().evaluate_to_constant()).toEqual(0.5);
+    expect(me.fromText("50%").remove_units(false).evaluate_to_constant()).toEqual(50);
+    expect(me.fromText("$9.5").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("$9.5").evaluate_to_constant()).toEqual(9.5);
+    expect(me.fromText("$9.5").evaluate_to_constant(true, false)).toEqual(9.5);
+    expect(me.fromText("$9.5").remove_units().evaluate_to_constant()).toEqual(9.5);
+    expect(me.fromText("$9.5").remove_units(false).evaluate_to_constant()).toEqual(9.5);
+    expect(me.fromText("180deg").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("180deg").evaluate_to_constant()).toEqual(Math.PI);
+    expect(me.fromText("180deg").evaluate_to_constant(true, false)).toEqual(180);
+    expect(me.fromText("180deg").remove_units().evaluate_to_constant()).toEqual(Math.PI);
+    expect(me.fromText("180deg").remove_units(false).evaluate_to_constant()).toEqual(180);
   })
 
 });
@@ -524,6 +554,13 @@ describe("collect like terms and factor", function () {
   it("with blanks untouched", function () {
     expect(me.fromText("/5+").collect_like_terms_factors().tree).toEqual(['+', ["/", "\uff3f", 5], '\uff3f']);
     expect(me.fromText("(3*) + 5*").collect_like_terms_factors().tree).toEqual(['+', ["*", 3, "\uff3f"], ["*", 5, '\uff3f']]);
+  })
+
+  it("with units", function () {
+    expect(me.fromText("x% + 2x%").collect_like_terms_factors().tree).toEqual(me.fromText("3x%").tree)
+    expect(me.fromText("$x + 2$x").collect_like_terms_factors().tree).toEqual(me.fromText("$3x").tree)
+    expect(me.fromText("$x + y% + z deg -a% - $b - c deg + e deg + f% + $g").collect_like_terms_factors().tree).toEqual(
+      me.fromText("$(x-b+g) + (y-a+f)% + (z-c+e)deg").default_order().tree)
   })
 
 });

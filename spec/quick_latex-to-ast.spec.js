@@ -4,26 +4,26 @@ import { ParseError } from '../lib/converters/error';
 var converter = new latexToAst();
 
 var trees = {
-  
-  '\\frac{1}{2} x': ['*',['/',1,2],'x'],
-  '1+x+3': ['+',1,'x',3],
-  '1-x-3': ['+',1,['-','x'],-3],
-  "1 + - x": ['+',1,['-','x']],
-  "1 - - x": ['+',1,['-',['-','x']]],
-  '1.+x+3.0': ['+',1,'x',3],
-  '1-3': ['+',1,-3],
-  '1-0': ['+',1,['-',0]],
+
+  '\\frac{1}{2} x': ['*', ['/', 1, 2], 'x'],
+  '1+x+3': ['+', 1, 'x', 3],
+  '1-x-3': ['+', 1, ['-', 'x'], -3],
+  "1 + - x": ['+', 1, ['-', 'x']],
+  "1 - - x": ['+', 1, ['-', ['-', 'x']]],
+  '1.+x+3.0': ['+', 1, 'x', 3],
+  '1-3': ['+', 1, -3],
+  '1-0': ['+', 1, ['-', 0]],
   'x^2': ['^', 'x', 2],
   '\\log x': ['apply', 'log', 'x'],
   '\\ln x': ['apply', 'ln', 'x'],
   '\\log_{10} x': ['apply', 'log10', 'x'],
-  '-x^2': ['-',['^', 'x', 2]],
-  '|x|': ['apply', 'abs','x'],
+  '-x^2': ['-', ['^', 'x', 2]],
+  '|x|': ['apply', 'abs', 'x'],
   '|\\sin|x||': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],
   'x^47': ['*', ['^', 'x', 4], 7],
   'x^ab': ['*', ['^', 'x', 'a'], 'b'],
   'x^a3': ['*', ['^', 'x', 'a'], 3],
-  'x^a!':  ['^', 'x', ['apply', 'factorial', 'a']],
+  'x^a!': ['^', 'x', ['apply', 'factorial', 'a']],
   'f^47': ['*', ['^', 'f', 4], 7],
   'f^ab': ['*', ['^', 'f', 'a'], 'b'],
   'f^a3': ['*', ['^', 'f', 'a'], 3],
@@ -33,29 +33,29 @@ var trees = {
   'f_47': ['*', ['_', 'f', 4], 7],
   'f_ab': ['*', ['_', 'f', 'a'], 'b'],
   'f_a3': ['*', ['_', 'f', 'a'], 3],
-  'xyz': ['*','x','y','z'],
+  'xyz': ['*', 'x', 'y', 'z'],
   'c(a+b)': ['*', 'c', ['+', 'a', 'b']],
   '(a+b)c': ['*', ['+', 'a', 'b'], 'c'],
-  'a!': ['apply', 'factorial','a'],
+  'a!': ['apply', 'factorial', 'a'],
   '\\theta': 'theta',
   'theta': ['*', 't', 'h', 'e', 't', 'a'],
-  '\\cos(\\theta)': ['apply', 'cos','theta'],
+  '\\cos(\\theta)': ['apply', 'cos', 'theta'],
   'cos(x)': ['*', 'c', 'o', 's', 'x'],
   '|\\sin(|x|)|': ['apply', 'abs', ['apply', 'sin', ['apply', 'abs', 'x']]],
   '\\operatorname{blah}(x)': ['*', 'blah', 'x'],
   '|x+3=2|': ['apply', 'abs', ['=', ['+', 'x', 3], 2]],
-  'x_y_z': ['_', 'x', ['_','y','z']],
-  'x_{y_z}': ['_', 'x', ['_','y','z']],
-  '{x_y}_z': ['_', ['_', 'x', 'y'],'z'],
-  'x^y^z': ['^', 'x', ['^','y','z']],
-  'x^{y^z}': ['^', 'x', ['^','y','z']],
-  '{x^y}^z': ['^', ['^', 'x', 'y'],'z'],
-  'x^y_z': ['^', 'x', ['_','y','z']],
-  'x_y^z': ['^', ['_','x','y'],'z'],
-  'xyz!': ['*','x','y', ['apply', 'factorial', 'z']],
+  'x_y_z': ['_', 'x', ['_', 'y', 'z']],
+  'x_{y_z}': ['_', 'x', ['_', 'y', 'z']],
+  '{x_y}_z': ['_', ['_', 'x', 'y'], 'z'],
+  'x^y^z': ['^', 'x', ['^', 'y', 'z']],
+  'x^{y^z}': ['^', 'x', ['^', 'y', 'z']],
+  '{x^y}^z': ['^', ['^', 'x', 'y'], 'z'],
+  'x^y_z': ['^', 'x', ['_', 'y', 'z']],
+  'x_y^z': ['^', ['_', 'x', 'y'], 'z'],
+  'xyz!': ['*', 'x', 'y', ['apply', 'factorial', 'z']],
   'x': 'x',
   'f': 'f',
-  'fg': ['*', 'f','g'],
+  'fg': ['*', 'f', 'g'],
   'f+g': ['+', 'f', 'g'],
   'f(x)': ['apply', 'f', 'x'],
   'f(x,y,z)': ['apply', 'f', ['tuple', 'x', 'y', 'z']],
@@ -67,21 +67,21 @@ var trees = {
   'f\'g': ['*', ['prime', 'f'], 'g'],
   'f\'g\'\'': ['*', ['prime', 'f'], ['prime', ['prime', 'g']]],
   'x\'': ['prime', 'x'],
-  'f\'(x)' : ['apply', ['prime', 'f'], 'x'],
-  'f(x)\'' : ['prime', ['apply', 'f', 'x']],
+  'f\'(x)': ['apply', ['prime', 'f'], 'x'],
+  'f(x)\'': ['prime', ['apply', 'f', 'x']],
   '\\sin(x)\'': ['prime', ['apply', 'sin', 'x']],
   '\\sin\'(x)': ['apply', ['prime', 'sin'], 'x'],
-  'f\'\'(x)': ['apply', ['prime', ['prime', 'f']],'x'],
-  '\\sin(x)\'\'': ['prime', ['prime', ['apply','sin','x']]],
-  'f(x)^t_y': ['^', ['apply', 'f','x'], ['_','t','y']],
+  'f\'\'(x)': ['apply', ['prime', ['prime', 'f']], 'x'],
+  '\\sin(x)\'\'': ['prime', ['prime', ['apply', 'sin', 'x']]],
+  'f(x)^t_y': ['^', ['apply', 'f', 'x'], ['_', 't', 'y']],
   'f_t(x)': ['apply', ['_', 'f', 't'], 'x'],
   'f(x)_t': ['_', ['apply', 'f', 'x'], 't'],
   'f^2(x)': ['apply', ['^', 'f', 2], 'x'],
-  'f(x)^2': ['^', ['apply', 'f', 'x'],2],
+  'f(x)^2': ['^', ['apply', 'f', 'x'], 2],
   'f\'^a(x)': ['apply', ['^', ['prime', 'f'], 'a'], 'x'],
   'f^a\'(x)': ['apply', ['^', 'f', ['prime', 'a']], 'x'],
-  'f_a^b\'(x)': ['apply', ['^', ['_', 'f', 'a'], ['prime', 'b']],'x'],
-  'f_a\'^b(x)': ['apply', ['^', ['prime', ['_', 'f','a']],'b'],'x'],
+  'f_a^b\'(x)': ['apply', ['^', ['_', 'f', 'a'], ['prime', 'b']], 'x'],
+  'f_a\'^b(x)': ['apply', ['^', ['prime', ['_', 'f', 'a']], 'b'], 'x'],
   '\\sin x': ['apply', 'sin', 'x'],
   'f x': ['*', 'f', 'x'],
   '\\sin^xyz': ['*', ['apply', ['^', 'sin', 'x'], 'y'], 'z'],
@@ -96,39 +96,39 @@ var trees = {
   'x_t\'': ['prime', ['_', 'x', 't']],
   'x_f\'': ['_', 'x', ['prime', 'f']],
   '(x,y,z)': ['tuple', 'x', 'y', 'z'],
-  '(x,y)-[x,y]': ['+', ['tuple','x','y'], ['-', ['array','x','y']]],
+  '(x,y)-[x,y]': ['+', ['tuple', 'x', 'y'], ['-', ['array', 'x', 'y']]],
   '2[z-(x+1)]': ['*', 2, ['+', 'z', ['-', ['+', 'x', 1]]]],
   '\\{1,2,x\\}': ['set', 1, 2, 'x'],
   '\\{x, x\\}': ['set', 'x', 'x'],
   '\\{x\\}': ['set', 'x'],
-  '\\{-x\\}': ['set', ['-','x']],
+  '\\{-x\\}': ['set', ['-', 'x']],
   '(1,2]': ['interval', ['tuple', 1, 2], ['tuple', false, true]],
   '[1,2)': ['interval', ['tuple', 1, 2], ['tuple', true, false]],
-  '[1,2]': ['array', 1, 2 ],
-  '(1,2)': ['tuple', 1, 2 ],
+  '[1,2]': ['array', 1, 2],
+  '(1,2)': ['tuple', 1, 2],
   '1,2,3': ['list', 1, 2, 3],
   'x=a': ['=', 'x', 'a'],
   'x=y=1': ['=', 'x', 'y', 1],
   'x=(y=1)': ['=', 'x', ['=', 'y', 1]],
-  '(x=y)=1': ['=', ['=','x', 'y'], 1],
+  '(x=y)=1': ['=', ['=', 'x', 'y'], 1],
   '7 \\ne 2': ['ne', 7, 2],
   '7 \\neq 2': ['ne', 7, 2],
   '\\lnot x=y': ['not', ['=', 'x', 'y']],
   '\\lnot (x=y)': ['not', ['=', 'x', 'y']],
-  'x>y': ['>', 'x','y'],
-  'x \\gt y': ['>', 'x','y'],
-  'x \\ge y': ['ge', 'x','y'],
-  'x \\geq y': ['ge', 'x','y'],
-  'x>y>z': ['gts', ['tuple', 'x', 'y','z'], ['tuple', true, true]],
-  'x>y \\ge z': ['gts', ['tuple', 'x', 'y','z'], ['tuple', true, false]],
-  'x \\ge y>z': ['gts', ['tuple', 'x', 'y','z'], ['tuple', false, true]],
-  'x \\ge y \\ge z': ['gts', ['tuple', 'x', 'y','z'], ['tuple', false, false]],
-  'x<y': ['<', 'x','y'],
-  'x \\lt y': ['<', 'x','y'],
-  'x \\le y': ['le', 'x','y'],
-  'x \\leq y': ['le', 'x','y'],
-  'x<y<z': ['lts', ['tuple', 'x', 'y','z'], ['tuple', true, true]],
-  'x<y \\le z': ['lts', ['tuple', 'x', 'y','z'], ['tuple', true, false]],
+  'x>y': ['>', 'x', 'y'],
+  'x \\gt y': ['>', 'x', 'y'],
+  'x \\ge y': ['ge', 'x', 'y'],
+  'x \\geq y': ['ge', 'x', 'y'],
+  'x>y>z': ['gts', ['tuple', 'x', 'y', 'z'], ['tuple', true, true]],
+  'x>y \\ge z': ['gts', ['tuple', 'x', 'y', 'z'], ['tuple', true, false]],
+  'x \\ge y>z': ['gts', ['tuple', 'x', 'y', 'z'], ['tuple', false, true]],
+  'x \\ge y \\ge z': ['gts', ['tuple', 'x', 'y', 'z'], ['tuple', false, false]],
+  'x<y': ['<', 'x', 'y'],
+  'x \\lt y': ['<', 'x', 'y'],
+  'x \\le y': ['le', 'x', 'y'],
+  'x \\leq y': ['le', 'x', 'y'],
+  'x<y<z': ['lts', ['tuple', 'x', 'y', 'z'], ['tuple', true, true]],
+  'x<y \\le z': ['lts', ['tuple', 'x', 'y', 'z'], ['tuple', true, false]],
   'x \\le y<z': ['lts', ['tuple', 'x', 'y', 'z'], ['tuple', false, true]],
   'x \\le y \\le z': ['lts', ['tuple', 'x', 'y', 'z'], ['tuple', false, false]],
   'x<y>z': ['>', ['<', 'x', 'y'], 'z'],
@@ -153,7 +153,7 @@ var trees = {
   'A \\lor B \\land C': ['or', 'A', ['and', 'B', 'C']],
   '\\lnot x=1': ['not', ['=', 'x', 1]],
   '\\lnot(x=1)': ['not', ['=', 'x', 1]],
-  '\\lnot(x=y) \\lor z \\ne w': ['or', ['not', ['=','x','y']], ['ne','z','w']],
+  '\\lnot(x=y) \\lor z \\ne w': ['or', ['not', ['=', 'x', 'y']], ['ne', 'z', 'w']],
   '1.2E3': 1200,
   '1.2E+3  ': 1200,
   '3.1E-3 ': 0.0031,
@@ -163,19 +163,19 @@ var trees = {
   '3.1E-3 + 2 ': ['+', ['*', 3.1, 'E'], -3, 2],
   '(3.1E-3 ) + 2': ['+', 0.0031, 2],
   '\\sin((3.1E-3)x)': ['apply', 'sin', ['*', 0.0031, 'x']],
-  '\\sin( 3.1E-3 x)': ['apply', 'sin',  ['+', ['*', 3.1, 'E'], ['-', ['*', 3, 'x']]]],
+  '\\sin( 3.1E-3 x)': ['apply', 'sin', ['+', ['*', 3.1, 'E'], ['-', ['*', 3, 'x']]]],
   '\\frac{3.1E-3 }{x}': ['/', 0.0031, 'x'],
   '|3.1E-3|': ['apply', 'abs', 0.0031],
   '|3.1E-3|': ['apply', 'abs', 0.0031],
   '(3.1E-3, 1E2)': ['tuple', 0.0031, 100],
   '(3.1E-3, 1E2]': ["interval", ["tuple", 0.0031, 100], ["tuple", false, true]],
   '\\{ 3.1E-3, 1E2 \\}': ['set', 0.0031, 100],
-  '\\begin{matrix} 1E-3 & 3E-12 \\\\ 6E+3& 7E5\\end{matrix}': [ 'matrix', [ 'tuple', 2, 2 ], [ 'tuple', [ 'tuple', 0.001, 3e-12 ], [ 'tuple', 6000, 700000 ] ] ],
+  '\\begin{matrix} 1E-3 & 3E-12 \\\\ 6E+3& 7E5\\end{matrix}': ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 0.001, 3e-12], ['tuple', 6000, 700000]]],
   '1.2e-3': ['+', ['*', 1.2, 'e'], -3],
   '+2': ['+', 2],
   '\\infty': Infinity,
   '+\\infty': ['+', Infinity],
-  'a b\\,c\\!d\\ e\\>f\\;g\\>h\\quad i \\qquad j': ['*','a','b','c','d','e','f','g','h','i','j'],
+  'a b\\,c\\!d\\ e\\>f\\;g\\>h\\quad i \\qquad j': ['*', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
   '\\begin{bmatrix}a & b\\\\ c&d\\end{bmatrix}': ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 'd']]],
   '\\begin{pmatrix}a & b\\\\ c\\end{pmatrix}': ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 0]]],
   '\\begin{matrix}a & b\\\\ &d\\end{matrix}': ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 0, 'd']]],
@@ -230,8 +230,8 @@ var trees = {
   '3\\div1': ['/', 3, 1],
   '\\sin2': ['apply', 'sin', 2],
   '3|x|': ['*', 3, ['apply', 'abs', 'x']],
-  '|a|b|c|': ['*',['apply', 'abs', 'a'], 'b', ['apply', 'abs', 'c']],
-  '|a|*b*|c|': ['*',['apply', 'abs', 'a'], 'b', ['apply', 'abs', 'c']],
+  '|a|b|c|': ['*', ['apply', 'abs', 'a'], 'b', ['apply', 'abs', 'c']],
+  '|a|*b*|c|': ['*', ['apply', 'abs', 'a'], 'b', ['apply', 'abs', 'c']],
   '|a*|b|*c|': ['apply', 'abs', ['*', 'a', ['apply', 'abs', 'b'], 'c']],
   '\\left|a\\left|b\\right|c\\right|': ['apply', 'abs', ['*', 'a', ['apply', 'abs', 'b'], 'c']],
   '|a(q|b|r)c|': ['apply', 'abs', ['*', 'a', 'q', ['apply', 'abs', 'b'], 'r', 'c']],
@@ -243,7 +243,7 @@ var trees = {
   '\\{ x : x > 0 \\}': ['set', [':', 'x', ['>', 'x', 0]]],
   '\\ldots': ['ldots'],
   '1,2,3,\\ldots': ['list', 1, 2, 3, ['ldots']],
-  '(1,2,3,\\ldots)':  ['tuple', 1, 2, 3, ['ldots']],
+  '(1,2,3,\\ldots)': ['tuple', 1, 2, 3, ['ldots']],
   'a-2b': ['+', 'a', ['-', ['*', 2, 'b']]],
   'a+-2b': ['+', 'a', ['-', ['*', 2, 'b']]],
   'a+(-2b)': ['+', 'a', ['-', ['*', 2, 'b']]],
@@ -381,10 +381,10 @@ var trees = {
   'x^2-': ['+', ["^", "x", 2], ["-", '\uff3f']],
   'x^2--': ['+', ["^", "x", 2], ["-", '-']],
   'x^2---': ['+', ["^", "x", 2], ["-", "--"]],
-  'x^2----': ['+', ["^", "x", 2], ["-","---"]],
+  'x^2----': ['+', ["^", "x", 2], ["-", "---"]],
   'x^2-----': ['+', ["^", "x", 2], ["-", "----"]],
   'x^2------': ['+', ["^", "x", 2], ["-", "-----"]],
-  'x^2-+': ['+', ["^", "x", 2], ['-','+']],
+  'x^2-+': ['+', ["^", "x", 2], ['-', '+']],
   'x^2+-': ['+', ["^", "x", 2], ['-', '\uff3f']],
   'x^2++-': ['+', ["^", "x", 2], '+-'],
   'x^2--+': ['+', ["^", "x", 2], ['-', '-+']],
@@ -399,8 +399,8 @@ var trees = {
   '5+()+2': ['+', 5, '\uff3f', 2],
   '5+{}': ['+', 5, '\uff3f'],
   '5+{}+2': ['+', 5, '\uff3f', 2],
-  '\\Re(x)': ["apply", "re" ,"x"],
-  '\\Im(x)': ["apply", "im" ,"x"],
+  '\\Re(x)': ["apply", "re", "x"],
+  '\\Im(x)': ["apply", "im", "x"],
   '\\det(A)': ["apply", "det", "A"],
   '\\trace(A)': ["apply", "trace", "A"],
   '\\operatorname{nCr}(x,y)': ["apply", "nCr", ["tuple", "x", "y"]],
@@ -441,10 +441,25 @@ var trees = {
   '\\angle A*B': ["*", ["angle", "A"], "B"],
   '\\angle (ABC)': ["angle", ["*", "A", "B", "C"]],
   '\\angle (A,B,C)': ["angle", "A", "B", "C"],
+  '$x': ["unit", "$", "x"],
+  'x%': ["unit", "x", "%"],
+  'x\\circ': ["unit", "x", "deg"],
+  '$xy': ["unit", "$", ["*", "x", "y"]],
+  'x%y': ["*", ["unit", "x", "%"], "y"],
+  'x\\circ y': ["*", ["unit", "x", "deg"], "y"],
+  'y$x': ["*", "y", ["unit", "$", "x"]],
+  'yx%': ["unit", ["*", "y", "x"], "%"],
+  'yx\\circ': ["unit", ["*", "y", "x"], "deg"],
+  'y$xz': ["*", "y", ["unit", "$", ["*", "x", "z"]]],
+  'yx%z': ["*", ["unit", ["*", "y", "x"], "%"], "z"],
+  'yx\\circ z': ["*", ["unit", ["*", "y", "x"], "deg"], "z"],
+  '$x%': ["unit", "$", ["unit", "x", "%"]],
+  '%x$': ["*", "%", "x", "$"],
+  'x%y$z': ["*", ["unit", "x", "%"], "y", ["unit", "$", "z"]],
 };
 
 
-Object.keys(trees).forEach(function(string) {
+Object.keys(trees).forEach(function (string) {
   test("parses " + string, () => {
     expect(converter.convert(string)).toEqual(trees[string]);
   });
@@ -474,51 +489,57 @@ var bad_inputs = {
 }
 
 
-Object.keys(bad_inputs).forEach(function(string) {
-  test("throws " + string, function() {
-    expect(() => {converter.convert(string)}).toThrow(bad_inputs[string]);
+Object.keys(bad_inputs).forEach(function (string) {
+  test("throws " + string, function () {
+    expect(() => { converter.convert(string) }).toThrow(bad_inputs[string]);
   });
 });
 
 
 test("function symbols", function () {
-  let converter = new latexToAst({functionSymbols: []});
+  let converter = new latexToAst({ functionSymbols: [] });
   expect(converter.convert('f(x)+h(y)')).toEqual(
-    ['+',['*', 'f', 'x'], ['*', 'h', 'y']]);
+    ['+', ['*', 'f', 'x'], ['*', 'h', 'y']]);
 
-  converter = new latexToAst({functionSymbols: ['f']});
+  converter = new latexToAst({ functionSymbols: ['f'] });
   expect(converter.convert('f(x)+h(y)')).toEqual(
-    ['+',['apply', 'f', 'x'], ['*', 'h', 'y']]);
+    ['+', ['apply', 'f', 'x'], ['*', 'h', 'y']]);
 
-  converter = new latexToAst({functionSymbols: ['f', 'h']});
+  converter = new latexToAst({ functionSymbols: ['f', 'h'] });
   expect(converter.convert('f(x)+h(y)')).toEqual(
-    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+    ['+', ['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 
-  converter = new latexToAst({functionSymbols: ['f', 'h', 'x']});
+  converter = new latexToAst({ functionSymbols: ['f', 'h', 'x'] });
   expect(converter.convert('f(x)+h(y)')).toEqual(
-    ['+',['apply', 'f', 'x'], ['apply', 'h', 'y']]);
+    ['+', ['apply', 'f', 'x'], ['apply', 'h', 'y']]);
 
 });
 
 
 test("applied function symbols", function () {
 
-  let converter = new latexToAst({appliedFunctionSymbols: [],
-				  allowedLatexSymbols: ['custom', 'sin']});
+  let converter = new latexToAst({
+    appliedFunctionSymbols: [],
+    allowedLatexSymbols: ['custom', 'sin']
+  });
   expect(converter.convert('\\sin(x) + \\custom(y)')).toEqual(
     ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
   expect(converter.convert('\\sin x  + \\custom y')).toEqual(
     ['+', ['*', 'sin', 'x'], ['*', 'custom', 'y']]);
 
-  converter = new latexToAst({appliedFunctionSymbols: ['custom'],
-			      allowedLatexSymbols: ['custom', 'sin']});
+  converter = new latexToAst({
+    appliedFunctionSymbols: ['custom'],
+    allowedLatexSymbols: ['custom', 'sin']
+  });
   expect(converter.convert('\\sin(x) + \\custom(y)')).toEqual(
     ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
   expect(converter.convert('\\sin x  + \\custom y')).toEqual(
     ['+', ['*', 'sin', 'x'], ['apply', 'custom', 'y']]);
 
-  converter = new latexToAst({appliedFunctionSymbols: ['custom', 'sin'],
-				  allowedLatexSymbols: ['custom', 'sin']});
+  converter = new latexToAst({
+    appliedFunctionSymbols: ['custom', 'sin'],
+    allowedLatexSymbols: ['custom', 'sin']
+  });
   expect(converter.convert('\\sin(x) + \\custom(y)')).toEqual(
     ['+', ['apply', 'sin', 'x'], ['apply', 'custom', 'y']]);
   expect(converter.convert('\\sin x  + \\custom y')).toEqual(
@@ -531,11 +552,11 @@ test("allow simplified function application", function () {
   expect(converter.convert('\\sin x')).toEqual(
     ['apply', 'sin', 'x']);
 
-  converter = new latexToAst({allowSimplifiedFunctionApplication: false});
-  expect(() => {converter.convert('\\sin x')}).toThrow(
+  converter = new latexToAst({ allowSimplifiedFunctionApplication: false });
+  expect(() => { converter.convert('\\sin x') }).toThrow(
     "Expecting ( after function");
 
-  converter = new latexToAst({allowSimplifiedFunctionApplication: true});
+  converter = new latexToAst({ allowSimplifiedFunctionApplication: true });
   expect(converter.convert('\\sin x')).toEqual(
     ['apply', 'sin', 'x']);
 
@@ -547,11 +568,11 @@ test("parse Leibniz notation", function () {
   expect(converter.convert('\\frac{dy}{dx}')).toEqual(
     ['derivative_leibniz', 'y', ['tuple', 'x']]);
 
-  converter = new latexToAst({parseLeibnizNotation: false});
+  converter = new latexToAst({ parseLeibnizNotation: false });
   expect(converter.convert('\\frac{dy}{dx}')).toEqual(
     ['/', ['*', 'd', 'y'], ['*', 'd', 'x']]);
 
-  converter = new latexToAst({parseLeibnizNotation: true});
+  converter = new latexToAst({ parseLeibnizNotation: true });
   expect(converter.convert('\\frac{dy}{dx}')).toEqual(
     ['derivative_leibniz', 'y', ['tuple', 'x']]);
 
@@ -564,11 +585,11 @@ test("parse scientific notation", function () {
   expect(converter.convert('2E^2-3E+2')).toEqual(
     ['+', ['*', 2, ["^", "E", 2]], -300]);
 
-  converter = new latexToAst({parseScientificNotation: false});
+  converter = new latexToAst({ parseScientificNotation: false });
   expect(converter.convert('2E^2-3E+2')).toEqual(
     ['+', ['*', 2, ["^", "E", 2]], ['-', ['*', 3, "E"]], 2]);
 
-  converter = new latexToAst({parseScientificNotation: true});
+  converter = new latexToAst({ parseScientificNotation: true });
   expect(converter.convert('2E^2-3E+2')).toEqual(
     ['+', ['*', 2, ["^", "E", 2]], -300]);
 
@@ -576,7 +597,7 @@ test("parse scientific notation", function () {
 
 test("conditional probability", function () {
 
-  let converter = new latexToAst({functionSymbols: ["P"]});
+  let converter = new latexToAst({ functionSymbols: ["P"] });
 
   expect(converter.convert("P(A|B)")).toEqual(
     ['apply', 'P', ['|', 'A', 'B']]);

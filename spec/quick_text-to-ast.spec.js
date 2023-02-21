@@ -421,6 +421,22 @@ var trees = {
   '∠A*B': ["*", ["angle", "A"], "B"],
   '∠(ABC)': ["angle", ["*", "A", "B", "C"]],
   '∠(A,B,C)': ["angle", "A", "B", "C"],
+  '$x': ["unit", "$", "x"],
+  'x%': ["unit", "x", "%"],
+  'x deg': ["unit", "x", "deg"],
+  '$xy': ["unit", "$", ["*", "x", "y"]],
+  'x%y': ["*", ["unit", "x", "%"], "y"],
+  'x deg y': ["*", ["unit", "x", "deg"], "y"],
+  'y$x': ["*", "y", ["unit", "$", "x"]],
+  'yx%': ["unit", ["*", "y", "x"], "%"],
+  'yx deg': ["unit", ["*", "y", "x"], "deg"],
+  'y$xz': ["*", "y", ["unit", "$", ["*", "x", "z"]]],
+  'yx%z': ["*", ["unit", ["*", "y", "x"], "%"], "z"],
+  'yx deg z': ["*", ["unit", ["*", "y", "x"], "deg"], "z"],
+  '$x%': ["unit", "$", ["unit", "x", "%"]],
+  '%x$': ["*", "%", "x", "$"],
+  'x%y$z': ["*", ["unit", "x", "%"], "y", ["unit", "$", "z"]],
+
 };
 
 Object.keys(trees).forEach(function (string) {

@@ -799,6 +799,42 @@ const objectsToTest = [
     'ast': ["*", ['angle', 'A', 'B', 'C'], 'x'],
     'text': '( ∠ABC ) x',
   },
+  {
+    'ast': ["unit", "$", "x"],
+    'text': '$ x',
+  },
+  {
+    'ast': ["unit", "x", "%"],
+    'text': 'x %',
+  },
+  {
+    'ast': ["unit", "x", "deg"],
+    'text': 'x deg',
+  },
+  {
+    'ast': ["*", ["unit", "$", "x"], "y"],
+    'text': '($ x) y',
+  },
+  {
+    'ast': ["*", ["unit", "x", "%"], "y"],
+    'text': '(x %) y',
+  },
+  {
+    'ast': ["*", ["unit", "x", "deg"], "y"],
+    'text': '(x deg) y',
+  },
+  {
+    'ast': ["*", "y", ["unit", "$", "x"]],
+    'text': 'y ($ x)',
+  },
+  {
+    'ast': ["*", "y", ["unit", "x", "%"]],
+    'text': 'y (x %)',
+  },
+  {
+    'ast': ["*", "y", ["unit", "x", "deg"]],
+    'text': 'y (x deg)',
+  },
 
 
 

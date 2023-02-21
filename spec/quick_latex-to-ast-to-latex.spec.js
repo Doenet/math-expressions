@@ -306,6 +306,18 @@ var inputs = [
   ['\\angle(A,B,C)', '\\angle ABC'],
   ['\\angle(A,B,C)x', '(\\angle ABC)x'],
   ['(\\angle ABC)x', '(\\angle ABC)x'],
+  '50 \\circ',
+  '$8',
+  '75%',
+  ['50 \\circ x', '(50 \\circ) x'],
+  '$8x',
+  ['75%x', '(75%)x'],
+  ['x 50 \\circ', 'x \\cdot 50 \\circ'],
+  ['x$8', 'x($8)'],
+  ['x 75%', 'x \\cdot 75%'],
+  ['x 50 \\circ y', '(x \\cdot 50 \\circ) y'],
+  ['x$8y', 'x($8y)'],
+  ['x 75%y', '(x \\cdot 75%)y'],
 ];
 
 function clean(text) {
