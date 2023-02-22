@@ -320,6 +320,11 @@ var inputs = [
   ['x 50deg y', '(x*50 deg) y'],
   ['x$8y', 'x($8y)'],
   ['x 75%y', '(x*75%)y'],
+  ['int_a^bf(x)dx', '∫_a^bf(x)dx'],
+  ['int f(x)dx', '∫f(x)dx'],
+  ['int x^2 dx', '∫x^2 dx'],
+  ['int (x^2+y^2)dxdy', '∫(x^2+y^2)dxdy'],
+  ['int dx f(x)', '∫f(x) dx'],
 ];
 
 

@@ -382,6 +382,10 @@ describe("expression", function () {
     ['50% + 1', '1.5'],
     ['x%', 'x/100'],
     ['180 deg', 'pi'],
+    ['∫_(a+a)^(5b-b)xx dx', '∫_(2a)^(4b)x^2dx'],
+    ['∫_(a+a)^(5b-b)dx xx', '∫_(2a)^(4b)x^2dx'],
+    ['∫ f(x)f(x)dx', '∫ f(x)^2dx'],
+
   ];
 
   _.each(equivalences, function (equiv) {
@@ -477,6 +481,11 @@ describe("expression", function () {
     ['∠ABC', '∠ACB'],
     ['$5', '5'],
     ['$x', 'x'],
+    ['∫_a^b xdx', '∫_(2a)^b xdx'],
+    ['∫_a^b xdx', '∫_a^(2b) xdx'],
+    ['∫_a^b xdx', '∫_a^b 2xdx'],
+    ['∫ xdx', '∫ 2xdx'],
+    ['∫ f(x)dx', '∫ g(x)dx'],
   ];
 
   _.each(nonequivalences, function (nonequiv) {

@@ -319,6 +319,11 @@ var inputs = [
   ['x 50 \\circ y', '(x \\cdot 50 \\circ) y'],
   ['x$8y', 'x($8y)'],
   ['x 75%y', '(x \\cdot 75%)y'],
+  ['\\int_a^bf(x)dx', '\\int_{a}^{b}f(x)dx'],
+  '\\int f(x) dx',
+  ['\\int x^2 dx', '\\int x^{2} dx'],
+  ['\\int (x^2+y^2)dxdy', '\\int (x^{2}+y^{2})dxdy'],
+  ['\\int dx f(x)', '\\int f(x) dx'],
 ];
 
 function clean(text) {
