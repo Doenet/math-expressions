@@ -352,6 +352,7 @@ describe("expression", function () {
     ['nCr(8,3)', '56'],
     ['nPr(8,3)', '336'],
     ['binom(8,3)', '56'],
+    ['binom(n,m)', 'nCr(n,m)'],
     ['floor(17.8)', '17'],
     ['floor(-17.3)', '-18'],
     ['ceil(17.3)', '18'],
