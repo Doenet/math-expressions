@@ -596,12 +596,16 @@ describe("matrix and vector simplify", function () {
 
   it("add and subtract tuples and vectors", function () {
     expect(me.fromAst(["+", ["vector", "a", "b"], ["tuple", "c", "d"]]).simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
+    expect(me.fromAst(["+", ["tuple", "a", "b"], ["vector", "c", "d"]]).simplify().tree).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
     expect(me.fromAst(["+", ["vector", "a", "b"], ['-', ["tuple", "c", "d"]]]).simplify().tree).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
+    expect(me.fromAst(["+", ["tuple", "a", "b"], ['-', ["vector", "c", "d"]]]).simplify().tree).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
   })
 
   it("add and subtract tuples and altvectors", function () {
     expect(me.fromLatex("\\langle a, b \\rangle + (c,d)").simplify().tree).toEqual(me.fromLatex("( a+c, b+d )").tuples_to_vectors().tree);
+    expect(me.fromLatex("(a, b) + \\langle c,d\\rangle").simplify().tree).toEqual(me.fromLatex("( a+c, b+d )").tuples_to_vectors().tree);
     expect(me.fromLatex("\\langle a, b \\rangle - (c,d)").simplify().tree).toEqual(me.fromLatex("( a-c, b-d )").tuples_to_vectors().tree);
+    expect(me.fromLatex("(a, b) - \\langle c,d\\rangle").simplify().tree).toEqual(me.fromLatex("( a-c, b-d )").tuples_to_vectors().tree);
   })
 
   it("don't add intervals", function () {

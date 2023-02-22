@@ -95,12 +95,40 @@ const objectsToTest = [
     'text': 'x^a!'
   },
   {
+    'ast': ['tuple', 1, 2],
+    'text': '( 1, 2 )'
+  },
+  {
+    'ast': ['prime', ['tuple', 1, 2]],
+    'text': '( 1, 2 )\''
+  },
+  {
+    'ast': ['^', ['tuple', 1, 2], 'T'],
+    'text': '( 1, 2 )^T'
+  },
+  {
     'ast': ['vector', 1, 2],
     'text': '( 1, 2 )'
   },
   {
+    'ast': ['prime', ['vector', 1, 2]],
+    'text': '( 1, 2 )\''
+  },
+  {
+    'ast': ['^', ['vector', 1, 2], 'T'],
+    'text': '( 1, 2 )^T'
+  },
+  {
     'ast': ['altvector', 'x', 'y'],
     'text': '⟨ x, y ⟩', // langle and rangle delimiters
+  },
+  {
+    'ast': ['prime', ['altvector', 'x', 'y']],
+    'text': '⟨ x, y ⟩\'', // langle and rangle delimiters
+  },
+  {
+    'ast': ['^', ['altvector', 'x', 'y'], 'T'],
+    'text': '⟨ x, y ⟩^T', // langle and rangle delimiters
   },
   {
     'ast': ['*', 'x', 'y', 'z'],

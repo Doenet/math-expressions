@@ -13,7 +13,7 @@ describe("matrixtest", function () {
    });
 });
 
-describe("vector addition", function () {
+describe("vector, tuple addition", function () {
    var vectors = [
       ['(1,2)', '(5,6)', '(6,8)'],
       ['(1,2,3)', '(7,6,5)', '(8,8,8)'],
@@ -26,6 +26,8 @@ describe("vector addition", function () {
          let second_vector = me.fromText(example[1]);
          let sum_vector = me.fromText(example[2]).tuples_to_vectors();
          expect(me.vector_add(first_vector, second_vector).tree).toEqual(sum_vector.tree);
+         expect(me.vector_add(first_vector, second_vector.tuples_to_vectors()).tree).toEqual(sum_vector.tree);
+         expect(me.vector_add(first_vector.tuples_to_vectors(), second_vector).tree).toEqual(sum_vector.tree);
          expect(me.vector_add(first_vector.tuples_to_vectors(), second_vector.tuples_to_vectors()).tree).toEqual(sum_vector.tree);
       })
    })
@@ -44,6 +46,24 @@ describe("altvector addition", function () {
          let second_vector = me.fromLatex(example[1]);
          let sum_vector = me.fromLatex(example[2]);
          expect(me.vector_add(first_vector, second_vector).tree).toEqual(sum_vector.tree);
+      })
+   })
+})
+
+describe("vector, altvector, tuple addition", function () {
+   var vectors = [
+      ['\\langle 1,2 \\rangle', '(5,6)', '(6,8)'],
+      ['\\langle 1,2,3 \\rangle', '(7,6,5)', '(8,8,8)'],
+      ['\\langle 1,2,3,4 \\rangle', '(5,2,1,2)', '(6,4,4,6)']
+   ]
+
+   vectors.forEach(function (example) {
+      it(example.toString(), function () {
+         let first_vector = me.fromLatex(example[0]);
+         let second_vector = me.fromLatex(example[1]);
+         let sum_vector = me.fromLatex(example[2]).tuples_to_vectors();;
+         expect(me.vector_add(first_vector, second_vector).tree).toEqual(sum_vector.tree);
+         expect(me.vector_add(first_vector, second_vector.tuples_to_vectors()).tree).toEqual(sum_vector.tree);
       })
    })
 })

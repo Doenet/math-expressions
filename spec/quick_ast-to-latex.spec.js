@@ -436,12 +436,36 @@ const objectsToTest = [
     'latex': '\\left( 1, 2 \\right)'
   },
   {
+    'ast': ['prime', ['tuple', 1, 2]],
+    'latex': '\\left( 1, 2 \\right)\''
+  },
+  {
+    'ast': ['^', ['tuple', 1, 2], 'T'],
+    'latex': '\\left( 1, 2 \\right)^{T}'
+  },
+  {
     'ast': ['vector', 1, 2],
     'latex': '\\left( 1, 2 \\right)'
   },
   {
+    'ast': ['prime', ['vector', 1, 2]],
+    'latex': '\\left( 1, 2 \\right)\''
+  },
+  {
+    'ast': ['^', ['vector', 1, 2], 'T'],
+    'latex': '\\left( 1, 2 \\right)^{T}'
+  },
+  {
     'ast': ['altvector', 'x', 'y'],
     'latex': '\\left\\langle x, y \\right\\rangle',
+  },
+  {
+    'ast': ['prime', ['altvector', 'x', 'y']],
+    'latex': '\\left\\langle x, y \\right\\rangle\'',
+  },
+  {
+    'ast': ['^', ['altvector', 'x', 'y'], 'T'],
+    'latex': '\\left\\langle x, y \\right\\rangle^{T}',
   },
   {
     'ast': ['list', 1, 2, 3],
@@ -675,7 +699,7 @@ const objectsToTest = [
     'latex': ''
   },
   {
-    'ast':  ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 'd']]],
+    'ast': ['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 'd']]],
     'latex': '\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}'
   },
   {
@@ -727,15 +751,15 @@ const objectsToTest = [
     'latex': '\\frac{ \\partial^{3}x }{ \\partial s^{2} \\partial t }',
   },
   {
-    'ast': ["*","a",["apply","abs","x"]],
+    'ast': ["*", "a", ["apply", "abs", "x"]],
     'latex': 'a \\left|x\\right|',
   },
   {
-    'ast': ["*",["apply","abs","a"],"b",["apply","abs","c"]],
+    'ast': ["*", ["apply", "abs", "a"], "b", ["apply", "abs", "c"]],
     'latex': '\\left|a\\right| b \\left|c\\right|',
   },
   {
-    'ast': ["apply","abs",["*","a",["apply","abs","b"],"c"]],
+    'ast': ["apply", "abs", ["*", "a", ["apply", "abs", "b"], "c"]],
     'latex': '\\left|a \\left|b\\right| c\\right|',
   },
   {
@@ -922,7 +946,7 @@ for (let objectToTest of objectsToTest) {
 
 test("matrix environment", function () {
 
-  let converter = new astToLatex({matrixEnvironment: "pmatrix" });
+  let converter = new astToLatex({ matrixEnvironment: "pmatrix" });
 
   expect(converter.convert(['matrix', ['tuple', 2, 2], ['tuple', ['tuple', 'a', 'b'], ['tuple', 'c', 'd']]])).toEqual('\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}');
 
@@ -931,7 +955,7 @@ test("matrix environment", function () {
 
 test("pad to digits", function () {
 
-  let converter = new astToLatex({padToDigits: 5 });
+  let converter = new astToLatex({ padToDigits: 5 });
 
   expect(converter.convert(123E28)).toEqual("1.2300 \\cdot 10^{30}")
   expect(converter.convert(123E14)).toEqual("12300000000000000")
@@ -952,14 +976,14 @@ test("pad to digits", function () {
 
   expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.00 \\cdot 10^{28}")
   expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.00 \\cdot 10^{-28}")
-  
+
   expect(converter.convert(NaN)).toEqual("NaN")
 
 });
 
 test("pad to decimals", function () {
 
-  let converter = new astToLatex({padToDecimals: 5 });
+  let converter = new astToLatex({ padToDecimals: 5 });
 
   expect(converter.convert(123E28)).toEqual("1230000000000000000000000000000.00000")
   expect(converter.convert(123E14)).toEqual("12300000000000000.00000")
