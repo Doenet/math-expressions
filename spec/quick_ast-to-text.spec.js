@@ -497,16 +497,32 @@ const objectsToTest = [
     'text': 'A ⊂ B'
   },
   {
+    'ast': ['subseteq', 'A', 'B'],
+    'text': 'A ⊆ B'
+  },
+  {
     'ast': ['notsubset', 'A', 'B'],
     'text': 'A ⊄ B'
+  },
+  {
+    'ast': ['notsubseteq', 'A', 'B'],
+    'text': 'A ⊈ B'
   },
   {
     'ast': ['superset', 'A', 'B'],
     'text': 'A ⊃ B'
   },
   {
+    'ast': ['superseteq', 'A', 'B'],
+    'text': 'A ⊇ B'
+  },
+  {
     'ast': ['notsuperset', 'A', 'B'],
     'text': 'A ⊅ B'
+  },
+  {
+    'ast': ['notsuperseteq', 'A', 'B'],
+    'text': 'A ⊉ B'
   },
   {
     'ast': ['in', 'x', 'A'],

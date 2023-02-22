@@ -278,6 +278,9 @@ describe("default order", function () {
     expect(me.from("A superset B or C notsubset D").default_order().tree).toEqual(
       me.from("D notsuperset C or B subset A").default_order().tree);
 
+    expect(me.from("A superseteq B or C notsubseteq D").default_order().tree).toEqual(
+      me.from("D notsuperseteq C or B subseteq A").default_order().tree);
+
   });
 
 });

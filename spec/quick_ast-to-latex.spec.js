@@ -548,16 +548,32 @@ const objectsToTest = [
     'latex': 'A \\subset B'
   },
   {
+    'ast': ['subseteq', 'A', 'B'],
+    'latex': 'A \\subseteq B'
+  },
+  {
     'ast': ['notsubset', 'A', 'B'],
     'latex': 'A \\not\\subset B'
+  },
+  {
+    'ast': ['notsubseteq', 'A', 'B'],
+    'latex': 'A \\not\\subseteq B'
   },
   {
     'ast': ['superset', 'A', 'B'],
     'latex': 'A \\supset B'
   },
   {
+    'ast': ['superseteq', 'A', 'B'],
+    'latex': 'A \\supseteq B'
+  },
+  {
     'ast': ['notsuperset', 'A', 'B'],
     'latex': 'A \\not\\supset B'
+  },
+  {
+    'ast': ['notsuperseteq', 'A', 'B'],
+    'latex': 'A \\not\\supseteq B'
   },
   {
     'ast': ['in', 'x', 'A'],

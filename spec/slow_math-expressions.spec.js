@@ -385,7 +385,12 @@ describe("expression", function () {
     ['∫_(a+a)^(5b-b)xx dx', '∫_(2a)^(4b)x^2dx'],
     ['∫_(a+a)^(5b-b)dx xx', '∫_(2a)^(4b)x^2dx'],
     ['∫ f(x)f(x)dx', '∫ f(x)^2dx'],
-
+    ['x ∈ A', 'A ∋ x'],
+    ['x ∉ A', 'A ∌ x'],
+    ['A ⊂ B', 'B ⊃ A'],
+    ['A ⊆ B', 'B ⊇ A'],
+    ['A ⊄ B', 'B ⊅ A'],
+    ['A ⊈ B', 'B ⊉ A'],
   ];
 
   _.each(equivalences, function (equiv) {
@@ -486,6 +491,10 @@ describe("expression", function () {
     ['∫_a^b xdx', '∫_a^b 2xdx'],
     ['∫ xdx', '∫ 2xdx'],
     ['∫ f(x)dx', '∫ g(x)dx'],
+    ['A ⊂ B', 'A ⊆ B'],
+    ['A ⊄ B', 'A ⊈ B'],
+    ['A ⊃ B', 'A ⊇ B'],
+    ['A ⊅ B', 'A ⊉ B'],
   ];
 
   _.each(nonequivalences, function (nonequiv) {
@@ -829,6 +838,12 @@ describe("expression", function () {
     ['∠ABC', '∠ACB'],
     ['50%', '1/2'],
     ['180 deg', 'pi'],
+    ['x ∈ A', 'A ∋ x'],
+    ['x ∉ A', 'A ∌ x'],
+    ['A ⊂ B', 'B ⊃ A'],
+    ['A ⊆ B', 'B ⊇ A'],
+    ['A ⊄ B', 'B ⊅ A'],
+    ['A ⊈ B', 'B ⊉ A'],
   ];
 
   _.each(symbolic_nonequivalences, function (nonequiv) {
