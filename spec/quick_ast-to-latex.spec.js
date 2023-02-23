@@ -904,7 +904,7 @@ const objectsToTest = [
   },
   {
     'ast': ["unit", "x", "deg"],
-    'latex': 'x \\circ',
+    'latex': 'x^{\\circ}',
   },
   {
     'ast': ["*", ["unit", "$", "x"], "y"],
@@ -916,7 +916,7 @@ const objectsToTest = [
   },
   {
     'ast': ["*", ["unit", "x", "deg"], "y"],
-    'latex': '\\left(x \\circ\\right) y',
+    'latex': '\\left(x^{\\circ}\\right) y',
   },
   {
     'ast': ["*", "y", ["unit", "$", "x"]],
@@ -928,7 +928,7 @@ const objectsToTest = [
   },
   {
     'ast': ["*", "y", ["unit", "x", "deg"]],
-    'latex': 'y \\left(x \\circ\\right)',
+    'latex': 'y \\left(x^{\\circ}\\right)',
   },
 
 
