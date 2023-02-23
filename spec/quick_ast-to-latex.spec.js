@@ -895,12 +895,24 @@ const objectsToTest = [
     'latex': '\\left( \\angle ABC \\right) x',
   },
   {
+    'ast': "$",
+    'latex': '\\$',
+  },
+  {
     'ast': ["unit", "$", "x"],
-    'latex': '$ x',
+    'latex': '\\$ x',
+  },
+  {
+    'ast': "%",
+    'latex': '\\%',
   },
   {
     'ast': ["unit", "x", "%"],
-    'latex': 'x %',
+    'latex': 'x \\%',
+  },
+  {
+    'ast': "circ",
+    'latex': '\\circ',
   },
   {
     'ast': ["unit", "x", "deg"],
@@ -908,11 +920,11 @@ const objectsToTest = [
   },
   {
     'ast': ["*", ["unit", "$", "x"], "y"],
-    'latex': '\\left($ x\\right) y',
+    'latex': '\\left(\\$ x\\right) y',
   },
   {
     'ast': ["*", ["unit", "x", "%"], "y"],
-    'latex': '\\left(x %\\right) y',
+    'latex': '\\left(x \\%\\right) y',
   },
   {
     'ast': ["*", ["unit", "x", "deg"], "y"],
@@ -920,11 +932,11 @@ const objectsToTest = [
   },
   {
     'ast': ["*", "y", ["unit", "$", "x"]],
-    'latex': 'y \\left($ x\\right)',
+    'latex': 'y \\left(\\$ x\\right)',
   },
   {
     'ast': ["*", "y", ["unit", "x", "%"]],
-    'latex': 'y \\left(x %\\right)',
+    'latex': 'y \\left(x \\%\\right)',
   },
   {
     'ast': ["*", "y", ["unit", "x", "deg"]],
