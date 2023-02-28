@@ -796,6 +796,14 @@ const objectsToTest = [
     'text': 'vec(a)',
   },
   {
+    'ast': ['linesegment', 'A', 'B'],
+    'text': 'linesegment( A, B )',
+  },
+  {
+    'ast': ['linesegment', ['prime', 'A'], ['prime', 'B']],
+    'text': 'linesegment( A\', B\' )',
+  },
+  {
     'ast': ['apply', 'floor', 'a'],
     'text': 'floor(a)',
   },

@@ -445,6 +445,8 @@ var trees = {
   'nCr(x,y)': ["apply", "nCr", ["tuple", "x", "y"]],
   'binom(x,y)': ["binom", "x", "y"],
   'vec(a)': ["vec", "a"],
+  'linesegment(A,B)': ["linesegment", "A", "B"],
+  'linesegment(A\',B\')': ["linesegment", ["prime", "A"], ["prime", "B"]],
   'floor(a)': ["apply", "floor", "a"],
   'ceil(a)': ["apply", "ceil", "a"],
   'round(a)': ["apply", "round", "a"],

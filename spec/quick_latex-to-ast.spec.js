@@ -489,6 +489,8 @@ var trees = {
   '\\vec ab': ["*", ["vec", "a"], "b"],
   '\\vec2': ["vec", 2],
   '\\vec2a': ["*", ["vec", 2], "a"],
+  '\\overline{AB}': ["linesegment", "A", "B"],
+  '\\overline{A\'B\'}': ["linesegment", ["prime", "A"], ["prime", "B"]],
   '\\lfloor a \\rfloor': ["apply", "floor", "a"],
   '\\lfloor1.5\\rfloor2': ["*", ["apply", "floor", 1.5], 2],
   '\\lceil a \\rceil': ["apply", "ceil", "a"],

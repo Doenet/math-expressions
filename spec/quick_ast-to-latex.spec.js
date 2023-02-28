@@ -847,6 +847,14 @@ const objectsToTest = [
     'latex': '\\vec{a}',
   },
   {
+    'ast': ['linesegment', 'A', 'B'],
+    'latex': '\\overline{A B}',
+  },
+  {
+    'ast': ['linesegment', ['prime', 'A'], ['prime', 'B']],
+    'latex': '\\overline{A\' B\'}',
+  },
+  {
     'ast': ['apply', 'floor', 'a'],
     'latex': '\\left\\lfloor a \\right\\rfloor',
   },

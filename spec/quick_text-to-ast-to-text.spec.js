@@ -304,6 +304,7 @@ var inputs = [
   'nPr(x,y)',
   'binom(x,y)',
   'vec(a)',
+  'linesegment(A,B)',
   'floor(a)',
   'ceil(a)',
   'round(a)',
