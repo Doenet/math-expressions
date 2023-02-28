@@ -376,6 +376,7 @@ describe("expression", function () {
     ['x++--y', 'x+y'],
     ['x--y', 'x+y'],
     ['∠ABC', '∠CBA'],
+    ['linesegment(A,B)', 'linesegment(B,A)'],
     ['$5', '$3+$2'],
     ['$5', '$9-$4'],
     ['$xy+a$b', '$(xy+ab)'],
@@ -487,6 +488,7 @@ describe("expression", function () {
     ['log^2(x)', 'log(x)^2'],
     ['ln^2(x)', 'ln(x)^2'],
     ['∠ABC', '∠ACB'],
+    ['linesegment(A,B)', 'linesegment(A,C)'],
     ['$5', '5'],
     ['$x', 'x'],
     ['∫_a^b xdx', '∫_(2a)^b xdx'],
@@ -635,6 +637,7 @@ describe("expression", function () {
     ["f'''(x)", "f(x)'''"],
     ['x+-y', 'x-y'],
     ['∠ABC', '∠CBA'],
+    ['linesegment(A,B)', 'linesegment(B,A)'],
   ];
 
   _.each(symbolic_equivalences, function (equiv) {
@@ -839,6 +842,7 @@ describe("expression", function () {
     ['x++--y', 'x+y'],
     ['x--y', 'x+y'],
     ['∠ABC', '∠ACB'],
+    ['linesegment(A,B)', 'linesegment(A,C)'],
     ['50%', '1/2'],
     ['180 deg', 'pi'],
     ['x ∈ A', 'A ∋ x'],
