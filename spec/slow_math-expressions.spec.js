@@ -392,6 +392,8 @@ describe("expression", function () {
     ['A ⊆ B', 'B ⊇ A'],
     ['A ⊄ B', 'B ⊅ A'],
     ['A ⊈ B', 'B ⊉ A'],
+    ['vec(x)+vec(x)', '2vec(x)'],
+    ['sin^2(vec(x)*vec(y)) + cos^2(vec(x)*vec(y))', '1'],
   ];
 
   _.each(equivalences, function (equiv) {
