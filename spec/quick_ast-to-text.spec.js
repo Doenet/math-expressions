@@ -553,6 +553,22 @@ const objectsToTest = [
     'text': 'A ⊉ B'
   },
   {
+    'ast': ['forall', 'x'],
+    'text': '∀ x'
+  },
+  {
+    'ast': ['forall', ['in', 'x', 'A']],
+    'text': '∀ x ∈ A'
+  },
+  {
+    'ast': ['exists', 'x'],
+    'text': '∃ x'
+  },
+  {
+    'ast': ['exists', ['in', 'x', 'A']],
+    'text': '∃ x ∈ A'
+  },
+  {
     'ast': ['in', 'x', 'A'],
     'text': 'x ∈ A'
   },

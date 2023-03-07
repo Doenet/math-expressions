@@ -600,6 +600,22 @@ const objectsToTest = [
     'latex': 'A \\not\\supseteq B'
   },
   {
+    'ast': ['forall', 'x'],
+    'latex': '\\forall x'
+  },
+  {
+    'ast': ['forall', ['in', 'x', 'A']],
+    'latex': '\\forall x \\in A'
+  },
+  {
+    'ast': ['exists', 'x'],
+    'latex': '\\exists x'
+  },
+  {
+    'ast': ['exists', ['in', 'x', 'A']],
+    'latex': '\\exists x \\in A'
+  },
+  {
     'ast': ['in', 'x', 'A'],
     'latex': 'x \\in A'
   },
