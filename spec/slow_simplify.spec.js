@@ -563,6 +563,11 @@ describe("collect like terms and factor", function () {
       me.fromText("$(x-b+g) + (y-a+f)% + (z-c+e)deg").default_order().tree)
   })
 
+  it("handle lone - or + signs", function () {
+    expect(me.fromText("cos(2 pi (-))").collect_like_terms_factors().tree).toEqual(me.fromText("cos(2 pi (-))").tree)
+    expect(me.fromText("cos(2 pi (+))").collect_like_terms_factors().tree).toEqual(me.fromText("cos(2 pi (+))").tree)
+  })
+
 });
 
 describe("matrix and vector simplify", function () {
