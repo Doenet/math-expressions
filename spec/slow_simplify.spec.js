@@ -276,8 +276,8 @@ describe("evaluate_to_constant", function () {
 
   });
 
-  it("with blanks gives null", function () {
-    expect(me.fromText("1+2+").evaluate_to_constant()).toEqual(null);
+  it("with blanks gives NaN", function () {
+    expect(me.fromText("1+2+").evaluate_to_constant()).toEqual(NaN);
   })
 
   it("multiple pluses and minus", function () {
@@ -298,19 +298,19 @@ describe("evaluate_to_constant", function () {
   })
 
   it("with units", function () {
-    expect(me.fromText("50%").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("50%").evaluate_to_constant({remove_units_first:false})).toEqual(NaN);
     expect(me.fromText("50%").evaluate_to_constant()).toEqual(0.5);
-    expect(me.fromText("50%").evaluate_to_constant(true, false)).toEqual(50);
+    expect(me.fromText("50%").evaluate_to_constant({scale_based_on_unit: false})).toEqual(50);
     expect(me.fromText("50%").remove_units().evaluate_to_constant()).toEqual(0.5);
     expect(me.fromText("50%").remove_units(false).evaluate_to_constant()).toEqual(50);
-    expect(me.fromText("$9.5").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("$9.5").evaluate_to_constant({remove_units_first:false})).toEqual(NaN);
     expect(me.fromText("$9.5").evaluate_to_constant()).toEqual(9.5);
-    expect(me.fromText("$9.5").evaluate_to_constant(true, false)).toEqual(9.5);
+    expect(me.fromText("$9.5").evaluate_to_constant({scale_based_on_unit: false})).toEqual(9.5);
     expect(me.fromText("$9.5").remove_units().evaluate_to_constant()).toEqual(9.5);
     expect(me.fromText("$9.5").remove_units(false).evaluate_to_constant()).toEqual(9.5);
-    expect(me.fromText("180deg").evaluate_to_constant(false)).toEqual(null);
+    expect(me.fromText("180deg").evaluate_to_constant({remove_units_first:false})).toEqual(NaN);
     expect(me.fromText("180deg").evaluate_to_constant()).toEqual(Math.PI);
-    expect(me.fromText("180deg").evaluate_to_constant(true, false)).toEqual(180);
+    expect(me.fromText("180deg").evaluate_to_constant({scale_based_on_unit: false})).toEqual(180);
     expect(me.fromText("180deg").remove_units().evaluate_to_constant()).toEqual(Math.PI);
     expect(me.fromText("180deg").remove_units(false).evaluate_to_constant()).toEqual(180);
   })
