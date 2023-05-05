@@ -174,6 +174,23 @@ describe("round to decimals", function () {
       expect(me.fromAst(-Infinity).round_numbers_to_precision_plus_decimals(10,2).tree).toEqual(-Infinity)
   
     });
+
+    it("fall back to digits or decimals", function () {
+      let expr = me.fromText('123456789.0123456789');
+      expect(expr.round_numbers_to_precision_plus_decimals(4,"bad").tree).toEqual(123500000);
+      expect(expr.round_numbers_to_precision_plus_decimals(4,-Infinity).tree).toEqual(123500000);
+      expect(expr.round_numbers_to_precision_plus_decimals("bad",-8).tree).toEqual(100000000);
+      expect(expr.round_numbers_to_precision_plus_decimals(0,-8).tree).toEqual(100000000);
+      expect(expr.round_numbers_to_precision_plus_decimals("bad",-9).tree).toEqual(0);
+      expect(expr.round_numbers_to_precision_plus_decimals(0,-9).tree).toEqual(0);
+
+      expr = me.fromText('0.00001234567890123456789');
+      expect(expr.round_numbers_to_precision_plus_decimals("bad",5).tree).toEqual(0.00001);
+      expect(expr.round_numbers_to_precision_plus_decimals(0,5).tree).toEqual(0.00001);
+      expect(expr.round_numbers_to_precision_plus_decimals("bad",4).tree).toEqual(0);
+      expect(expr.round_numbers_to_precision_plus_decimals(0,4).tree).toEqual(0);
+      expect(expr.round_numbers_to_precision_plus_decimals(1,4).tree).toEqual(0.00001);
+    })
   
     it("expression", function () {
   
