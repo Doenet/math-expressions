@@ -1044,3 +1044,31 @@ test("pad to decimals", function () {
   expect(converter.convert(NaN)).toEqual("NaN")
 
 });
+
+test("pad to digits and decimals", function () {
+
+  let converter = new astToLatex({ padToDecimals: 2, padToDigits: 6 });
+
+  expect(converter.convert(123E28)).toEqual("1230000000000000000000000000000.00")
+  expect(converter.convert(123E14)).toEqual("12300000000000000.00")
+  expect(converter.convert(123E8)).toEqual("12300000000.00")
+  expect(converter.convert(123000)).toEqual("123000.00")
+  expect(converter.convert(12300)).toEqual("12300.00")
+  expect(converter.convert(1230)).toEqual("1230.00")
+  expect(converter.convert(123)).toEqual("123.000")
+  expect(converter.convert(12.3)).toEqual("12.3000")
+  expect(converter.convert(1.23)).toEqual("1.23000")
+  expect(converter.convert(.123)).toEqual("0.123000")
+  expect(converter.convert(.0123)).toEqual("0.0123000")
+  expect(converter.convert(.00123)).toEqual("0.00123000")
+  expect(converter.convert(.000123)).toEqual("0.000123000")
+  expect(converter.convert(123E-8)).toEqual("0.00000123000")
+  expect(converter.convert(123E-14)).toEqual("1.23000 \\cdot 10^{-12}")
+  expect(converter.convert(123E-28)).toEqual("1.23000 \\cdot 10^{-26}")
+
+  expect(converter.convert(['*', 123, ['^', 10, 28]])).toEqual("123.000 \\cdot 10^{28}")
+  expect(converter.convert(['*', 123, ['^', 10, -28]])).toEqual("123.000 \\cdot 10^{-28}")
+
+  expect(converter.convert(NaN)).toEqual("NaN")
+
+});
