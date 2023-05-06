@@ -212,7 +212,7 @@ describe("evaluate_numbers", function () {
   })
 
 
-  it("set small zero", function () {
+  it("set small zero via evaluate number", function () {
 
     expect(me.fromText('10x+5E-15').evaluate_numbers({ set_small_zero: true }).tree).toEqual(['*', 10, 'x']);
     expect(me.fromText('10x+5E-15').evaluate_numbers().tree).toEqual(
@@ -230,6 +230,21 @@ describe("evaluate_numbers", function () {
     expect(me.fromText('sin(pi)x').evaluate_numbers(
       { evaluate_functions: true, max_digits: Infinity, set_small_zero: true }
     ).tree).toEqual(0);
+
+  })
+
+
+  it("set small zero", function () {
+
+    expect(me.fromText('10x+5E-15').set_small_zero().tree).toEqual(['+', ['*', 10, 'x'], 0]);
+    expect(me.fromText('10x+5E-15').set_small_zero(2E-15).tree).toEqual(
+      ['+', ['*', 10, 'x'], 5E-15]);
+    expect(me.fromText('10x+5E-15').set_small_zero( 1E-13 ).tree).toEqual(['+', ['*', 10, 'x'], 0]);
+    
+    expect(me.fromText('(5E-15)x').set_small_zero().tree).toEqual(['*', 0, 'x']);
+
+    expect(me.fromText('0.0001^4x').set_small_zero().tree).toEqual(me.fromText('0.0001^4x').set_small_zero().tree)
+    expect(me.fromText('sin(pi)x').set_small_zero().tree).toEqual(me.fromText('sin(pi)x').tree);
 
   })
 
