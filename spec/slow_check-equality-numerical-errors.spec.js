@@ -32,6 +32,36 @@ const allow_error_in_numbers = [
     ],
   },
   {
+    original: '65.2313+sin^2(x)+cos^2(x)-1',
+    allowed_error: 0.0001,
+    absolute_error: false,
+    include_exponents: false,
+    correct_answers: [
+      '65.2313',
+      '65.2313*1.00009',
+      '65.2313*0.99991',
+    ],
+    at_least_one_incorrect_answer: [
+      '65.2313*1.00011',
+      '65.2313*0.99989',
+    ],
+  },
+  {
+    original: '65.2313+sin^2(x)+cos^2(x)-1',
+    allowed_error: 0.0001,
+    absolute_error: true,
+    include_exponents: false,
+    correct_answers: [
+      '65.2313',
+      '65.2313+.00009',
+      '65.2313-.00009',
+    ],
+    at_least_one_incorrect_answer: [
+      '65.2313+.00011',
+      '65.2313-.00011',
+    ],
+  },
+  {
     original: 'exp(5xy+c)',
     allowed_error: 0.0001,
     absolute_error: false,
@@ -593,7 +623,7 @@ for (let objectToTest of allow_error_in_numbers) {
       let ans = me.fromText(option);
       test(option + " is correct", () => {
 
-        expect(orig.equalsViaComplex(ans, {
+        expect(orig.equals(ans, {
           allowed_error_in_numbers: objectToTest.allowed_error,
           include_error_in_number_exponents: objectToTest.include_exponents,
           allowed_error_is_absolute: objectToTest.absolute_error,
@@ -604,7 +634,7 @@ for (let objectToTest of allow_error_in_numbers) {
       let found_incorrect = false;
       for (let option of objectToTest.at_least_one_incorrect_answer) {
         let ans = me.fromText(option);
-        let result = orig.equalsViaComplex(ans, {
+        let result = orig.equals(ans, {
           allowed_error_in_numbers: objectToTest.allowed_error,
           include_error_in_number_exponents: objectToTest.include_exponents,
           allowed_error_is_absolute: objectToTest.absolute_error,
