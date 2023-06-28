@@ -18,8 +18,15 @@
     "type": "git",
     "url": "https://github.com/kisonecat/math-expressions"
   },
-  "main": "build/math-expressions_umd.js",
-  "jsnext:main": "build/math-expressions.js",
+  "files": [
+    "/build"
+  ],
+  "exports": {
+    ".": {
+      "import": "./build/math-expressions.js",
+      "require": "./build/math-expressions_umd.js"
+    }
+  },
   "private": false,
   "dependencies": {
     "@babel/cli": "^7.0.0",
