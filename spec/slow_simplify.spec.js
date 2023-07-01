@@ -330,6 +330,28 @@ describe("evaluate_to_constant", function () {
     expect(me.fromText("180deg").remove_units(false).evaluate_to_constant()).toEqual(180);
   })
 
+  it("complex numbers", function () {
+    expect(me.fromText("i").evaluate_to_constant()).toEqual({re:0, im:1});
+    expect(me.fromText("5i").evaluate_to_constant()).toEqual({re:0, im:5});
+    expect(me.fromText("2+5i").evaluate_to_constant()).toEqual({re:2, im:5});
+
+    // Since mathjs gives Infinity*i+Infinity for Infinity*i
+    // and it gives NaN*i+NaN for Infinity*i+Infinity
+    // make sure both give NaN*i+NaN so evaluating multiple times doesn't change the result
+    expect(me.fromText("Infinity*i").evaluate_to_constant()).toEqual({re:NaN, im:NaN});
+    expect(me.fromText("Infinity*i+Infinity").evaluate_to_constant()).toEqual({re:NaN, im:NaN});
+    expect(me.fromAst(["+", NaN, ["*", NaN, "i"]]).evaluate_to_constant()).toEqual({re:NaN, im:NaN});
+
+  })
+
+  it("matrices", function () {
+    // At least for now, evaluating a matrix to a constant gives NaN.
+    // TODO: do we want to return a numerical array?
+    expect(me.fromLatex("\\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}").evaluate_to_constant()).toEqual(NaN);
+
+  })
+
+
 });
 
 describe("collect like terms and factor", function () {
