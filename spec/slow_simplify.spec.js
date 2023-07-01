@@ -863,6 +863,81 @@ describe("expand", function () {
 
   });
 
+  it("expand matrix multiplication, tuple_to_vectors on matrix does not break", function () {
+
+    let matrix1 = me.fromLatex("\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}").tuples_to_vectors().tree;
+    let matrix2 = me.fromLatex("\\begin{pmatrix}e\\\\f\\end{pmatrix}").tuples_to_vectors().tree;
+    let product = me.fromLatex("\\begin{pmatrix}ae + bf\\\\ce + df\\end{pmatrix}").tuples_to_vectors().tree
+    let product_g = me.fromLatex("\\begin{pmatrix}aeg + bfg\\\\ceg + dfg\\end{pmatrix}").tuples_to_vectors().tree
+
+    let tuple = ["tuple", "e", "f"]
+    let product_tuple = me.fromLatex("(ae + bf, ce + df)").tree
+    let product_tuple_g = me.fromLatex("(aeg + bfg, ceg + dfg)").tree
+    let vector = ["vector", "e", "f"]
+    let product_vector = me.fromLatex("(ae + bf, ce + df)").tuples_to_vectors().tree
+    let product_vector_g = me.fromLatex("(aeg + bfg, ceg + dfg)").tuples_to_vectors().tree
+    let altvector = ["altvector", "e", "f"]
+    let product_altvector = me.fromLatex("\\langle ae + bf, ce + df\\rangle").tree
+    let product_altvector_g = me.fromLatex("\\langle aeg + bfg, ceg + dfg \\rangle").tree
+
+    expect(me.fromAst(["*", matrix1, matrix2]).expand().tree).toEqual(product)
+    expect(me.fromAst(["*", matrix2, matrix1]).expand().tree).toEqual(["*", matrix2, matrix1])
+    expect(me.fromAst(["*", matrix1, matrix2, "g"]).expand().tree).toEqual(product_g)
+    expect(me.fromAst(["*", "g", matrix1, matrix2]).expand().tree).toEqual(product_g)
+    expect(me.fromAst(["*", matrix1, "g", matrix2]).expand().tree).toEqual(product_g)
+
+    expect(me.fromAst(["*", matrix1, tuple]).expand().tree).toEqual(product_tuple)
+    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual(["*", tuple, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, tuple]).expand().tree).toEqual(product_tuple_g)
+    expect(me.fromAst(["*", matrix1, "g", tuple]).expand().tree).toEqual(product_tuple_g)
+    expect(me.fromAst(["*", matrix1, tuple, "g"]).expand().tree).toEqual(product_tuple_g)
+
+    expect(me.fromAst(["*", matrix1, vector]).expand().tree).toEqual(product_vector)
+    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual(["*", vector, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, vector]).expand().tree).toEqual(product_vector_g)
+    expect(me.fromAst(["*", matrix1, "g", vector]).expand().tree).toEqual(product_vector_g)
+    expect(me.fromAst(["*", matrix1, vector, "g"]).expand().tree).toEqual(product_vector_g)
+
+    expect(me.fromAst(["*", matrix1, altvector]).expand().tree).toEqual(product_altvector)
+    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual(["*", altvector, matrix1])
+    expect(me.fromAst(["*", "g", matrix1, altvector]).expand().tree).toEqual(product_altvector_g)
+    expect(me.fromAst(["*", matrix1, "g", altvector]).expand().tree).toEqual(product_altvector_g)
+    expect(me.fromAst(["*", matrix1, altvector, "g"]).expand().tree).toEqual(product_altvector_g)
+
+    // TODO: not sure if this is right behavior for multiplying vectors
+    // Also, at some point, we want a way to represent dot/cross products of vectors
+    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual(["^", tuple, 2])
+    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual(["*", tuple, vector])
+    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual(["*", vector, tuple])
+    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual(["^", vector, 2])
+
+    let matrix3 = me.fromLatex("\\begin{pmatrix}1 & -2\\\\3&-4\\end{pmatrix}").tree;
+    let product13 = me.fromLatex("\\begin{pmatrix}a + 3b & -2a-4b\\\\c + 3d & -2c-4d\\end{pmatrix}").evaluate_numbers().tree
+    let product31 = me.fromLatex("\\begin{pmatrix}a -2c & b - 2d\\\\3a -4c & 3b -4d\\end{pmatrix}").evaluate_numbers().tree
+
+    expect(me.fromAst(["*", matrix1, matrix3]).expand().tree).toEqual(product13)
+    expect(me.fromAst(["*", matrix3, matrix1]).expand().tree).toEqual(product31)
+
+    let product132 = me.fromLatex("\\begin{pmatrix}ae + 3be -2af-4bf\\\\ce + 3de -2cf-4df\\end{pmatrix}").evaluate_numbers().tree
+    let product312 = me.fromLatex("\\begin{pmatrix}ae -2ce + bf - 2df\\\\3ae -4ce + 3bf -4df\\end{pmatrix}").evaluate_numbers().tree
+    let product132_g = me.fromLatex("\\begin{pmatrix}aeg + 3beg -2afg-4bfg\\\\ceg + 3deg -2cfg-4dfg\\end{pmatrix}").evaluate_numbers().tree
+    let product312_g = me.fromLatex("\\begin{pmatrix}aeg -2ceg + bfg - 2dfg\\\\3aeg -4ceg + 3bfg -4dfg\\end{pmatrix}").evaluate_numbers().tree
+
+    expect(me.fromAst(["*", matrix1, matrix3, matrix2]).expand().tree).toEqual(product132)
+    expect(me.fromAst(["*", matrix3, matrix1, matrix2]).expand().tree).toEqual(product312)
+
+    expect(me.fromAst(["*", "g", matrix1, matrix3, matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, "g", matrix3, matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, matrix3, "g", matrix2]).expand().tree).toEqual(product132_g)
+    expect(me.fromAst(["*", matrix1, matrix3, matrix2, "g"]).expand().tree).toEqual(product132_g)
+
+    expect(me.fromAst(["*", "g", matrix3, matrix1, matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, "g", matrix1, matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, matrix1, "g", matrix2]).expand().tree).toEqual(product312_g)
+    expect(me.fromAst(["*", matrix3, matrix1, matrix2, "g"]).expand().tree).toEqual(product312_g)
+
+  });
+
   it("expand with complex numbers", function () {
     expect(me.from("(x-i)(x+i)").expand().tree).toEqual(me.from("x^2+1").tree)
     expect(me.from("(i+ix)(i-x)").expand().tree).toEqual(me.from("-ix^2 -ix -x -1").tree)
