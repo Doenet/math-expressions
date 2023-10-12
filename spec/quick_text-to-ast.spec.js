@@ -68,6 +68,7 @@ var trees = {
   'fp(x)': ['*', 'f', 'p', 'x'],
   'fx': ['*', 'f', 'x'],
   'f\'': ['prime', 'f'],
+  'f′': ['prime', 'f'],
   'fg\'': ['*', 'f', ['prime', 'g']],
   'f\'g': ['*', ['prime', 'f'], 'g'],
   'f\'g\'\'': ['*', ['prime', 'f'], ['prime', ['prime', 'g']]],
