@@ -635,6 +635,30 @@ const objectsToTest = [
     'text': '(not (x = y)) or (z ≠ w)'
   },
   {
+    'ast': ['implies', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) ⟹ (not C) or D'
+  },
+  {
+    'ast': ['impliedby', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) ⟸ (not C) or D'
+  },
+  {
+    'ast': ['iff', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) ⟺ (not C) or D'
+  },
+  {
+    'ast': ['rightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) → (not C) or D'
+  },
+  {
+    'ast': ['leftarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) ← (not C) or D'
+  },
+  {
+    'ast': ['leftrightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'text': 'A and (not B) ↔ (not C) or D'
+  },
+  {
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],

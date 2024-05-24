@@ -686,6 +686,30 @@ const objectsToTest = [
     'latex': '\\left(\\lnot \\left(x = y\\right)\\right) \\lor \\left(z \\ne w\\right)'
   },
   {
+    'ast': ['implies', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\implies \\left(\\lnot C\\right) \\lor D'
+  },
+  {
+    'ast': ['impliedby', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\impliedby \\left(\\lnot C\\right) \\lor D'
+  },
+  {
+    'ast': ['iff', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\iff \\left(\\lnot C\\right) \\lor D'
+  },
+  {
+    'ast': ['rightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\rightarrow \\left(\\lnot C\\right) \\lor D'
+  },
+  {
+    'ast': ['leftarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\leftarrow \\left(\\lnot C\\right) \\lor D'
+  },
+  {
+    'ast': ['leftrightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+    'latex': 'A \\land \\left(\\lnot B\\right) \\leftrightarrow \\left(\\lnot C\\right) \\lor D'
+  },
+  {
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],
