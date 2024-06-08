@@ -201,6 +201,7 @@ var inputs = [
   ['(a,b) superseteq (c,d)', '(a,b) ⊇ (c,d)'],
   ['(a,b) notsuperset (c,d)', '(a,b) ⊅ (c,d)'],
   ['(a,b) notsuperseteq (c,d)', '(a,b) ⊉ (c,d)'],
+  ['x elementof emptyset', 'x ∈ ∅'],
   ['dx / dt', 'dx/dt'],
   '(dx)/(dt)',
   ['d x/dt', 'dx/dt'],

@@ -260,7 +260,9 @@ var trees = {
   'A and not B → not C or D': ['rightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
   'A and not B ← not C or D': ['leftarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
   'A and not B ↔ not C or D': ['leftrightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
-  
+  'x elementof emptyset': ['in', 'x', 'emptyset'],
+  'x ∈ ∅': ['in', 'x', 'emptyset'],
+
   '1.2E3': 1200,
   '1.2E+3  ': 1200,
   '3.1E-3 ': 0.0031,

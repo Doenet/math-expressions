@@ -202,6 +202,7 @@ var inputs = [
   '(a,b) \\supseteq (c,d)',
   '(a,b) \\not\\supset (c,d)',
   '(a,b) \\not\\supseteq (c,d)',
+  ['x \\in \\emptyset', 'x \\in \\varnothing'],
   ['\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}', '\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}'],
   ['\\begin{matrix} \\\\ 1 \\\\ &2 \\\\ &&3 \\end{matrix}', '\\begin{bmatrix}0&0&0\\\\1&0&0\\\\0&2&0\\\\0&0&3\\end{bmatrix}'],
   ['\\begin{matrix} 1 \\\\ &2 \\\\ &&3& \\end{matrix}', '\\begin{bmatrix}1&0&0&0\\\\0&2&0&0\\\\0&0&3&0\\end{bmatrix}'],

@@ -254,6 +254,8 @@ var trees = {
   'A \\land \\lnot B \\to \\neg C \\lor D': ['rightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
   'A \\land \\lnot B \\gets \\neg C \\lor D': ['leftarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
   'A \\land \\lnot B \\leftrightarrow \\neg C \\lor D': ['leftrightarrow', ['and', 'A', ['not', 'B']], ['or', ['not', 'C'], 'D']],
+  'x \\in \\varnothing': ['in', 'x', 'emptyset'],
+  'x \\in \\emptyset': ['in', 'x', 'emptyset'],
   '1.2E3': 1200,
   '1.2E+3  ': 1200,
   '3.1E-3 ': 0.0031,

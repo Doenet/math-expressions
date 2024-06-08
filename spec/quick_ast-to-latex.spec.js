@@ -710,6 +710,10 @@ const objectsToTest = [
     'latex': 'A \\land \\left(\\lnot B\\right) \\leftrightarrow \\left(\\lnot C\\right) \\lor D'
   },
   {
+    'ast': ['in', 'x', 'emptyset'],
+    'latex': 'x \\in \\varnothing'
+  },
+  {
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],

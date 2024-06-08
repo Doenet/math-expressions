@@ -659,6 +659,10 @@ const objectsToTest = [
     'text': 'A and (not B) ↔ (not C) or D'
   },
   {
+    'ast': ['in', 'x', 'emptyset'],
+    'text': 'x ∈ ∅'
+  },
+  {
     'ast': ['+', ['*', 1.2, 'e'],
       ['-', 3]
     ],
