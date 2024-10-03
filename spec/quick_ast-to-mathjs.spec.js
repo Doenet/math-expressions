@@ -584,6 +584,18 @@ const objectsToTest = [
     'ast': ['derivative_leibniz_mult', 2, 'x', 't'],
     'mathjs': {'implemented': false }
   },
+  {
+    'ast': ['apply', 'count', ['array', 1, 2]],
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"count"},"args":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}]}', reviver)
+  },
+  {
+    'ast': ['apply', 'count', ['tuple', 1, 2]],
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"count"},"args":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}]}', reviver)
+  },
+  {
+    'ast': ['apply', 'count', 1],
+    'mathjs': JSON.parse('{"mathjs":"FunctionNode","fn":{"mathjs":"SymbolNode","name":"count"},"args":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1}]}]}', reviver)
+  },
 
 ]
 
