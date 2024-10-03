@@ -349,7 +349,8 @@ const objectsToTest = [
   },
   {
     'ast': ['array', 1, 2],
-    'mathjs': {'implemented': false }
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2}]}', reviver)
+
   },
   {
     'ast': ['tuple', 1, 2],
@@ -569,6 +570,10 @@ const objectsToTest = [
   },
   {
     'ast': ['matrix', ['tuple', 2, 3], ['tuple', ['tuple', 8, 0, 0], ['tuple', 1, 2, 3]]],
+    'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":8},{"mathjs":"ConstantNode","value":0},{"mathjs":"ConstantNode","value":0}]},{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2},{"mathjs":"ConstantNode","value":3}]}]}', reviver)
+  },
+  {
+    'ast': ['array', ['array', 8, 0, 0], ['array', 1, 2, 3]],
     'mathjs': JSON.parse('{"mathjs":"ArrayNode","items":[{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":8},{"mathjs":"ConstantNode","value":0},{"mathjs":"ConstantNode","value":0}]},{"mathjs":"ArrayNode","items":[{"mathjs":"ConstantNode","value":1},{"mathjs":"ConstantNode","value":2},{"mathjs":"ConstantNode","value":3}]}]}', reviver)
   },
   {
