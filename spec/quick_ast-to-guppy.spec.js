@@ -1,25 +1,26 @@
-import astToGuppy from '../lib/converters/ast-to-guppy';
+import astToGuppy from "../lib/converters/ast-to-guppy";
 
 var converter = new astToGuppy();
 
 const objectsToTest = [
   {
-    'ast': ['*', ['/', 1, 2], 'x'],
-    'guppy': "<m><e></e><f type=\"bracket\" group=\"functions\"><b p=\"latex\">\\left(<r ref=\"1\"/>\\right)</b><b p=\"text\">(<r ref=\"1\"/>)</b><c delete=\"1\" is_bracket=\"yes\"><e></e><f type=\"fraction\" group=\"functions\"><b p=\"latex\">\\dfrac{<r ref=\"1\"/>}{<r ref=\"2\"/>}</b><b p=\"small_latex\">\\frac{<r ref=\"1\"/>}{<r ref=\"2\"/>}</b><b p=\"text\">(<r ref=\"1\"/>)/(<r ref=\"2\"/>)</b><c up=\"1\" down=\"2\" name=\"numerator\"><e>1</e></c><c up=\"1\" down=\"2\" name=\"denominator\"><e>2</e></c></f><e></e></c></f><f type=\"*\" group=\"operations\" c=\"yes\"><b p=\"latex\">\\cdot</b><b p=\"text\">*</b></f><e>x</e></m>"
+    ast: ["*", ["/", 1, 2], "x"],
+    guppy:
+      '<m><e></e><f type="bracket" group="functions"><b p="latex">\\left(<r ref="1"/>\\right)</b><b p="text">(<r ref="1"/>)</b><c delete="1" is_bracket="yes"><e></e><f type="fraction" group="functions"><b p="latex">\\dfrac{<r ref="1"/>}{<r ref="2"/>}</b><b p="small_latex">\\frac{<r ref="1"/>}{<r ref="2"/>}</b><b p="text">(<r ref="1"/>)/(<r ref="2"/>)</b><c up="1" down="2" name="numerator"><e>1</e></c><c up="1" down="2" name="denominator"><e>2</e></c></f><e></e></c></f><f type="*" group="operations" c="yes"><b p="latex">\\cdot</b><b p="text">*</b></f><e>x</e></m>',
   },
   {
-    'ast': ['+', 1, 'x', 3],
-    'guppy': '<m><e>1+x+3</e></m>'
+    ast: ["+", 1, "x", 3],
+    guppy: "<m><e>1+x+3</e></m>",
   },
   {
-    'ast': ['+', 1, ['-', 'x'],
-      ['-', 3]
-    ],
-    'guppy': '<m><e>1+</e><f type=\"bracket\" group=\"functions\"><b p=\"latex\">\\left(<r ref=\"1\"/>\\right)</b><b p=\"text\">(<r ref=\"1\"/>)</b><c delete=\"1\" is_bracket=\"yes\"><e>-<e>x</e></e></c></f><e>+</e><f type=\"bracket\" group=\"functions\"><b p=\"latex\">\\left(<r ref=\"1\"/>\\right)</b><b p=\"text\">(<r ref=\"1\"/>)</b><c delete=\"1\" is_bracket=\"yes\"><e>-<e>3</e></e></c></f><e></e></m>'
+    ast: ["+", 1, ["-", "x"], ["-", 3]],
+    guppy:
+      '<m><e>1+</e><f type="bracket" group="functions"><b p="latex">\\left(<r ref="1"/>\\right)</b><b p="text">(<r ref="1"/>)</b><c delete="1" is_bracket="yes"><e>-<e>x</e></e></c></f><e>+</e><f type="bracket" group="functions"><b p="latex">\\left(<r ref="1"/>\\right)</b><b p="text">(<r ref="1"/>)</b><c delete="1" is_bracket="yes"><e>-<e>3</e></e></c></f><e></e></m>',
   },
   {
-    'ast': ['+', 1, ['-', ['-', 'x']]],
-    'guppy': '<m><e>1+</e><f type=\"bracket\" group=\"functions\"><b p=\"latex\">\\left(<r ref=\"1\"/>\\right)</b><b p=\"text\">(<r ref=\"1\"/>)</b><c delete=\"1\" is_bracket=\"yes\"><e>-<f type=\"bracket\" group=\"functions\"><b p=\"latex\">\\left(<r ref=\"1\"/>\\right)</b><b p=\"text\">(<r ref=\"1\"/>)</b><c delete=\"1\" is_bracket=\"yes\"><e>-<e>x</e></e></c></f></e></c></f><e></e></m>'
+    ast: ["+", 1, ["-", ["-", "x"]]],
+    guppy:
+      '<m><e>1+</e><f type="bracket" group="functions"><b p="latex">\\left(<r ref="1"/>\\right)</b><b p="text">(<r ref="1"/>)</b><c delete="1" is_bracket="yes"><e>-<f type="bracket" group="functions"><b p="latex">\\left(<r ref="1"/>\\right)</b><b p="text">(<r ref="1"/>)</b><c delete="1" is_bracket="yes"><e>-<e>x</e></e></c></f></e></c></f><e></e></m>',
   },
   // {
   //   'ast': ['apply', 'log', 'x'],
@@ -580,18 +581,13 @@ const objectsToTest = [
   //   'ast': ['derivative_leibniz_mult', 2, 'x', 't'],
   //   'guppy': '\\frac{d^2x}{dt^2}',
   // },
-
-
-]
-
+];
 
 for (let objectToTest of objectsToTest) {
-  test("parses " + objectToTest.ast + ' to ' + objectToTest.guppy, () => {
+  test("parses " + objectToTest.ast + " to " + objectToTest.guppy, () => {
     expect(converter.convert(objectToTest.ast)).toEqual(objectToTest.guppy);
   });
-
 }
-
 
 // test("matrix environment", function () {
 //
