@@ -398,7 +398,12 @@ describe("expression", function () {
     ["x++--y", "x+y"],
     ["x--y", "x+y"],
     ["∠ABC", "∠CBA"],
+    ["∠ABC + ∠DEF", "∠CBA + ∠FED"],
     ["linesegment(A,B)", "linesegment(B,A)"],
+    [
+      "linesegment(A,B) + linesegment(C,D)",
+      "linesegment(B,A) + linesegment(D,C)",
+    ],
     ["$5", "$3+$2"],
     ["$5", "$9-$4"],
     ["$xy+a$b", "$(xy+ab)"],
@@ -714,7 +719,12 @@ describe("expression", function () {
     ["f'''(x)", "f(x)'''"],
     ["x+-y", "x-y"],
     ["∠ABC", "∠CBA"],
+    ["∠ABC + ∠DEF", "∠CBA + ∠FED"],
     ["linesegment(A,B)", "linesegment(B,A)"],
+    [
+      "linesegment(A,B) + linesegment(C,D)",
+      "linesegment(B,A) + linesegment(D,C)",
+    ],
   ];
 
   _.each(symbolic_equivalences, function (equiv) {
@@ -942,6 +952,33 @@ describe("expression", function () {
       expect(
         Expression.fromText(lhs).equalsViaSyntax(Expression.fromText(rhs)),
       ).toBeFalsy();
+    });
+  });
+
+  const symbolic_equivalent_asts = [
+    [["-", 3], -3],
+    [
+      ["-", ["*", 3, "x"]],
+      ["*", -3, "x"],
+    ],
+    [
+      ["+", 5, ["-", 3]],
+      ["+", 5, -3],
+    ],
+    [
+      ["+", 5, ["-", ["*", 3, "x"]]],
+      ["+", 5, ["*", -3, "x"]],
+    ],
+  ];
+
+  _.each(symbolic_equivalent_asts, function (equiv) {
+    var lhs = equiv[0];
+    var rhs = equiv[1];
+    it(lhs + " symbolic == " + rhs, function () {
+      Expression.set_to_default();
+      expect(
+        Expression.fromAst(lhs).equalsViaSyntax(Expression.fromAst(rhs)),
+      ).toBeTruthy();
     });
   });
 

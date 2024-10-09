@@ -411,3 +411,28 @@ describe("constants to floats", function () {
     );
   });
 });
+
+describe("normalize negative numbers", function () {
+  it("negative number", function () {
+    expect(me.fromAst(["-", 3]).normalize_negative_numbers().tree).toEqual(-3);
+  });
+
+  it("subtract number", function () {
+    expect(
+      me.fromAst(["+", 4, ["-", 3]]).normalize_negative_numbers().tree,
+    ).toEqual(["+", 4, -3]);
+  });
+
+  it("negative product", function () {
+    expect(
+      me.fromAst(["-", ["*", 3, "y"]]).normalize_negative_numbers().tree,
+    ).toEqual(["*", -3, "y"]);
+  });
+
+  it("subtract product", function () {
+    expect(
+      me.fromAst(["+", "x", ["-", ["*", 3, "y"]]]).normalize_negative_numbers()
+        .tree,
+    ).toEqual(["+", "x", ["*", -3, "y"]]);
+  });
+});
