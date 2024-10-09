@@ -88,6 +88,30 @@ describe("normalize applied functions", function () {
     ).toEqual(me.from("\\sin^(-1)(x)").tree);
   });
 
+  it("exponent normalized outside for log", function () {
+    expect(me.from("\\log^2(x)").normalize_applied_functions().tree).toEqual(
+      me.from("\\log(x)^2").tree,
+    );
+  });
+
+  it("exponent normalized outside for log b", function () {
+    expect(me.normalize_applied_functions(me.from("\\ln^2(x)")).tree).toEqual(
+      me.from("\\ln(x)^2").tree,
+    );
+  });
+
+  it("neg 1 exponent not normalized outside for log", function () {
+    expect(me.from("\\log^(-1)(x)").normalize_applied_functions().tree).toEqual(
+      me.from("\\log^(-1)(x)").tree,
+    );
+  });
+
+  it("neg 1 exponent not normalized outside for log b", function () {
+    expect(
+      me.normalize_applied_functions(me.from("\\ln^(-1)(x)")).tree,
+    ).toEqual(me.from("\\ln^(-1)(x)").tree);
+  });
+
   it("derivative exponent inside", function () {
     expect(me.from("f'^2(x)").tree).toEqual([
       "apply",
