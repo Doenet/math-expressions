@@ -982,6 +982,38 @@ describe("expression", function () {
     });
   });
 
+  const symbolic_nonequivalent_asts = [
+    [["-", -3], 3],
+    [["-", ["-", 3]], 3],
+    [
+      ["-", ["*", -3, "x"]],
+      ["*", 3, "x"],
+    ],
+    [
+      ["-", ["*", ["-", 3], "x"]],
+      ["*", 3, "x"],
+    ],
+    [
+      ["+", 5, ["-", -3]],
+      ["+", 5, 3],
+    ],
+    [
+      ["+", 5, ["-", ["*", -3, "x"]]],
+      ["+", 5, ["*", 3, "x"]],
+    ],
+  ];
+
+  _.each(symbolic_nonequivalent_asts, function (equiv) {
+    var lhs = equiv[0];
+    var rhs = equiv[1];
+    it(lhs + " symbolic != " + rhs, function () {
+      Expression.set_to_default();
+      expect(
+        Expression.fromAst(lhs).equalsViaSyntax(Expression.fromAst(rhs)),
+      ).toBeFalsy();
+    });
+  });
+
   it("allow blanks", function () {
     var expr1 = Expression.fromText("/4");
     var expr2 = Expression.fromText("/4");
