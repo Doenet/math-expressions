@@ -1084,14 +1084,33 @@ describe("expression", function () {
     let altvector = Expression.fromLatex("\\langle a, b \\rangle");
     let interval = Expression.fromLatex("(a,b)").to_intervals();
 
-    expect(tuple.equals(vector)).toBeFalsy();
-    expect(tuple.equals(altvector)).toBeFalsy();
-    expect(tuple.equals(interval)).toBeFalsy();
-    expect(vector.equals(altvector)).toBeFalsy();
+    expect(tuple.equals(vector)).toBeTruthy();
+    expect(tuple.equals(vector, { coerce_tuples_arrays: false })).toBeFalsy();
+    expect(tuple.equals(altvector)).toBeTruthy();
+    expect(
+      tuple.equals(altvector, { coerce_tuples_arrays: false }),
+    ).toBeFalsy();
+    expect(tuple.equals(interval)).toBeTruthy();
+    expect(tuple.equals(interval, { coerce_tuples_arrays: false })).toBeFalsy();
+    expect(vector.equals(altvector)).toBeTruthy();
+    expect(vector.equals(altvector, { coerce_vectors: false })).toBeFalsy();
     expect(vector.equals(interval)).toBeFalsy();
     expect(altvector.equals(interval)).toBeFalsy();
     expect(vector.equals(altvector.altvectors_to_vectors())).toBeTruthy();
+    expect(
+      vector.equals(altvector.altvectors_to_vectors(), {
+        coerce_vectors: false,
+      }),
+    ).toBeTruthy();
     expect(interval.equals(altvector).altvectors_to_vectors).toBeFalsy();
+  });
+
+  it("arrays, intervals", function () {
+    let array = Expression.fromLatex("[a,b]");
+    let interval = Expression.fromLatex("[a,b]").to_intervals();
+
+    expect(array.equals(interval)).toBeTruthy();
+    expect(array.equals(interval, { coerce_tuples_arrays: false })).toBeFalsy();
   });
 
   var matchDerivatives = [

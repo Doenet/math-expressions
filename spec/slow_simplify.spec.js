@@ -1408,14 +1408,14 @@ describe("expand", function () {
       2,
     ]);
     expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual([
-      "*",
+      "^",
       tuple,
-      vector,
+      2,
     ]);
     expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual([
-      "*",
+      "^",
       vector,
-      tuple,
+      2,
     ]);
     expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual([
       "^",
@@ -1609,14 +1609,14 @@ describe("expand", function () {
       2,
     ]);
     expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual([
-      "*",
+      "^",
       tuple,
-      vector,
+      2,
     ]);
     expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual([
-      "*",
+      "^",
       vector,
-      tuple,
+      2,
     ]);
     expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual([
       "^",
