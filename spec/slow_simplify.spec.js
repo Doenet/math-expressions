@@ -200,6 +200,90 @@ describe("evaluate_numbers", function () {
     ]);
   });
 
+  it("tuples, vectors, altvectors, open intervals sorted the same", function () {
+    let vector_sum = me.fromAst([
+      "+",
+      me.fromText("(5-5, 2+3, 2+2)").tuples_to_vectors().tree,
+      me.fromText("(4-4, 5-1, 1+3)").tree,
+      me.fromLatex("\\langle 6-6, 6/2, 4 \\rangle").tree,
+      me.fromText("(3*3, 2^3)").tree,
+      me.fromText("(27/3, 3+4)").tuples_to_vectors().tree,
+      me.fromLatex("\\langle 10-1, 3*2 \\rangle").tree,
+      me.fromText("(5+4, 10/2)").to_intervals().tree,
+      me.fromText("(5-4, 3^2)").to_intervals().tree,
+      me.fromLatex("\\langle 1, 4*2 \\rangle").tree,
+      me.fromText("(7/7, 3+4)").tuples_to_vectors().tree,
+      me.fromText("(6-5, 3*2)").tree,
+    ]);
+
+    let unsorted_result = [
+      "+",
+      ["vector", 0, 5, 4],
+      ["tuple", 0, 4, 4],
+      ["altvector", 0, 3, 4],
+      ["tuple", 9, 8],
+      ["vector", 9, 7],
+      ["altvector", 9, 6],
+      ["interval", ["tuple", 9, 5], ["tuple", false, false]],
+      ["interval", ["tuple", 1, 9], ["tuple", false, false]],
+      ["altvector", 1, 8],
+      ["vector", 1, 7],
+      ["tuple", 1, 6],
+    ];
+
+    let sorted_result = [
+      "+",
+      ["tuple", 1, 6],
+      ["vector", 1, 7],
+      ["altvector", 1, 8],
+      ["interval", ["tuple", 1, 9], ["tuple", false, false]],
+      ["interval", ["tuple", 9, 5], ["tuple", false, false]],
+      ["altvector", 9, 6],
+      ["vector", 9, 7],
+      ["tuple", 9, 8],
+      ["altvector", 0, 3, 4],
+      ["tuple", 0, 4, 4],
+      ["vector", 0, 5, 4],
+    ];
+    expect(vector_sum.evaluate_numbers().tree).toEqual(sorted_result);
+    expect(vector_sum.evaluate_numbers({ skip_ordering: true }).tree).toEqual(
+      unsorted_result,
+    );
+  });
+
+  it("arrays, closed intervals sorted the same", function () {
+    let interval_union = me.fromAst([
+      "union",
+      me.fromText("[4-4, 5-1, 1+3]").tree,
+      me.fromText("[3*3, 2^3]").tree,
+      me.fromText("[5+4, 10/2]").to_intervals().tree,
+      me.fromText("[5-4, 3^2]").to_intervals().tree,
+      me.fromText("[6-5, 3*2]").tree,
+    ]);
+
+    let unsorted_result = [
+      "union",
+      ["array", 0, 4, 4],
+      ["array", 9, 8],
+      ["interval", ["tuple", 9, 5], ["tuple", true, true]],
+      ["interval", ["tuple", 1, 9], ["tuple", true, true]],
+      ["array", 1, 6],
+    ];
+
+    let sorted_result = [
+      "union",
+      ["array", 1, 6],
+      ["interval", ["tuple", 1, 9], ["tuple", true, true]],
+      ["interval", ["tuple", 9, 5], ["tuple", true, true]],
+      ["array", 9, 8],
+      ["array", 0, 4, 4],
+    ];
+    expect(interval_union.evaluate_numbers().tree).toEqual(sorted_result);
+    expect(
+      interval_union.evaluate_numbers({ skip_ordering: true }).tree,
+    ).toEqual(unsorted_result);
+  });
+
   it("to constant", function () {
     expect(me.from("log(e)x+log(1)y").evaluate_numbers().tree).toEqual([
       "+",

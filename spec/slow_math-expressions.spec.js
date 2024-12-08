@@ -1117,6 +1117,55 @@ describe("expression", function () {
     expect(array.equals(interval, { coerce_tuples_arrays: false })).toBeFalsy();
   });
 
+  it("unions of tuples, vectors, intervals, altvectors, arrays", function () {
+    let t1 = Expression.fromLaTeX("(1,2)");
+    let t1a = Expression.fromLatex("(\\sin^2(x)+\\cos^2(x),2)");
+    let v1 = t1.tuples_to_vectors().tree;
+    let v1a = t1a.tuples_to_vectors().tree;
+    let oi1 = t1.to_intervals().tree;
+    let oi1a = t1a.to_intervals().tree;
+    t1 = t1.tree;
+    t1a = t1a.tree;
+    let av1 = Expression.fromLaTeX("\\langle 1,2 \\rangle").tree;
+
+    let a2 = Expression.fromLaTeX("[3,4]");
+    let ci2 = a2.to_intervals().tree;
+    a2 = a2.tree;
+
+    let tvav1 = [t1, t1a, v1, v1a, av1];
+    let ao2 = [a2, ci2];
+
+    for (let [i11, op11] of tvav1.entries()) {
+      for (let [i12, op12] of ao2.entries()) {
+        for (let op21 of tvav1.slice(i11 + 1)) {
+          for (let op22 of ao2.slice(i12 + 1)) {
+            expect(
+              Expression.fromAst(["union", op11, op12]).equals(
+                Expression.fromAst(["union", op21, op22]),
+              ),
+            ).toBeTruthy();
+          }
+        }
+      }
+    }
+
+    let to1 = [t1, t1a, oi1, oi1a];
+
+    for (let [i11, op11] of to1.entries()) {
+      for (let [i12, op12] of ao2.entries()) {
+        for (let op21 of to1.slice(i11 + 1)) {
+          for (let op22 of ao2.slice(i12 + 1)) {
+            expect(
+              Expression.fromAst(["union", op11, op12]).equals(
+                Expression.fromAst(["union", op21, op22]),
+              ),
+            ).toBeTruthy();
+          }
+        }
+      }
+    }
+  });
+
   var matchDerivatives = [
     ["x^3/3+c", "x^3/3+c"],
     ["x^2/2-2*x+2+c", "(x-2)^2/2+k"],
