@@ -5,7 +5,11 @@ var converter = new astToLatex();
 const objectsToTest = [
   {
     ast: ["*", ["/", 1, 2], "x"],
-    latex: "\\left(\\frac{1}{2}\\right) x",
+    latex: "\\frac{1}{2} x",
+  },
+  {
+    ast: ["*", "y", ["/", 1, 2], "x"],
+    latex: "y \\left(\\frac{1}{2}\\right) x",
   },
   {
     ast: ["+", 1, "x", 3],
