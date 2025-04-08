@@ -1371,6 +1371,25 @@ describe("matrix and vector simplify", function () {
   });
 });
 
+describe("square root of integers", function () {
+  it("single square roots", function () {
+    expect(me.from("sqrt(200)").simplify().tree).toEqual(
+      me.from("10*sqrt(2)").tree,
+    );
+    expect(me.from("sqrt(-30*27)").simplify().tree).toEqual(
+      me.from("9*sqrt(-10)").tree,
+    );
+  });
+  it("sums of square roots", function () {
+    expect(me.from("sqrt(75) + 2sqrt(48)").simplify().tree).toEqual(
+      me.from("13sqrt(3)").tree,
+    );
+    expect(me.from("sqrt(448)x+sqrt(392)y").simplify().tree).toEqual(
+      me.from("8x*sqrt(7)+ 14y sqrt(2)").tree,
+    );
+  });
+});
+
 describe("expand", function () {
   it("expand polynomials", function () {
     expect(me.from("(x-1)(x+2)").expand().tree).toEqual(
