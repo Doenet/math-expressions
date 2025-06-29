@@ -1,5 +1,11 @@
 import me from "../lib/math-expressions";
 import { equals as discreteEquals } from "../lib/expression/equality/discrete_infinite_set";
+import util from "util";
+
+const origLog = console.log;
+console.log = (...args) => {
+  origLog(...args.map((x) => util.inspect(x, false, 10, true)));
+};
 
 describe("discrete infinite", function () {
   test("basic equality", function () {
@@ -202,5 +208,24 @@ describe("discrete infinite", function () {
     expect(set.equals(list2)).toBeTruthy();
     expect(set.equals(list3)).toBeFalsy();
     expect(set.equals(list4)).toBeFalsy();
+  });
+
+  test("compare simplified sets", function () {
+    var set1 = me.create_discrete_infinite_set({
+      offsets: me.fromText("pi/4, 3pi/4"),
+      periods: me.fromText("pi"),
+    });
+    var set2 = me.create_discrete_infinite_set({
+      offsets: me.fromText("-pi/4"),
+      periods: me.fromText("pi/2"),
+    });
+    expect(set1.equals(set2)).toBeTruthy();
+    expect(set2.equals(set1)).toBeTruthy();
+
+    set1 = set1.simplify();
+    set2 = set2.simplify();
+
+    expect(set1.equals(set2)).toBeTruthy();
+    expect(set2.equals(set1)).toBeTruthy();
   });
 });
