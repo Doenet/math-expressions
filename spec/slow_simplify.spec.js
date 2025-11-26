@@ -748,6 +748,34 @@ describe("collect like terms and factor", function () {
         me.fromText("27x^4/(y^7z^5)").tree,
       ),
     ).toBeTruthy();
+
+    expect(
+      trees.equal(
+        me.fromText("(-x)^2").collect_like_terms_factors().tree,
+        me.fromText("x^2").tree,
+      ),
+    ).toBeTruthy();
+
+    expect(
+      trees.equal(
+        me.fromText("(-x)^3").collect_like_terms_factors().tree,
+        me.fromText("-x^3").tree,
+      ),
+    ).toBeTruthy();
+
+    expect(
+      trees.equal(
+        me.fromText("(-x)^4").collect_like_terms_factors().tree,
+        me.fromText("x^4").tree,
+      ),
+    ).toBeTruthy();
+
+    expect(
+      trees.equal(
+        me.fromText("(-x)^5").collect_like_terms_factors().tree,
+        me.fromText("-x^5").tree,
+      ),
+    ).toBeTruthy();
   });
 
   it("like factors with assumptions", function () {
