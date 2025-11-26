@@ -1871,4 +1871,19 @@ describe("expand", function () {
         .default_order().tree,
     );
   });
+
+  it("do not distribute dx in integrals", function () {
+    expect(me.from("int (x^2 + x)dx").expand().tree).toEqual(
+      me.from("int (x^2 + x)dx").tree,
+    );
+    expect(me.from("int (x^2 + x) x dx").expand().tree).toEqual(
+      me.from("int (x^3 + x^2)dx").tree,
+    );
+    expect(me.from("int (x^2 + y)dx dy").expand().tree).toEqual(
+      me.from("int (x^2 + y)dx dy").tree,
+    );
+    expect(me.from("int y(x^2 + y)x dx dy").expand().tree).toEqual(
+      me.from("int (y x^3 + xy^2)dx dy").tree,
+    );
+  });
 });
