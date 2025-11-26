@@ -1,7 +1,7 @@
 {
   "name": "math-expressions",
   "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "2.0.0-alpha76",
+  "version": "2.0.0-alpha77",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kisonecat/math-expressions"
+    "url": "git+https://github.com/kisonecat/math-expressions.git"
   },
   "files": [
     "/build"
@@ -33,7 +33,7 @@
   "dependencies": {
     "@babel/cli": "^7.25.7",
     "babel-upgrade": "^1.0.1",
-    "mathjs": "^14.5.2",
+    "mathjs": "^15.1.0",
     "number-theory": "1.1.0",
     "numeric": "1.2.6",
     "seedrandom": "^3.0.5",
