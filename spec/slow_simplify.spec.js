@@ -1630,6 +1630,54 @@ describe("expand", function () {
     ).toEqual(product312_g);
   });
 
+  it("expand matrix powers", function () {
+    let matrix1 = me.fromLatex(
+      "\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}",
+    ).tree;
+    let matrix1_2 = me.fromLatex(
+      "\\begin{pmatrix}a^2 + bc & ab+bd\\\\ac + cd & bc+d^2\\end{pmatrix}",
+    ).tree;
+    let matrix1_3 = me.fromLatex(
+      "\\begin{pmatrix}a^3+2abc+bcd & ba^2+abd+cb^2+bd^2\\\\ca^2+acd+bc^2+cd^2 & abc+2bcd+d^3\\end{pmatrix}",
+    ).tree;
+
+    expect(me.fromAst(["^", matrix1, 1]).expand().tree).toEqual(matrix1);
+    expect(me.fromAst(["^", matrix1, 2]).expand().tree).toEqual(matrix1_2);
+    expect(me.fromAst(["^", matrix1, 3]).expand().tree).toEqual(matrix1_3);
+
+    let matrix2 = me.fromLatex(
+      "\\begin{pmatrix}1 & 2 & 3\\\\4&5&6\\\\7&8&9\\end{pmatrix}",
+    ).tree;
+    let matrix2_2 = me.fromLatex(
+      "\\begin{pmatrix}30 & 36 & 42\\\\66&81&96 \\\\ 102&126&150 \\end{pmatrix}",
+    ).tree;
+    let matrix2_3 = me.fromLatex(
+      "\\begin{pmatrix} 468&576&684 \\\\ 1062&1305&1548 \\\\ 1656&2034&2412 \\end{pmatrix}",
+    ).tree;
+
+    expect(me.fromAst(["^", matrix2, 1]).expand().tree).toEqual(matrix2);
+    expect(me.fromAst(["^", matrix2, 2]).expand().tree).toEqual(matrix2_2);
+    expect(me.fromAst(["^", matrix2, 3]).expand().tree).toEqual(matrix2_3);
+
+    let matrix3a = me.fromLatex(
+      "\\begin{pmatrix} 5&6 \\\\ 7&8 \\end{pmatrix}",
+    ).tree;
+    let matrix3b = me.fromLatex(
+      "\\begin{pmatrix} 1&2 \\\\ 3&4 \\end{pmatrix}",
+    ).tree;
+    let matrix3c = me.fromLatex(
+      "\\begin{pmatrix} 9&0 \\\\ -1&-2 \\end{pmatrix}",
+    ).tree;
+
+    let combination = me.fromLatex(
+      "\\begin{pmatrix} 943&-364 \\\\ 1275&-492 \\end{pmatrix}",
+    ).tree;
+
+    expect(
+      me.fromAst(["*", matrix3a, ["^", matrix3b, 2], matrix3c]).expand().tree,
+    ).toEqual(combination);
+  });
+
   it("expand matrix multiplication, tuple_to_vectors on matrix does not break", function () {
     let matrix1 = me
       .fromLatex("\\begin{pmatrix}a & b\\\\c&d\\end{pmatrix}")
