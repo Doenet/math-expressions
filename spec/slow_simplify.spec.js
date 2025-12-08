@@ -603,6 +603,17 @@ describe("evaluate_to_constant", function () {
     ).toEqual({ re: NaN, im: NaN });
   });
 
+  it("negative number raised to m/n where n is odd gives real number", function () {
+    expect(me.fromText("(-8)^(1/3)").evaluate_to_constant()).toEqual(-2);
+    expect(me.fromText("(-8)^(2/3)").evaluate_to_constant()).toEqual(4);
+    expect(me.fromText("(-8)^(3/3)").evaluate_to_constant()).toEqual(-8);
+    expect(me.fromText("(-8)^(-1/3)").evaluate_to_constant()).toEqual(-0.5);
+    expect(me.fromText("(-8)^((-1)/3)").evaluate_to_constant()).toEqual(-0.5);
+    expect(me.fromText("(-8)^(1/-3)").evaluate_to_constant()).toEqual(-0.5);
+    expect(me.fromText("(-8)^(-1/-3)").evaluate_to_constant()).toEqual(-2);
+    expect(me.fromText("(-8)^(-(-1)/-3)").evaluate_to_constant()).toEqual(-0.5);
+  });
+
   it("matrices", function () {
     // At least for now, evaluating a matrix to a constant gives NaN.
     // TODO: do we want to return a numerical array?
