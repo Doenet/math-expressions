@@ -435,4 +435,19 @@ describe("normalize negative numbers", function () {
         .tree,
     ).toEqual(["+", "x", ["*", -3, "y"]]);
   });
+
+  it("negative product involving fraction", function () {
+    expect(
+      me.fromAst(["-", ["*", ["/", 3, 4], "y"]]).normalize_negative_numbers()
+        .tree,
+    ).toEqual(["*", ["/", -3, 4], "y"]);
+  });
+
+  it("subtract product involving fraction", function () {
+    expect(
+      me
+        .fromAst(["+", "x", ["-", ["*", ["/", 3, 4], "y"]]])
+        .normalize_negative_numbers().tree,
+    ).toEqual(["+", "x", ["*", ["/", -3, 4], "y"]]);
+  });
 });
