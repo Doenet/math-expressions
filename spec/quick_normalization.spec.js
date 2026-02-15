@@ -311,10 +311,7 @@ describe("default order", function () {
     );
   });
 
-  // this test stopped passing when changed now negative numbers are parsed
-  // TODO: does it matter given that other normalization and simplification
-  // still works in the same way?
-  it.skip("normalize negative combination", function () {
+  it("normalize negative combination", function () {
     expect(me.from("5+x(-3)").default_order().tree).toEqual(
       me.from("5-3x").default_order().tree,
     );
@@ -390,6 +387,12 @@ describe("default order", function () {
       me.from("D notsuperseteq C or B subseteq A").default_order().tree,
     );
   });
+
+  it("order with negatives", function () {
+    expect(
+      me.from("(x+a)(x-a)").substitute({ a: 1 }).default_order().tree,
+    ).toEqual(me.from("(x+1)(x-1)").default_order().tree);
+  });
 });
 
 describe("constants to floats", function () {
@@ -449,5 +452,20 @@ describe("normalize negative numbers", function () {
         .fromAst(["+", "x", ["-", ["*", ["/", 3, 4], "y"]]])
         .normalize_negative_numbers().tree,
     ).toEqual(["+", "x", ["*", ["/", -3, 4], "y"]]);
+  });
+
+  it("negative fraction involving product", function () {
+    expect(
+      me.fromAst(["-", ["/", ["*", 3, "y"], 4]]).normalize_negative_numbers()
+        .tree,
+    ).toEqual(["/", ["*", -3, "y"], 4]);
+  });
+
+  it("subtract negative fraction involving product", function () {
+    expect(
+      me
+        .fromAst(["+", "x", ["-", ["/", ["*", 3, "y"], 4]]])
+        .normalize_negative_numbers().tree,
+    ).toEqual(["+", "x", ["/", ["*", -3, "y"], 4]]);
   });
 });

@@ -1001,6 +1001,13 @@ describe("collect like terms and factor", function () {
       me.fromText("cos(2 pi (+))").collect_like_terms_factors().tree,
     ).toEqual(me.fromText("cos(2 pi (+))").tree);
   });
+
+  it("don't create extra fractions", function () {
+    // make sure bug is fixed where it would turn -q t/(3 s) into -(qt)/3/s
+    expect(
+      me.fromText("- ((q t)/(3 s ))").collect_like_terms_factors().tree,
+    ).toEqual(me.fromText("-q t/(3 s)").tree);
+  });
 });
 
 describe("matrix and vector simplify", function () {

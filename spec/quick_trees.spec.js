@@ -361,7 +361,7 @@ describe("tree matching", function () {
 
     expect(match).toBeTruthy();
     expect(
-      match["a"] == 0.3 && trees.equal(match["b"], ["-", 3]) && match["c"] == 7,
+      match["a"] == 0.3 && match["b"] == -3 && match["c"] == 7,
     ).toBeTruthy();
 
     expect(
@@ -387,9 +387,7 @@ describe("tree matching", function () {
       allow_implicit_identities: ["a"],
     });
     expect(match).toBeTruthy();
-    expect(
-      match["a"] == 1 && trees.equal(match["b"], ["-", 3]) && match["c"] == 7,
-    ).toBeTruthy();
+    expect(match["a"] == 1 && match["b"] == -3 && match["c"] == 7).toBeTruthy();
 
     expect(
       trees.match(TREE("s^2-3s"), pattern, {
@@ -415,9 +413,7 @@ describe("tree matching", function () {
       allow_implicit_identities: ["a", "c"],
     });
     expect(match).toBeTruthy();
-    expect(
-      match["a"] == 1 && trees.equal(match["b"], ["-", 3]) && match["c"] == 0,
-    ).toBeTruthy();
+    expect(match["a"] == 1 && match["b"] == -3 && match["c"] == 0).toBeTruthy();
 
     match = trees.match(TREE("2y-y"), TREE("mx+nx"), {
       variables: {
