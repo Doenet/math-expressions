@@ -9,25 +9,34 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && npm run build:types",
+    "build:types": "cp index.d.ts build/index.d.ts",
     "test:watch": "jest --watch",
     "test": "jest quick_",
     "test:all": "jest",
     "lint": "jshint lib/*.js spec/*.js",
     "prettier:format": "prettier --write .",
-    "prettier:check": "prettier --check ."
+    "prettier:check": "prettier --check .",
+    "types:check": "tsc --noEmit --skipLibCheck"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kisonecat/math-expressions.git"
   },
+  "types": "./build/index.d.ts",
   "files": [
     "/build"
   ],
   "exports": {
     ".": {
-      "import": "./build/math-expressions.js",
-      "require": "./build/math-expressions_umd.js"
+      "import": {
+        "types": "./build/index.d.ts",
+        "default": "./build/math-expressions.js"
+      },
+      "require": {
+        "types": "./build/index.d.ts",
+        "default": "./build/math-expressions_umd.js"
+      }
     }
   },
   "private": false,
@@ -57,7 +66,8 @@
     "regenerator-runtime": "^0.14.1",
     "rollup": "^4.57.1",
     "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-polyfill-node": "^0.13.0"
+    "rollup-plugin-polyfill-node": "^0.13.0",
+    "typescript": "^5.9.3"
   },
   "jest": {
     "testEnvironment": "node",
