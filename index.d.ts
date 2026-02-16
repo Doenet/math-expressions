@@ -22,23 +22,7 @@ export type Tree = number | string | boolean | [string, ...Tree[]];
  * @param value The value to check
  * @returns True if the value is a valid Tree structure
  */
-export function isTree(value: unknown): value is Tree {
-  if (
-    typeof value === "number" ||
-    typeof value === "string" ||
-    typeof value === "boolean"
-  ) {
-    return true;
-  }
-  if (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    typeof value[0] === "string"
-  ) {
-    return value.slice(1).every((item) => isTree(item));
-  }
-  return false;
-}
+export function isTree(value: unknown): value is Tree;
 
 /**
  * Complex number representation (from mathjs)
