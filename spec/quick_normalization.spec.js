@@ -287,6 +287,24 @@ describe("default order", function () {
     );
   });
 
+  it("factors ordered alphabetically, then by exponents", function () {
+    expect(me.from("y^3 x y^2 z y").default_order().tree).toEqual(
+      me.from("x y y^2 y^3 z").tree,
+    );
+  });
+
+  it("root factors at end", function () {
+    expect(me.from("y^3 x sqrt(x) y^2 z y").default_order().tree).toEqual(
+      me.from("x y y^2 y^3 z sqrt(x)").tree,
+    );
+    expect(me.from("y^3 x cbrt(x) y^2 z y").default_order().tree).toEqual(
+      me.from("x y y^2 y^3 z cbrt(x)").tree,
+    );
+    expect(me.from("y^3 x nthroot(x, 3) y^2 z y").default_order().tree).toEqual(
+      me.from("x y y^2 y^3 z nthroot(x, 3)").tree,
+    );
+  });
+
   it("order equality", function () {
     expect(me.from("xy=ab").default_order().tree).toEqual(
       me.from("ab=xy").default_order().tree,
