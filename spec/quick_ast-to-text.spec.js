@@ -56,6 +56,22 @@ const objectsToTest = [
     text: "|x|",
   },
   {
+    ast: ["apply", "sqrt", "x"],
+    text: "sqrt(x)",
+  },
+  {
+    ast: ["apply", "cbrt", "x"],
+    text: "cbrt(x)",
+  },
+  {
+    ast: ["apply", "nthroot", ["tuple", "x", 4]],
+    text: "nthroot( x, 4 )",
+  },
+  {
+    ast: ["apply", "nthroot", "x"],
+    text: "nthroot(x)",
+  },
+  {
     ast: ["apply", "abs", ["apply", "sin", ["apply", "abs", "x"]]],
     text: "|sin(|x|)|",
   },
