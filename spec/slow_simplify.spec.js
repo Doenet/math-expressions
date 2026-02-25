@@ -1436,6 +1436,57 @@ describe("square root of integers", function () {
   });
 });
 
+describe("roots of powers", function () {
+  it("factor out square roots of perfect squares", function x() {
+    expect(me.from("sqrt(x^4)").simplify().tree).toEqual(me.from("x^2").tree);
+    expect(me.from("sqrt(16x^6)").simplify().tree).toEqual(
+      me.from("4x^3").tree,
+    );
+    expect(me.from("sqrt(8x^5)").simplify().tree).toEqual(
+      me.from("2x^2*sqrt(2x)").tree,
+    );
+    expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
+      me.from("2x^2 y z^2*sqrt(3y)").tree,
+    );
+  });
+
+  it("factor out cube roots of perfect cubes", function x() {
+    expect(me.from("cbrt(x^3)").simplify().tree).toEqual(me.from("x").tree);
+    expect(me.from("cbrt(8x^6)").simplify().tree).toEqual(me.from("2x^2").tree);
+    expect(me.from("cbrt(81x^11)").simplify().tree).toEqual(
+      me.from("3x^3 cbrt(3x^2)").tree,
+    );
+    expect(me.from("cbrt(2x^3 2 y^3 x 2 z^4 3)").simplify().tree).toEqual(
+      me.from("2x y z cbrt(3xz)").tree,
+    );
+  });
+
+  it("factor out nth roots of perfect powers", function x() {
+    expect(me.from("nthroot(x^4,4)").simplify().tree).toEqual(
+      me.from("x").tree,
+    );
+    expect(me.from("nthroot(32x^10,5)").simplify().tree).toEqual(
+      me.from("2x^2").tree,
+    );
+    expect(me.from("nthroot(243x^11,4)").simplify().tree).toEqual(
+      me.from("3x^2 nthroot(3x^3,4)").tree,
+    );
+    expect(
+      me.from("nthroot(6 x^4 2 y^5 2 x^2 2 z^11 2, 5)").simplify().tree,
+    ).toEqual(me.from("2x y z^2 nthroot(3xz,5)").tree);
+  });
+
+  it("roots inside roots", function x() {
+    expect(me.from("sqrt(x sqrt(2 x sqrt(4x^2)))").simplify().tree).toEqual(
+      me.from("x sqrt(2)").tree,
+    );
+    expect(
+      me.from("cbrt(2 x sqrt(4 x^3 nthroot(32x^5, 5) cbrt(8x^6)))").simplify()
+        .tree,
+    ).toEqual(me.from("2x cbrt(x)").tree);
+  });
+});
+
 describe("expand", function () {
   it("expand polynomials", function () {
     expect(me.from("(x-1)(x+2)").expand().tree).toEqual(
@@ -1656,7 +1707,7 @@ describe("expand", function () {
       "\\begin{pmatrix}a^2 + bc & ab+bd\\\\ac + cd & bc+d^2\\end{pmatrix}",
     ).tree;
     let matrix1_3 = me.fromLatex(
-      "\\begin{pmatrix}a^3+2abc+bcd & ba^2+abd+cb^2+bd^2\\\\ca^2+acd+bc^2+cd^2 & abc+2bcd+d^3\\end{pmatrix}",
+      "\\begin{pmatrix}a^3+2abc+bcd & a^2b+abd+b^2c+bd^2\\\\a^2c+acd+bc^2+cd^2 & abc+2bcd+d^3\\end{pmatrix}",
     ).tree;
 
     expect(me.fromAst(["^", matrix1, 1]).expand().tree).toEqual(matrix1);
@@ -1949,7 +2000,7 @@ describe("expand", function () {
       me.from("int (x^2 + y)dx dy").tree,
     );
     expect(me.from("int y(x^2 + y)x dx dy").expand().tree).toEqual(
-      me.from("int (y x^3 + xy^2)dx dy").tree,
+      me.from("int (x^3y + xy^2)dx dy").tree,
     );
   });
 });
