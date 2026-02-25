@@ -486,4 +486,20 @@ describe("normalize negative numbers", function () {
         .normalize_negative_numbers().tree,
     ).toEqual(["+", "x", ["/", ["*", -3, "y"], 4]]);
   });
+
+  it("negative fraction involving nested fraction and product", function () {
+    expect(
+      me
+        .fromAst(["-", ["/", ["/", ["*", 3, "x"], "y"], 4]])
+        .normalize_negative_numbers().tree,
+    ).toEqual(["/", ["/", ["*", -3, "x"], "y"], 4]);
+  });
+
+  it("negative fraction involving deeply nested fractions and product", function () {
+    expect(
+      me
+        .fromAst(["-", ["/", ["/", ["/", ["*", 3, "x"], "y"], "z"], 4]])
+        .normalize_negative_numbers().tree,
+    ).toEqual(["/", ["/", ["/", ["*", -3, "x"], "y"], "z"], 4]);
+  });
 });
