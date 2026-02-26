@@ -1436,6 +1436,245 @@ describe("square root of integers", function () {
   });
 });
 
+describe("roots of powers", function () {
+  it("factor out square roots of perfect squares, assume non-negative or positive", function x() {
+    me.clear_assumptions();
+    me.add_assumption(me.fromText("x>=0 and y>0 and z>0"));
+    expect(me.from("sqrt(x^4)").simplify().tree).toEqual(me.from("x^2").tree);
+    expect(me.from("sqrt(16x^6)").simplify().tree).toEqual(
+      me.from("4x^3").tree,
+    );
+    expect(me.from("sqrt(8x^5)").simplify().tree).toEqual(
+      me.from("2x^2*sqrt(2x)").tree,
+    );
+    expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
+      me.from("2x^2 y z^2*sqrt(3y)").tree,
+    );
+    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
+      me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out square roots of perfect squares, assume real", function x() {
+    me.clear_assumptions();
+    me.add_assumption(
+      me.fromText("x elementof R and y elementof R and z elementof R"),
+    );
+
+    expect(me.from("sqrt(x)").simplify().tree).toEqual(me.from("sqrt(x)").tree);
+    expect(me.from("sqrt(x^4)").simplify().tree).toEqual(me.from("x^2").tree);
+    expect(me.from("sqrt(16x^6)").simplify().tree).toEqual(
+      me.from("4|x|^3").tree,
+    );
+    expect(me.from("sqrt(8x^5)").simplify().tree).toEqual(
+      me.from("2x^2*sqrt(2x)").tree,
+    );
+    expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
+      me.from("2x^2 z^2 |y| sqrt(3y)").tree,
+    );
+    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
+      me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out square roots of perfect squares, no assumptions", function x() {
+    me.clear_assumptions();
+
+    expect(me.from("sqrt(x)").simplify().tree).toEqual(me.from("sqrt(x)").tree);
+    expect(me.from("sqrt(x^4)").simplify().tree).toEqual(
+      me.from("sqrt(x^4)").tree,
+    );
+    expect(me.from("sqrt(16x^6)").simplify().tree).toEqual(
+      me.from("4sqrt(x^6)").tree,
+    );
+    expect(me.from("sqrt(8x^5)").simplify().tree).toEqual(
+      me.from("2 sqrt(2x^5)").tree,
+    );
+    expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
+      me.from("2sqrt(3x^4 y^3 z^4)").tree,
+    );
+    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
+      me.from("4 sqrt(-x^5)").normalize_negative_numbers().tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out cube roots of perfect cubes, assume real", function x() {
+    me.clear_assumptions();
+    me.add_assumption(
+      me.fromText("x elementof R and y elementof R and z elementof R"),
+    );
+
+    expect(me.from("cbrt(x^2)").simplify().tree).toEqual(
+      me.from("cbrt(x^2)").tree,
+    );
+    expect(me.from("cbrt(-x^2)").simplify().tree).toEqual(
+      me.from("-cbrt(x^2)").tree,
+    );
+    expect(me.from("cbrt(x^3)").simplify().tree).toEqual(me.from("x").tree);
+    expect(me.from("cbrt(-x^3)").simplify().tree).toEqual(me.from("-x").tree);
+    expect(me.from("cbrt((-x)^3)").simplify().tree).toEqual(me.from("-x").tree);
+    expect(me.from("cbrt(8x^6)").simplify().tree).toEqual(me.from("2x^2").tree);
+    expect(me.from("cbrt(81x^11)").simplify().tree).toEqual(
+      me.from("3x^3 cbrt(3x^2)").tree,
+    );
+    expect(me.from("cbrt(2x^3 2 y^3 x 2 z^4 3)").simplify().tree).toEqual(
+      me.from("2x y z cbrt(3xz)").tree,
+    );
+    expect(me.from("cbrt(-16x^4)").simplify().tree).toEqual(
+      me.from("-2x cbrt(2x)").normalize_negative_numbers().tree,
+    );
+    expect(me.from("cbrt(-4x^4)").simplify().tree).toEqual(
+      me.from("-x cbrt(4x)").normalize_negative_numbers().tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out cube roots of perfect cubes, no assumptions", function x() {
+    me.clear_assumptions();
+
+    expect(me.from("cbrt(x^2)").simplify().tree).toEqual(
+      me.from("cbrt(x^2)").tree,
+    );
+    expect(me.from("cbrt(-x^2)").simplify().tree).toEqual(
+      me.from("-cbrt(x^2)").tree,
+    );
+    expect(me.from("cbrt(x^3)").simplify().tree).toEqual(
+      me.from("cbrt(x^3)").tree,
+    );
+    expect(me.from("cbrt(-x^3)").simplify().tree).toEqual(
+      me.from("-cbrt(x^3)").tree,
+    );
+    expect(me.from("cbrt((-x)^3)").simplify().tree).toEqual(
+      me.from("-cbrt(x^3)").tree,
+    );
+    expect(me.from("cbrt(8x^6)").simplify().tree).toEqual(
+      me.from("2cbrt(x^6)").tree,
+    );
+    expect(me.from("cbrt(81x^11)").simplify().tree).toEqual(
+      me.from("3 cbrt(3x^11)").tree,
+    );
+    expect(me.from("cbrt(2x^3 2 y^3 x 2 z^4 3)").simplify().tree).toEqual(
+      me.from("2 cbrt(3x^4 y^3z^4)").tree,
+    );
+    expect(me.from("cbrt(-16x^4)").simplify().tree).toEqual(
+      me.from("-2 cbrt(2x^4)").normalize_negative_numbers().tree,
+    );
+    expect(me.from("cbrt(-4x^4)").simplify().tree).toEqual(
+      me.from("-cbrt(4x^4)").normalize_negative_numbers().tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out nth roots of perfect powers, assume non-negative or positive", function x() {
+    me.clear_assumptions();
+    me.add_assumption(me.fromText("x>=0 and y>0 and z>0"));
+    expect(me.from("nthroot(x^3,4)").simplify().tree).toEqual(
+      me.from("nthroot(x^3,4)").tree,
+    );
+    expect(me.from("nthroot(x^4 y^8,4)").simplify().tree).toEqual(
+      me.from("x y^2").tree,
+    );
+    expect(me.from("nthroot(32x^15,5)").simplify().tree).toEqual(
+      me.from("2x^3").tree,
+    );
+    expect(me.from("nthroot(243x^11,4)").simplify().tree).toEqual(
+      me.from("3x^2 nthroot(3x^3,4)").tree,
+    );
+    expect(
+      me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
+    ).toEqual(me.from("2 x y z^2 nthroot(3xz,6)").tree);
+    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
+      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
+    );
+    expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
+      me.from("-nthroot(16x^4,5)").tree,
+    );
+    expect(me.from("nthroot(-16x^3,4)").simplify().tree).toEqual(
+      me.from("2 nthroot(-x^3,4)").tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out nth roots of perfect powers, assume real", function x() {
+    me.clear_assumptions();
+    me.add_assumption(
+      me.fromText("x elementof R and y elementof R and z elementof R"),
+    );
+
+    expect(me.from("nthroot(x^3,4)").simplify().tree).toEqual(
+      me.from("nthroot(x^3,4)").tree,
+    );
+    expect(me.from("nthroot(x^4 y^8,4)").simplify().tree).toEqual(
+      me.from("y^2 |x|").tree,
+    );
+    expect(me.from("nthroot(32x^15,5)").simplify().tree).toEqual(
+      me.from("2x^3").tree,
+    );
+    expect(me.from("nthroot(243x^11,4)").simplify().tree).toEqual(
+      me.from("3x^2 nthroot(3x^3,4)").tree,
+    );
+    expect(
+      me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
+    ).toEqual(me.from("2 z^2 abs(x) abs(y) nthroot(3xz,6)").tree);
+    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
+      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
+    );
+    expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
+      me.from("-nthroot(16x^4,5)").tree,
+    );
+    expect(me.from("nthroot(-16x^3,4)").simplify().tree).toEqual(
+      me.from("2 nthroot(-x^3,4)").tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("factor out nth roots of perfect powers, no assumptions", function x() {
+    me.clear_assumptions();
+
+    expect(me.from("nthroot(x^3,4)").simplify().tree).toEqual(
+      me.from("nthroot(x^3,4)").tree,
+    );
+    expect(me.from("nthroot(x^4 y^8,4)").simplify().tree).toEqual(
+      me.from("nthroot(x^4 y^8,4)").tree,
+    );
+    expect(me.from("nthroot(32x^15,5)").simplify().tree).toEqual(
+      me.from("2 nthroot(x^15,5)").tree,
+    );
+    expect(me.from("nthroot(243x^11,4)").simplify().tree).toEqual(
+      me.from("3 nthroot(3x^11,4)").tree,
+    );
+    expect(
+      me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
+    ).toEqual(me.from("2 nthroot(3 x^7 y^6 z^13, 6)").tree);
+    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
+      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
+    );
+    expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
+      me.from("-nthroot(16x^4,5)").tree,
+    );
+    expect(me.from("nthroot(-16x^3,4)").simplify().tree).toEqual(
+      me.from("2 nthroot(-x^3,4)").tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("roots inside roots", function x() {
+    me.clear_assumptions();
+    me.add_assumption(me.fromText("x>0"));
+    expect(me.from("sqrt(x sqrt(2 x sqrt(4x^2)))").simplify().tree).toEqual(
+      me.from("x sqrt(2)").tree,
+    );
+    expect(
+      me.from("cbrt(2 x sqrt(4 x^3 nthroot(32x^5, 5) cbrt(8x^6)))").simplify()
+        .tree,
+    ).toEqual(me.from("2x cbrt(x)").tree);
+    me.clear_assumptions();
+  });
+});
+
 describe("expand", function () {
   it("expand polynomials", function () {
     expect(me.from("(x-1)(x+2)").expand().tree).toEqual(
@@ -1656,7 +1895,7 @@ describe("expand", function () {
       "\\begin{pmatrix}a^2 + bc & ab+bd\\\\ac + cd & bc+d^2\\end{pmatrix}",
     ).tree;
     let matrix1_3 = me.fromLatex(
-      "\\begin{pmatrix}a^3+2abc+bcd & ba^2+abd+cb^2+bd^2\\\\ca^2+acd+bc^2+cd^2 & abc+2bcd+d^3\\end{pmatrix}",
+      "\\begin{pmatrix}a^3+2abc+bcd & a^2b+abd+b^2c+bd^2\\\\a^2c+acd+bc^2+cd^2 & abc+2bcd+d^3\\end{pmatrix}",
     ).tree;
 
     expect(me.fromAst(["^", matrix1, 1]).expand().tree).toEqual(matrix1);
@@ -1949,7 +2188,7 @@ describe("expand", function () {
       me.from("int (x^2 + y)dx dy").tree,
     );
     expect(me.from("int y(x^2 + y)x dx dy").expand().tree).toEqual(
-      me.from("int (y x^3 + xy^2)dx dy").tree,
+      me.from("int (x^3y + xy^2)dx dy").tree,
     );
   });
 });

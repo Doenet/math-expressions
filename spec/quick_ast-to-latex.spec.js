@@ -868,6 +868,18 @@ const objectsToTest = [
     latex: "\\left(\\sqrt{2}\\right)^{3}",
   },
   {
+    ast: ["^", ["apply", "cbrt", 2], 3],
+    latex: "\\left(\\sqrt[3]{2}\\right)^{3}",
+  },
+  {
+    ast: ["^", ["apply", "nthroot", ["tuple", 2, 4]], 3],
+    latex: "\\left(\\sqrt[4]{2}\\right)^{3}",
+  },
+  {
+    ast: ["^", ["apply", "nthroot", 2], 3],
+    latex: "\\left(\\sqrt{2}\\right)^{3}",
+  },
+  {
     ast: 0.0000000000123,
     latex: "1.23 \\cdot 10^{-11}",
   },

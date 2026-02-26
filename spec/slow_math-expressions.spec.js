@@ -57,6 +57,11 @@ describe("expression", function () {
     ["x-1", "(x^2-1)/(x+1)"],
     ["a^b * a^c", "a^(b+c)"],
     ["2+2*sqrt(3+x)", "2+sqrt(12+4*x)"],
+    ["cbrt(x)", "x^(1/3)"],
+    ["nthroot(x, n)", "x^(1/n)"],
+    ["nthroot(x, 3)", "cbrt(x)"],
+    ["nthroot(x,2)", "sqrt(x)"],
+    ["nthroot(x)", "sqrt(x)"],
     ["1/n-1/(n+1)", "1/(n*(n+1))"],
     ["0.5*x^2+3*x-1", "x^2/2+3*x-1"],
     ["cos(x)", "cos(-x)"],
@@ -1187,19 +1192,19 @@ describe("expression", function () {
   });
 
   var matchDerivatives = [
-    ["x^3/3+c", "x^3/3+c"],
+    ["x^3/3+c", "x^3/3"],
     ["x^2/2-2*x+2+c", "(x-2)^2/2+k"],
     ["exp(x)+c", "exp(x)"],
-    ["ln(x)+c", "ln(x)+c"],
+    ["ln(x)+c", "ln(x)"],
     ["ln(k*x)", "ln(x)+c"],
-    ["ln(abs(x))+c", "ln(abs(x))+c"],
+    ["ln(abs(x))+c", "ln(abs(x))"],
     ["ln(k*abs(x))", "ln(abs(x))+c"],
     ["ln(abs(k*x))", "ln(abs(x))+c"],
     ["ln(abs(x))+c", "ln(k*abs(x))"],
     ["ln(k*abs(x))", "ln(k*abs(x))"],
     ["c-(log(2)-log(x))^2/2", "-1/2*log(2/x)^2"],
     ["2*sin(x)*cos(x)+k", "sin(2*x)+c"],
-    ["-2*cos(3*x)/3-3*cos(2*x)/2+c", "-2*cos(3*x)/3-3*cos(2*x)/2+c"],
+    ["-2*cos(3*x)/3-3*cos(2*x)/2+c", "-2*cos(3*x)/3-3*cos(2*x)/2"],
     [
       "(tan(2*x)-2*x)/2+c",
       "-(x*sin(4*x)^2-sin(4*x)+x*cos(4*x)^2+2*x*cos(4*x)+x)/(sin(4*x)^2+cos(4*x)^2+2*cos(4*x)+1)",
@@ -1207,7 +1212,7 @@ describe("expression", function () {
     ["tan(x)-x+c", "tan(x)-x"],
     [
       "2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c",
-      "2*(sqrt(x)-5)-10*log((sqrt(x)-5))+c",
+      "2*(sqrt(x)-5)-10*log((sqrt(x)-5))",
     ],
     ["x^3/3+c", "x^3/3"],
     ["x^3/3+c+1", "x^3/3"],
@@ -1216,6 +1221,9 @@ describe("expression", function () {
     ["x^2/2-2*x+2+c", "(x-2)^2/2"],
     ["(x-1)^5/5+c", "(x-1)^5/5"],
     ["cos(2*x)/2+1+c", "cos(2*x)/2"],
+    ["sqrt(x)+c", "x^(1/2)"],
+    ["cbrt(x)+c", "x^(1/3)"],
+    ["nthroot(x, 4)+c", "x^(1/4)"],
     //'exp(x^y)' , 'exp(x^y + 1)'],
   ];
 
