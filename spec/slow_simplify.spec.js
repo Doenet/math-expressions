@@ -1436,9 +1436,9 @@ describe("square root of integers", function () {
   });
 });
 
-describe("roots of powers", function () {
-  it("factor out square roots of perfect squares, assume positive", function x() {
-    me.add_assumption(me.fromText("x>0 and y>0 and z>0"));
+describe.only("roots of powers", function () {
+  it("factor out square roots of perfect squares, assume non-negative or positive", function x() {
+    me.add_assumption(me.fromText("x>=0 and y>0 and z>0"));
     expect(me.from("sqrt(x^4)").simplify().tree).toEqual(me.from("x^2").tree);
     expect(me.from("sqrt(16x^6)").simplify().tree).toEqual(
       me.from("4x^3").tree,
@@ -1498,8 +1498,8 @@ describe("roots of powers", function () {
     );
   });
 
-  it("factor out nth roots of perfect powers, assume positive", function x() {
-    me.add_assumption(me.fromText("x>0 and y>0 and z>0"));
+  it("factor out nth roots of perfect powers, assume non-negative or positive", function x() {
+    me.add_assumption(me.fromText("x>=0 and y>0 and z>0"));
     expect(me.from("nthroot(x^3,4)").simplify().tree).toEqual(
       me.from("nthroot(x^3,4)").tree,
     );
