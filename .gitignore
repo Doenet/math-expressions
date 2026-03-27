@@ -10,3 +10,5 @@ npm-debug.log
 node_modules
 components
 bower_components
+
+.vscode
