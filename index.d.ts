@@ -80,6 +80,18 @@ export interface EvaluateToConstantOptions {
 }
 
 /**
+ * Options for analytic checks.
+ */
+export interface IsAnalyticOptions {
+  /** Allow abs(x) in analytic checks */
+  allow_abs?: boolean;
+  /** Allow arg(x) in analytic checks */
+  allow_arg?: boolean;
+  /** Allow relation operators in analytic checks */
+  allow_relation?: boolean;
+}
+
+/**
  * Options for simplify method
  */
 export interface SimplifyOptions {
@@ -220,11 +232,6 @@ export interface Expression {
   remove_scaling_units(): Expression;
 
   /**
-   * Simplify integer square roots
-   */
-  simplify_integer_square_roots(): Expression;
-
-  /**
    * Simplify ratios in expression
    * @param assumptions Optional assumptions about variables
    */
@@ -240,15 +247,9 @@ export interface Expression {
   derivative(variable: string, story?: string[]): Expression;
 
   /**
-   * Integrate with respect to a variable (symbolically if possible)
-   * @param variable Variable to integrate with respect to
-   */
-  integrate(variable: string): Expression;
-
-  /**
    * Numerical integration
    */
-  integrateNumerically(): Expression;
+  integrateNumerically(variable: string, lower: number, upper: number): number;
 
   // ========== Expansion and Transformation ==========
 
@@ -359,11 +360,6 @@ export interface Expression {
   subscripts_to_strings(force?: boolean): Expression;
 
   /**
-   * Normalize subscripts to strings
-   */
-  subscripts_to_strings(): Expression;
-
-  /**
    * Convert strings to subscripts
    */
   strings_to_subscripts(): Expression;
@@ -382,11 +378,6 @@ export interface Expression {
    * Convert alternative vectors to vectors
    */
   altvectors_to_vectors(): Expression;
-
-  /**
-   * Convert log subscripts to two-argument log
-   */
-  log_subscript_to_two_arg_log(): Expression;
 
   /**
    * Substitute abs function
@@ -455,22 +446,7 @@ export interface Expression {
    */
   common_denominator(): Expression;
 
-  /**
-   * Get the numerator of a rational expression
-   */
-  get_numerator(): Expression;
-
-  /**
-   * Get the denominator of a rational expression
-   */
-  get_denominator(): Expression;
-
   // ========== Matrix operations ==========
-
-  /**
-   * Create a matrix from expression
-   */
-  matrix(): Expression;
 
   /**
    * Vector addition
@@ -485,12 +461,6 @@ export interface Expression {
   vector_sub(other: Expression | Tree): Expression;
 
   /**
-   * Scalar multiplication
-   * @param scalar Scalar value
-   */
-  scalar_mul(scalar: number): Expression;
-
-  /**
    * Dot product
    * @param other Vector for dot product
    */
@@ -501,13 +471,6 @@ export interface Expression {
    * @param other Vector for cross product
    */
   cross_prod(other: Expression | Tree): Expression;
-
-  // ========== Sets operations ==========
-
-  /**
-   * Create discrete infinite set from expression
-   */
-  create_discrete_infinite_set(): Expression;
 
   // ========== Inspection methods (return other types) ==========
 
@@ -591,9 +554,9 @@ export interface Expression {
 
   /**
    * Check if expression is analytic (has no discontinuities)
-   * @param variables Variables to check analyticity over
+   * @param options Analytic check options
    */
-  isAnalytic(variables?: string[]): boolean;
+  isAnalytic(options?: IsAnalyticOptions | string[]): boolean;
 
   /**
    * Match expression against a pattern
@@ -604,11 +567,6 @@ export interface Expression {
     pattern: Expression | Tree,
     allow_permutations?: boolean,
   ): MatchResult | null;
-
-  /**
-   * Check if expression contains a sign error
-   */
-  sign_error(): boolean;
 
   // ========== Formatting methods ==========
 
@@ -643,11 +601,6 @@ export interface Expression {
    * Convert to Guppy representation
    */
   toGuppy(): string;
-
-  /**
-   * Convert to MathJS representation
-   */
-  toMathjs(): any;
 
   /**
    * Serialize to JSON
@@ -947,7 +900,6 @@ export interface Context {
   remove_units(expr: Expression | Tree): Expression;
   add_unit(expr: Expression | Tree, unit: Expression | Tree): Expression;
   remove_scaling_units(expr: Expression | Tree): Expression;
-  simplify_integer_square_roots(expr: Expression | Tree): Expression;
   simplify_ratios(
     expr: Expression | Tree,
     assumptions?: Assumptions,
@@ -959,8 +911,12 @@ export interface Context {
     variable: string,
     story?: string[],
   ): Expression;
-  integrate(expr: Tree, variable: string): Expression;
-  integrateNumerically(expr: Tree): Expression;
+  integrateNumerically(
+    expr: Expression,
+    variable: string,
+    lower: number,
+    upper: number,
+  ): number;
 
   // ========== Expansion and Transformation ==========
   expand(expr: Expression | Tree, no_division?: boolean): Expression;
@@ -1037,53 +993,54 @@ export interface Context {
   solve_linear(expr: Expression | Tree, variable: string): Expression;
   reduce_rational(expr: Expression | Tree): Expression;
   common_denominator(expr: Expression | Tree): Expression;
-  get_numerator(expr: Tree): Expression;
-  get_denominator(expr: Tree): Expression;
-
   // ========== Matrix operations ==========
-  matrix(expr: Tree): Expression;
+  matrix(entries: Expression[][]): Expression;
   vector_add(expr: Expression | Tree, other: Expression | Tree): Expression;
   vector_sub(expr: Expression | Tree, other: Expression | Tree): Expression;
-  scalar_mul(expr: Tree, scalar: number): Expression;
+  scalar_mul(
+    scalar: number | Expression | Tree,
+    vector: Expression | Tree,
+  ): Expression;
   dot_prod(expr: Expression | Tree, other: Expression | Tree): Expression;
   cross_prod(expr: Expression | Tree, other: Expression | Tree): Expression;
 
   // ========== Sets operations ==========
-  create_discrete_infinite_set(expr: Tree): Expression;
+  create_discrete_infinite_set(params?: {
+    offsets?: Expression | Tree;
+    periods?: Expression | Tree;
+    min_index?: Expression | Tree;
+    max_index?: Expression | Tree;
+  }): Expression;
 
   // ========== Inspection methods ==========
   variables(expr: Expression | Tree, include_subscripts?: boolean): string[];
   operators(expr: Expression | Tree): string[];
   functions(expr: Expression | Tree): string[];
-  equals(
-    expr: Tree,
-    other: Expression | Tree,
-    options?: EqualsOptions,
-  ): boolean;
+  equals(expr: Expression, other: Expression, options?: EqualsOptions): boolean;
   equalsViaSyntax(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaComplex(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaReal(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaFiniteField(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   f(expr: Expression | Tree): (bindings: Bindings) => number | Complex;
   evaluate(expr: Expression | Tree, bindings: Bindings): number | Complex;
   finite_field_evaluate(
-    expr: Tree,
+    expr: Expression,
     bindings: Bindings,
     modulus: number,
   ): number;
@@ -1091,22 +1048,22 @@ export interface Context {
     expr: Expression | Tree,
     options?: EvaluateToConstantOptions,
   ): number | null;
-  isAnalytic(expr: Expression | Tree, variables?: string[]): boolean;
+  isAnalytic(
+    expr: Expression | Tree,
+    options?: IsAnalyticOptions | string[],
+  ): boolean;
   match(
     expr: Expression | Tree,
     pattern: Expression | Tree,
     allow_permutations?: boolean,
   ): MatchResult | null;
-  sign_error(expr: Tree): boolean;
-
   // ========== Formatting methods ==========
-  toString(expr: Tree, params?: FormatParams): string;
-  toLatex(expr: Tree, params?: FormatParams): string;
-  tex(expr: Tree, params?: FormatParams): string;
-  toXML(expr: Tree): string;
-  toGLSL(expr: Tree): string;
-  toGuppy(expr: Tree): string;
-  toMathjs(expr: Tree): any;
+  toString(expr: Expression | Tree, params?: FormatParams): string;
+  toLatex(expr: Expression | Tree, params?: FormatParams): string;
+  tex(expr: Expression | Tree, params?: FormatParams): string;
+  toXML(expr: Expression | Tree): string;
+  toGLSL(expr: Expression | Tree): string;
+  toGuppy(expr: Expression | Tree): string;
 
   // ========== Mathematical function methods ==========
   abs(expr: Expression | Tree): Expression;
