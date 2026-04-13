@@ -80,6 +80,18 @@ export interface EvaluateToConstantOptions {
 }
 
 /**
+ * Options for analytic checks.
+ */
+export interface IsAnalyticOptions {
+  /** Allow abs(x) in analytic checks */
+  allow_abs?: boolean;
+  /** Allow arg(x) in analytic checks */
+  allow_arg?: boolean;
+  /** Allow relation operators in analytic checks */
+  allow_relation?: boolean;
+}
+
+/**
  * Options for simplify method
  */
 export interface SimplifyOptions {
@@ -220,11 +232,6 @@ export interface Expression {
   remove_scaling_units(): Expression;
 
   /**
-   * Simplify integer square roots
-   */
-  simplify_integer_square_roots(): Expression;
-
-  /**
    * Simplify ratios in expression
    * @param assumptions Optional assumptions about variables
    */
@@ -240,15 +247,9 @@ export interface Expression {
   derivative(variable: string, story?: string[]): Expression;
 
   /**
-   * Integrate with respect to a variable (symbolically if possible)
-   * @param variable Variable to integrate with respect to
-   */
-  integrate(variable: string): Expression;
-
-  /**
    * Numerical integration
    */
-  integrateNumerically(): Expression;
+  integrateNumerically(variable: string, lower: number, upper: number): number;
 
   // ========== Expansion and Transformation ==========
 
@@ -359,11 +360,6 @@ export interface Expression {
   subscripts_to_strings(force?: boolean): Expression;
 
   /**
-   * Normalize subscripts to strings
-   */
-  subscripts_to_strings(): Expression;
-
-  /**
    * Convert strings to subscripts
    */
   strings_to_subscripts(): Expression;
@@ -382,11 +378,6 @@ export interface Expression {
    * Convert alternative vectors to vectors
    */
   altvectors_to_vectors(): Expression;
-
-  /**
-   * Convert log subscripts to two-argument log
-   */
-  log_subscript_to_two_arg_log(): Expression;
 
   /**
    * Substitute abs function
@@ -455,22 +446,7 @@ export interface Expression {
    */
   common_denominator(): Expression;
 
-  /**
-   * Get the numerator of a rational expression
-   */
-  get_numerator(): Expression;
-
-  /**
-   * Get the denominator of a rational expression
-   */
-  get_denominator(): Expression;
-
   // ========== Matrix operations ==========
-
-  /**
-   * Create a matrix from expression
-   */
-  matrix(): Expression;
 
   /**
    * Vector addition
@@ -485,12 +461,6 @@ export interface Expression {
   vector_sub(other: Expression | Tree): Expression;
 
   /**
-   * Scalar multiplication
-   * @param scalar Scalar value
-   */
-  scalar_mul(scalar: number): Expression;
-
-  /**
    * Dot product
    * @param other Vector for dot product
    */
@@ -501,13 +471,6 @@ export interface Expression {
    * @param other Vector for cross product
    */
   cross_prod(other: Expression | Tree): Expression;
-
-  // ========== Sets operations ==========
-
-  /**
-   * Create discrete infinite set from expression
-   */
-  create_discrete_infinite_set(): Expression;
 
   // ========== Inspection methods (return other types) ==========
 
@@ -591,21 +554,19 @@ export interface Expression {
 
   /**
    * Check if expression is analytic (has no discontinuities)
-   * @param variables Variables to check analyticity over
+   * @param options Analytic check options
    */
-  isAnalytic(variables?: string[]): boolean;
+  isAnalytic(options?: IsAnalyticOptions | string[]): boolean;
 
   /**
    * Match expression against a pattern
    * @param pattern Pattern tree to match against
    * @param allow_permutations Allow reordering of commutative operations
    */
-  match(pattern: Tree, allow_permutations?: boolean): MatchResult | null;
-
-  /**
-   * Check if expression contains a sign error
-   */
-  sign_error(): boolean;
+  match(
+    pattern: Expression | Tree,
+    allow_permutations?: boolean,
+  ): MatchResult | null;
 
   // ========== Formatting methods ==========
 
@@ -640,11 +601,6 @@ export interface Expression {
    * Convert to Guppy representation
    */
   toGuppy(): string;
-
-  /**
-   * Convert to MathJS representation
-   */
-  toMathjs(): any;
 
   /**
    * Serialize to JSON
@@ -833,11 +789,14 @@ export interface Context {
    * @param assumption Assumption object
    * @param exclude_generic Exclude from generic assumptions
    */
-  add_assumption(assumption: {
-    variable?: string;
-    element_of?: string | string[];
-    [key: string]: any;
-  }, exclude_generic?: boolean): void;
+  add_assumption(
+    assumption: {
+      variable?: string;
+      element_of?: string | string[];
+      [key: string]: any;
+    },
+    exclude_generic?: boolean,
+  ): void;
 
   /**
    * Add generic assumption about a variable
@@ -907,94 +866,119 @@ export interface Context {
   // These are the same methods available on Expression instances, but work on Trees directly
 
   // ========== Arithmetic methods ==========
-  add(expr: Tree, other: Expression | Tree): Expression;
-  subtract(expr: Tree, other: Expression | Tree): Expression;
-  multiply(expr: Tree, other: Expression | Tree): Expression;
-  divide(expr: Tree, other: Expression | Tree): Expression;
-  pow(expr: Tree, exponent: Expression | Tree | number): Expression;
-  mod(expr: Tree, other: Expression | Tree): Expression;
-  copy(expr: Tree): Expression;
+  add(expr: Expression | Tree, other: Expression | Tree): Expression;
+  subtract(expr: Expression | Tree, other: Expression | Tree): Expression;
+  multiply(expr: Expression | Tree, other: Expression | Tree): Expression;
+  divide(expr: Expression | Tree, other: Expression | Tree): Expression;
+  pow(
+    expr: Expression | Tree,
+    exponent: Expression | Tree | number,
+  ): Expression;
+  mod(expr: Expression | Tree, other: Expression | Tree): Expression;
+  copy(expr: Expression | Tree): Expression;
 
   // ========== Simplification methods ==========
   simplify(
-    expr: Tree,
+    expr: Expression | Tree,
     assumptions?: Assumptions,
     max_digits?: number,
   ): Expression;
-  simplify_logical(expr: Tree, assumptions?: Assumptions): Expression;
+  simplify_logical(
+    expr: Expression | Tree,
+    assumptions?: Assumptions,
+  ): Expression;
   collect_like_terms_factors(
-    expr: Tree,
+    expr: Expression | Tree,
     assumptions?: Assumptions,
     max_digits?: number,
   ): Expression;
-  clean(expr: Tree): Expression;
-  collapse_unary_minus(expr: Tree): Expression;
+  clean(expr: Expression | Tree): Expression;
+  collapse_unary_minus(expr: Expression | Tree): Expression;
   perform_vector_matrix_additions_scalar_multiplications(
-    expr: Tree,
+    expr: Expression | Tree,
   ): Expression;
-  remove_units(expr: Tree): Expression;
-  add_unit(expr: Tree, unit: Expression | Tree): Expression;
-  remove_scaling_units(expr: Tree): Expression;
-  simplify_integer_square_roots(expr: Tree): Expression;
-  simplify_ratios(expr: Tree, assumptions?: Assumptions): Expression;
+  remove_units(expr: Expression | Tree): Expression;
+  add_unit(expr: Expression | Tree, unit: Expression | Tree): Expression;
+  remove_scaling_units(expr: Expression | Tree): Expression;
+  simplify_ratios(
+    expr: Expression | Tree,
+    assumptions?: Assumptions,
+  ): Expression;
 
   // ========== Differentiation and Integration ==========
-  derivative(expr: Tree, variable: string, story?: string[]): Expression;
-  integrate(expr: Tree, variable: string): Expression;
-  integrateNumerically(expr: Tree): Expression;
+  derivative(
+    expr: Expression | Tree,
+    variable: string,
+    story?: string[],
+  ): Expression;
+  integrateNumerically(
+    expr: Expression,
+    variable: string,
+    lower: number,
+    upper: number,
+  ): number;
 
   // ========== Expansion and Transformation ==========
-  expand(expr: Tree, no_division?: boolean): Expression;
+  expand(expr: Expression | Tree, no_division?: boolean): Expression;
   factor(expr: Tree): Expression;
-  expand_relations(expr: Tree): Expression;
+  expand_relations(expr: Expression | Tree): Expression;
   substitute(
-    expr: Tree,
+    expr: Expression | Tree,
     substitutions: { [variable: string]: Expression | Tree },
   ): Expression;
   substitute_component(
-    expr: Tree,
+    expr: Expression | Tree,
     component: number | number[],
     value: Expression | Tree,
   ): Expression;
-  get_component(expr: Tree, component: number | number[]): Expression;
+  get_component(
+    expr: Expression | Tree,
+    component: number | number[],
+  ): Expression;
   perform_vector_scalar_multiplications(
-    expr: Tree,
+    expr: Expression | Tree,
     include_tuples?: boolean,
   ): Expression;
-  perform_matrix_scalar_multiplications(expr: Tree): Expression;
+  perform_matrix_scalar_multiplications(expr: Expression | Tree): Expression;
   perform_matrix_multiplications(
-    expr: Tree,
+    expr: Expression | Tree,
     include_vectors?: boolean,
     include_tuples?: boolean,
   ): Expression;
 
   // ========== Normalization methods ==========
-  normalize_function_names(expr: Tree): Expression;
-  normalize_applied_functions(expr: Tree): Expression;
-  normalize_negative_numbers(expr: Tree): Expression;
-  normalize_angle_linesegment_arg_order(expr: Tree): Expression;
-  default_order(expr: Tree): Expression;
-  constants_to_floats(expr: Tree): Expression;
-  log_subscript_to_two_arg_log(expr: Tree): Expression;
-  subscripts_to_strings(expr: Tree, force?: boolean): Expression;
-  strings_to_subscripts(expr: Tree): Expression;
-  tuples_to_vectors(expr: Tree): Expression;
-  to_intervals(expr: Tree): Expression;
-  altvectors_to_vectors(expr: Tree): Expression;
-  substitute_abs(expr: Tree): Expression;
+  normalize_function_names(expr: Expression | Tree): Expression;
+  normalize_applied_functions(expr: Expression | Tree): Expression;
+  normalize_negative_numbers(expr: Expression | Tree): Expression;
+  normalize_angle_linesegment_arg_order(expr: Expression | Tree): Expression;
+  default_order(expr: Expression | Tree): Expression;
+  constants_to_floats(expr: Expression | Tree): Expression;
+  log_subscript_to_two_arg_log(expr: Expression | Tree): Expression;
+  subscripts_to_strings(expr: Expression | Tree, force?: boolean): Expression;
+  strings_to_subscripts(expr: Expression | Tree): Expression;
+  tuples_to_vectors(expr: Expression | Tree): Expression;
+  to_intervals(expr: Expression | Tree): Expression;
+  altvectors_to_vectors(expr: Expression | Tree): Expression;
+  substitute_abs(expr: Expression | Tree): Expression;
 
   // ========== Rounding methods ==========
-  round_numbers_to_precision(expr: Tree, precision: number): Expression;
-  round_numbers_to_decimals(expr: Tree, decimals: number): Expression;
+  round_numbers_to_precision(
+    expr: Expression | Tree,
+    precision: number,
+  ): Expression;
+  round_numbers_to_decimals(
+    expr: Expression | Tree,
+    decimals: number,
+  ): Expression;
   round_numbers_to_precision_plus_decimals(
-    expr: Tree,
+    expr: Expression | Tree,
     precision: number,
     decimals: number,
   ): Expression;
 
   // ========== Number evaluation ==========
   evaluate_numbers(
-    expr: Tree,
+    expr: Expression | Tree,
     options?: {
       max_digits?: number;
       skip_ordering?: boolean;
@@ -1003,121 +987,122 @@ export interface Context {
       assumptions?: Assumptions;
     },
   ): Expression;
-  set_small_zero(expr: Tree, tolerance?: number): Expression;
+  set_small_zero(expr: Expression | Tree, tolerance?: number): Expression;
 
   // ========== Solve and Rational methods ==========
-  solve_linear(expr: Tree, variable: string): Expression;
-  reduce_rational(expr: Tree): Expression;
-  common_denominator(expr: Tree): Expression;
-  get_numerator(expr: Tree): Expression;
-  get_denominator(expr: Tree): Expression;
-
+  solve_linear(expr: Expression | Tree, variable: string): Expression;
+  reduce_rational(expr: Expression | Tree): Expression;
+  common_denominator(expr: Expression | Tree): Expression;
   // ========== Matrix operations ==========
-  matrix(expr: Tree): Expression;
-  vector_add(expr: Tree, other: Expression | Tree): Expression;
-  vector_sub(expr: Tree, other: Expression | Tree): Expression;
-  scalar_mul(expr: Tree, scalar: number): Expression;
-  dot_prod(expr: Tree, other: Expression | Tree): Expression;
-  cross_prod(expr: Tree, other: Expression | Tree): Expression;
+  matrix(entries: Expression[][]): Expression;
+  vector_add(expr: Expression | Tree, other: Expression | Tree): Expression;
+  vector_sub(expr: Expression | Tree, other: Expression | Tree): Expression;
+  scalar_mul(
+    scalar: number | Expression | Tree,
+    vector: Expression | Tree,
+  ): Expression;
+  dot_prod(expr: Expression | Tree, other: Expression | Tree): Expression;
+  cross_prod(expr: Expression | Tree, other: Expression | Tree): Expression;
 
   // ========== Sets operations ==========
-  create_discrete_infinite_set(expr: Tree): Expression;
+  create_discrete_infinite_set(params?: {
+    offsets?: Expression | Tree;
+    periods?: Expression | Tree;
+    min_index?: Expression | Tree;
+    max_index?: Expression | Tree;
+  }): Expression;
 
   // ========== Inspection methods ==========
-  variables(expr: Tree, include_subscripts?: boolean): string[];
-  operators(expr: Tree): string[];
-  functions(expr: Tree): string[];
-  equals(
-    expr: Tree,
-    other: Expression | Tree,
-    options?: EqualsOptions,
-  ): boolean;
+  variables(expr: Expression | Tree, include_subscripts?: boolean): string[];
+  operators(expr: Expression | Tree): string[];
+  functions(expr: Expression | Tree): string[];
+  equals(expr: Expression, other: Expression, options?: EqualsOptions): boolean;
   equalsViaSyntax(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaComplex(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaReal(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
   equalsViaFiniteField(
-    expr: Tree,
-    other: Expression | Tree,
+    expr: Expression,
+    other: Expression,
     options?: EqualsOptions,
   ): boolean;
-  f(expr: Tree): (bindings: Bindings) => number | Complex;
-  evaluate(expr: Tree, bindings: Bindings): number | Complex;
+  f(expr: Expression | Tree): (bindings: Bindings) => number | Complex;
+  evaluate(expr: Expression | Tree, bindings: Bindings): number | Complex;
   finite_field_evaluate(
-    expr: Tree,
+    expr: Expression,
     bindings: Bindings,
     modulus: number,
   ): number;
   evaluate_to_constant(
-    expr: Tree,
+    expr: Expression | Tree,
     options?: EvaluateToConstantOptions,
   ): number | null;
-  isAnalytic(expr: Tree, variables?: string[]): boolean;
+  isAnalytic(
+    expr: Expression | Tree,
+    options?: IsAnalyticOptions | string[],
+  ): boolean;
   match(
-    expr: Tree,
-    pattern: Tree,
+    expr: Expression | Tree,
+    pattern: Expression | Tree,
     allow_permutations?: boolean,
   ): MatchResult | null;
-  sign_error(expr: Tree): boolean;
-
   // ========== Formatting methods ==========
-  toString(expr: Tree, params?: FormatParams): string;
-  toLatex(expr: Tree, params?: FormatParams): string;
-  tex(expr: Tree, params?: FormatParams): string;
-  toXML(expr: Tree): string;
-  toGLSL(expr: Tree): string;
-  toGuppy(expr: Tree): string;
-  toMathjs(expr: Tree): any;
+  toString(expr: Expression | Tree, params?: FormatParams): string;
+  toLatex(expr: Expression | Tree, params?: FormatParams): string;
+  tex(expr: Expression | Tree, params?: FormatParams): string;
+  toXML(expr: Expression | Tree): string;
+  toGLSL(expr: Expression | Tree): string;
+  toGuppy(expr: Expression | Tree): string;
 
   // ========== Mathematical function methods ==========
-  abs(expr: Tree): Expression;
-  exp(expr: Tree): Expression;
-  log(expr: Tree): Expression;
-  log10(expr: Tree): Expression;
-  sign(expr: Tree): Expression;
-  sqrt(expr: Tree): Expression;
-  conj(expr: Tree): Expression;
-  im(expr: Tree): Expression;
-  re(expr: Tree): Expression;
-  factorial(expr: Tree): Expression;
-  gamma(expr: Tree): Expression;
-  erf(expr: Tree): Expression;
-  acos(expr: Tree): Expression;
-  acosh(expr: Tree): Expression;
-  acot(expr: Tree): Expression;
-  acoth(expr: Tree): Expression;
-  acsc(expr: Tree): Expression;
-  acsch(expr: Tree): Expression;
-  asec(expr: Tree): Expression;
-  asech(expr: Tree): Expression;
-  asin(expr: Tree): Expression;
-  asinh(expr: Tree): Expression;
-  atan(expr: Tree): Expression;
-  atanh(expr: Tree): Expression;
-  cos(expr: Tree): Expression;
-  cosh(expr: Tree): Expression;
-  cot(expr: Tree): Expression;
-  coth(expr: Tree): Expression;
-  csc(expr: Tree): Expression;
-  csch(expr: Tree): Expression;
-  sec(expr: Tree): Expression;
-  sech(expr: Tree): Expression;
-  sin(expr: Tree): Expression;
-  sinh(expr: Tree): Expression;
-  tan(expr: Tree): Expression;
-  tanh(expr: Tree): Expression;
-  atan2(expr: Tree, other: Expression | Tree): Expression;
+  abs(expr: Expression | Tree): Expression;
+  exp(expr: Expression | Tree): Expression;
+  log(expr: Expression | Tree): Expression;
+  log10(expr: Expression | Tree): Expression;
+  sign(expr: Expression | Tree): Expression;
+  sqrt(expr: Expression | Tree): Expression;
+  conj(expr: Expression | Tree): Expression;
+  im(expr: Expression | Tree): Expression;
+  re(expr: Expression | Tree): Expression;
+  factorial(expr: Expression | Tree): Expression;
+  gamma(expr: Expression | Tree): Expression;
+  erf(expr: Expression | Tree): Expression;
+  acos(expr: Expression | Tree): Expression;
+  acosh(expr: Expression | Tree): Expression;
+  acot(expr: Expression | Tree): Expression;
+  acoth(expr: Expression | Tree): Expression;
+  acsc(expr: Expression | Tree): Expression;
+  acsch(expr: Expression | Tree): Expression;
+  asec(expr: Expression | Tree): Expression;
+  asech(expr: Expression | Tree): Expression;
+  asin(expr: Expression | Tree): Expression;
+  asinh(expr: Expression | Tree): Expression;
+  atan(expr: Expression | Tree): Expression;
+  atanh(expr: Expression | Tree): Expression;
+  cos(expr: Expression | Tree): Expression;
+  cosh(expr: Expression | Tree): Expression;
+  cot(expr: Expression | Tree): Expression;
+  coth(expr: Expression | Tree): Expression;
+  csc(expr: Expression | Tree): Expression;
+  csch(expr: Expression | Tree): Expression;
+  sec(expr: Expression | Tree): Expression;
+  sech(expr: Expression | Tree): Expression;
+  sin(expr: Expression | Tree): Expression;
+  sinh(expr: Expression | Tree): Expression;
+  tan(expr: Expression | Tree): Expression;
+  tanh(expr: Expression | Tree): Expression;
+  atan2(expr: Expression | Tree, other: Expression | Tree): Expression;
 }
 
 /**
