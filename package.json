@@ -43,7 +43,7 @@
   "dependencies": {
     "@babel/cli": "^7.28.6",
     "babel-upgrade": "^1.0.1",
-    "mathjs": "^15.1.1",
+    "mathjs": "^15.2.0",
     "number-theory": "1.1.0",
     "numeric": "1.2.6",
     "seedrandom": "^3.0.5",
@@ -64,7 +64,7 @@
     "jshint": "^2.13.6",
     "prettier": "^3.8.1",
     "regenerator-runtime": "^0.14.1",
-    "rollup": "^4.57.1",
+    "rollup": "^4.60.1",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "typescript": "^5.9.3"
