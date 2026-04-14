@@ -1,4 +1,5 @@
 import astToText from "../lib/converters/ast-to-text";
+import me from "../lib/math-expressions";
 
 var converter = new astToText();
 
@@ -1131,6 +1132,31 @@ test("pad to digits and decimals", function () {
   );
 
   expect(converter.convert(NaN)).toEqual("NaN");
+});
+
+test("explicit multiplication symbols for factored products", function () {
+  let expr = me.fromText("(x-2)(x-5)");
+
+  expect(expr.toString()).toEqual("(x - 2) (x - 5)");
+  expect(expr.toString({ explicitMultiplicationSymbols: true })).toEqual(
+    "(x - 2)*(x - 5)",
+  );
+});
+
+test("explicit multiplication symbols for coefficient-variable products", function () {
+  let expr = me.fromText("3x");
+
+  expect(expr.toString()).toEqual("3 x");
+  expect(expr.toString({ explicitMultiplicationSymbols: true })).toEqual("3*x");
+});
+
+test("explicit multiplication symbols for nested parenthesized factors", function () {
+  let expr = me.fromText("a(b+c)d");
+
+  expect(expr.toString()).toEqual("a (b + c) d");
+  expect(expr.toString({ explicitMultiplicationSymbols: true })).toEqual(
+    "a*(b + c)*d",
+  );
 });
 
 //
