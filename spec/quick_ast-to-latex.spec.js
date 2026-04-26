@@ -1225,3 +1225,9 @@ test("avoid scientific notation with padding", function () {
 
   expect(converter.convert(123e-14)).toEqual("0.0000000000012300");
 });
+
+test("avoid scientific notation keeps expanded number simple in exponent", function () {
+  let converter = new astToLatex({ avoidScientificNotation: true });
+
+  expect(converter.convert(["^", 123e-14, 2])).toEqual("0.00000000000123^{2}");
+});
