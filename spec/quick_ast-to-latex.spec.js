@@ -1208,3 +1208,20 @@ test("pad to digits and decimals", function () {
 
   expect(converter.convert(NaN)).toEqual("NaN");
 });
+
+test("avoid scientific notation", function () {
+  let converter = new astToLatex({ avoidScientificNotation: true });
+
+  expect(converter.convert(123e28)).toEqual("1230000000000000000000000000000");
+  expect(converter.convert(123e-14)).toEqual("0.00000000000123");
+  expect(converter.convert(123e-28)).toEqual("0.0000000000000000000000000123");
+});
+
+test("avoid scientific notation with padding", function () {
+  let converter = new astToLatex({
+    avoidScientificNotation: true,
+    padToDigits: 5,
+  });
+
+  expect(converter.convert(123e-14)).toEqual("0.0000000000012300");
+});
