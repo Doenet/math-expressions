@@ -1134,6 +1134,39 @@ test("pad to digits and decimals", function () {
   expect(converter.convert(NaN)).toEqual("NaN");
 });
 
+test("avoid scientific notation", function () {
+  let converter = new astToText({ avoidScientificNotation: true });
+
+  expect(converter.convert(123e28)).toEqual("1230000000000000000000000000000");
+  expect(converter.convert(123e-14)).toEqual("0.00000000000123");
+  expect(converter.convert(123e-28)).toEqual("0.0000000000000000000000000123");
+});
+
+test("avoid scientific notation with padding", function () {
+  let converter = new astToText({
+    avoidScientificNotation: true,
+    padToDigits: 5,
+  });
+
+  expect(converter.convert(123e-14)).toEqual("0.0000000000012300");
+});
+
+test("avoid scientific notation with pad to decimals", function () {
+  let converter = new astToText({
+    avoidScientificNotation: true,
+    padToDecimals: 12,
+  });
+
+  expect(converter.convert(1.23e21)).toEqual("1230000000000000000000.000000000000");
+  expect(converter.convert(1.23e-9)).toEqual("0.000000001230");
+});
+
+test("avoid scientific notation keeps expanded number simple in exponent", function () {
+  let converter = new astToText({ avoidScientificNotation: true });
+
+  expect(converter.convert(["^", 123e-14, 2])).toEqual("0.00000000000123^2");
+});
+
 test("explicit multiplication symbols for factored products", function () {
   let expr = me.fromText("(x-2)(x-5)");
 
