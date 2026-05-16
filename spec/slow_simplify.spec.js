@@ -1673,6 +1673,51 @@ describe("roots of powers", function () {
     ).toEqual(me.from("2x cbrt(x)").tree);
     me.clear_assumptions();
   });
+
+  it("pull every reducible factor out of an nth root", function () {
+    me.clear_assumptions();
+    me.add_assumption(me.fromText("a>0 and b>0 and c>0"));
+    // every factor is pulled, even when an earlier factor's reduced
+    // exponent is still greater than 2 (the open range (2, m) trap)
+    expect(me.from("nthroot(a^7 b^6 c^8, 5)").simplify().tree).toEqual(
+      me.from("a b c nthroot(a^2 b c^3, 5)").tree,
+    );
+    expect(me.from("nthroot(a^7 b^6 c^9, 5)").simplify().tree).toEqual(
+      me.from("a b c nthroot(a^2 b c^4, 5)").tree,
+    );
+    // a factor pulled out of the root recombines with a matching
+    // factor that was already outside it
+    expect(me.from("a nthroot(a^7 b^6 c^8, 5)").simplify().tree).toEqual(
+      me.from("a^2 b c nthroot(a^2 b c^3, 5)").tree,
+    );
+    expect(me.from("a^3 nthroot(a^7 b^6 c^8, 5)").simplify().tree).toEqual(
+      me.from("a^4 b c nthroot(a^2 b c^3, 5)").tree,
+    );
+    me.clear_assumptions();
+  });
+
+  it("a factor pulled out of an nth root cancels a matching divisor", function () {
+    me.clear_assumptions();
+    me.add_assumption(me.fromText("a>0 and b>0 and c>0"));
+    // dividing by a factor that gets pulled out: the pulled-out factor
+    // recombines with (and here fully cancels) the divisor
+    expect(me.from("nthroot(a^7 b^6 c^8, 5) / a").simplify().tree).toEqual(
+      me.from("b c nthroot(a^2 b c^3, 5)").tree,
+    );
+    expect(me.from("nthroot(a^7 b^6 c^8, 5) / b").simplify().tree).toEqual(
+      me.from("a c nthroot(a^2 b c^3, 5)").tree,
+    );
+    // multiplying by such a factor raised to a negative exponent behaves
+    // the same as dividing by it
+    expect(me.from("nthroot(a^7 b^6 c^8, 5) a^(-1)").simplify().tree).toEqual(
+      me.from("b c nthroot(a^2 b c^3, 5)").tree,
+    );
+    // a partial cancellation leaves the remaining negative power
+    expect(me.from("nthroot(a^7 b^6 c^8, 5) / a^3").simplify().tree).toEqual(
+      me.from("b c nthroot(a^2 b c^3, 5) / a^2").tree,
+    );
+    me.clear_assumptions();
+  });
 });
 
 describe("expand", function () {
