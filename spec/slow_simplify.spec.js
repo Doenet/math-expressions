@@ -1674,7 +1674,7 @@ describe("roots of powers", function () {
     me.clear_assumptions();
   });
 
-  it("pull every reducible factor out of an nth root", function x() {
+  it("pull every reducible factor out of an nth root", function () {
     me.clear_assumptions();
     me.add_assumption(me.fromText("a>0 and b>0 and c>0"));
     // every factor is pulled, even when an earlier factor's reduced
@@ -1696,7 +1696,7 @@ describe("roots of powers", function () {
     me.clear_assumptions();
   });
 
-  it("a factor pulled out of an nth root cancels a matching divisor", function x() {
+  it("a factor pulled out of an nth root cancels a matching divisor", function () {
     me.clear_assumptions();
     me.add_assumption(me.fromText("a>0 and b>0 and c>0"));
     // dividing by a factor that gets pulled out: the pulled-out factor
