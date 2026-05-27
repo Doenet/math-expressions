@@ -89,26 +89,78 @@ describe("pm strict syntax equality", () => {
   });
 });
 
-describe("pm looser symbolic equality (via .equals + simplify)", () => {
-  test("reordering pm terms is equal after simplification", () => {
+describe("pm symbolic equality (simplify + equalsViaSyntax)", () => {
+  // This block exercises the explicit symbolic path: simplify both sides
+  // first, then strict syntax compare. It pins down which transformations
+  // canonicalize pm expressions to the same tree (the things `default_order`
+  // and the new pm simplify rules cover) — independent of numerical sampling.
+  const same = (a, b) =>
+    me.fromLatex(a).simplify().equalsViaSyntax(me.fromLatex(b).simplify());
+
+  test("reordering pm terms canonicalizes to the same tree", () => {
+    expect(same("5 \\pm 3 \\pm 4", "5 \\pm 4 \\pm 3")).toBe(true);
+    expect(same("a \\pm 2 b", "\\pm 2 b + a")).toBe(true);
+  });
+  test("scaling rule pulls constants inside pm: 2 · ±x → ±(2x)", () => {
+    // After simplify, 2·±b and ±(2b) should land on the same canonical form.
     expect(
-      me.fromLatex("5 \\pm 3 \\pm 4").equals(me.fromLatex("5 \\pm 4 \\pm 3")),
+      me
+        .fromAst(["*", 2, ["pm", "b"]])
+        .simplify()
+        .equalsViaSyntax(me.fromAst(["pm", ["*", 2, "b"]]).simplify()),
     ).toBe(true);
   });
-  test("scaling into pm: 2(a ± b) equals 2a ± 2b", () => {
+  test("negation rule: -(±x) canonicalizes to ±x", () => {
+    expect(
+      me
+        .fromAst(["-", ["pm", "x"]])
+        .simplify()
+        .equalsViaSyntax(me.fromAst(["pm", "x"]).simplify()),
+    ).toBe(true);
+  });
+  test("does NOT canonicalize different pm terms together", () => {
+    // simplification deliberately avoids combining independent pm terms
+    expect(same("5 \\pm 3 \\pm 4", "5 \\pm 7")).toBe(false);
+    expect(same("\\pm 3 + \\pm 3", "2 \\pm 3")).toBe(false);
+  });
+  test("does NOT distribute multiplication over a sum containing pm", () => {
+    // simplify doesn't auto-distribute c·(a + ±b); these stay distinct trees
+    expect(same("2(a \\pm b)", "2 a \\pm 2 b")).toBe(false);
+  });
+  test("does NOT have a pm-of-negative-number rule: ±3 vs ±(-3) stay distinct", () => {
+    // ["pm", -3] and ["pm", 3] denote the same set, but no simplify rule
+    // collapses them — that would require a transformation, not just
+    // ambiguity removal
+    expect(same("5 \\pm 3", "5 \\pm (-3)")).toBe(false);
+  });
+});
+
+describe("pm equality via .equals (orchestrator: simplify+syntax, then numeric)", () => {
+  // `.equals()` is the orchestrator from lib/expression/equality.js. It tries
+  // simplify+equalsViaSyntax first; on miss it falls through to
+  // equalsViaFiniteField and equalsViaComplex (which dispatches to
+  // pm_equals_numerical when pm is present). The tests below succeed on the
+  // numeric leg — simplify alone does NOT canonicalize their trees together
+  // (see the "symbolic" block above for the precise demarcation).
+  test("scaling: 2(a ± b) equals 2a ± 2b via numeric", () => {
     expect(
       me.fromLatex("2(a \\pm b)").equals(me.fromLatex("2 a \\pm 2 b")),
     ).toBe(true);
   });
-  test("pm symmetry: 5 ± 3 equals 5 ± (-3)", () => {
+  test("pm symmetry: 5 ± 3 equals 5 ± (-3) via numeric (same value set)", () => {
     expect(me.fromLatex("5 \\pm 3").equals(me.fromLatex("5 \\pm (-3)"))).toBe(
       true,
     );
   });
+  test("reordering pm terms is equal (succeeds via simplify+syntax already)", () => {
+    expect(
+      me.fromLatex("5 \\pm 3 \\pm 4").equals(me.fromLatex("5 \\pm 4 \\pm 3")),
+    ).toBe(true);
+  });
   test("does NOT combine different pm terms (5 ± 3 ± 4 != 5 ± 7)", () => {
-    expect(me.fromLatex("5 \\pm 3 \\pm 4").equals(me.fromLatex("5 \\pm 7"))).toBe(
-      false,
-    );
+    expect(
+      me.fromLatex("5 \\pm 3 \\pm 4").equals(me.fromLatex("5 \\pm 7")),
+    ).toBe(false);
   });
   test("does NOT combine two ±3 into 2±3", () => {
     expect(
