@@ -138,6 +138,79 @@ describe("pm looser symbolic equality (via .equals + simplify)", () => {
   });
 });
 
+describe("pm inside structural containers (tuples, vectors, relations)", () => {
+  test("tuple component containing pm equals itself", () => {
+    expect(
+      me.fromText("(5 ± 3, 4)").equals(me.fromText("(5 ± 3, 4)")),
+    ).toBe(true);
+  });
+  test("tuple component containing pm respects component order", () => {
+    // tuples are ordered, so swapping components should not be equal
+    expect(
+      me.fromText("(5 ± 3, 4)").equals(me.fromText("(4, 5 ± 3)")),
+    ).toBe(false);
+  });
+  test("tuple with pm in one component and matching non-pm value is not equal", () => {
+    expect(
+      me.fromText("(5 ± 3, 4)").equals(me.fromText("(8, 4)")),
+    ).toBe(false);
+  });
+  test("tuple with pm: reordered pm-bearing component (commutative under pm) still equal", () => {
+    // 5 ± 3 should be set-equal to 3 ± 5 (both yield {8, 2} and {8, -2}? no
+    // actually {3+5, 3-5} = {8, -2} vs {5+3, 5-3} = {8, 2}; not the same set)
+    // so this should be NOT equal
+    expect(
+      me.fromText("(5 ± 3, 4)").equals(me.fromText("(3 ± 5, 4)")),
+    ).toBe(false);
+  });
+  test("vector component containing pm equals itself", () => {
+    expect(
+      me
+        .fromLatex("\\langle 5 \\pm 3, 4 \\rangle")
+        .equals(me.fromLatex("\\langle 5 \\pm 3, 4 \\rangle")),
+    ).toBe(true);
+  });
+  test("equation with pm on one side compares via standard form", () => {
+    // x = 5 ± 3   <=>   x - 5 ∓ 3 = 0
+    // Compare to:  x - 5 = ± 3, whose standard form is x - 5 ∓ 3 = 0.
+    // These represent the same equation set {x = 8, x = 2}.
+    expect(
+      me.fromText("x = 5 ± 3").equals(me.fromText("x - 5 = ± 3")),
+    ).toBe(true);
+  });
+  test("equation with pm: y = 5 ± 3 equals y = 5 ± 3", () => {
+    expect(
+      me.fromText("y = 5 ± 3").equals(me.fromText("y = 5 ± 3")),
+    ).toBe(true);
+  });
+  test("equation with pm: y = 5 ± 3 NOT equal to y = 5 + 3", () => {
+    expect(
+      me.fromText("y = 5 ± 3").equals(me.fromText("y = 8")),
+    ).toBe(false);
+  });
+});
+
+describe("pm with allowed_error_in_numbers tolerance", () => {
+  test("5 ± 3 vs 5.05 ± 3 is true with allowed_error_in_numbers=0.1", () => {
+    expect(
+      me.fromText("5 ± 3").equals(me.fromText("5.05 ± 3"), {
+        allowed_error_in_numbers: 0.1,
+      }),
+    ).toBe(true);
+  });
+  test("5 ± 3 vs 5.05 ± 3 is false without allowed_error_in_numbers", () => {
+    expect(me.fromText("5 ± 3").equals(me.fromText("5.05 ± 3"))).toBe(false);
+  });
+  test("5 ± 3 vs 5.5 ± 3 is false even with allowed_error_in_numbers=0.01", () => {
+    // 0.01 * 5 = 0.05 allowed, but the actual error is 0.5; should fail.
+    expect(
+      me.fromText("5 ± 3").equals(me.fromText("5.5 ± 3"), {
+        allowed_error_in_numbers: 0.01,
+      }),
+    ).toBe(false);
+  });
+});
+
 describe("pm simplification preserves independence", () => {
   test("5 ± 3 ± 4 does not collapse", () => {
     const tree = me.fromLatex("5 \\pm 3 \\pm 4").simplify().tree;
