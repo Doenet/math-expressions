@@ -207,10 +207,10 @@ describe("pm inside structural containers (tuples, vectors, relations)", () => {
       me.fromText("(5 ± 3, 4)").equals(me.fromText("(8, 4)")),
     ).toBe(false);
   });
-  test("tuple with pm: reordered pm-bearing component (commutative under pm) still equal", () => {
-    // 5 ± 3 should be set-equal to 3 ± 5 (both yield {8, 2} and {8, -2}? no
-    // actually {3+5, 3-5} = {8, -2} vs {5+3, 5-3} = {8, 2}; not the same set)
-    // so this should be NOT equal
+  test("tuple with pm: swapping operands inside pm gives a different value set (NOT equal)", () => {
+    // 5 ± 3 has value set {5+3, 5-3} = {8, 2}
+    // 3 ± 5 has value set {3+5, 3-5} = {8, -2}
+    // different sets, so tuples are not equal
     expect(
       me.fromText("(5 ± 3, 4)").equals(me.fromText("(3 ± 5, 4)")),
     ).toBe(false);
@@ -260,6 +260,34 @@ describe("pm with allowed_error_in_numbers tolerance", () => {
         allowed_error_in_numbers: 0.01,
       }),
     ).toBe(false);
+  });
+  test("per-variant tolerance: 5 ± 3 vs 5 ± 3.04 rejects because the − variant is more sensitive", () => {
+    // For `5 ± 3` with allowed_error_in_numbers=0.01, the derivative-based
+    // tolerance differs per sign variant:
+    //   + variant: |1·5 + 1·3| · 0.01 = 0.08  (loose)
+    //   − variant: |1·5 + (-1)·3| · 0.01 = 0.02  (tight)
+    // The literal `3` is perturbed by 0.04 in the comparison expression.
+    //   + variant comparison: |8 - 8.04| = 0.04 ≤ 0.08  ✓
+    //   − variant comparison: |2 - 1.96| = 0.04 ≤ 0.02? NO
+    // Using only the + variant's (looser) tolerance for all variants would
+    // incorrectly accept this; the per-variant tolerance correctly rejects.
+    expect(
+      me.fromText("5 ± 3").equals(me.fromText("5 ± 3.04"), {
+        allowed_error_in_numbers: 0.01,
+      }),
+    ).toBe(false);
+  });
+  test("per-variant tolerance: 5 ± 3 vs 5 ± 3.01 still accepts under both variants", () => {
+    // Same expressions as above, but with a smaller perturbation (0.01).
+    //   + variant: 0.01 ≤ 0.08  ✓
+    //   − variant: 0.01 ≤ 0.02  ✓
+    // Both per-variant tolerances admit this difference, so the comparison
+    // should still return true.
+    expect(
+      me.fromText("5 ± 3").equals(me.fromText("5 ± 3.01"), {
+        allowed_error_in_numbers: 0.01,
+      }),
+    ).toBe(true);
   });
 });
 
