@@ -117,6 +117,17 @@ describe("pm looser symbolic equality (via .equals + simplify)", () => {
   test("pm vs no pm is not equal", () => {
     expect(me.fromLatex("5 \\pm 3").equals(me.fromLatex("5"))).toBe(false);
   });
+  test("function/variable overlap (`f` used as both) is handled with pm", () => {
+    // Exercises the function-variable disambiguation path inside
+    // pm_equals_numerical — `f` appears as both a free variable and an
+    // applied function in the same expression.
+    expect(
+      me.fromText("f(x) + ± f").equals(me.fromText("f(x) + ± f")),
+    ).toBe(true);
+    expect(
+      me.fromText("f(x) + ± f").equals(me.fromText("± f + f(x)")),
+    ).toBe(true);
+  });
 });
 
 describe("pm simplification preserves independence", () => {
