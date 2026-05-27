@@ -35,6 +35,14 @@ describe("pm helpers", () => {
     const variants = expand_pm_signs(["+", 5, ["pm", 3], ["pm", 4]]);
     expect(variants).toHaveLength(4);
   });
+  test("expand_pm_signs throws when count exceeds MAX_PM_COUNT", () => {
+    // Build a tree with 11 pm operators — one over the limit.
+    let tree = "x";
+    for (let i = 0; i < 11; i++) {
+      tree = ["+", tree, ["pm", i]];
+    }
+    expect(() => expand_pm_signs(tree)).toThrow(/plus-minus/);
+  });
 });
 
 describe("pm round-trip via converters", () => {
