@@ -263,6 +263,98 @@ describe("pm with allowed_error_in_numbers tolerance", () => {
   });
 });
 
+describe("pm interaction with expand()", () => {
+  // Distributing a non-pm factor over a sum that contains pm is safe — the
+  // value set is unchanged. Distributing a pm-containing factor over a sum
+  // is unsound, since the original has one ± choice tied to the whole
+  // factor but the distributed form has independent ± per term. expand()
+  // is guarded accordingly. (expand already runs collect_like_terms_factors
+  // internally, so an explicit `.simplify()` after expand is typically a
+  // no-op; we use the simplify+equalsViaSyntax form here when we want to
+  // pin down the canonical shape independent of numeric sampling.)
+
+  test("x(y ± z) distributes to xy ± xz (non-pm factor, pm in sum)", () => {
+    expect(
+      me
+        .fromLatex("x(y \\pm z)")
+        .expand()
+        .equalsViaSyntax(me.fromLatex("x y \\pm x z").simplify()),
+    ).toBe(true);
+  });
+
+  test("\\pm x(y+z) keeps pm outside the distributed sum (±(xy+xz))", () => {
+    // parses as `["pm", x*(y+z)]` — the pm wraps the whole product, so
+    // distribution happens inside the pm and remains a single sign choice
+    const expanded = me.fromLatex("\\pm x(y+z)").expand().tree;
+    expect(expanded[0]).toBe("pm");
+    expect(me.fromAst(expanded).equals(me.fromLatex("\\pm x(y+z)"))).toBe(
+      true,
+    );
+  });
+
+  test("(±x)(y+z) is NOT distributed to ±xy ± ±xz (would inflate value set)", () => {
+    // The unsafe expansion `(±x)(y+z) → (±x)y + (±x)z` would produce two
+    // independent pm operators, changing the value set from 2 to 4. Our
+    // guard prevents that match. The result still equals the input.
+    const original = me.fromAst(["*", ["pm", "x"], ["+", "y", "z"]]);
+    const expanded = original.expand();
+    // The expanded form is mathematically equal to the original (the
+    // numeric path can confirm because the pm count is preserved):
+    expect(original.equals(me.fromAst(expanded.tree))).toBe(true);
+    // It should NOT have become a sum of two independent pm operands
+    // (which would mean two `pm` operators at the top level of a `+`).
+    const sumOfTwoPm =
+      Array.isArray(expanded.tree) &&
+      expanded.tree[0] === "+" &&
+      expanded.tree
+        .slice(1)
+        .filter((t) => Array.isArray(t) && t[0] === "pm").length >= 2;
+    expect(sumOfTwoPm).toBe(false);
+  });
+
+  test("(a+b)^3 with pm in a is left unexpanded (avoids spurious sign combinations)", () => {
+    // (±k+m)^3 = {(k+m)^3, (m-k)^3}  (2 values). Expanded form
+    // ±k^3 + 3k^2 m + ±(3km^2) + m^3 has independent ± in two odd-degree
+    // terms (the squared term is sign-invariant), giving 4 distinct
+    // values — three of which the original cannot produce. So expand
+    // leaves the power alone.
+    const expanded = me.fromLatex("(\\pm k + m)^3").expand().tree;
+    expect(expanded[0]).toBe("^");
+    expect(expanded[2]).toBe(3);
+  });
+
+  test("(a+b)^4 with pm in a is left unexpanded for the same reason", () => {
+    const expanded = me.fromLatex("(\\pm k + m)^4").expand().tree;
+    expect(expanded[0]).toBe("^");
+    expect(expanded[2]).toBe(4);
+  });
+
+  test("non-pm polynomials still expand normally (no regressions)", () => {
+    expect(
+      me
+        .fromLatex("a(b+c)")
+        .expand()
+        .equalsViaSyntax(me.fromLatex("a b + a c").simplify()),
+    ).toBe(true);
+    expect(
+      me
+        .fromLatex("(a+b)(c+d)")
+        .expand()
+        .equalsViaSyntax(
+          me.fromLatex("a c + a d + b c + b d").simplify(),
+        ),
+    ).toBe(true);
+    expect(
+      me
+        .fromLatex("(a+b)^3")
+        .expand()
+        .equalsViaSyntax(
+          me.fromLatex("a^3 + 3 a^2 b + 3 a b^2 + b^3").simplify(),
+        ),
+    ).toBe(true);
+  });
+});
+
 describe("pm simplification preserves independence", () => {
   test("5 ± 3 ± 4 does not collapse", () => {
     const tree = me.fromLatex("5 \\pm 3 \\pm 4").simplify().tree;
