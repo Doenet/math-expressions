@@ -348,6 +348,13 @@ var inputs = [
   ["int x^2 dx", "∫x^2 dx"],
   ["int (x^2+y^2)dxdy", "∫(x^2+y^2)dxdy"],
   ["int dx f(x)", "∫f(x) dx"],
+
+  // plus-minus operator
+  "5 ± 3",
+  "5 ± 3 ± 4",
+  "a + b ± c",
+  ["5 plusminus 3", "5 ± 3"],
+  ["plusminus x", "± x"],
 ];
 
 inputs.forEach(function (input) {
