@@ -181,39 +181,37 @@ describe("pm equality via .equals (orchestrator: simplify+syntax, then numeric)"
     // Exercises the function-variable disambiguation path inside
     // pm_equals_numerical — `f` appears as both a free variable and an
     // applied function in the same expression.
-    expect(
-      me.fromText("f(x) + ± f").equals(me.fromText("f(x) + ± f")),
-    ).toBe(true);
-    expect(
-      me.fromText("f(x) + ± f").equals(me.fromText("± f + f(x)")),
-    ).toBe(true);
+    expect(me.fromText("f(x) + ± f").equals(me.fromText("f(x) + ± f"))).toBe(
+      true,
+    );
+    expect(me.fromText("f(x) + ± f").equals(me.fromText("± f + f(x)"))).toBe(
+      true,
+    );
   });
 });
 
 describe("pm inside structural containers (tuples, vectors, relations)", () => {
   test("tuple component containing pm equals itself", () => {
-    expect(
-      me.fromText("(5 ± 3, 4)").equals(me.fromText("(5 ± 3, 4)")),
-    ).toBe(true);
+    expect(me.fromText("(5 ± 3, 4)").equals(me.fromText("(5 ± 3, 4)"))).toBe(
+      true,
+    );
   });
   test("tuple component containing pm respects component order", () => {
     // tuples are ordered, so swapping components should not be equal
-    expect(
-      me.fromText("(5 ± 3, 4)").equals(me.fromText("(4, 5 ± 3)")),
-    ).toBe(false);
+    expect(me.fromText("(5 ± 3, 4)").equals(me.fromText("(4, 5 ± 3)"))).toBe(
+      false,
+    );
   });
   test("tuple with pm in one component and matching non-pm value is not equal", () => {
-    expect(
-      me.fromText("(5 ± 3, 4)").equals(me.fromText("(8, 4)")),
-    ).toBe(false);
+    expect(me.fromText("(5 ± 3, 4)").equals(me.fromText("(8, 4)"))).toBe(false);
   });
   test("tuple with pm: swapping operands inside pm gives a different value set (NOT equal)", () => {
     // 5 ± 3 has value set {5+3, 5-3} = {8, 2}
     // 3 ± 5 has value set {3+5, 3-5} = {8, -2}
     // different sets, so tuples are not equal
-    expect(
-      me.fromText("(5 ± 3, 4)").equals(me.fromText("(3 ± 5, 4)")),
-    ).toBe(false);
+    expect(me.fromText("(5 ± 3, 4)").equals(me.fromText("(3 ± 5, 4)"))).toBe(
+      false,
+    );
   });
   test("vector component containing pm equals itself", () => {
     expect(
@@ -226,19 +224,17 @@ describe("pm inside structural containers (tuples, vectors, relations)", () => {
     // x = 5 ± 3   <=>   x - 5 ∓ 3 = 0
     // Compare to:  x - 5 = ± 3, whose standard form is x - 5 ∓ 3 = 0.
     // These represent the same equation set {x = 8, x = 2}.
-    expect(
-      me.fromText("x = 5 ± 3").equals(me.fromText("x - 5 = ± 3")),
-    ).toBe(true);
+    expect(me.fromText("x = 5 ± 3").equals(me.fromText("x - 5 = ± 3"))).toBe(
+      true,
+    );
   });
   test("equation with pm: y = 5 ± 3 equals y = 5 ± 3", () => {
-    expect(
-      me.fromText("y = 5 ± 3").equals(me.fromText("y = 5 ± 3")),
-    ).toBe(true);
+    expect(me.fromText("y = 5 ± 3").equals(me.fromText("y = 5 ± 3"))).toBe(
+      true,
+    );
   });
   test("equation with pm: y = 5 ± 3 NOT equal to y = 5 + 3", () => {
-    expect(
-      me.fromText("y = 5 ± 3").equals(me.fromText("y = 8")),
-    ).toBe(false);
+    expect(me.fromText("y = 5 ± 3").equals(me.fromText("y = 8"))).toBe(false);
   });
 });
 
@@ -289,6 +285,26 @@ describe("pm with allowed_error_in_numbers tolerance", () => {
       }),
     ).toBe(true);
   });
+  test("matching is order-independent: 95 ± 5 vs 95 ± (-4) with allowed_error 0.1", () => {
+    // 95 ± 5 → {100, 90} (per-variant tolerances ≈ {10, 9});
+    // 95 ± (-4) → {91, 99} (no tolerance, RHS).
+    // The only valid one-to-one pairing is 100↔99 and 90↔91; a greedy
+    // first-fit would instead pair 100↔91 and then fail on 90↔99. The
+    // bipartite matching must find the valid pairing regardless of order.
+    expect(
+      me
+        .fromAst(["+", 95, ["pm", 5]])
+        .equals(me.fromAst(["+", 95, ["pm", -4]]), {
+          allowed_error_in_numbers: 0.1,
+        }),
+    ).toBe(true);
+    // Without the allowed error the value sets genuinely differ.
+    expect(
+      me
+        .fromAst(["+", 95, ["pm", 5]])
+        .equals(me.fromAst(["+", 95, ["pm", -4]])),
+    ).toBe(false);
+  });
 });
 
 describe("pm interaction with expand()", () => {
@@ -315,9 +331,7 @@ describe("pm interaction with expand()", () => {
     // distribution happens inside the pm and remains a single sign choice
     const expanded = me.fromLatex("\\pm x(y+z)").expand().tree;
     expect(expanded[0]).toBe("pm");
-    expect(me.fromAst(expanded).equals(me.fromLatex("\\pm x(y+z)"))).toBe(
-      true,
-    );
+    expect(me.fromAst(expanded).equals(me.fromLatex("\\pm x(y+z)"))).toBe(true);
   });
 
   test("(±x)(y+z) is NOT distributed to ±xy ± ±xz (would inflate value set)", () => {
@@ -334,9 +348,8 @@ describe("pm interaction with expand()", () => {
     const sumOfTwoPm =
       Array.isArray(expanded.tree) &&
       expanded.tree[0] === "+" &&
-      expanded.tree
-        .slice(1)
-        .filter((t) => Array.isArray(t) && t[0] === "pm").length >= 2;
+      expanded.tree.slice(1).filter((t) => Array.isArray(t) && t[0] === "pm")
+        .length >= 2;
     expect(sumOfTwoPm).toBe(false);
   });
 
@@ -368,9 +381,7 @@ describe("pm interaction with expand()", () => {
       me
         .fromLatex("(a+b)(c+d)")
         .expand()
-        .equalsViaSyntax(
-          me.fromLatex("a c + a d + b c + b d").simplify(),
-        ),
+        .equalsViaSyntax(me.fromLatex("a c + a d + b c + b d").simplify()),
     ).toBe(true);
     expect(
       me
@@ -396,10 +407,7 @@ describe("pm simplification preserves independence", () => {
     expect(tree.slice(1)).toHaveLength(3);
   });
   test("-(±x) absorbs to ±x", () => {
-    expect(me.fromAst(["-", ["pm", "x"]]).simplify().tree).toEqual([
-      "pm",
-      "x",
-    ]);
+    expect(me.fromAst(["-", ["pm", "x"]]).simplify().tree).toEqual(["pm", "x"]);
   });
   test("±x · ±x does NOT combine into (±x)^2 (independent factors)", () => {
     // (±x)·(±x) has value set {x², -x²}; (±x)² has only {x²}. The
