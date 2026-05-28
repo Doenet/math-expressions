@@ -1032,6 +1032,11 @@ const objectsToTest = [
     ast: ["*", "y", ["unit", "x", "deg"]],
     text: "y (x deg)",
   },
+
+  // plus-minus operator (unicode output)
+  { ast: ["pm", 3], text: "± 3" },
+  { ast: ["+", 5, ["pm", 3]], text: "5 ± 3" },
+  { ast: ["+", 5, ["pm", 3], ["pm", 4]], text: "5 ± 3 ± 4" },
 ];
 
 for (let objectToTest of objectsToTest) {
@@ -1039,6 +1044,15 @@ for (let objectToTest of objectsToTest) {
     expect(converter.convert(objectToTest.ast)).toEqual(objectToTest.text);
   });
 }
+
+test("plus-minus operator (ascii output)", function () {
+  let asciiConverter = new astToText({ output_unicode: false });
+  expect(asciiConverter.convert(["pm", 3])).toEqual("plusminus 3");
+  expect(asciiConverter.convert(["+", 5, ["pm", 3]])).toEqual("5 plusminus 3");
+  expect(asciiConverter.convert(["+", 5, ["pm", 3], ["pm", 4]])).toEqual(
+    "5 plusminus 3 plusminus 4",
+  );
+});
 
 test("pad to digits", function () {
   let converter = new astToText({ padToDigits: 5 });

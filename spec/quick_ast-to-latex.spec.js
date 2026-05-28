@@ -1095,6 +1095,15 @@ const objectsToTest = [
     ast: ["*", "y", ["unit", "x", "deg"]],
     latex: "y \\left(x^{\\circ}\\right)",
   },
+
+  // plus-minus operator
+  { ast: ["pm", 3], latex: "\\pm 3" },
+  { ast: ["pm", "x"], latex: "\\pm x" },
+  { ast: ["+", 5, ["pm", 3]], latex: "5 \\pm 3" },
+  { ast: ["+", 5, ["pm", 3], ["pm", 4]], latex: "5 \\pm 3 \\pm 4" },
+  { ast: ["+", "a", ["pm", "b"]], latex: "a \\pm b" },
+  { ast: ["-", ["+", 5, ["pm", 3]]], latex: "-\\left(5 \\pm 3\\right)" },
+  { ast: ["*", 2, ["+", 5, ["pm", 3]]], latex: "2 \\left(5 \\pm 3\\right)" },
 ];
 
 for (let objectToTest of objectsToTest) {

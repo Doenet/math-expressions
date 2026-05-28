@@ -706,6 +706,16 @@ var trees = {
   "$x%": ["unit", "$", ["unit", "x", "%"]],
   "%x$": ["*", "%", "x", "$"],
   "x%y$z": ["*", ["unit", "x", "%"], "y", ["unit", "$", "z"]],
+
+  // plus-minus operator
+  "5 ± 3": ["+", 5, ["pm", 3]],
+  "± 3": ["pm", 3],
+  "5 ± 3 ± 4": ["+", 5, ["pm", 3], ["pm", 4]],
+  "a + b ± c": ["+", "a", "b", ["pm", "c"]],
+  "5 plusminus 3": ["+", 5, ["pm", 3]],
+  "plusminus 3": ["pm", 3],
+  "a plusminus b plusminus c": ["+", "a", ["pm", "b"], ["pm", "c"]],
+  "-(5 ± 3)": ["-", ["+", 5, ["pm", 3]]],
 };
 
 Object.keys(trees).forEach(function (string) {

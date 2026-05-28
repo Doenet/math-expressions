@@ -389,6 +389,12 @@ var inputs = [
   ["\\int x^2 dx", "\\int x^{2} dx"],
   ["\\int (x^2+y^2)dxdy", "\\int (x^{2}+y^{2})dxdy"],
   ["\\int dx f(x)", "\\int f(x) dx"],
+
+  // plus-minus operator
+  "5 \\pm 3",
+  "\\pm x",
+  "5 \\pm 3 \\pm 4",
+  "a + b \\pm c",
 ];
 
 function clean(text) {
