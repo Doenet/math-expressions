@@ -236,6 +236,23 @@ describe("pm inside structural containers (tuples, vectors, relations)", () => {
   test("equation with pm: y = 5 ± 3 NOT equal to y = 5 + 3", () => {
     expect(me.fromText("y = 5 ± 3").equals(me.fromText("y = 8"))).toBe(false);
   });
+  test("pm equation comparison is proportional: x = 5 ± 3 equals 2x = 10 ± 6", () => {
+    // Both have solution set {2, 8}. The pm `=` path compares the products of
+    // the sign-expansion branches up to a scalar factor (here 1/2), recovering
+    // the scaling invariance the non-pm `=` path has.
+    expect(me.fromText("x = 5 ± 3").equals(me.fromText("2x = 10 ± 6"))).toBe(
+      true,
+    );
+    expect(me.fromText("x = 5 ± 3").equals(me.fromText("3x = 15 ± 9"))).toBe(
+      true,
+    );
+  });
+  test("pm equation: scaling the equation but changing solutions is NOT equal", () => {
+    // 2x = 10 ± 4 has solutions {3, 7}, not {2, 8}, so not equal to x = 5 ± 3
+    expect(me.fromText("x = 5 ± 3").equals(me.fromText("2x = 10 ± 4"))).toBe(
+      false,
+    );
+  });
 });
 
 describe("pm with allowed_error_in_numbers tolerance", () => {
