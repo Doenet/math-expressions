@@ -401,4 +401,23 @@ describe("pm simplification preserves independence", () => {
       "x",
     ]);
   });
+  test("±x · ±x does NOT combine into (±x)^2 (independent factors)", () => {
+    // (±x)·(±x) has value set {x², -x²}; (±x)² has only {x²}. The
+    // multiplicative power-combining rule must not merge independent pm
+    // bases (mirrors the additive like-term guard).
+    const tree = me.fromAst(["*", ["pm", "x"], ["pm", "x"]]).simplify().tree;
+    expect(tree).toEqual(["*", ["pm", "x"], ["pm", "x"]]);
+    // and the numeric leg agrees the two forms are genuinely different
+    expect(
+      me
+        .fromAst(["*", ["pm", "x"], ["pm", "x"]])
+        .equalsViaComplex(me.fromAst(["^", ["pm", "x"], 2])),
+    ).toBe(false);
+  });
+  test("±x · ±x · ±x does NOT combine into (±x)^3", () => {
+    const tree = me
+      .fromAst(["*", ["pm", "x"], ["pm", "x"], ["pm", "x"]])
+      .simplify().tree;
+    expect(tree).toEqual(["*", ["pm", "x"], ["pm", "x"], ["pm", "x"]]);
+  });
 });
