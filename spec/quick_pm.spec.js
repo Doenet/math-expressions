@@ -253,6 +253,15 @@ describe("pm inside structural containers (tuples, vectors, relations)", () => {
       false,
     );
   });
+  test("pm equation with vacuous ±0 equals the non-pm equation", () => {
+    // x = 5 ± 0 expands to the duplicate branches [x-5, x-5]; deduplicating
+    // them collapses the product to (x-5), proportional to x = 5's (x-5).
+    expect(me.fromText("x = 5 ± 0").equals(me.fromText("x = 5"))).toBe(true);
+  });
+  test("pm equation with vacuous ±0 stays proportional after scaling", () => {
+    // 2x = 10 ± 0 dedups to (2x-10), proportional to x = 5's (x-5) by 2.
+    expect(me.fromText("2x = 10 ± 0").equals(me.fromText("x = 5"))).toBe(true);
+  });
 });
 
 describe("pm with allowed_error_in_numbers tolerance", () => {
@@ -385,6 +394,19 @@ describe("pm interaction with expand()", () => {
     const expanded = me.fromLatex("(\\pm k + m)^4").expand().tree;
     expect(expanded[0]).toBe("^");
     expect(expanded[2]).toBe(4);
+  });
+
+  test("(m + (n ± x))^2 with composite pm operand is left unexpanded", () => {
+    // Squaring is sign-invariant only for a *bare* ±k. For a composite pm
+    // operand the (n ± x) subtree would be duplicated into the squared term
+    // (n±x)^2 and the cross term 2m(n±x), making those sign choices
+    // independent and inflating the value set. The (a+b)^2 rule is guarded
+    // against pm, so the power is left alone and stays numerically equal.
+    const original = me.fromText("(m + (n ± x))^2");
+    const expanded = original.expand();
+    expect(expanded.tree[0]).toBe("^");
+    expect(expanded.tree[2]).toBe(2);
+    expect(original.equals(expanded)).toBe(true);
   });
 
   test("non-pm polynomials still expand normally (no regressions)", () => {
