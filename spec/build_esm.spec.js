@@ -1,13 +1,17 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BUILD_PATH = path.resolve(__dirname, "../build/math-expressions.js");
 
 const buildExists = fs.existsSync(BUILD_PATH);
 
-// Node.js 22+ supports require() of ES modules
-const lib = buildExists ? require(BUILD_PATH) : null;
-const ME = lib?.default;
+let ME, lib;
+if (buildExists) {
+    lib = await import(/* @vite-ignore */ BUILD_PATH);
+    ME = lib?.default;
+}
 
 describe("ESM build", () => {
     if (!buildExists) {
