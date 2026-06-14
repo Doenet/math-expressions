@@ -4,7 +4,25 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["spec/**/*.spec.js"],
+    projects: [
+      {
+        test: {
+          name: "quick",
+          globals: true,
+          environment: "node",
+          include: ["spec/quick_*.spec.js", "spec/build_*.spec.js"],
+        },
+      },
+      {
+        test: {
+          name: "slow",
+          globals: true,
+          environment: "node",
+          include: ["spec/slow_*.spec.js"],
+          testTimeout: 60000,
+        },
+      },
+    ],
   },
   build: {
     outDir: "build",
