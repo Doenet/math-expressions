@@ -1,6 +1,11 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  test: {
+    globals: true,
+    environment: "node",
+    include: ["spec/**/*.spec.js"],
+  },
   build: {
     outDir: "build",
     lib: {

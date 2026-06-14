@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 import vm from "vm";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BUILD_PATH = path.resolve(__dirname, "../build/math-expressions_umd.js");
 
 const buildExists = fs.existsSync(BUILD_PATH);
