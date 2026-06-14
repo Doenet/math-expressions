@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default defineConfig({
+  plugins: [visualizer({ filename: "build/stats.html", gzipSize: true })],
   test: {
     globals: true,
     environment: "node",
