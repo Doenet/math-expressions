@@ -89,6 +89,10 @@ The current algorithm randomly samples the two expressions in a neighborhood of 
 
 Symbolically differentiate `expression` with respect to the given `variable`. For example, if `f` is `MathExpression.fromText('x^10')`, then `f.derivative('x')` is `10 x^9`.
 
+# Development
+
+Suggested development happens inside the dev container. Open the repository in VS Code and choose **Reopen in Container** to get a pre-configured environment with the correct Node.js and Rust versions.
+
 # Tests
 
 Assuming you have `git clone`ed the repository and `npm install`ed to

@@ -12,3 +12,5 @@ components
 bower_components
 
 .vscode
+tmp/
+build/stats.html
