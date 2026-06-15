@@ -9,7 +9,8 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "build": "vite build && npm run build:types",
+    "build": "vite build && npm run build:externalized_mathjs && npm run build:types",
+    "build:externalized_mathjs": "vite build --config vite.config.externalized_mathjs.js",
     "build:types": "cp index.d.ts build/index.d.ts",
     "test:watch": "vitest --reporter=verbose",
     "test": "vitest run --reporter=verbose spec/quick_",
@@ -51,6 +52,8 @@
     "xml-parser": "1.2.1"
   },
   "devDependencies": {
+    "@types/seedrandom": "^3.0.8",
+    "@types/underscore": "^1.13.0",
     "jshint": "^2.13.6",
     "prettier": "^3.8.1",
     "rollup-plugin-visualizer": "^7.0.1",

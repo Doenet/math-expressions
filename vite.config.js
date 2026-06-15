@@ -28,6 +28,7 @@ export default defineConfig({
   },
   build: {
     outDir: "build",
+    emptyOutDir: false,
     lib: {
       entry: "lib/math-expressions.js",
       name: "MathExpression",
