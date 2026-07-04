@@ -9,11 +9,11 @@
     "url": "http://kisonecat.com/"
   },
   "scripts": {
-    "build": "rollup -c && npm run build:types",
+    "build": "vite build && npm run build:types",
     "build:types": "cp index.d.ts build/index.d.ts",
-    "test:watch": "jest --watch",
-    "test": "jest quick_",
-    "test:all": "jest",
+    "test:watch": "vitest --reporter=verbose",
+    "test": "vitest run --reporter=verbose spec/quick_",
+    "test:all": "vitest run",
     "lint": "jshint lib/*.js spec/*.js",
     "prettier:format": "prettier --write .",
     "prettier:check": "prettier --check .",
@@ -41,8 +41,6 @@
   },
   "private": false,
   "dependencies": {
-    "@babel/cli": "^7.28.6",
-    "babel-upgrade": "^1.0.1",
     "mathjs": "^15.2.0",
     "number-theory": "1.1.0",
     "numeric": "1.2.6",
@@ -50,30 +48,11 @@
     "xml-parser": "1.2.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.28.6",
-    "@babel/core": "^7.29.0",
-    "@babel/node": "^7.29.0",
-    "@babel/preset-env": "^7.29.0",
-    "@rollup/plugin-commonjs": "^29.0.0",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "babel-core": "^7.0.0-bridge.0",
-    "babel-jest": "^30.2.0",
-    "babel-loader": "^10.0.0",
-    "jest": "^30.2.0",
     "jshint": "^2.13.6",
     "prettier": "^3.8.1",
-    "regenerator-runtime": "^0.14.1",
-    "rollup": "^4.60.1",
-    "rollup-plugin-node-builtins": "^2.1.2",
-    "rollup-plugin-polyfill-node": "^0.13.0",
-    "typescript": "^5.9.3"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "setupFilesAfterEnv": [
-      "./spec/setup.js"
-    ]
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }
