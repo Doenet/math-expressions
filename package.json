@@ -39,6 +39,9 @@
       }
     }
   },
+  "sideEffects": [
+    "./lib/math-expressions.js"
+  ],
   "private": false,
   "dependencies": {
     "mathjs": "^15.2.0",
@@ -50,6 +53,7 @@
   "devDependencies": {
     "jshint": "^2.13.6",
     "prettier": "^3.8.1",
+    "rollup-plugin-visualizer": "^7.0.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"
