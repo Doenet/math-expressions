@@ -1,0 +1,4 @@
+[workspace]
+members = ["math-expressions-rs"]
+default-members = ["math-expressions-rs"]
+resolver = "2"
