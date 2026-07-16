@@ -5,6 +5,27 @@
 use crate::expr::{Expr, MathConst};
 use crate::sym::Sym;
 
+/// Maximum recursion budget for the parsers (PORTING_PLAN.md §6e). Counts
+/// frames through the self-recursive functions (`statement`, `relation`,
+/// `expression`, `factor`, `base_factor`) — the ones untrusted input can
+/// drive to unbounded stack depth via nesting (`((…))`) or prefix chains
+/// (`----x`, `!!!!x`). `statement` must be in the set: its bar-fallback
+/// catches errors, rewinds, and re-descends, so budget freed by the failed
+/// descent's unwind would otherwise be re-spent each retry; `statement`'s
+/// own increment is held across both attempts and bounds the total.
+///
+/// Sizing (measured, debug native): recursive descent costs ~4 budget units
+/// and ~40 KB of stack per bracket level. A 1 MB stack overflows near 25
+/// bracket levels in debug and ~60 in release; this cap fires at ~16 levels,
+/// which fits 1 MB in *both* profiles with margin. The entire fixture corpus
+/// nests at most 2 deep, so ~16 is ~8× real educational input. Deeper input
+/// yields a "too deeply nested" `ParseError`, never a stack-overflow trap
+/// (which on wasm32 kills the whole instance).
+///
+/// Lower than serde_json's 128 because our per-level frame is ~4× heavier;
+/// the real fix for a higher ceiling is an iterative parser (deferred, §6e).
+pub const MAX_PARSE_DEPTH: usize = 64;
+
 /// Parse-time parameters, mirroring the JS options objects that are
 /// re-destructured with defaults at every call site.
 #[derive(Debug, Clone, Copy)]

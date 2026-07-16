@@ -8,7 +8,8 @@
 //! brace-based Leibniz notation, and the `\circ` exponent unit.
 
 use super::common::{
-    atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string, P,
+    atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string,
+    MAX_PARSE_DEPTH, P,
 };
 use super::error::ParseError;
 use super::lexer::{Lexer, LexerState, Tok, Token};
@@ -132,6 +133,8 @@ pub struct LatexToAst {
     applied_functions: HashSet<String>,
     functions: HashSet<String>,
     allowed_symbols: HashSet<String>,
+    /// Recursion depth through the self-recursive parse functions (§6e).
+    depth: usize,
 }
 
 impl LatexToAst {
@@ -148,7 +151,22 @@ impl LatexToAst {
                 text: String::new(),
                 original: String::new(),
             },
+            depth: 0,
         }
+    }
+
+    /// Enter a recursive parse function; errors if the depth budget (§6e) is
+    /// exhausted. Balanced: each `Ok` increment pairs with one `leave`.
+    fn enter(&mut self) -> R<()> {
+        if self.depth >= MAX_PARSE_DEPTH {
+            return Err(self.err("Expression too deeply nested"));
+        }
+        self.depth += 1;
+        Ok(())
+    }
+
+    fn leave(&mut self) {
+        self.depth -= 1;
     }
 
     fn advance(&mut self) -> R<()> {
@@ -187,6 +205,7 @@ impl LatexToAst {
 
     pub fn convert(&mut self, input: &str) -> R<Expr> {
         self.lexer.set_input(input);
+        self.depth = 0;
         self.advance()?;
         let result = self.statement_list()?;
         if self.token.ttype != Tok::Eof {
@@ -209,6 +228,14 @@ impl LatexToAst {
     }
 
     fn statement(&mut self, p: P) -> R<Expr> {
+        // Capped (held across the bar-fallback retry) — see text.rs.
+        self.enter()?;
+        let r = self.statement_inner(p);
+        self.leave();
+        r
+    }
+
+    fn statement_inner(&mut self, p: P) -> R<Expr> {
         if self.token.ttype == Tok::Ldots {
             self.advance()?;
             return Ok(Expr::Ldots);
@@ -314,6 +341,13 @@ impl LatexToAst {
     }
 
     fn relation(&mut self, p: P) -> R<Expr> {
+        self.enter()?;
+        let r = self.relation_inner(p);
+        self.leave();
+        r
+    }
+
+    fn relation_inner(&mut self, p: P) -> R<Expr> {
         if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.relation(p)?)));
@@ -408,6 +442,13 @@ impl LatexToAst {
     }
 
     fn expression(&mut self, p: P) -> R<Expr> {
+        self.enter()?;
+        let r = self.expression_inner(p);
+        self.leave();
+        r
+    }
+
+    fn expression_inner(&mut self, p: P) -> R<Expr> {
         if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.expression(p)?)));
@@ -659,6 +700,13 @@ impl LatexToAst {
     }
 
     fn factor(&mut self, p: P) -> R<Option<Expr>> {
+        self.enter()?;
+        let r = self.factor_inner(p);
+        self.leave();
+        r
+    }
+
+    fn factor_inner(&mut self, p: P) -> R<Option<Expr>> {
         if self.token.text == "+" {
             self.advance()?;
             let f = self.factor(p)?;
@@ -751,6 +799,13 @@ impl LatexToAst {
     }
 
     fn base_factor(&mut self, p: P) -> R<Option<Expr>> {
+        self.enter()?;
+        let r = self.base_factor_inner(p);
+        self.leave();
+        r
+    }
+
+    fn base_factor_inner(&mut self, p: P) -> R<Option<Expr>> {
         if self.token.ttype == Tok::BeginEnvironment {
             return self.matrix_environment(p).map(Some);
         }

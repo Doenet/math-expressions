@@ -16,6 +16,12 @@ use serde_json::{json, Value};
 /// tree shapes the parsers produce (Rat is not reconstructed — a `["/", a, b]`
 /// node becomes `Div`, matching the parser). Panics on malformed input; the
 /// caller (WASM boundary, tests) supplies well-formed trees.
+///
+/// Recursion is not depth-capped here (§6e): the realistic input path is a
+/// JSON string deserialized by `serde_json`, whose own recursion limit (128)
+/// rejects deeply-nested input before a `Value` is built, so `from_js` never
+/// sees a tree deep enough to overflow. A hand-constructed `Value` could, but
+/// that is not a user-input vector.
 pub fn from_js(value: &Value) -> Expr {
     match value {
         Value::Number(n) => {

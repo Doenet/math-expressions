@@ -409,8 +409,14 @@ wasm32 has a fixed 1 MB shadow stack; overflow is a trap that kills the instance
 Strategy: **bounded boundary + depth-oblivious core** — a nesting-depth cap at the
 producers (§6e) plus iterative traversals internally. On the `Expr` type itself:
 
-- **Iterative `Drop`** (do first, ~25 lines): dropping a deep tree recurses through
-  the `Box`/`Vec` chain even if every algorithm is iterative. Worklist-drain pattern.
+- **Iterative `Drop`** — deferred, and NOT "~25 lines": implementing `Drop for Expr`
+  triggers **60 E0509 errors** (Rust forbids moving fields out of a `Drop` type, and
+  the codebase move-matches `Expr` pervasively — `match e { Expr::Add(xs) => …xs… }`),
+  so it is a ~60-site `mem::replace` refactor. And it is no longer urgent: the §6e
+  cap bounds *every* producer's tree depth, so recursive `Drop` is bounded too
+  (canonicalize deepens by ≤ a small constant). Revisit only if programmatic
+  deep-tree construction is exposed, or fold into the flat-arena migration (§16),
+  where `Drop` becomes one `Vec` free.
 - **Derived `Clone`/`PartialEq`/`Hash`/`Debug` are recursive** — stage-1 equality is
   derived `PartialEq`, and `eq::opaque_key` currently uses derived `Debug`. Under the
   §6e cap these are bounded (internal passes deepen trees by ≤ a small constant, e.g.
@@ -563,22 +569,41 @@ Two supplementary test sources beyond the extracted data maps:
    parseScientificNotation off, conditional probability) — code paths no data-map
    fixture touches.
 
-### 6e. Nesting-depth cap (planned — STACK_SAFETY_PLAN.md, not yet implemented)
+### 6e. Nesting-depth cap  ✓ done
 
-Both parsers are recursive descent (~13 mutually recursive functions, several frames
-per nesting level) — the deepest stacks in the codebase, driven by untrusted input
-(`((((…))))` at 50 000 deep costs 100 KB of text). Cap nesting depth serde_json-style
-(its default `recursion_limit` is 128): a counter incremented at the ~4 self-nesting
-entry points (`statement`, `bracketed`, `get_subsuperscript`, function-argument
-parsing), erroring "expression too deeply nested" past the limit. Proposed default
-**256** (fixture corpus max depth ≈ 10–15; real educational math is wide, not deep),
-compile-time constant first. `js_tree::from_js` gets the same check — it is the other
-producer (WASM `from_json` boundary).
+Both parsers are recursive descent (deepest stacks in the codebase) driven by
+untrusted input. A shared depth counter (`MAX_PARSE_DEPTH`, `parse/common.rs`) is
+incremented on entry to the self-recursive functions and errors "Expression too
+deeply nested" past the limit. Implementation findings that refined the plan:
 
-Deliberately NOT a pushdown-automaton rewrite: that would destroy the grammar-shaped
-readability that makes the parsers verifiable against the JS, for no user-visible
-benefit once the cap exists. Deep-input tests: 10⁵-deep input → clean `ParseError` on
-both parsers and `from_js`, never a crash.
+- **Which functions to cap**: `statement`, `relation`, `expression`, `factor`,
+  `base_factor` (via thin `enter()?` / `_inner` / `leave()` wrappers). The prefix
+  chains (`----x`, `!!!!x`) recurse in `factor`/`relation`/`expression` *without*
+  passing through `base_factor`, so those must be capped too. `statement` is
+  essential and subtle: its bar-fallback catches the too-deep error, rewinds the
+  lexer, and re-descends via `statement_bar_fallback` — capping `statement` (whose
+  increment is *held* across both attempts) is what bounds nested `|…|`; capping
+  only the descent functions is not enough (they `leave()` on unwind, freeing budget
+  for the retry). Found via a stack-overflow that only `|…|` triggered.
+- **Cap value = 64, not 256**. Measured (debug native): recursive descent costs ~4–5
+  budget units and ~40 KB of stack *per bracket level*; a 1 MB stack overflows near
+  25 bracket levels in debug and ~60 in release. Budget 256 fires above 63 levels —
+  *after* the release stack already overflows, so it never protects. 64 fires at ~12
+  levels: fits 1 MB in both profiles with margin, and is ~6× the whole fixture
+  corpus's max nesting depth (which is **2**). Sized for the release wasm target; the
+  real fix for a higher ceiling is an iterative parser (deferred).
+- **`from_js` is NOT capped**: `serde_json` rejects deeply-nested JSON at
+  deserialization (recursion limit 128), so the realistic `from_json` path never
+  builds a tree deep enough to overflow. Documented on `from_js`. A hand-built
+  `Value` could, but that is not a user-input vector.
+- Deliberately NOT a pushdown-automaton rewrite: it would destroy the grammar-shaped
+  readability that makes the parsers verifiable against the JS, for no benefit once
+  the cap exists.
+
+Tests: `tests/stack_safety.rs` — 10⁵-deep input of every recursion pattern yields a
+`ParseError` (never a crash), reasonable nesting still parses, and a cap-depth tree
+flows through canonicalize/equals/Drop in a 256 KB thread. (Overflow aborts the
+process, so the deep tests run in explicitly-sized threads via `std::thread`.)
 
 ---
 
@@ -666,13 +691,12 @@ the cap composes because it re-checks materialized input sizes; decimal
 exponents beyond ~10^6 digits approximate via f64), which makes the existing
 pipeline polynomial in input size. Agreed follow-ups, in order:
 
-1. **Stack safety** (do before/with Phase 5): deep nesting is a
-   stack-overflow crash — in WASM a trap that kills the instance; the JS
-   library has the same flaw, do not inherit it. Spec: §5b (iterative `Drop`,
-   `fold` driver, derived-impl caveats) + §6e (parser/`from_js` depth cap);
-   full rationale in STACK_SAFETY_PLAN.md. Sequencing: iterative `Drop` →
-   depth cap (closes the crash vector end-to-end) → port passes to the
-   driver one per commit.
+1. **Stack safety** — the crash vector (deep untrusted input → wasm trap) is
+   **closed** by the §6e parser depth cap (done). Remaining items are
+   defense-in-depth, deferred: iterative `Drop` (§5b — 60-site refactor, now
+   bounded by the cap so non-urgent) and the iterative `fold` driver for
+   post-parse passes (§5b — also bounded by the cap; matters only if trees can
+   exceed it via programmatic construction).
 2. **`Limits` context when unpredictable machinery lands** (simplify §7e,
    polynomial GCD §8): `Limits { max_number_bits, max_nodes, fuel }` passed
    into those subsystems, generous defaults. Rewrite-to-convergence loops and
