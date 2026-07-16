@@ -403,6 +403,34 @@ Used by the fixture tests (§6d compare via this mapping), `to_json`/`from_json`
 any JS caller that needs to inspect trees. Everything else in the crate sees only the
 clean `Expr`.
 
+### 5b. Stack safety of `Expr` (planned — STACK_SAFETY_PLAN.md, not yet implemented)
+
+wasm32 has a fixed 1 MB shadow stack; overflow is a trap that kills the instance.
+Strategy: **bounded boundary + depth-oblivious core** — a nesting-depth cap at the
+producers (§6e) plus iterative traversals internally. On the `Expr` type itself:
+
+- **Iterative `Drop`** (do first, ~25 lines): dropping a deep tree recurses through
+  the `Box`/`Vec` chain even if every algorithm is iterative. Worklist-drain pattern.
+- **Derived `Clone`/`PartialEq`/`Hash`/`Debug` are recursive** — stage-1 equality is
+  derived `PartialEq`, and `eq::opaque_key` currently uses derived `Debug`. Under the
+  §6e cap these are bounded (internal passes deepen trees by ≤ a small constant, e.g.
+  `Div → Mul[…, Pow(b,−1)]` adds one level); replace `opaque_key`'s Debug-key
+  regardless, and decide derived-`PartialEq` from frame-size measurements.
+- **Shared iterative `fold` driver** with a `children()` helper and a pre-order
+  `Prune` hook: every post-parse pass (`flatten`, `canonicalize`, `cmp` (paired-stack
+  variant), `eval_complex`/`free_symbols`/`contains_blank`/`coerce_seqs`,
+  `to_js`/`from_js`, both formatters, `convert_units_in_term`) is a genuine
+  post-order fold — the smart constructors already inspect only already-folded
+  children, so they plug into the `exit` callback unchanged. Write the traversal
+  once; port one pass per commit under the existing fixture/round-trip/equality-corpus
+  oracle.
+- **Verification without a wasm harness**: run each pass in a
+  `std::thread::Builder::stack_size(128 * 1024)` thread against a cap-depth tree and
+  a 10⁵-node *wide* tree.
+- Rejected: `stacker` (no wasm32 support — silently doesn't grow); flat-arena
+  representation now (see §16 — natural post-Phase-7 optimisation, the `fold` driver
+  survives that migration).
+
 ---
 
 ## 6. Parsers (`src/parse/`)
@@ -535,6 +563,23 @@ Two supplementary test sources beyond the extracted data maps:
    parseScientificNotation off, conditional probability) — code paths no data-map
    fixture touches.
 
+### 6e. Nesting-depth cap (planned — STACK_SAFETY_PLAN.md, not yet implemented)
+
+Both parsers are recursive descent (~13 mutually recursive functions, several frames
+per nesting level) — the deepest stacks in the codebase, driven by untrusted input
+(`((((…))))` at 50 000 deep costs 100 KB of text). Cap nesting depth serde_json-style
+(its default `recursion_limit` is 128): a counter incremented at the ~4 self-nesting
+entry points (`statement`, `bracketed`, `get_subsuperscript`, function-argument
+parsing), erroring "expression too deeply nested" past the limit. Proposed default
+**256** (fixture corpus max depth ≈ 10–15; real educational math is wide, not deep),
+compile-time constant first. `js_tree::from_js` gets the same check — it is the other
+producer (WASM `from_json` boundary).
+
+Deliberately NOT a pushdown-automaton rewrite: that would destroy the grammar-shaped
+readability that makes the parsers verifiable against the JS, for no user-visible
+benefit once the cap exists. Deep-input tests: 10⁵-deep input → clean `ParseError` on
+both parsers and `from_js`, never a crash.
+
 ---
 
 ## 7. Normalisation (`src/norm/`)
@@ -621,12 +666,13 @@ the cap composes because it re-checks materialized input sizes; decimal
 exponents beyond ~10^6 digits approximate via f64), which makes the existing
 pipeline polynomial in input size. Agreed follow-ups, in order:
 
-1. **Parser depth limit** (do before/with Phase 5): the parsers,
-   `canonicalize`, `cmp`, and `eval_complex` all recurse along the tree, so
-   deep nesting (`((((…))))`) is a stack-overflow crash — in WASM a trap that
-   kills the instance. One depth counter in the parsers ("expression too
-   deeply nested" ParseError) bounds every downstream pass. The JS library
-   has the same flaw; do not inherit it.
+1. **Stack safety** (do before/with Phase 5): deep nesting is a
+   stack-overflow crash — in WASM a trap that kills the instance; the JS
+   library has the same flaw, do not inherit it. Spec: §5b (iterative `Drop`,
+   `fold` driver, derived-impl caveats) + §6e (parser/`from_js` depth cap);
+   full rationale in STACK_SAFETY_PLAN.md. Sequencing: iterative `Drop` →
+   depth cap (closes the crash vector end-to-end) → port passes to the
+   driver one per commit.
 2. **`Limits` context when unpredictable machinery lands** (simplify §7e,
    polynomial GCD §8): `Limits { max_number_bits, max_nodes, fuel }` passed
    into those subsystems, generous defaults. Rewrite-to-convergence loops and
@@ -956,6 +1002,12 @@ Parse errors surface as structured `ParseError { message, span }` (§6) converte
 JS object — error quality matters in an educational tool where malformed input is the
 common case, and spans are painful to retrofit later.
 
+**Stack & isolation notes** (§5b/§6e/§7f): size the shadow stack explicitly in the
+wasm build (`-C link-arg=-zstack-size=N`) against measured worst-case frames ×
+depth cap; document that embedders should run the module in a web worker (or
+killable server task) — internal limits make abuse hard, only a host timeout makes
+it impossible.
+
 ---
 
 ## 14. Key dependencies
@@ -1024,8 +1076,9 @@ Each phase: write tests first, then implementation until all tests pass.
 - Tests: `tests/norm.rs`
 
 ### Phase 5 — Polynomial algorithms (weeks 6–7)
-- First: parser depth limit + `Limits` context (§7f) — poly GCD is the main
-  coefficient-swell risk and must take a budget from day one
+- First: stack safety steps 1–2 (§5b iterative `Drop` + §6e depth cap) and the
+  `Limits` context (§7f) — poly GCD is the main coefficient-swell risk and must
+  take a budget from day one; driver ports (§5b) can proceed in parallel
 - `DUP`: arithmetic, division, GCD, `eval`
 - `DMP`: arithmetic, division (pseudo-remainder), GCD
 - `Domain` system
@@ -1064,6 +1117,11 @@ Each phase: write tests first, then implementation until all tests pass.
 - **Immutable nodes**: `Expr` is `Clone`; algorithms return new trees rather than mutating.
   No `Arc` needed (single-threaded WASM).
 - **Symbol interning**: symbols are `u32` indices, comparison and hashing are O(1).
+- **No flat arena initially**: a `Vec<Node>` + u32-index representation would solve
+  stack safety structurally (no pointer chains; `Drop` is one `Vec` free) and speed up
+  traversals, but invalidates every `match`-based pass and the faithful-port parsers
+  mid-project. Natural post-Phase-7 optimisation, together with hash-consing below;
+  the §5b `fold` driver survives that migration (only `children()` changes).
 - **No hash-consing initially**: hash-consing (sharing identical subtrees) is an optimisation
   that can be added later behind the smart constructors without changing any API.
 
