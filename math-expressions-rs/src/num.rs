@@ -262,11 +262,15 @@ impl Number {
         ))
     }
 
-    /// Raise to an integer power. `None` only for `0` to a negative power
-    /// (an exact division by zero); `0^0 == 1`, matching JS `Math.pow`.
+    /// Raise to an integer power. `None` for `0` to a negative power (an
+    /// exact division by zero), and for exponents so large the exact result
+    /// would be astronomically big — the caller leaves the node unfolded
+    /// either way. `0^0 == 1`, matching JS `Math.pow`.
     pub fn checked_pow_int(&self, exp: i64) -> Option<Number> {
         if let Number::Float(f) = self {
-            return Some(Number::Float(F64::new(f.get().powi(exp as i32))));
+            // powi takes i32; saturate rather than wrap for absurd exponents.
+            let e = exp.clamp(i32::MIN as i64, i32::MAX as i64) as i32;
+            return Some(Number::Float(F64::new(f.get().powi(e))));
         }
         if exp == 0 {
             return Some(Number::one());
@@ -275,6 +279,13 @@ impl Number {
             return if exp < 0 { None } else { Some(Number::zero()) };
         }
         let base = self.to_bigrational().unwrap();
+        // Refuse exact results beyond ~10^6 bits (canonicalization must stay
+        // cheap on any input; `2^(10^12)` is not a number to materialize).
+        // |±1| is exempt: its powers stay one digit.
+        let base_bits = base.numer().bits().max(base.denom().bits());
+        if base_bits > 1 && exp.unsigned_abs().saturating_mul(base_bits) > 1_000_000 {
+            return None;
+        }
         let mag = bigrat_powu(base, exp.unsigned_abs());
         let result = if exp < 0 { mag.recip() } else { mag };
         Some(Number::from_bigrational(result))
@@ -283,7 +294,9 @@ impl Number {
     /// Parse a decimal NUMBER token to an *exact* rational (§3a). The value is
     /// `digits × 10^(exp − frac_len)`: a non-negative power of ten yields an
     /// integer (`Int`/`Big`), a negative one an exact fraction whose
-    /// denominator is `2^a·5^b` (`Rat`/`Big`). Never returns `Float`.
+    /// denominator is `2^a·5^b` (`Rat`/`Big`). Returns `Float` only for
+    /// absurd exponents (|10^exp| beyond ~10^6 digits), where it approximates
+    /// like JS `parseFloat`.
     ///
     /// Accepts the NUMBER token grammar (`12`, `1.`, `.3`, `1.2`, optional
     /// `E[+-]?digits`, surrounding whitespace the sci-notation lexer folds in)
@@ -292,7 +305,18 @@ impl Number {
     pub fn from_decimal_str(text: &str) -> Number {
         let t = text.trim();
         let (mantissa, exp) = match t.split_once(['E', 'e']) {
-            Some((m, e)) => (m, e.parse::<i64>().unwrap_or(0)),
+            // An exponent overflowing i64 saturates (the magnitude cap below
+            // then applies); `unwrap_or(0)` would silently misread the value.
+            Some((m, e)) => (
+                m,
+                e.parse::<i64>().unwrap_or_else(|_| {
+                    if e.starts_with('-') {
+                        i64::MIN
+                    } else {
+                        i64::MAX
+                    }
+                }),
+            ),
             None => (t, 0),
         };
         let (int_part, frac_part) = match mantissa.split_once('.') {
@@ -310,7 +334,14 @@ impl Number {
             digits.parse().expect("NUMBER token is all digits")
         };
 
-        let pow10 = exp - frac_part.len() as i64;
+        let pow10 = exp.saturating_sub(frac_part.len() as i64);
+        // Beyond ~10^6 decimal places the exact value is not worth
+        // materializing (megabytes of BigInt, and `pow10 as u32` would wrap);
+        // approximate through f64 like JS parseFloat (±inf / 0 / rounded).
+        if pow10.unsigned_abs() > 1_000_000 {
+            let approx: f64 = t.replace(['E'], "e").parse().unwrap_or(f64::NAN);
+            return Number::Float(F64::new(approx));
+        }
         let ten = BigInt::from(10u32);
         if pow10 >= 0 {
             Number::from_bigint(numer * ten.pow(pow10 as u32))

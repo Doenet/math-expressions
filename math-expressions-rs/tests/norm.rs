@@ -112,3 +112,25 @@ fn idempotent_over_corpus() {
     }
     assert!(n > 100, "expected a substantial corpus, got {n}");
 }
+
+/// Canonicalization stays fast on adversarial inputs: folds that would
+/// materialize astronomically large numbers are refused, not attempted.
+#[test]
+fn adversarial_folds_are_bounded() {
+    // Would hang before the caps (10^12 multiplications / a 10^12-bit BigInt).
+    assert!(matches!(canon("99999999999999!"), Expr::Apply(..)));
+    assert!(matches!(canon("2^99999999999999"), Expr::Pow(..)));
+    // Ordinary folds still work.
+    assert_eq!(canon("10!"), Expr::Num(Number::Int(3628800)));
+    assert_eq!(canon("2^62"), Expr::Num(Number::Int(1 << 62)));
+}
+
+#[test]
+fn symmetric_relations_canonicalize() {
+    same("x = y", "y = x");
+    same("a + b = c", "c = b + a");
+    same("x != y", "y != x");
+    same("a = b = c", "c = b = a");
+    // Directional relations are NOT symmetric.
+    assert_ne!(canon("x < y"), canon("y < x"));
+}

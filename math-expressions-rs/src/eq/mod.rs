@@ -66,6 +66,21 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     equals_numerical(&ca, &cb, opts)
 }
 
+/// Symbolic (syntactic) equality: canonical structural comparison only, no
+/// numerical sampling. Mirrors the JS `equalsViaSyntax` slot — though our
+/// canonical form folds constants and combines like terms, so it is strictly
+/// *more* permissive than the JS's non-folding check (e.g. we call `3+2` and
+/// `5` symbolically equal). An intentional divergence per the redesign note's
+/// baseline decision.
+pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
+    if !opts.allow_blanks && (contains_blank(a) || contains_blank(b)) {
+        return false;
+    }
+    let ca = coerce_seqs(canonicalize(a), opts);
+    let cb = coerce_seqs(canonicalize(b), opts);
+    ca == cb
+}
+
 /// Does the tree contain a `Blank` (missing operand)? A variant check, not a
 /// magic-symbol scan.
 fn contains_blank(e: &Expr) -> bool {
@@ -94,7 +109,9 @@ fn contains_blank(e: &Expr) -> bool {
 }
 
 /// Map coerced sequence kinds to a common kind so `(1,2)`, `[1,2]`, and vector
-/// forms compare equal when the corresponding flag is set.
+/// forms compare equal when the corresponding flag is set. Recurses through
+/// every variant — a tuple nested inside a relation, interval, or matrix must
+/// coerce too.
 fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
     fn recur(e: Expr, opts: &EqOptions) -> Expr {
         let map_kind = |k: SeqKind| match k {
@@ -102,19 +119,48 @@ fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
             SeqKind::Vector | SeqKind::AltVector if opts.coerce_vectors => SeqKind::Tuple,
             other => other,
         };
+        let each = |xs: Vec<Expr>, opts: &EqOptions| -> Vec<Expr> {
+            xs.into_iter().map(|x| recur(x, opts)).collect()
+        };
         match e {
-            Expr::Seq(k, xs) => Expr::Seq(
-                map_kind(k),
-                xs.into_iter().map(|x| recur(x, opts)).collect(),
-            ),
-            Expr::Add(xs) => Expr::Add(xs.into_iter().map(|x| recur(x, opts)).collect()),
-            Expr::Mul(xs) => Expr::Mul(xs.into_iter().map(|x| recur(x, opts)).collect()),
+            Expr::Seq(k, xs) => Expr::Seq(map_kind(k), each(xs, opts)),
+            Expr::Add(xs) => Expr::Add(each(xs, opts)),
+            Expr::Mul(xs) => Expr::Mul(each(xs, opts)),
+            Expr::And(xs) => Expr::And(each(xs, opts)),
+            Expr::Or(xs) => Expr::Or(each(xs, opts)),
+            Expr::Union(xs) => Expr::Union(each(xs, opts)),
+            Expr::Intersect(xs) => Expr::Intersect(each(xs, opts)),
             Expr::Pow(a, b) => Expr::Pow(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
-            Expr::Apply(h, xs) => Expr::Apply(
-                Box::new(recur(*h, opts)),
-                xs.into_iter().map(|x| recur(x, opts)).collect(),
-            ),
-            other => other,
+            Expr::Div(a, b) => Expr::Div(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
+            Expr::Index(a, b) => Expr::Index(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
+            Expr::Neg(x) => Expr::Neg(Box::new(recur(*x, opts))),
+            Expr::Not(x) => Expr::Not(Box::new(recur(*x, opts))),
+            Expr::Prime(x) => Expr::Prime(Box::new(recur(*x, opts))),
+            Expr::Apply(h, xs) => Expr::Apply(Box::new(recur(*h, opts)), each(xs, opts)),
+            Expr::Interval { endpoints, closed } => {
+                let (a, b) = *endpoints;
+                Expr::Interval {
+                    endpoints: Box::new((recur(a, opts), recur(b, opts))),
+                    closed,
+                }
+            }
+            Expr::Relation { operands, ops } => Expr::Relation {
+                operands: each(operands, opts),
+                ops,
+            },
+            Expr::Matrix {
+                rows,
+                cols,
+                entries,
+            } => Expr::Matrix {
+                rows,
+                cols,
+                entries: each(entries, opts),
+            },
+            Expr::OtherOp(name, xs) => Expr::OtherOp(name, each(xs, opts)),
+            leaf @ (Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots) => {
+                leaf
+            }
         }
     }
     recur(e, opts)

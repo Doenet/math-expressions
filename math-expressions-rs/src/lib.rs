@@ -12,7 +12,7 @@ pub mod output;
 pub mod parse;
 pub mod sym;
 
-pub use eq::{equals, EqOptions};
+pub use eq::{equals, equals_syntactic, EqOptions};
 pub use expr::Expr;
 pub use norm::canonicalize;
 pub use num::Number;

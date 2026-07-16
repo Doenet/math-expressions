@@ -11,7 +11,7 @@
 
 pub(crate) mod order;
 
-use crate::expr::{Expr, SeqKind};
+use crate::expr::{Expr, RelOp, SeqKind};
 use crate::num::Number;
 
 pub(crate) use order::cmp;
@@ -38,11 +38,16 @@ pub fn canonicalize(e: &Expr) -> Expr {
         Expr::Intersect(xs) => assoc_sorted(Variant::Intersect, xs),
         Expr::Not(x) => Expr::Not(Box::new(canonicalize(x))),
 
-        Expr::Apply(head, args) => Expr::Apply(
-            Box::new(normalize_head(canonicalize(head))),
-            args.iter().map(canonicalize).collect(),
-        ),
-        Expr::Prime(x) => Expr::Prime(Box::new(canonicalize(x))),
+        Expr::Apply(head, args) => {
+            canon_apply(canonicalize(head), args.iter().map(canonicalize).collect())
+        }
+        // Push primes inside an application so `f(x)'` and `f'(x)` agree:
+        // Prime(Apply(h, args)) → Apply(Prime(h), args). Recursion handles
+        // repeated primes (`f'''`).
+        Expr::Prime(x) => match canonicalize(x) {
+            Expr::Apply(h, args) => Expr::Apply(Box::new(Expr::Prime(h)), args),
+            other => Expr::Prime(Box::new(other)),
+        },
         Expr::Index(a, b) => Expr::Index(Box::new(canonicalize(a)), Box::new(canonicalize(b))),
 
         Expr::Seq(kind, xs) => {
@@ -58,10 +63,9 @@ pub fn canonicalize(e: &Expr) -> Expr {
             endpoints: Box::new((canonicalize(&endpoints.0), canonicalize(&endpoints.1))),
             closed: *closed,
         },
-        Expr::Relation { operands, ops } => Expr::Relation {
-            operands: operands.iter().map(canonicalize).collect(),
-            ops: ops.clone(),
-        },
+        Expr::Relation { operands, ops } => {
+            canon_relation(operands.iter().map(canonicalize).collect(), ops.clone())
+        }
         Expr::Matrix {
             rows,
             cols,
@@ -71,7 +75,16 @@ pub fn canonicalize(e: &Expr) -> Expr {
             cols: *cols,
             entries: entries.iter().map(canonicalize).collect(),
         },
-        Expr::OtherOp(name, args) => Expr::OtherOp(*name, args.iter().map(canonicalize).collect()),
+        Expr::OtherOp(name, args) => {
+            let cargs: Vec<Expr> = args.iter().map(canonicalize).collect();
+            // `binom(n,k)` and the applied `nCr(n,k)` denote the same thing;
+            // unify on the applied form so they compare equal.
+            if name.name() == "binom" && cargs.len() == 2 {
+                canon_apply(Expr::sym("nCr"), cargs)
+            } else {
+                Expr::OtherOp(*name, cargs)
+            }
+        }
     }
 }
 
@@ -265,6 +278,106 @@ fn assoc_sorted(variant: Variant, xs: &[Expr]) -> Expr {
         Variant::Union => Expr::Union(flat),
         Variant::Intersect => Expr::Intersect(flat),
     }
+}
+
+/// Build a canonical function application (head and args already canonical),
+/// applying the notation/fold rules that hold without assumptions:
+/// inverse-function notation (`sin^(-1) → asin`), name normalization
+/// (`arcsin → asin`, `ln → log`), and exact folding of `n!`.
+fn canon_apply(head: Expr, args: Vec<Expr>) -> Expr {
+    // `f^(-1)(x)` is the inverse function, not a reciprocal, for the invertible
+    // functions (contrast `sin^2(x)`, which is a power). Only exponent −1.
+    if let Expr::Pow(inner, exp) = &head {
+        if matches!(&**exp, Expr::Num(Number::Int(-1))) {
+            if let Expr::Sym(f) = &**inner {
+                if let Some(inv) = inverse_function_name(&f.name()) {
+                    return Expr::Apply(Box::new(Expr::sym(inv)), args);
+                }
+            }
+        }
+    }
+
+    let head = normalize_head(head);
+
+    // Fold `n!` for a non-negative integer `n` (exact, promotes to Big).
+    if let Expr::Sym(s) = &head {
+        if s.name() == "factorial" {
+            if let [Expr::Num(Number::Int(n))] = args.as_slice() {
+                if let Some(v) = factorial_of(*n) {
+                    return Expr::Num(v);
+                }
+            }
+        }
+    }
+
+    Expr::Apply(Box::new(head), args)
+}
+
+/// Normalize a relation:
+/// - converse pairs flip to one canonical direction, so `a ⊃ b` ≡ `b ⊂ a`,
+///   `x ∈ A` ≡ `A ∋ x`, `a > b` ≡ `b < a` (binary only; chains keep order);
+/// - fully symmetric relations (`=`, `≠`, including chained `a=b=c`) sort
+///   their operands, so `x = y` ≡ `y = x`.
+fn canon_relation(mut operands: Vec<Expr>, ops: Vec<RelOp>) -> Expr {
+    use RelOp::*;
+    if let ([_, _], [op]) = (operands.as_slice(), ops.as_slice()) {
+        if let Some(converse) = match op {
+            Gt => Some(Lt),
+            Ge => Some(Le),
+            Superset => Some(Subset),
+            SupersetEq => Some(SubsetEq),
+            NotSuperset => Some(NotSubset),
+            NotSupersetEq => Some(NotSubsetEq),
+            Ni => Some(In),
+            NotNi => Some(NotIn),
+            _ => None,
+        } {
+            operands.swap(0, 1);
+            return Expr::Relation {
+                operands,
+                ops: vec![converse],
+            };
+        }
+    }
+    if ops.iter().all(|o| matches!(o, Eq)) || matches!(ops.as_slice(), [Ne]) {
+        operands.sort_by(cmp);
+    }
+    Expr::Relation { operands, ops }
+}
+
+fn factorial_of(n: i64) -> Option<Number> {
+    // Cap the fold: canonicalization must stay cheap on any user input, and
+    // `(10^12)!` would otherwise loop forever. Beyond the cap the node stays
+    // an application (structural equality still works).
+    if !(0..=10_000).contains(&n) {
+        return None;
+    }
+    let mut acc = Number::one();
+    for k in 2..=n {
+        acc = acc.mul(&Number::Int(k));
+    }
+    Some(acc)
+}
+
+/// The inverse of an invertible (trig/hyperbolic) function, using the
+/// normalized `a…` spelling. `None` for functions without a notated inverse.
+fn inverse_function_name(name: &str) -> Option<&'static str> {
+    Some(match name {
+        "sin" => "asin",
+        "cos" => "acos",
+        "tan" => "atan",
+        "sec" => "asec",
+        "csc" => "acsc",
+        "cot" => "acot",
+        "sinh" => "asinh",
+        "cosh" => "acosh",
+        "tanh" => "atanh",
+        "sech" => "asech",
+        "csch" => "acsch",
+        "coth" => "acoth",
+        // Already-inverse names spelled `arc…` normalize elsewhere.
+        _ => return None,
+    })
 }
 
 /// Canonicalize a function head's name (`arcsin → asin`, `ln → log`, …). The

@@ -275,3 +275,28 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
     }
     a
 }
+
+// ---- Review regression tests: bounded computation on adversarial input ----
+
+#[test]
+fn absurd_exponents_do_not_hang_or_wrap() {
+    // Exponent overflows i64: saturates, then approximates like parseFloat
+    // (previously `unwrap_or(0)` silently read the value as 1).
+    let huge = Number::from_decimal_str("1E99999999999999999999");
+    assert!(matches!(huge, Number::Float(f) if f.get().is_infinite()));
+    let tiny = Number::from_decimal_str("1E-99999999999999999999");
+    assert!(matches!(tiny, Number::Float(f) if f.get() == 0.0));
+
+    // Exact power folding refuses astronomically large results...
+    assert_eq!(Number::Int(2).checked_pow_int(1_000_000_000_000), None);
+    // ...but |1| bases are exempt (their powers stay small)...
+    assert_eq!(
+        Number::Int(-1).checked_pow_int(1_000_000_000_000),
+        Some(Number::Int(1))
+    );
+    // ...and reasonable big powers still fold exactly.
+    assert_eq!(
+        Number::Int(10).checked_pow_int(20).unwrap().js_string(),
+        "100000000000000000000"
+    );
+}

@@ -12,8 +12,17 @@ use std::collections::HashMap;
 pub type Env = HashMap<String, Complex64>;
 
 /// Evaluate `e` at `env`. Returns `None` for anything not numerically
-/// meaningful here (relations, sequences, blanks, unknown functions).
+/// meaningful here (relations, sequences, blanks).
+///
+/// Subtrees this slice can't compute symbolically — applications of unknown
+/// functions (`f(a)`), subscripts (`y_t`), primes, and `OtherOp` nodes
+/// (`vec(x)`) — are treated as *opaque atoms*: sampled as a single variable
+/// keyed by their structure, so `f(a)` takes the same value on both sides of a
+/// comparison. This lets `(f(a)-f(b))·x` and `(f(b)-f(a))·(-x)` agree.
 pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
+    if is_opaque_atom(e) {
+        return env.get(&opaque_key(e)).copied();
+    }
     Some(match e {
         Expr::Num(n) => number_to_complex(n),
         Expr::Const(c) => match c {
@@ -22,7 +31,14 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
             MathConst::I => Complex64::I,
             MathConst::Inf | MathConst::NegInf | MathConst::NaN => return None,
         },
-        Expr::Sym(s) => *env.get(&s.name())?,
+        // `pi`, `e`, `i` are number-symbols (constants), not free variables —
+        // the parser emits them as plain symbols (matching JS convention).
+        Expr::Sym(s) => match s.name().as_str() {
+            "pi" => Complex64::new(std::f64::consts::PI, 0.0),
+            "e" => Complex64::new(std::f64::consts::E, 0.0),
+            "i" => Complex64::I,
+            name => *env.get(name)?,
+        },
 
         Expr::Add(xs) => xs
             .iter()
@@ -39,6 +55,79 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
         // Not numerically meaningful in this slice.
         _ => return None,
     })
+}
+
+/// A subtree evaluated as a single opaque sample variable: an application of an
+/// unknown function, a subscript, a prime, or an `OtherOp` (`vec`, `angle`, …).
+fn is_opaque_atom(e: &Expr) -> bool {
+    match e {
+        Expr::Apply(head, args) => !head_evaluable(head, args.len()),
+        Expr::Index(..) | Expr::Prime(_) | Expr::OtherOp(..) => true,
+        _ => false,
+    }
+}
+
+/// Can `eval_apply` handle this head/arity? (A `Pow` head is `sin^2`-style.)
+fn head_evaluable(head: &Expr, nargs: usize) -> bool {
+    match head {
+        Expr::Pow(inner, _) => head_evaluable(inner, nargs),
+        Expr::Sym(s) => known_function(&s.name(), nargs),
+        _ => false,
+    }
+}
+
+fn known_function(name: &str, nargs: usize) -> bool {
+    match nargs {
+        1 => matches!(
+            name,
+            "sin"
+                | "cos"
+                | "tan"
+                | "sinh"
+                | "cosh"
+                | "tanh"
+                | "asin"
+                | "acos"
+                | "atan"
+                | "asinh"
+                | "acosh"
+                | "atanh"
+                | "sec"
+                | "csc"
+                | "cot"
+                | "sech"
+                | "csch"
+                | "coth"
+                | "asec"
+                | "acsc"
+                | "acot"
+                | "asech"
+                | "acsch"
+                | "acoth"
+                | "exp"
+                | "log"
+                | "log10"
+                | "sqrt"
+                | "cbrt"
+                | "abs"
+                | "sign"
+                | "conj"
+                | "re"
+                | "im"
+                | "arg"
+                | "floor"
+                | "ceil"
+                | "round"
+                | "trace"
+        ),
+        2 => matches!(name, "atan2" | "nthroot" | "nCr" | "nPr" | "mod"),
+        _ => false,
+    }
+}
+
+/// A structural key identifying an opaque subtree (stable within a run).
+fn opaque_key(e: &Expr) -> String {
+    format!("{e:?}")
 }
 
 fn number_to_complex(n: &Number) -> Complex64 {
@@ -74,6 +163,16 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
             "sec" => z.cos().inv(),
             "csc" => z.sin().inv(),
             "cot" => z.tan().inv(),
+            "sech" => z.cosh().inv(),
+            "csch" => z.sinh().inv(),
+            "coth" => z.tanh().inv(),
+            // Inverse reciprocal-trig via the primary inverses of 1/z.
+            "asec" => z.inv().acos(),
+            "acsc" => z.inv().asin(),
+            "acot" => z.inv().atan(),
+            "asech" => z.inv().acosh(),
+            "acsch" => z.inv().asinh(),
+            "acoth" => z.inv().atanh(),
             "exp" => z.exp(),
             "log" => z.ln(), // natural log (ln normalizes to log)
             "log10" => z.log10(),
@@ -90,17 +189,26 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
             "conj" => z.conj(),
             "re" => Complex64::new(z.re, 0.0),
             "im" => Complex64::new(z.im, 0.0),
+            "arg" => Complex64::new(z.arg(), 0.0),
+            // Rounding functions are only defined on (near-)real inputs.
+            "floor" => real_only(z, f64::floor)?,
+            "ceil" => real_only(z, f64::ceil)?,
+            "round" => real_only(z, f64::round)?,
+            "trace" => z, // trace of a 1×1 / scalar is itself
             _ => return None,
         };
         return Some(r);
     }
 
-    // A couple of binary functions.
+    // Binary functions.
     if let [a, b] = args {
         let (za, zb) = (eval_complex(a, env)?, eval_complex(b, env)?);
         let r = match name.as_str() {
             "atan2" => Complex64::new(za.re.atan2(zb.re), 0.0),
             "nthroot" => za.powc(zb.inv()),
+            "nCr" => combinatorial(za, zb, false)?,
+            "nPr" => combinatorial(za, zb, true)?,
+            "mod" => Complex64::new(za.re.rem_euclid(zb.re), 0.0),
             _ => return None,
         };
         return Some(r);
@@ -109,15 +217,62 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
     None
 }
 
-/// Collect the free-symbol names of an expression (for choosing sample points).
+/// Apply a real function to a (near-)real complex value, else `None`.
+fn real_only(z: Complex64, f: fn(f64) -> f64) -> Option<Complex64> {
+    if z.im.abs() < 1e-9 {
+        Some(Complex64::new(f(z.re), 0.0))
+    } else {
+        None
+    }
+}
+
+/// `nCr`/`nPr` on non-negative integer arguments.
+fn combinatorial(n: Complex64, r: Complex64, ordered: bool) -> Option<Complex64> {
+    let is_int = |z: Complex64| z.im.abs() < 1e-9 && (z.re.round() - z.re).abs() < 1e-9;
+    if !is_int(n) || !is_int(r) {
+        return None;
+    }
+    let (n, r) = (n.re.round() as i64, r.re.round() as i64);
+    // The r-length product loop must stay bounded on any input; past ~10^4
+    // the f64 result is astronomically large/imprecise anyway.
+    if n < 0 || r < 0 || r > n || r > 10_000 {
+        return None;
+    }
+    // P(n,r) = n·(n-1)···(n-r+1); C(n,r) = P(n,r)/r!.
+    let mut num = 1.0f64;
+    for k in 0..r {
+        num *= (n - k) as f64;
+    }
+    if ordered {
+        return Some(Complex64::new(num, 0.0));
+    }
+    let mut den = 1.0f64;
+    for k in 1..=r {
+        den *= k as f64;
+    }
+    Some(Complex64::new(num / den, 0.0))
+}
+
+/// Collect the sample-variable keys of an expression: free symbols plus opaque
+/// subtrees (see [`eval_complex`]), which are keyed by structure and not
+/// descended into. Must mirror `eval_complex`'s opaque/known-function
+/// decisions so every key it reads is populated here.
 pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
+    if is_opaque_atom(e) {
+        out.insert(opaque_key(e));
+        return;
+    }
     match e {
         Expr::Sym(s) => {
-            out.insert(s.name());
+            // `pi`/`e`/`i` are constants, not sample variables.
+            let name = s.name();
+            if !matches!(name.as_str(), "pi" | "e" | "i") {
+                out.insert(name);
+            }
         }
         Expr::Num(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => {}
-        Expr::Neg(x) | Expr::Not(x) | Expr::Prime(x) => free_symbols(x, out),
-        Expr::Pow(a, b) | Expr::Div(a, b) | Expr::Index(a, b) => {
+        Expr::Neg(x) | Expr::Not(x) => free_symbols(x, out),
+        Expr::Pow(a, b) | Expr::Div(a, b) => {
             free_symbols(a, out);
             free_symbols(b, out);
         }
@@ -128,16 +283,16 @@ pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
         | Expr::Union(xs)
         | Expr::Intersect(xs)
         | Expr::Seq(_, xs) => xs.iter().for_each(|x| free_symbols(x, out)),
-        Expr::Apply(h, xs) => {
-            free_symbols(h, out);
-            xs.iter().for_each(|x| free_symbols(x, out));
-        }
+        // An evaluable application: descend into arguments only, not the
+        // function-name head (`sin` is not a variable).
+        Expr::Apply(_, xs) => xs.iter().for_each(|x| free_symbols(x, out)),
         Expr::Interval { endpoints, .. } => {
             free_symbols(&endpoints.0, out);
             free_symbols(&endpoints.1, out);
         }
         Expr::Relation { operands, .. } => operands.iter().for_each(|x| free_symbols(x, out)),
         Expr::Matrix { entries, .. } => entries.iter().for_each(|x| free_symbols(x, out)),
-        Expr::OtherOp(_, xs) => xs.iter().for_each(|x| free_symbols(x, out)),
+        // Opaque nodes (Index, Prime, OtherOp) are handled above.
+        Expr::Index(..) | Expr::Prime(_) | Expr::OtherOp(..) => {}
     }
 }

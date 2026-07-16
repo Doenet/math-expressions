@@ -80,3 +80,11 @@ fn commutativity_and_tuple_coercion() {
     };
     assert!(!equals(&parse("(1,2)"), &parse("[1,2]"), &no_coerce));
 }
+
+#[test]
+fn coercion_reaches_nested_positions() {
+    // Sequence coercion must apply inside relations (and other containers),
+    // not just at the top level.
+    assert!(eq("(1,2) = x", "[1,2] = x"));
+    assert!(eq("x = y", "y = x"));
+}

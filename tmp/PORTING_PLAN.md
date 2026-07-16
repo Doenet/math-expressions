@@ -612,6 +612,35 @@ Non-trivial rewrites that require pattern matching:
 
 These are applied as rewrite rules with a convergence loop (max iterations guard).
 
+### 7f. Resource limits — decided 2026-07, NOT yet implemented
+
+All expression input is untrusted (student answers), so every pass must stay
+bounded on adversarial input. Current state: `Number` folds are capped
+in-place (factorial ≤ 10000!, exact pow refused beyond ~10^6 result bits —
+the cap composes because it re-checks materialized input sizes; decimal
+exponents beyond ~10^6 digits approximate via f64), which makes the existing
+pipeline polynomial in input size. Agreed follow-ups, in order:
+
+1. **Parser depth limit** (do before/with Phase 5): the parsers,
+   `canonicalize`, `cmp`, and `eval_complex` all recurse along the tree, so
+   deep nesting (`((((…))))`) is a stack-overflow crash — in WASM a trap that
+   kills the instance. One depth counter in the parsers ("expression too
+   deeply nested" ParseError) bounds every downstream pass. The JS library
+   has the same flaw; do not inherit it.
+2. **`Limits` context when unpredictable machinery lands** (simplify §7e,
+   polynomial GCD §8): `Limits { max_number_bits, max_nodes, fuel }` passed
+   into those subsystems, generous defaults. Rewrite-to-convergence loops and
+   polynomial GCD coefficient swell are inherently not boundable by local
+   caps. Count **operations, not wall-clock** — verdicts must be identical on
+   every machine (grading engine; reproducible tests).
+3. **Perf note**: `add`/`mul` like-term combining is a linear scan with
+   String-cloning symbol compares — quadratic on many-term inputs. Not a
+   security issue (polynomial), but add an interned-Sym fast path before the
+   poly layer leans on these constructors.
+4. **Embedder wall**: internal limits make abuse hard; only a host timeout
+   (web worker / task kill) makes it impossible. Document in the WASM
+   bindings (§13) when they land.
+
 ---
 
 ## 8. Polynomial layer (`src/poly/`)
@@ -995,6 +1024,8 @@ Each phase: write tests first, then implementation until all tests pass.
 - Tests: `tests/norm.rs`
 
 ### Phase 5 — Polynomial algorithms (weeks 6–7)
+- First: parser depth limit + `Limits` context (§7f) — poly GCD is the main
+  coefficient-swell risk and must take a budget from day one
 - `DUP`: arithmetic, division, GCD, `eval`
 - `DMP`: arithmetic, division (pseudo-remainder), GCD
 - `Domain` system
