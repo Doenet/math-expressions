@@ -1,18 +1,11 @@
-//! Recursive descent text parser — a faithful port of
-//! lib/converters/text-to-ast.js (grammar documented there and in
-//! PORTING_PLAN.md §6b).
+//! Recursive descent LaTeX parser — a faithful port of
+//! lib/converters/latex-to-ast.js. Shares the pure helpers in
+//! `super::common` and the lexer engine (LaTeX flavour) with the text parser.
 //!
-//! Porting conventions:
-//! - JS `false` return values ("no factor here") become `Option<Expr>::None`.
-//! - JS assigns the blank "＿" where an operand is missing → `Expr::Blank`.
-//! - JS builds sign-symbol strings like "2++++" via string concatenation on
-//!   numbers/symbols; ported via `atom_string`/`sign_string`.
-//! - Parameter objects are re-destructured with defaults at every JS call
-//!   site; the `P` struct mirrors this — each call site constructs exactly
-//!   the fields the JS passes, everything else reset to defaults. This
-//!   includes bug-faithful quirks (e.g. symbol splitting drops the
-//!   in_subsuperscript flag — that is what makes "x^ab" parse as
-//!   (x^a)*b).
+//! Structurally close to `text.rs`; the LaTeX-specific parts are: the lexer
+//! rule table, `\begin{matrix}` environments, `\sqrt`, `\frac`/`\binom`/etc.
+//! operator symbols, `\lfloor`/`\lceil`, `LATEXCOMMAND` validation, the
+//! brace-based Leibniz notation, and the `\circ` exponent unit.
 
 use super::common::{
     atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string, P,
@@ -21,70 +14,125 @@ use super::error::ParseError;
 use super::lexer::{Lexer, LexerState, Token};
 use crate::expr::{flatten, Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
-use std::collections::HashMap;
 
 type R<T> = Result<T, ParseError>;
 
 #[derive(Debug, Clone)]
-pub struct TextToAstOptions {
+pub struct LatexToAstOptions {
     pub allow_simplified_function_application: bool,
-    pub split_symbols: bool,
-    pub unsplit_symbols: Vec<String>,
+    pub allowed_latex_symbols: Vec<String>,
     pub applied_function_symbols: Vec<String>,
     pub function_symbols: Vec<String>,
-    pub operator_symbols: Vec<String>,
     pub parse_leibniz_notation: bool,
     pub parse_scientific_notation: bool,
 }
 
-impl Default for TextToAstOptions {
+impl Default for LatexToAstOptions {
     fn default() -> Self {
         fn v(names: &[&str]) -> Vec<String> {
             names.iter().map(|s| s.to_string()).collect()
         }
-        TextToAstOptions {
+        LatexToAstOptions {
             allow_simplified_function_application: true,
-            split_symbols: true,
-            unsplit_symbols: v(&[
+            allowed_latex_symbols: v(&[
                 "alpha", "beta", "gamma", "Gamma", "delta", "Delta", "epsilon", "zeta", "eta",
                 "theta", "Theta", "iota", "kappa", "lambda", "Lambda", "mu", "nu", "xi", "Xi",
                 "pi", "Pi", "rho", "sigma", "Sigma", "tau", "Tau", "upsilon", "Upsilon", "phi",
-                "Phi", "chi", "psi", "Psi", "omega", "Omega", "angle", "deg", "emptyset",
+                "Phi", "chi", "psi", "Psi", "omega", "Omega", "partial", "angle", "circ", "%", "$",
+                "emptyset",
             ]),
             applied_function_symbols: v(&[
-                "abs", "exp", "log", "ln", "log10", "sign", "sqrt", "cbrt", "nthroot", "mod",
-                "erf", "cos", "cosh", "acos", "acosh", "arccos", "arccosh", "cot", "coth", "acot",
-                "acoth", "arccot", "arccoth", "csc", "csch", "acsc", "acsch", "arccsc", "arccsch",
-                "sec", "sech", "asec", "asech", "arcsec", "arcsech", "sin", "sinh", "asin",
-                "asinh", "arcsin", "arcsinh", "tan", "tanh", "atan", "atan2", "atanh", "arctan",
-                "arctanh", "arg", "conj", "re", "im", "det", "trace", "nPr", "nCr", "floor",
-                "ceil", "round",
+                "abs", "exp", "log", "ln", "log10", "sign", "sqrt", "erf", "cos", "cosh", "acos",
+                "acosh", "arccos", "arccosh", "cot", "coth", "acot", "acoth", "arccot", "arccoth",
+                "csc", "csch", "acsc", "acsch", "arccsc", "arccsch", "sec", "sech", "asec",
+                "asech", "arcsec", "arcsech", "sin", "sinh", "asin", "asinh", "arcsin", "arcsinh",
+                "tan", "tanh", "atan", "atan2", "atanh", "arctan", "arctanh", "arg", "conj", "Re",
+                "Im", "det", "trace", "nPr", "nCr", "floor", "ceil", "round",
             ]),
             function_symbols: v(&["f", "g"]),
-            operator_symbols: v(&["binom", "vec", "linesegment"]),
             parse_leibniz_notation: true,
             parse_scientific_notation: true,
         }
     }
 }
 
-/// The units table from lib/expression/units.js — only the shape matters at
-/// parse time (prefix vs postfix); the scale closures belong to evaluation.
-fn units() -> HashMap<&'static str, bool /* prefix */> {
-    HashMap::from([("%", false), ("$", true), ("deg", false)])
+/// A `\frac`/`\binom`/`\vec`/`\overline` operator symbol.
+struct OpSym {
+    nargs: usize,
+    substitute: Option<&'static str>,
+    remove_products: bool,
 }
 
-pub struct TextToAst {
-    opts: TextToAstOptions,
+fn operator_symbol(name: &str) -> Option<OpSym> {
+    match name {
+        "frac" => Some(OpSym {
+            nargs: 2,
+            substitute: Some("/"),
+            remove_products: false,
+        }),
+        "binom" => Some(OpSym {
+            nargs: 2,
+            substitute: None,
+            remove_products: false,
+        }),
+        "vec" => Some(OpSym {
+            nargs: 1,
+            substitute: None,
+            remove_products: false,
+        }),
+        "overline" => Some(OpSym {
+            nargs: 1,
+            substitute: Some("linesegment"),
+            remove_products: true,
+        }),
+        _ => None,
+    }
+}
+
+/// Parse-time unit shape (prefix vs postfix, exponent units, substitution).
+struct Unit {
+    prefix: bool,
+    substitute: Option<&'static str>,
+    is_exponent: bool,
+}
+
+fn unit_of(name: &str) -> Option<Unit> {
+    match name {
+        "%" => Some(Unit {
+            prefix: false,
+            substitute: None,
+            is_exponent: false,
+        }),
+        "$" => Some(Unit {
+            prefix: true,
+            substitute: None,
+            is_exponent: false,
+        }),
+        // \circ acts as a postfix exponent unit substituting for degrees.
+        "circ" => Some(Unit {
+            prefix: false,
+            substitute: Some("deg"),
+            is_exponent: true,
+        }),
+        _ => None,
+    }
+}
+
+/// JS `this.token.token_type[0] === "|"` — the token is `|` or `|L`.
+fn is_pipe(tt: &str) -> bool {
+    tt == "|" || tt == "|L"
+}
+
+pub struct LatexToAst {
+    opts: LatexToAstOptions,
     lexer: Lexer,
     token: Token,
-    units: HashMap<&'static str, bool>,
 }
 
-impl TextToAst {
-    pub fn new(opts: TextToAstOptions) -> Self {
-        let lexer = Lexer::new(opts.parse_scientific_notation);
-        TextToAst {
+impl LatexToAst {
+    pub fn new(opts: LatexToAstOptions) -> Self {
+        let lexer = Lexer::new_latex(opts.parse_scientific_notation);
+        LatexToAst {
             opts,
             lexer,
             token: Token {
@@ -92,16 +140,11 @@ impl TextToAst {
                 text: String::new(),
                 original: String::new(),
             },
-            units: units(),
         }
     }
 
     fn advance(&mut self) -> R<()> {
-        self.advance_opts(true)
-    }
-
-    fn advance_opts(&mut self, remove_initial_space: bool) -> R<()> {
-        self.token = self.lexer.advance(remove_initial_space);
+        self.token = self.lexer.advance(true);
         if self.token.ttype == "INVALID" {
             return Err(ParseError::new(
                 format!("Invalid symbol '{}'", self.token.original),
@@ -122,6 +165,16 @@ impl TextToAst {
 
     fn err(&self, msg: impl Into<String>) -> ParseError {
         ParseError::new(msg, self.lexer.location)
+    }
+
+    fn is_applied(&self, name: &str) -> bool {
+        self.opts.applied_function_symbols.iter().any(|s| s == name)
+    }
+    fn is_function(&self, name: &str) -> bool {
+        self.opts.function_symbols.iter().any(|s| s == name)
+    }
+    fn is_allowed_symbol(&self, name: &str) -> bool {
+        self.opts.allowed_latex_symbols.iter().any(|s| s == name)
     }
 
     pub fn convert(&mut self, input: &str) -> R<Expr> {
@@ -148,7 +201,6 @@ impl TextToAst {
     }
 
     fn statement(&mut self, p: P) -> R<Expr> {
-        // three periods ... can be a statement by itself
         if self.token.ttype == "LDOTS" {
             self.advance()?;
             return Ok(Expr::Ldots);
@@ -159,12 +211,11 @@ impl TextToAst {
         match self.statement_main(p) {
             Ok(r) => Ok(r),
             Err(e) => {
-                // If parsing the statement failed, try again ignoring
-                // absolute value and interpreting | as a binary operator.
+                // retry: ignore absolute value, treat bar as a binary operator
                 self.set_state(original_state);
                 match self.statement_bar_fallback() {
                     Ok(r) => Ok(r),
-                    Err(_) => Err(e), // rethrow the original error
+                    Err(_) => Err(e),
                 }
             }
         }
@@ -176,12 +227,13 @@ impl TextToAst {
             ..P::default()
         })?;
 
-        if self.token.ttype != ":" {
+        if self.token.ttype != ":" && self.token.ttype != "MID" {
             return Ok(lhs);
         }
+        let operator = if self.token.ttype == ":" { ":" } else { "|" };
         self.advance()?;
         let rhs = self.statement_a(P::default())?;
-        Ok(other_op(":", vec![lhs, rhs]))
+        Ok(other_op(operator, vec![lhs, rhs]))
     }
 
     fn statement_bar_fallback(&mut self) -> R<Expr> {
@@ -189,8 +241,7 @@ impl TextToAst {
             parse_absolute_value: false,
             ..P::default()
         })?;
-
-        if self.token.ttype != "|" {
+        if !is_pipe(self.token.ttype) {
             return Err(self.err("statement fallback: no bar"));
         }
         self.advance()?;
@@ -208,7 +259,6 @@ impl TextToAst {
             ..P::default()
         };
         let mut lhs = self.statement_b(fwd)?;
-
         while matches!(
             self.token.ttype,
             "IMPLIES" | "IMPLIEDBY" | "IFF" | "LEFTARROW" | "RIGHTARROW" | "LEFTRIGHTARROW"
@@ -218,7 +268,6 @@ impl TextToAst {
             let rhs = self.statement_b(fwd)?;
             lhs = other_op(&operation, vec![lhs, rhs]);
         }
-
         Ok(lhs)
     }
 
@@ -229,26 +278,21 @@ impl TextToAst {
             ..P::default()
         };
         let mut lhs = self.statement_c(fwd)?;
-
         while self.token.ttype == "OR" {
             self.advance()?;
             let rhs = self.statement_c(fwd)?;
             lhs = Expr::Or(vec![lhs, rhs]);
         }
-
         Ok(lhs)
     }
 
     fn statement_c(&mut self, p: P) -> R<Expr> {
-        // AND binds tighter than OR
         let mut lhs = self.relation(p)?;
-
         while self.token.ttype == "AND" {
             self.advance()?;
             let rhs = self.relation(p)?;
             lhs = Expr::And(vec![lhs, rhs]);
         }
-
         Ok(lhs)
     }
 
@@ -257,7 +301,6 @@ impl TextToAst {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.relation(p)?)));
         }
-
         if self.token.ttype == "FORALL" || self.token.ttype == "EXISTS" {
             let operator = self.token.ttype.to_lowercase();
             self.advance()?;
@@ -289,13 +332,11 @@ impl TextToAst {
                 _ => None,
             };
             let Some(op) = op else { break };
-
             self.advance()?;
             let rhs = self.expression(p)?;
 
             match op {
                 RelOp::Lt | RelOp::Le if self.token.ttype == "<" || self.token.ttype == "LE" => {
-                    // sequence of multiple < or <=
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
                     while self.token.ttype == "<" || self.token.ttype == "LE" {
@@ -326,7 +367,6 @@ impl TextToAst {
                 RelOp::Eq => {
                     let mut operands = vec![lhs, rhs];
                     let mut ops = vec![RelOp::Eq];
-                    // check for sequence of multiple =
                     while self.token.ttype == "=" {
                         self.advance()?;
                         operands.push(self.expression(p)?);
@@ -357,13 +397,11 @@ impl TextToAst {
             plus_begin = true;
             self.advance()?;
         }
-
         let mut negative_begin = false;
         if self.token.ttype == "-" {
             negative_begin = true;
             self.advance()?;
         }
-
         let mut pm_begin = false;
         if self.token.ttype == "PM" {
             pm_begin = true;
@@ -397,11 +435,9 @@ impl TextToAst {
                 Expr::Neg(Box::new(lhs))
             };
         }
-
         if pm_begin {
             lhs = other_op("pm", vec![lhs]);
         }
-
         if plus_begin {
             lhs = Expr::Add(vec![lhs]);
         }
@@ -464,7 +500,6 @@ impl TextToAst {
             }
 
             let mut rhs = rhs_opt.unwrap_or(Expr::Blank);
-
             if negative {
                 rhs = if is_positive_number(&rhs) {
                     negate_number(rhs)
@@ -472,7 +507,6 @@ impl TextToAst {
                     Expr::Neg(Box::new(rhs))
                 };
             }
-
             if pm_sign {
                 rhs = other_op("pm", vec![rhs]);
             }
@@ -481,7 +515,7 @@ impl TextToAst {
                 "+" => Expr::Add(vec![lhs, rhs]),
                 "union" => Expr::Union(vec![lhs, rhs]),
                 "intersect" => Expr::Intersect(vec![lhs, rhs]),
-                other => other_op(other, vec![lhs, rhs]), // perp, parallel
+                other => other_op(other, vec![lhs, rhs]),
             };
         }
 
@@ -503,7 +537,6 @@ impl TextToAst {
                 let rhs = self.factor(p)?.unwrap_or(Expr::Blank);
                 lhs = Some(Expr::Div(Box::new(l), Box::new(rhs)));
             } else {
-                // the one case where | could close an absolute value
                 let p2 = P {
                     allow_absolute_value_closing: true,
                     ..p
@@ -528,30 +561,37 @@ impl TextToAst {
                 for (ind, op) in ops.iter().enumerate() {
                     let Expr::Sym(s) = op else { continue };
                     let name = s.name();
-                    let Some(&prefix) = self.units.get(name.as_str()) else {
-                        continue;
-                    };
-                    if prefix && ind < n - 1 {
+                    let Some(unit) = unit_of(&name) else { continue };
+                    let unit_name = unit.substitute.unwrap_or(&name);
+                    if unit.prefix && ind < n - 1 {
                         let post = if ind == n - 2 {
                             ops[n - 1].clone()
                         } else {
                             self.convert_units_in_term(Expr::Mul(ops[ind + 1..].to_vec()))
                         };
-                        let unit_tree = other_op("unit", vec![op.clone(), post]);
+                        let unit_tree = other_op("unit", vec![Expr::sym(unit_name), post]);
                         return if ind == 0 {
                             unit_tree
                         } else {
-                            let mut rest = ops[..ind].to_vec();
+                            let mut rest: Vec<Expr> = ops[..ind]
+                                .iter()
+                                .map(|o| self.convert_units_in_term(o.clone()))
+                                .collect();
                             rest.push(unit_tree);
                             Expr::Mul(rest)
                         };
-                    } else if !prefix && ind > 0 {
+                    } else if !unit.prefix && ind > 0 {
                         let pre = if ind == 1 {
                             ops[0].clone()
                         } else {
-                            Expr::Mul(ops[..ind].to_vec())
+                            Expr::Mul(
+                                ops[..ind]
+                                    .iter()
+                                    .map(|o| self.convert_units_in_term(o.clone()))
+                                    .collect(),
+                            )
                         };
-                        let unit_tree = other_op("unit", vec![pre, op.clone()]);
+                        let unit_tree = other_op("unit", vec![pre, Expr::sym(unit_name)]);
                         return if ind == n - 1 {
                             unit_tree
                         } else {
@@ -561,18 +601,36 @@ impl TextToAst {
                         };
                     }
                 }
-                Expr::Mul(ops)
+                Expr::Mul(
+                    ops.into_iter()
+                        .map(|o| self.convert_units_in_term(o))
+                        .collect(),
+                )
             }
             Expr::Div(a, b) => Expr::Div(
                 Box::new(self.convert_units_in_term(*a)),
                 Box::new(self.convert_units_in_term(*b)),
             ),
+            Expr::Pow(base, exp) => {
+                if let Expr::Sym(s) = exp.as_ref() {
+                    let name = s.name();
+                    if let Some(u) = unit_of(&name) {
+                        if u.is_exponent {
+                            let unit_name = u.substitute.unwrap_or(&name);
+                            return other_op("unit", vec![*base, Expr::sym(unit_name)]);
+                        }
+                    }
+                }
+                Expr::Pow(
+                    Box::new(self.convert_units_in_term(*base)),
+                    Box::new(self.convert_units_in_term(*exp)),
+                )
+            }
             other => other,
         }
     }
 
     fn factor(&mut self, p: P) -> R<Option<Expr>> {
-        // NOTE: JS checks token_text (not token_type) for "+" here.
         if self.token.text == "+" {
             self.advance()?;
             let f = self.factor(p)?;
@@ -599,19 +657,16 @@ impl TextToAst {
         }
 
         let mut result = self.non_minus_factor(p)?;
-
         if result.is_none() && self.token.ttype == "PERP" {
             result = Some(Expr::sym("perp"));
             self.advance()?;
         }
-
         Ok(result)
     }
 
     fn non_minus_factor(&mut self, p: P) -> R<Option<Expr>> {
         let mut result = self.base_factor(p)?;
 
-        // allow arbitrary sequence of exponents, factorials, primes
         while matches!(self.token.ttype, "^" | "!" | "'") {
             let r = result.take().unwrap_or(Expr::Blank);
             result = Some(match self.token.ttype {
@@ -634,7 +689,26 @@ impl TextToAst {
         Ok(result)
     }
 
+    /// A single leading digit of a NUMBER token, pushing the rest back on the
+    /// lexer. Used by `\frac12`, `x^23`, and operator-symbol arguments.
+    fn get_single_digit_as_number(&mut self) -> R<Option<Expr>> {
+        if self.token.ttype == "NUMBER" && !self.token.text.starts_with('.') {
+            let first = self.token.text.as_bytes()[0] as char;
+            let num = (first as u8 - b'0') as i64;
+            if self.token.text.len() > 1 {
+                let rest = self.token.text[1..].to_string();
+                self.lexer.unput(&rest);
+            }
+            self.advance()?;
+            return Ok(Some(Expr::int(num)));
+        }
+        Ok(None)
+    }
+
     fn get_subsuperscript(&mut self, p: P) -> R<Expr> {
+        if let Some(num) = self.get_single_digit_as_number()? {
+            return Ok(num);
+        }
         if matches!(self.token.ttype, "+" | "-" | "PERP") {
             let subresult = self.token.ttype.to_lowercase();
             self.advance()?;
@@ -649,6 +723,10 @@ impl TextToAst {
     }
 
     fn base_factor(&mut self, p: P) -> R<Option<Expr>> {
+        if self.token.ttype == "BEGINENVIRONMENT" {
+            return self.matrix_environment(p).map(Some);
+        }
+
         let mut result: Option<Expr> = None;
 
         if self.token.ttype == "NUMBER" {
@@ -658,84 +736,20 @@ impl TextToAst {
         } else if self.token.ttype == "INFINITY" {
             result = Some(Expr::Const(MathConst::Inf));
             self.advance()?;
-        } else if self.token.ttype == "VAR" || self.token.ttype == "VARMULTICHAR" {
-            let name = self.token.text.clone();
-
-            if self.opts.applied_function_symbols.contains(&name)
-                || self.opts.function_symbols.contains(&name)
-            {
-                return self.function_var(p, &name).map(Some);
-            } else if self.opts.operator_symbols.contains(&name) {
-                self.advance()?;
-
-                if self.token.ttype == "(" {
-                    self.advance()?;
-                    let args = self.statement_list()?;
-                    if self.token.ttype != ")" {
-                        return Err(self.err("Expecting )"));
-                    }
-                    self.advance()?;
-                    result = Some(match args {
-                        Expr::Seq(SeqKind::List, xs) => other_op(&name, xs),
-                        a => other_op(&name, vec![a]),
-                    });
-                } else {
-                    let arg = self
-                        .factor(P {
-                            parse_absolute_value: p.parse_absolute_value,
-                            ..P::default()
-                        })?
-                        .unwrap_or(Expr::Blank);
-                    result = Some(other_op(&name, vec![arg]));
-                }
-            } else {
-                // possibly a derivative in Leibniz notation
-                if self.opts.parse_leibniz_notation {
-                    let original_state = self.state();
-                    match self.leibniz_notation()? {
-                        Some(r) => return Ok(Some(r)),
-                        None => self.set_state(original_state),
-                    }
-                }
-
-                // determine if should split text into single letter factors
-                let mut split = self.opts.split_symbols;
-                if split
-                    && (self.token.ttype == "VARMULTICHAR"
-                        || self.opts.unsplit_symbols.contains(&name)
-                        || name.chars().count() == 1
-                        || name.chars().any(|c| c.is_ascii_digit()))
-                {
-                    split = false;
-                }
-
-                if split {
-                    // put characters back on the input separated by spaces,
-                    // then process again
-                    for ch in name.chars().rev() {
-                        self.lexer.unput(" ");
-                        let mut buf = [0u8; 4];
-                        self.lexer.unput(ch.encode_utf8(&mut buf));
-                    }
-                    self.advance()?;
-                    // NOTE: in_subsuperscript is deliberately dropped here,
-                    // matching the JS (this makes "x^ab" parse as (x^a)*b).
-                    return self.base_factor(P {
-                        inside_absolute_value: p.inside_absolute_value,
-                        parse_absolute_value: p.parse_absolute_value,
-                        allow_absolute_value_closing: p.allow_absolute_value_closing,
-                        ..P::default()
-                    });
-                } else {
-                    result = Some(Expr::sym(&name));
-                    self.advance()?;
-                }
+        } else if self.token.ttype == "SQRT" {
+            result = Some(self.sqrt_factor(p)?);
+        } else if matches!(self.token.ttype, "VAR" | "LATEXCOMMAND" | "VARMULTICHAR") {
+            match self.symbol_factor(p)? {
+                SymbolResult::Return(e) => return Ok(Some(e)),
+                SymbolResult::Continue(e) => result = e,
             }
-        } else if matches!(self.token.ttype, "(" | "[" | "{" | "LANGLE") {
+        } else if matches!(self.token.ttype, "(" | "[" | "{" | "LBRACE" | "LANGLE") {
             result = Some(self.bracketed(p)?);
-        } else if self.token.ttype == "|"
+        } else if is_pipe(self.token.ttype)
             && p.parse_absolute_value
-            && (p.inside_absolute_value == 0 || !p.allow_absolute_value_closing)
+            && (p.inside_absolute_value == 0
+                || !p.allow_absolute_value_closing
+                || self.token.ttype == "|L")
         {
             let inside = p.inside_absolute_value + 1;
             self.advance()?;
@@ -748,6 +762,8 @@ impl TextToAst {
             }
             self.advance()?;
             result = Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![st]));
+        } else if matches!(self.token.ttype, "LFLOOR" | "LCEIL") {
+            result = Some(self.floor_ceil()?);
         } else if self.token.ttype == "ANGLE" {
             result = self.angle_factor(p)?;
         } else if self.token.ttype == "INT" {
@@ -764,13 +780,171 @@ impl TextToAst {
         Ok(result)
     }
 
-    /// The VAR branch for function symbols (applied or unapplied).
-    fn function_var(&mut self, p: P, name: &str) -> R<Expr> {
-        let must_apply = self
-            .opts
-            .applied_function_symbols
-            .contains(&name.to_string());
-        let mut result = Expr::sym(name);
+    fn matrix_environment(&mut self, _p: P) -> R<Expr> {
+        // token text is "\begin{...}"; extract the environment name.
+        let environment = brace_content(&self.token.text);
+        if !matches!(environment.as_str(), "matrix" | "pmatrix" | "bmatrix") {
+            return Err(self.err(format!("Unrecognized environment {}", environment)));
+        }
+
+        let mut all_rows: Vec<Vec<Expr>> = vec![];
+        let mut row: Vec<Expr> = vec![];
+        let mut n_cols = 0usize;
+        // last_token tracks &/LINEBREAK to detect blank entries.
+        let mut last_token = self.token.ttype;
+
+        self.advance()?;
+
+        while self.token.ttype != "ENDENVIRONMENT" {
+            if self.token.ttype == "&" {
+                if last_token == "&" || last_token == "LINEBREAK" {
+                    row.push(Expr::int(0));
+                }
+                last_token = self.token.ttype;
+                self.advance()?;
+            } else if self.token.ttype == "LINEBREAK" {
+                if last_token == "&" || last_token == "LINEBREAK" {
+                    row.push(Expr::int(0));
+                }
+                n_cols = n_cols.max(row.len());
+                all_rows.push(std::mem::take(&mut row));
+                last_token = self.token.ttype;
+                self.advance()?;
+            } else {
+                // JS condition is always truthy here, so always parse an entry.
+                row.push(self.statement(P::default())?);
+                last_token = " ";
+            }
+        }
+
+        let environment2 = brace_content(&self.token.text);
+        if environment2 != environment {
+            return Err(self.err(format!("Expecting \\end{{{}}}", environment)));
+        }
+
+        if last_token == "&" {
+            row.push(Expr::int(0));
+        }
+        n_cols = n_cols.max(row.len());
+        all_rows.push(row);
+
+        self.advance()?;
+
+        let n_rows = all_rows.len();
+        let mut entries = Vec::with_capacity(n_rows * n_cols);
+        for mut r in all_rows {
+            let have = r.len();
+            entries.append(&mut r);
+            for _ in have..n_cols {
+                entries.push(Expr::int(0));
+            }
+        }
+
+        Ok(Expr::Matrix {
+            rows: n_rows as u32,
+            cols: n_cols as u32,
+            entries,
+        })
+    }
+
+    fn sqrt_factor(&mut self, p: P) -> R<Expr> {
+        self.advance()?;
+
+        let mut root = Expr::int(2);
+        if self.token.ttype == "[" {
+            self.advance()?;
+            let parameter = self.statement(P {
+                parse_absolute_value: p.parse_absolute_value,
+                ..P::default()
+            })?;
+            if self.token.ttype != "]" {
+                return Err(self.err("Expecting ]"));
+            }
+            self.advance()?;
+            root = parameter;
+        }
+
+        if self.token.ttype != "{" {
+            return Err(self.err("Expecting {"));
+        }
+        self.advance()?;
+        let parameter = self.statement(P {
+            parse_absolute_value: p.parse_absolute_value,
+            ..P::default()
+        })?;
+        if self.token.ttype != "}" {
+            return Err(self.err("Expecting }"));
+        }
+        self.advance()?;
+
+        Ok(if root == Expr::int(2) {
+            Expr::Apply(Box::new(Expr::sym("sqrt")), vec![parameter])
+        } else if root == Expr::int(3) {
+            Expr::Apply(Box::new(Expr::sym("cbrt")), vec![parameter])
+        } else {
+            Expr::Apply(Box::new(Expr::sym("nthroot")), vec![parameter, root])
+        })
+    }
+
+    fn floor_ceil(&mut self) -> R<Expr> {
+        let (expected_right, function_name) = if self.token.ttype == "LFLOOR" {
+            ("RFLOOR", "floor")
+        } else {
+            ("RCEIL", "ceil")
+        };
+        self.advance()?;
+        let st = self.statement(P::default())?;
+        let result = Expr::Apply(Box::new(Expr::sym(function_name)), vec![st]);
+        if self.token.ttype != expected_right {
+            return Err(self.err(format!("Expecting {}", expected_right)));
+        }
+        self.advance()?;
+        Ok(result)
+    }
+
+    /// The VAR / LATEXCOMMAND / VARMULTICHAR branch of baseFactor.
+    fn symbol_factor(&mut self, p: P) -> R<SymbolResult> {
+        let mut result = self.token.text.clone();
+
+        if self.token.ttype == "LATEXCOMMAND" {
+            result = result[1..].to_string(); // strip leading backslash
+            if !(self.is_applied(&result)
+                || self.is_function(&result)
+                || self.is_allowed_symbol(&result)
+                || operator_symbol(&result).is_some())
+            {
+                return Err(self.err(format!(
+                    "Unrecognized latex command {}",
+                    self.token.original
+                )));
+            }
+        } else if self.token.ttype == "VARMULTICHAR" {
+            result = brace_content(&result); // \operatorname{...}
+        }
+
+        if self.is_applied(&result) || self.is_function(&result) {
+            return Ok(SymbolResult::Return(self.function_var(p, result)?));
+        }
+
+        if let Some(op) = operator_symbol(&result) {
+            return Ok(SymbolResult::Continue(Some(
+                self.operator_symbol_factor(p, &result, op)?,
+            )));
+        }
+
+        // plain symbol
+        self.advance()?;
+        Ok(SymbolResult::Continue(Some(Expr::sym(&result))))
+    }
+
+    fn function_var(&mut self, p: P, name: String) -> R<Expr> {
+        let must_apply = self.is_applied(&name);
+        let mut name = name;
+        if name == "Re" || name == "Im" {
+            name = name.to_lowercase();
+        }
+        let mut result = Expr::sym(&name);
+        let is_log = name == "log";
         self.advance()?;
 
         if self.token.ttype == "_" {
@@ -779,7 +953,7 @@ impl TextToAst {
                 parse_absolute_value: p.parse_absolute_value,
                 ..P::default()
             })?;
-            if name == "log" && subscript == Expr::int(10) {
+            if is_log && subscript == Expr::int(10) {
                 result = Expr::sym("log10");
             } else {
                 result = Expr::Index(Box::new(result), Box::new(subscript));
@@ -795,7 +969,6 @@ impl TextToAst {
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
-
             while self.token.ttype == "^" {
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
@@ -805,26 +978,23 @@ impl TextToAst {
                 result = Expr::Pow(Box::new(result), Box::new(superscript));
             }
 
-            if self.token.ttype == "(" {
+            if self.token.ttype == "{" || self.token.ttype == "(" {
+                let expected_right = if self.token.ttype == "{" { "}" } else { ")" };
                 self.advance()?;
                 let parameters = self.statement_list()?;
-                if self.token.ttype != ")" {
-                    return Err(self.err("Expecting )"));
+                if self.token.ttype != expected_right {
+                    return Err(self.err(format!("Expecting {}", expected_right)));
                 }
                 self.advance()?;
-
                 let args = match parameters {
-                    // rename from list to tuple → native multi-arg apply
                     Expr::Seq(SeqKind::List, xs) => xs,
                     other => vec![other],
                 };
                 result = Expr::Apply(Box::new(result), args);
             } else if must_apply {
-                // an applied function symbol cannot omit its argument
                 if !self.opts.allow_simplified_function_application {
                     return Err(self.err("Expecting ( after function"));
                 }
-                // simplified application: argument is the next factor
                 let arg = self
                     .factor(P {
                         parse_absolute_value: p.parse_absolute_value,
@@ -838,13 +1008,74 @@ impl TextToAst {
         Ok(result)
     }
 
-    /// ( [ { ⟨ … grouping, tuples/arrays/sets/altvectors, half-open intervals.
+    fn operator_symbol_factor(&mut self, p: P, name: &str, op: OpSym) -> R<Expr> {
+        self.advance()?;
+
+        if name == "frac" && self.opts.parse_leibniz_notation {
+            let original_state = self.state();
+            match self.leibniz_notation()? {
+                Some(r) => return Ok(r),
+                None => self.set_state(original_state),
+            }
+        }
+
+        let mut args: Vec<Expr> = vec![];
+        for _ in 0..op.nargs {
+            if self.token.ttype == "{" {
+                self.advance()?;
+                let new_arg = self.statement(P {
+                    parse_absolute_value: p.parse_absolute_value,
+                    ..P::default()
+                })?;
+                if op.remove_products {
+                    if let Expr::Mul(factors) = new_arg {
+                        args.extend(factors);
+                    } else {
+                        args.push(new_arg);
+                    }
+                } else {
+                    args.push(new_arg);
+                }
+                if self.token.ttype != "}" {
+                    return Err(self.err("Expecting }"));
+                }
+                self.advance()?;
+            } else {
+                let new_arg = match self.get_single_digit_as_number()? {
+                    Some(n) => n,
+                    None => {
+                        if self.token.ttype == "VAR" {
+                            let v = Expr::sym(&self.token.text);
+                            self.advance()?;
+                            v
+                        } else {
+                            return Err(self.err("Expecting {"));
+                        }
+                    }
+                };
+                args.push(new_arg);
+            }
+        }
+
+        Ok(match op.substitute {
+            Some("/") => {
+                let mut it = args.into_iter();
+                let a = it.next().unwrap();
+                let b = it.next().unwrap();
+                Expr::Div(Box::new(a), Box::new(b))
+            }
+            Some(sub) => other_op(sub, args),
+            None => other_op(name, args),
+        })
+    }
+
     fn bracketed(&mut self, _p: P) -> R<Expr> {
         let token_left = self.token.ttype;
         let (expected_right, other_right) = match token_left {
             "(" => (")", Some("]")),
             "[" => ("]", Some(")")),
             "{" => ("}", None),
+            "LBRACE" => ("RBRACE", None),
             _ => ("RANGLE", None),
         };
 
@@ -864,7 +1095,6 @@ impl TextToAst {
             if self.token.ttype != other_right {
                 return Err(self.err("Expecting ) or ]"));
             }
-            // half-open interval
             let Expr::Seq(SeqKind::List, xs) = result else {
                 unreachable!("n_elements == 2 implies a list");
             };
@@ -882,19 +1112,17 @@ impl TextToAst {
             };
         } else if n_elements >= 2 {
             let kind = match token_left {
-                "(" => SeqKind::Tuple,
+                "(" | "{" => SeqKind::Tuple,
                 "[" => SeqKind::Array,
-                "{" => SeqKind::Set,
+                "LBRACE" => SeqKind::Set,
                 _ => SeqKind::AltVector,
             };
             if let Expr::Seq(_, xs) = result {
                 result = Expr::Seq(kind, xs);
             }
-        } else if token_left == "{" {
-            // singleton set (also covers set-builder | and :)
+        } else if token_left == "LBRACE" {
             result = Expr::Seq(SeqKind::Set, vec![result]);
         }
-        // single element in ( [ ⟨: plain grouping — result unchanged
 
         self.advance()?;
         Ok(result)
@@ -903,23 +1131,21 @@ impl TextToAst {
     fn angle_factor(&mut self, p: P) -> R<Option<Expr>> {
         self.advance()?;
 
-        if self.token.ttype == "(" {
+        if self.token.ttype == "{" || self.token.ttype == "(" {
+            let expected_right = if self.token.ttype == "{" { "}" } else { ")" };
             self.advance()?;
             let parameters = self.statement_list()?;
-            if self.token.ttype != ")" {
-                return Err(self.err("Expecting )"));
+            if self.token.ttype != expected_right {
+                return Err(self.err(format!("Expecting {}", expected_right)));
             }
             self.advance()?;
 
-            // JS: only a list or a product is recognised here; anything else
-            // leaves result false.
             Ok(match parameters {
                 Expr::Seq(SeqKind::List, xs) => Some(other_op("angle", xs)),
                 m @ Expr::Mul(_) => Some(other_op("angle", vec![m])),
                 _ => None,
             })
         } else {
-            // angle not followed by ( — collect non-minus factors
             let mut args = vec![];
             while let Some(sub) = self.non_minus_factor(P {
                 parse_absolute_value: p.parse_absolute_value,
@@ -939,7 +1165,6 @@ impl TextToAst {
         self.advance()?;
 
         let mut head = Expr::sym("int");
-
         if self.token.ttype == "_" {
             self.advance()?;
             let subscript = self.get_subsuperscript(p)?;
@@ -955,12 +1180,9 @@ impl TextToAst {
             parse_absolute_value: p.parse_absolute_value,
             ..P::default()
         })?;
-        // (JS can produce `false` here for a bare "int"; blank is the closest
-        // representable tree)
         let mut integrand = integrand.map(flatten).unwrap_or(Expr::Blank);
 
         if let Expr::Mul(ops) = &mut integrand {
-            // extract consecutive factors "d", x as differentials ["d", x]
             let mut ds = vec![];
             let mut i = 0;
             while i + 1 < ops.len() {
@@ -968,7 +1190,6 @@ impl TextToAst {
                     let factor2 = ops.remove(i + 1);
                     ops.remove(i);
                     ds.push(other_op("d", vec![factor2]));
-                    // do not advance i: re-check the same position (JS i--)
                 } else {
                     i += 1;
                 }
@@ -979,110 +1200,95 @@ impl TextToAst {
         Ok(Expr::Apply(Box::new(head), vec![integrand]))
     }
 
-    /// Attempt to parse a derivative in Leibniz notation (dy/dx, ∂²f/∂x∂y…).
-    /// Returns None (with the caller restoring lexer state) on failure.
+    /// `\frac{d^n f}{d x^n}` derivative in Leibniz notation. Assumes the
+    /// `\frac` token has already been consumed; returns None (caller restores
+    /// state) if the shape does not match.
     fn leibniz_notation(&mut self) -> R<Option<Expr>> {
-        let chars: Vec<char> = self.token.text.chars().collect();
-
-        let valid_start = self.token.ttype == "VAR"
-            && !chars.is_empty()
-            && (chars[0] == 'd' || chars[0] == '∂')
-            && (chars.len() == 1 || (chars.len() == 2 && chars[1].is_ascii_alphabetic()));
-        if !valid_start {
+        if self.token.ttype != "{" {
             return Ok(None);
         }
+        self.advance()?;
 
-        let deriv_symbol = chars[0];
-        let mut n_deriv: f64 = 1.0;
-        let var1: String;
-        let mut var2s: Vec<String> = vec![];
-        let mut var2_exponents: Vec<f64> = vec![];
-
-        if chars.len() == 2 {
-            var1 = chars[1].to_string();
-        } else {
-            // just a d or ∂: must be followed by ^ or a variable without ∂
-            self.advance()?;
-            if self.token.ttype == "VARMULTICHAR"
-                || (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
-            {
-                var1 = self.token.text.clone();
+        // Numerator: d or \partial, optional ^ n, then the differentiated var.
+        let deriv_symbol =
+            if self.token.ttype == "LATEXCOMMAND" && &self.token.text[1..] == "partial" {
+                '∂'
+            } else if self.token.ttype == "VAR" && self.token.text == "d" {
+                'd'
             } else {
-                if self.token.ttype != "^" {
-                    return Ok(None);
-                }
+                return Ok(None);
+            };
+
+        let mut n_deriv: f64 = 1.0;
+        self.advance()?;
+
+        if self.token.ttype == "^" {
+            self.advance()?;
+            let in_braces = self.token.ttype == "{";
+            if in_braces {
                 self.advance()?;
-                if self.token.ttype != "NUMBER" {
-                    return Ok(None);
-                }
-                n_deriv = parse_js_float(&self.token.text);
-                if n_deriv.fract() != 0.0 {
-                    return Ok(None);
-                }
+            }
+            if self.token.ttype != "NUMBER" {
+                return Ok(None);
+            }
+            n_deriv = parse_js_float(&self.token.text);
+            if n_deriv.fract() != 0.0 {
+                return Ok(None);
+            }
+            if in_braces {
                 self.advance()?;
-                if (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
-                    || self.token.ttype == "VARMULTICHAR"
-                {
-                    var1 = self.token.text.clone();
-                } else {
+                if self.token.ttype != "}" {
                     return Ok(None);
                 }
             }
+            self.advance()?;
         }
 
+        let Some(var1) = self.leibniz_var()? else {
+            return Ok(None);
+        };
+
+        // } then {
         self.advance()?;
-        if self.token.ttype != "/" {
+        if self.token.ttype != "}" {
             return Ok(None);
         }
-
-        let mut exponent_sum = 0.0;
+        self.advance()?;
+        if self.token.ttype != "{" {
+            return Ok(None);
+        }
         self.advance()?;
 
+        // Denominator: repeated (deriv_symbol var ^n?) until exponents sum to n.
+        let mut var2s: Vec<String> = vec![];
+        let mut var2_exponents: Vec<f64> = vec![];
+        let mut exponent_sum = 0.0;
+
         loop {
-            // next must be a VAR starting with the derivative symbol
-            if self.token.ttype != "VAR" || !self.token.text.starts_with(deriv_symbol) {
+            let matches_symbol =
+                (deriv_symbol == 'd' && self.token.ttype == "VAR" && self.token.text == "d")
+                    || (deriv_symbol == '∂'
+                        && self.token.ttype == "LATEXCOMMAND"
+                        && &self.token.text[1..] == "partial");
+            if !matches_symbol {
                 return Ok(None);
             }
 
-            let tchars: Vec<char> = self.token.text.chars().collect();
-            if tchars.len() > 2 {
-                // put extra characters back on the lexer, keep two
-                let rest: String = tchars[2..].iter().collect();
-                self.lexer.unput(&rest);
-                self.token.text = tchars[..2].iter().collect();
-            }
+            self.advance()?;
+            let Some(var2) = self.leibniz_var()? else {
+                return Ok(None);
+            };
+            var2s.push(var2);
 
-            let tchars: Vec<char> = self.token.text.chars().collect();
-            if tchars.len() == 2 {
-                if tchars[1].is_ascii_alphabetic() {
-                    var2s.push(tchars[1].to_string());
-                } else {
-                    return Ok(None);
-                }
-            } else {
-                // token was just the derivative symbol
-                self.advance()?;
-                if (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
-                    || self.token.ttype == "VARMULTICHAR"
-                {
-                    var2s.push(self.token.text.clone());
-                } else {
-                    return Ok(None);
-                }
-            }
-
-            // optional ^ integer (no spaces before ^)
             let mut this_exponent: f64 = 1.0;
-            let mut last_was_space = false;
-
-            self.advance_opts(false)?;
-            if self.token.ttype == "SPACE" {
-                last_was_space = true;
-                self.advance()?;
-            }
+            self.advance()?;
 
             if self.token.ttype == "^" {
                 self.advance()?;
+                let in_braces = self.token.ttype == "{";
+                if in_braces {
+                    self.advance()?;
+                }
                 if self.token.ttype != "NUMBER" {
                     return Ok(None);
                 }
@@ -1090,12 +1296,13 @@ impl TextToAst {
                 if this_exponent.fract() != 0.0 {
                     return Ok(None);
                 }
-                last_was_space = false;
-                self.advance_opts(false)?;
-                if self.token.ttype == "SPACE" {
-                    last_was_space = true;
+                if in_braces {
                     self.advance()?;
+                    if self.token.ttype != "}" {
+                        return Ok(None);
+                    }
                 }
+                self.advance()?;
             }
 
             var2_exponents.push(this_exponent);
@@ -1104,24 +1311,17 @@ impl TextToAst {
             if exponent_sum > n_deriv {
                 return Ok(None);
             }
-
             if exponent_sum == n_deriv {
-                // the derivative must be separated from what follows
-                if !last_was_space
-                    && (self.token.ttype == "VAR" || self.token.ttype == "VARMULTICHAR")
-                {
+                if self.token.ttype != "}" {
                     return Ok(None);
                 }
-                if self.token.ttype == "SPACE" {
-                    self.advance()?;
-                }
+                self.advance()?;
 
                 let result_name = if deriv_symbol == '∂' {
                     "partial_derivative_leibniz"
                 } else {
                     "derivative_leibniz"
                 };
-
                 let arg1 = if n_deriv == 1.0 {
                     Expr::sym(&var1)
                 } else {
@@ -1130,7 +1330,6 @@ impl TextToAst {
                         vec![Expr::sym(&var1), Expr::Num(Number::from_f64(n_deriv))],
                     )
                 };
-
                 let r2: Vec<Expr> = var2s
                     .iter()
                     .zip(&var2_exponents)
@@ -1153,4 +1352,39 @@ impl TextToAst {
             }
         }
     }
+
+    /// A single differentiation variable in Leibniz notation: a VAR, an
+    /// `\operatorname{...}`, or a LATEXCOMMAND in allowed symbols. Does not
+    /// advance past it (caller advances). Returns None on mismatch.
+    fn leibniz_var(&mut self) -> R<Option<String>> {
+        Ok(match self.token.ttype {
+            "VAR" => Some(self.token.text.clone()),
+            "VARMULTICHAR" => Some(brace_content(&self.token.text)),
+            "LATEXCOMMAND" => {
+                let name = self.token.text[1..].to_string();
+                if self.is_allowed_symbol(&name) {
+                    Some(name)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+    }
+}
+
+/// Result of the symbol branch: either a fully-formed factor to return
+/// immediately (functions handle their own trailing subscripts), or a value
+/// to continue baseFactor with (for the trailing `_` subscript handling).
+enum SymbolResult {
+    Return(Expr),
+    Continue(Option<Expr>),
+}
+
+/// Extract the identifier inside a braced LaTeX token like `\begin{matrix}`,
+/// `\end{matrix}`, or `\operatorname{name}`.
+fn brace_content(s: &str) -> String {
+    let start = s.find('{').map(|i| i + 1).unwrap_or(0);
+    let end = s.rfind('}').unwrap_or(s.len());
+    s[start..end].trim().to_string()
 }

@@ -56,3 +56,10 @@ writeFixture(
   "bad_inputs",
   "error",
 );
+writeFixture("latex-to-ast.json", "quick_latex-to-ast.spec.js", "trees", "tree");
+writeFixture(
+  "latex-to-ast-errors.json",
+  "quick_latex-to-ast.spec.js",
+  "bad_inputs",
+  "error",
+);

@@ -62,7 +62,23 @@ pub fn to_js(expr: &Expr) -> Value {
 
         Expr::Relation { operands, ops } => relation_to_js(operands, ops),
 
-        Expr::Matrix { .. } => unimplemented!("matrices are not produced by the text parser"),
+        Expr::Matrix {
+            rows,
+            cols,
+            entries,
+        } => {
+            // ["matrix", ["tuple", rows, cols], ["tuple", <row-tuples>]]
+            let ncols = *cols as usize;
+            let mut body = vec![Value::String("tuple".to_string())];
+            for r in 0..*rows as usize {
+                let mut row = vec![Value::String("tuple".to_string())];
+                for c in 0..ncols {
+                    row.push(to_js(&entries[r * ncols + c]));
+                }
+                body.push(Value::Array(row));
+            }
+            json!(["matrix", ["tuple", rows, cols], Value::Array(body)])
+        }
 
         Expr::OtherOp(name, args) => {
             let mut v = vec![Value::String(name.name())];
