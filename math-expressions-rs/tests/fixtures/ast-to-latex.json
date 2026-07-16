@@ -1,0 +1,3103 @@
+[
+ {
+  "ast": [
+   "*",
+   [
+    "/",
+    1,
+    2
+   ],
+   "x"
+  ],
+  "out": "\\frac{1}{2} x"
+ },
+ {
+  "ast": [
+   "/",
+   -2,
+   3
+  ],
+  "out": "-\\frac{2}{3}"
+ },
+ {
+  "ast": [
+   "/",
+   [
+    "-",
+    "a"
+   ],
+   3
+  ],
+  "out": "-\\frac{a}{3}"
+ },
+ {
+  "ast": [
+   "/",
+   [
+    "*",
+    -2,
+    "x"
+   ],
+   3
+  ],
+  "out": "-\\frac{2 x}{3}"
+ },
+ {
+  "ast": [
+   "/",
+   [
+    "*",
+    [
+     "-",
+     "a"
+    ],
+    "x"
+   ],
+   3
+  ],
+  "out": "-\\frac{a x}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "/",
+    -2,
+    3
+   ]
+  ],
+  "out": "z - \\frac{2}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "/",
+    [
+     "-",
+     "a"
+    ],
+    3
+   ]
+  ],
+  "out": "z - \\frac{a}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "/",
+    [
+     "*",
+     -2,
+     "x"
+    ],
+    3
+   ]
+  ],
+  "out": "z - \\frac{2 x}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "/",
+    [
+     "*",
+     [
+      "-",
+      "a"
+     ],
+     "x"
+    ],
+    3
+   ]
+  ],
+  "out": "z - \\frac{a x}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "-",
+    [
+     "/",
+     -2,
+     3
+    ]
+   ]
+  ],
+  "out": "z - \\frac{-2}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "-",
+    [
+     "/",
+     [
+      "-",
+      "a"
+     ],
+     3
+    ]
+   ]
+  ],
+  "out": "z - \\frac{-a}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "-",
+    [
+     "/",
+     [
+      "*",
+      -2,
+      "x"
+     ],
+     3
+    ]
+   ]
+  ],
+  "out": "z - \\frac{-2 x}{3}"
+ },
+ {
+  "ast": [
+   "+",
+   "z",
+   [
+    "-",
+    [
+     "/",
+     [
+      "*",
+      [
+       "-",
+       "a"
+      ],
+      "x"
+     ],
+     3
+    ]
+   ]
+  ],
+  "out": "z - \\frac{-a x}{3}"
+ },
+ {
+  "ast": [
+   "-",
+   [
+    "+",
+    "z",
+    [
+     "/",
+     -2,
+     3
+    ]
+   ]
+  ],
+  "out": "-\\left(z - \\frac{2}{3}\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "z",
+   [
+    "/",
+    -2,
+    3
+   ]
+  ],
+  "out": "z \\left(-\\frac{2}{3}\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "z",
+   [
+    "/",
+    [
+     "-",
+     "a"
+    ],
+    3
+   ]
+  ],
+  "out": "z \\left(-\\frac{a}{3}\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "z",
+   [
+    "/",
+    [
+     "*",
+     -2,
+     "x"
+    ],
+    3
+   ]
+  ],
+  "out": "z \\left(-\\frac{2 x}{3}\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "z",
+   [
+    "/",
+    [
+     "*",
+     [
+      "-",
+      "a"
+     ],
+     "x"
+    ],
+    3
+   ]
+  ],
+  "out": "z \\left(-\\frac{a x}{3}\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "y",
+   [
+    "/",
+    1,
+    2
+   ],
+   "x"
+  ],
+  "out": "y \\left(\\frac{1}{2}\\right) x"
+ },
+ {
+  "ast": [
+   "+",
+   1,
+   "x",
+   3
+  ],
+  "out": "1 + x + 3"
+ },
+ {
+  "ast": [
+   "+",
+   1,
+   [
+    "-",
+    "x"
+   ],
+   [
+    "-",
+    3
+   ]
+  ],
+  "out": "1 - x - 3"
+ },
+ {
+  "ast": [
+   "+",
+   1,
+   [
+    "-",
+    "x"
+   ],
+   -3
+  ],
+  "out": "1 - x - 3"
+ },
+ {
+  "ast": [
+   "+",
+   [
+    "-",
+    "x"
+   ],
+   [
+    "-",
+    0
+   ]
+  ],
+  "out": "-x - 0"
+ },
+ {
+  "ast": [
+   "+",
+   [
+    "-",
+    "x"
+   ],
+   0
+  ],
+  "out": "-x + 0"
+ },
+ {
+  "ast": [
+   "+",
+   -5,
+   -3
+  ],
+  "out": "-5 - 3"
+ },
+ {
+  "ast": [
+   "-",
+   0
+  ],
+  "out": "-0"
+ },
+ {
+  "ast": 0,
+  "out": "0"
+ },
+ {
+  "ast": [
+   "+",
+   1,
+   [
+    "-",
+    [
+     "-",
+     "x"
+    ]
+   ]
+  ],
+  "out": "1 - -x"
+ },
+ {
+  "ast": [
+   "apply",
+   "log",
+   "x"
+  ],
+  "out": "\\log\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "ln",
+   "x"
+  ],
+  "out": "\\ln\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "log10",
+   "x"
+  ],
+  "out": "\\log_{10}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "abs",
+   "x"
+  ],
+  "out": "\\left|x\\right|"
+ },
+ {
+  "ast": [
+   "apply",
+   "abs",
+   [
+    "apply",
+    "sin",
+    [
+     "apply",
+     "abs",
+     "x"
+    ]
+   ]
+  ],
+  "out": "\\left|\\sin\\left(\\left|x\\right|\\right)\\right|"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   2
+  ],
+  "out": "x^{2}"
+ },
+ {
+  "ast": [
+   "-",
+   [
+    "^",
+    "x",
+    2
+   ]
+  ],
+  "out": "-x^{2}"
+ },
+ {
+  "ast": [
+   "+",
+   "a",
+   [
+    "-",
+    [
+     "^",
+     "x",
+     2
+    ]
+   ]
+  ],
+  "out": "a - x^{2}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   47
+  ],
+  "out": "x^{47}"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "^",
+    "x",
+    "a"
+   ],
+   "b"
+  ],
+  "out": "x^{a} b"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "apply",
+    "factorial",
+    "a"
+   ]
+  ],
+  "out": "x^{a!}"
+ },
+ {
+  "ast": [
+   "*",
+   "x",
+   "y",
+   "z"
+  ],
+  "out": "x y z"
+ },
+ {
+  "ast": [
+   "*",
+   "c",
+   [
+    "+",
+    "a",
+    "b"
+   ]
+  ],
+  "out": "c \\left(a + b\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "+",
+    "a",
+    "b"
+   ],
+   "c"
+  ],
+  "out": "\\left(a + b\\right) c"
+ },
+ {
+  "ast": [
+   "apply",
+   "factorial",
+   "a"
+  ],
+  "out": "a!"
+ },
+ {
+  "ast": "theta",
+  "out": "\\theta"
+ },
+ {
+  "ast": [
+   "*",
+   "t",
+   "h",
+   "e",
+   "t",
+   "a"
+  ],
+  "out": "t h e t a"
+ },
+ {
+  "ast": [
+   "apply",
+   "cos",
+   "theta"
+  ],
+  "out": "\\cos\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "acos",
+   "theta"
+  ],
+  "out": "\\arccos\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arccos",
+   "theta"
+  ],
+  "out": "\\arccos\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "acot",
+   "theta"
+  ],
+  "out": "\\arccot\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arccot",
+   "theta"
+  ],
+  "out": "\\arccot\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "acsc",
+   "theta"
+  ],
+  "out": "\\arccsc\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arccsc",
+   "theta"
+  ],
+  "out": "\\arccsc\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "asec",
+   "theta"
+  ],
+  "out": "\\arcsec\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arcsec",
+   "theta"
+  ],
+  "out": "\\arcsec\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "asin",
+   "theta"
+  ],
+  "out": "\\arcsin\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arcsin",
+   "theta"
+  ],
+  "out": "\\arcsin\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "atan",
+   "theta"
+  ],
+  "out": "\\arctan\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "arctan",
+   "theta"
+  ],
+  "out": "\\arctan\\left(\\theta\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "c",
+   "o",
+   "s",
+   "x"
+  ],
+  "out": "c o s x"
+ },
+ {
+  "ast": [
+   "apply",
+   "abs",
+   [
+    "apply",
+    "sin",
+    [
+     "apply",
+     "abs",
+     "x"
+    ]
+   ]
+  ],
+  "out": "\\left|\\sin\\left(\\left|x\\right|\\right)\\right|"
+ },
+ {
+  "ast": [
+   "*",
+   "blah",
+   "x"
+  ],
+  "out": "\\operatorname{blah} x"
+ },
+ {
+  "ast": [
+   "apply",
+   "abs",
+   [
+    "=",
+    [
+     "+",
+     "x",
+     3
+    ],
+    2
+   ]
+  ],
+  "out": "\\left|x + 3 = 2\\right|"
+ },
+ {
+  "ast": [
+   "_",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "x_{y_{z}}"
+ },
+ {
+  "ast": [
+   "_",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "x_{y_{z}}"
+ },
+ {
+  "ast": [
+   "_",
+   [
+    "_",
+    "x",
+    "y"
+   ],
+   "z"
+  ],
+  "out": "\\left(x_{y}\\right)_{z}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "^",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "x^{y^{z}}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "^",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "x^{y^{z}}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "^",
+    "x",
+    "y"
+   ],
+   "z"
+  ],
+  "out": "\\left(x^{y}\\right)^{z}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "x^{y_{z}}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "_",
+    "x",
+    "y"
+   ],
+   "z"
+  ],
+  "out": "x_{y}^{z}"
+ },
+ {
+  "ast": [
+   "*",
+   "x",
+   "y",
+   [
+    "apply",
+    "factorial",
+    "z"
+   ]
+  ],
+  "out": "x y z!"
+ },
+ {
+  "ast": "x",
+  "out": "x"
+ },
+ {
+  "ast": "f",
+  "out": "f"
+ },
+ {
+  "ast": [
+   "*",
+   "f",
+   "g"
+  ],
+  "out": "f g"
+ },
+ {
+  "ast": [
+   "+",
+   "f",
+   "g"
+  ],
+  "out": "f + g"
+ },
+ {
+  "ast": [
+   "apply",
+   "f",
+   "x"
+  ],
+  "out": "f\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "f",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ]
+  ],
+  "out": "f\\left( x, y, z \\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "f",
+   [
+    "apply",
+    "g",
+    "x"
+   ]
+  ],
+  "out": "f g\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "f",
+   "p",
+   "x"
+  ],
+  "out": "f p x"
+ },
+ {
+  "ast": [
+   "*",
+   "f",
+   "x"
+  ],
+  "out": "f x"
+ },
+ {
+  "ast": [
+   "prime",
+   "f"
+  ],
+  "out": "f'"
+ },
+ {
+  "ast": [
+   "*",
+   "f",
+   [
+    "prime",
+    "g"
+   ]
+  ],
+  "out": "f g'"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "prime",
+    "f"
+   ],
+   "g"
+  ],
+  "out": "f' g"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "prime",
+    "f"
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     "g"
+    ]
+   ]
+  ],
+  "out": "f' g''"
+ },
+ {
+  "ast": [
+   "prime",
+   "x"
+  ],
+  "out": "x'"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "prime",
+    "f"
+   ],
+   "x"
+  ],
+  "out": "f'\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "apply",
+    "f",
+    "x"
+   ]
+  ],
+  "out": "f\\left(x\\right)'"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "apply",
+    "sin",
+    "x"
+   ]
+  ],
+  "out": "\\sin\\left(x\\right)'"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "prime",
+    "sin"
+   ],
+   "x"
+  ],
+  "out": "\\sin'\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "prime",
+    [
+     "prime",
+     "f"
+    ]
+   ],
+   "x"
+  ],
+  "out": "f''\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "prime",
+    [
+     "apply",
+     "sin",
+     "x"
+    ]
+   ]
+  ],
+  "out": "\\sin\\left(x\\right)''"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   [
+    "_",
+    "t",
+    "y"
+   ]
+  ],
+  "out": "f\\left(x\\right)^{t_{y}}"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "_",
+    "f",
+    "t"
+   ],
+   "x"
+  ],
+  "out": "f_{t}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "_",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   "t"
+  ],
+  "out": "f\\left(x\\right)_{t}"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    "f",
+    2
+   ],
+   "x"
+  ],
+  "out": "f^{2}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   2
+  ],
+  "out": "f\\left(x\\right)^{2}"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    [
+     "prime",
+     "f"
+    ],
+    "a"
+   ],
+   "x"
+  ],
+  "out": "f'^{a}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    "f",
+    [
+     "prime",
+     "a"
+    ]
+   ],
+   "x"
+  ],
+  "out": "f^{a'}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    [
+     "_",
+     "f",
+     "a"
+    ],
+    [
+     "prime",
+     "b"
+    ]
+   ],
+   "x"
+  ],
+  "out": "f_{a}^{b'}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    [
+     "prime",
+     [
+      "_",
+      "f",
+      "a"
+     ]
+    ],
+    "b"
+   ],
+   "x"
+  ],
+  "out": "f_{a}'^{b}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "sin",
+   "x"
+  ],
+  "out": "\\sin\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "apply",
+    [
+     "^",
+     "sin",
+     "x"
+    ],
+    "y"
+   ],
+   "z"
+  ],
+  "out": "\\sin^{x}\\left(y\\right) z"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "apply",
+    "sin",
+    "x"
+   ],
+   "y"
+  ],
+  "out": "\\sin\\left(x\\right) y"
+ },
+ {
+  "ast": [
+   "apply",
+   [
+    "^",
+    "sin",
+    2
+   ],
+   "x"
+  ],
+  "out": "\\sin^{2}\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "exp",
+   "x"
+  ],
+  "out": "\\exp\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "^",
+   "e",
+   "x"
+  ],
+  "out": "e^{x}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "apply",
+    "factorial",
+    2
+   ]
+  ],
+  "out": "x^{2!}"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   [
+    "apply",
+    "factorial",
+    [
+     "apply",
+     "factorial",
+     2
+    ]
+   ]
+  ],
+  "out": "x^{2!!}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "_",
+    "x",
+    "t"
+   ],
+   2
+  ],
+  "out": "x_{t}^{2}"
+ },
+ {
+  "ast": [
+   "_",
+   "x",
+   [
+    "^",
+    "f",
+    2
+   ]
+  ],
+  "out": "x_{f^{2}}"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "_",
+    "x",
+    "t"
+   ]
+  ],
+  "out": "x_{t}'"
+ },
+ {
+  "ast": [
+   "_",
+   "x",
+   [
+    "prime",
+    "f"
+   ]
+  ],
+  "out": "x_{f'}"
+ },
+ {
+  "ast": [
+   "tuple",
+   "x",
+   "y",
+   "z"
+  ],
+  "out": "\\left( x, y, z \\right)"
+ },
+ {
+  "ast": [
+   "+",
+   [
+    "tuple",
+    "x",
+    "y"
+   ],
+   [
+    "-",
+    [
+     "array",
+     "x",
+     "y"
+    ]
+   ]
+  ],
+  "out": "\\left( x, y \\right) - \\left[ x, y \\right]"
+ },
+ {
+  "ast": [
+   "*",
+   2,
+   [
+    "+",
+    "z",
+    [
+     "-",
+     [
+      "+",
+      "x",
+      1
+     ]
+    ]
+   ]
+  ],
+  "out": "2 \\left(z - \\left(x + 1\\right)\\right)"
+ },
+ {
+  "ast": [
+   "set",
+   1,
+   2,
+   "x"
+  ],
+  "out": "\\left\\{ 1, 2, x \\right\\}"
+ },
+ {
+  "ast": [
+   "set",
+   "x",
+   "x"
+  ],
+  "out": "\\left\\{ x, x \\right\\}"
+ },
+ {
+  "ast": [
+   "set",
+   "x"
+  ],
+  "out": "\\left\\{ x \\right\\}"
+ },
+ {
+  "ast": [
+   "interval",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ],
+  "out": "\\left( 1, 2 \\right]"
+ },
+ {
+  "ast": [
+   "array",
+   1,
+   2
+  ],
+  "out": "\\left[ 1, 2 \\right]"
+ },
+ {
+  "ast": [
+   "tuple",
+   1,
+   2
+  ],
+  "out": "\\left( 1, 2 \\right)"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "tuple",
+    1,
+    2
+   ]
+  ],
+  "out": "\\left( 1, 2 \\right)'"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   "T"
+  ],
+  "out": "\\left( 1, 2 \\right)^{T}"
+ },
+ {
+  "ast": [
+   "vector",
+   1,
+   2
+  ],
+  "out": "\\left( 1, 2 \\right)"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "vector",
+    1,
+    2
+   ]
+  ],
+  "out": "\\left( 1, 2 \\right)'"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "vector",
+    1,
+    2
+   ],
+   "T"
+  ],
+  "out": "\\left( 1, 2 \\right)^{T}"
+ },
+ {
+  "ast": [
+   "altvector",
+   "x",
+   "y"
+  ],
+  "out": "\\left\\langle x, y \\right\\rangle"
+ },
+ {
+  "ast": [
+   "prime",
+   [
+    "altvector",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\left\\langle x, y \\right\\rangle'"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "altvector",
+    "x",
+    "y"
+   ],
+   "T"
+  ],
+  "out": "\\left\\langle x, y \\right\\rangle^{T}"
+ },
+ {
+  "ast": [
+   "list",
+   1,
+   2,
+   3
+  ],
+  "out": "1, 2, 3"
+ },
+ {
+  "ast": [
+   "=",
+   "x",
+   "a"
+  ],
+  "out": "x = a"
+ },
+ {
+  "ast": [
+   "=",
+   "x",
+   "y",
+   1
+  ],
+  "out": "x = y = 1"
+ },
+ {
+  "ast": [
+   "=",
+   "x",
+   [
+    "=",
+    "y",
+    1
+   ]
+  ],
+  "out": "x = \\left(y = 1\\right)"
+ },
+ {
+  "ast": [
+   "=",
+   [
+    "=",
+    "x",
+    "y"
+   ],
+   1
+  ],
+  "out": "\\left(x = y\\right) = 1"
+ },
+ {
+  "ast": [
+   "ne",
+   7,
+   2
+  ],
+  "out": "7 \\ne 2"
+ },
+ {
+  "ast": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\lnot \\left(x = y\\right)"
+ },
+ {
+  "ast": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\lnot \\left(x = y\\right)"
+ },
+ {
+  "ast": [
+   ">",
+   "x",
+   "y"
+  ],
+  "out": "x > y"
+ },
+ {
+  "ast": [
+   "ge",
+   "x",
+   "y"
+  ],
+  "out": "x \\ge y"
+ },
+ {
+  "ast": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    true
+   ]
+  ],
+  "out": "x > y > z"
+ },
+ {
+  "ast": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    false
+   ]
+  ],
+  "out": "x > y \\ge z"
+ },
+ {
+  "ast": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ],
+  "out": "x \\ge y > z"
+ },
+ {
+  "ast": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    false
+   ]
+  ],
+  "out": "x \\ge y \\ge z"
+ },
+ {
+  "ast": [
+   "<",
+   "x",
+   "y"
+  ],
+  "out": "x < y"
+ },
+ {
+  "ast": [
+   "le",
+   "x",
+   "y"
+  ],
+  "out": "x \\le y"
+ },
+ {
+  "ast": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    true
+   ]
+  ],
+  "out": "x < y < z"
+ },
+ {
+  "ast": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    false
+   ]
+  ],
+  "out": "x < y \\le z"
+ },
+ {
+  "ast": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ],
+  "out": "x \\le y < z"
+ },
+ {
+  "ast": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    false
+   ]
+  ],
+  "out": "x \\le y \\le z"
+ },
+ {
+  "ast": [
+   ">",
+   [
+    "<",
+    "x",
+    "y"
+   ],
+   "z"
+  ],
+  "out": "\\left(x < y\\right) > z"
+ },
+ {
+  "ast": [
+   "subset",
+   "A",
+   "B"
+  ],
+  "out": "A \\subset B"
+ },
+ {
+  "ast": [
+   "subseteq",
+   "A",
+   "B"
+  ],
+  "out": "A \\subseteq B"
+ },
+ {
+  "ast": [
+   "notsubset",
+   "A",
+   "B"
+  ],
+  "out": "A \\not\\subset B"
+ },
+ {
+  "ast": [
+   "notsubseteq",
+   "A",
+   "B"
+  ],
+  "out": "A \\not\\subseteq B"
+ },
+ {
+  "ast": [
+   "superset",
+   "A",
+   "B"
+  ],
+  "out": "A \\supset B"
+ },
+ {
+  "ast": [
+   "superseteq",
+   "A",
+   "B"
+  ],
+  "out": "A \\supseteq B"
+ },
+ {
+  "ast": [
+   "notsuperset",
+   "A",
+   "B"
+  ],
+  "out": "A \\not\\supset B"
+ },
+ {
+  "ast": [
+   "notsuperseteq",
+   "A",
+   "B"
+  ],
+  "out": "A \\not\\supseteq B"
+ },
+ {
+  "ast": [
+   "forall",
+   "x"
+  ],
+  "out": "\\forall x"
+ },
+ {
+  "ast": [
+   "forall",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ],
+  "out": "\\forall x \\in A"
+ },
+ {
+  "ast": [
+   "exists",
+   "x"
+  ],
+  "out": "\\exists x"
+ },
+ {
+  "ast": [
+   "exists",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ],
+  "out": "\\exists x \\in A"
+ },
+ {
+  "ast": [
+   "in",
+   "x",
+   "A"
+  ],
+  "out": "x \\in A"
+ },
+ {
+  "ast": [
+   "notin",
+   "x",
+   "A"
+  ],
+  "out": "x \\notin A"
+ },
+ {
+  "ast": [
+   "ni",
+   "A",
+   "x"
+  ],
+  "out": "A \\ni x"
+ },
+ {
+  "ast": [
+   "notni",
+   "A",
+   "x"
+  ],
+  "out": "A \\not\\ni x"
+ },
+ {
+  "ast": [
+   "union",
+   "A",
+   "B"
+  ],
+  "out": "A \\cup B"
+ },
+ {
+  "ast": [
+   "intersect",
+   "A",
+   "B"
+  ],
+  "out": "A \\cap B"
+ },
+ {
+  "ast": [
+   "and",
+   "A",
+   "B"
+  ],
+  "out": "A \\land B"
+ },
+ {
+  "ast": [
+   "and",
+   "A",
+   "B"
+  ],
+  "out": "A \\land B"
+ },
+ {
+  "ast": [
+   "or",
+   "A",
+   "B"
+  ],
+  "out": "A \\lor B"
+ },
+ {
+  "ast": [
+   "or",
+   "A",
+   "B"
+  ],
+  "out": "A \\lor B"
+ },
+ {
+  "ast": [
+   "and",
+   "A",
+   "B",
+   "C"
+  ],
+  "out": "A \\land B \\land C"
+ },
+ {
+  "ast": [
+   "or",
+   "A",
+   "B",
+   "C"
+  ],
+  "out": "A \\lor B \\lor C"
+ },
+ {
+  "ast": [
+   "or",
+   [
+    "and",
+    "A",
+    "B"
+   ],
+   "C"
+  ],
+  "out": "\\left(A \\land B\\right) \\lor C"
+ },
+ {
+  "ast": [
+   "or",
+   "A",
+   [
+    "and",
+    "B",
+    "C"
+   ]
+  ],
+  "out": "A \\lor \\left(B \\land C\\right)"
+ },
+ {
+  "ast": [
+   "not",
+   [
+    "=",
+    "x",
+    1
+   ]
+  ],
+  "out": "\\lnot \\left(x = 1\\right)"
+ },
+ {
+  "ast": [
+   "not",
+   [
+    "=",
+    "x",
+    1
+   ]
+  ],
+  "out": "\\lnot \\left(x = 1\\right)"
+ },
+ {
+  "ast": [
+   "or",
+   [
+    "not",
+    [
+     "=",
+     "x",
+     "y"
+    ]
+   ],
+   [
+    "ne",
+    "z",
+    "w"
+   ]
+  ],
+  "out": "\\left(\\lnot \\left(x = y\\right)\\right) \\lor \\left(z \\ne w\\right)"
+ },
+ {
+  "ast": [
+   "implies",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\implies \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "impliedby",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\impliedby \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "iff",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\iff \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "rightarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\rightarrow \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "leftarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\leftarrow \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "leftrightarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ],
+  "out": "A \\land \\left(\\lnot B\\right) \\leftrightarrow \\left(\\lnot C\\right) \\lor D"
+ },
+ {
+  "ast": [
+   "in",
+   "x",
+   "emptyset"
+  ],
+  "out": "x \\in \\varnothing"
+ },
+ {
+  "ast": [
+   "+",
+   [
+    "*",
+    1.2,
+    "e"
+   ],
+   [
+    "-",
+    3
+   ]
+  ],
+  "out": "1.2 e - 3"
+ },
+ {
+  "ast": [
+   "+",
+   [
+    "*",
+    1.2,
+    "e"
+   ],
+   -3
+  ],
+  "out": "1.2 e - 3"
+ },
+ {
+  "ast": {
+   "$": "Inf"
+  },
+  "out": "\\infty"
+ },
+ {
+  "ast": [
+   "*",
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f",
+   "g",
+   "h",
+   "i",
+   "j"
+  ],
+  "out": "a b c d e f g h i j"
+ },
+ {
+  "ast": 2,
+  "out": "2"
+ },
+ {
+  "ast": "",
+  "out": ""
+ },
+ {
+  "ast": [
+   "matrix",
+   [
+    "tuple",
+    2,
+    2
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     "a",
+     "b"
+    ],
+    [
+     "tuple",
+     "c",
+     "d"
+    ]
+   ]
+  ],
+  "out": "\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}"
+ },
+ {
+  "ast": [
+   "matrix",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     [
+      "+",
+      "a",
+      [
+       "*",
+       3,
+       "y"
+      ]
+     ],
+     [
+      "*",
+      2,
+      [
+       "apply",
+       "sin",
+       "theta"
+      ]
+     ]
+    ]
+   ]
+  ],
+  "out": "\\begin{bmatrix} a + 3 y & 2 \\sin\\left(\\theta\\right) \\end{bmatrix}"
+ },
+ {
+  "ast": [
+   "matrix",
+   [
+    "tuple",
+    2,
+    3
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     8,
+     0,
+     0
+    ],
+    [
+     "tuple",
+     1,
+     2,
+     3
+    ]
+   ]
+  ],
+  "out": "\\begin{bmatrix} 8 & 0 & 0 \\\\ 1 & 2 & 3 \\end{bmatrix}"
+ },
+ {
+  "ast": [
+   "derivative_leibniz",
+   "x",
+   [
+    "tuple",
+    "t"
+   ]
+  ],
+  "out": "\\frac{ dx }{ dt }"
+ },
+ {
+  "ast": [
+   "derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    2
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     "t",
+     2
+    ]
+   ]
+  ],
+  "out": "\\frac{ d^{2}x }{ dt^{2} }"
+ },
+ {
+  "ast": [
+   "derivative_leibniz",
+   [
+    "tuple",
+    "mu",
+    2
+   ],
+   [
+    "tuple",
+    "tau",
+    "xi"
+   ]
+  ],
+  "out": "\\frac{ d^{2}\\mu }{ d\\tau d\\xi }"
+ },
+ {
+  "ast": [
+   "derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    3
+   ],
+   [
+    "tuple",
+    "s",
+    [
+     "tuple",
+     "t",
+     2
+    ]
+   ]
+  ],
+  "out": "\\frac{ d^{3}x }{ ds dt^{2} }"
+ },
+ {
+  "ast": [
+   "derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    3
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     "s",
+     2
+    ],
+    [
+     "tuple",
+     "t",
+     1
+    ]
+   ]
+  ],
+  "out": "\\frac{ d^{3}x }{ ds^{2} dt }"
+ },
+ {
+  "ast": [
+   "partial_derivative_leibniz",
+   "x",
+   [
+    "tuple",
+    "t"
+   ]
+  ],
+  "out": "\\frac{ \\partial x }{ \\partial t }"
+ },
+ {
+  "ast": [
+   "partial_derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    2
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     "t",
+     2
+    ]
+   ]
+  ],
+  "out": "\\frac{ \\partial^{2}x }{ \\partial t^{2} }"
+ },
+ {
+  "ast": [
+   "partial_derivative_leibniz",
+   [
+    "tuple",
+    "mu",
+    2
+   ],
+   [
+    "tuple",
+    "tau",
+    "xi"
+   ]
+  ],
+  "out": "\\frac{ \\partial^{2}\\mu }{ \\partial \\tau \\partial \\xi }"
+ },
+ {
+  "ast": [
+   "partial_derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    3
+   ],
+   [
+    "tuple",
+    "s",
+    [
+     "tuple",
+     "t",
+     2
+    ]
+   ]
+  ],
+  "out": "\\frac{ \\partial^{3}x }{ \\partial s \\partial t^{2} }"
+ },
+ {
+  "ast": [
+   "partial_derivative_leibniz",
+   [
+    "tuple",
+    "x",
+    3
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     "s",
+     2
+    ],
+    [
+     "tuple",
+     "t",
+     1
+    ]
+   ]
+  ],
+  "out": "\\frac{ \\partial^{3}x }{ \\partial s^{2} \\partial t }"
+ },
+ {
+  "ast": [
+   "*",
+   "a",
+   [
+    "apply",
+    "abs",
+    "x"
+   ]
+  ],
+  "out": "a \\left|x\\right|"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "apply",
+    "abs",
+    "a"
+   ],
+   "b",
+   [
+    "apply",
+    "abs",
+    "c"
+   ]
+  ],
+  "out": "\\left|a\\right| b \\left|c\\right|"
+ },
+ {
+  "ast": [
+   "apply",
+   "abs",
+   [
+    "*",
+    "a",
+    [
+     "apply",
+     "abs",
+     "b"
+    ],
+    "c"
+   ]
+  ],
+  "out": "\\left|a \\left|b\\right| c\\right|"
+ },
+ {
+  "ast": [
+   "|",
+   "A",
+   "B"
+  ],
+  "out": "A \\mid B"
+ },
+ {
+  "ast": [
+   ":",
+   "A",
+   "B"
+  ],
+  "out": "A : B"
+ },
+ {
+  "ast": [
+   "apply",
+   "P",
+   [
+    "|",
+    [
+     ">",
+     "X",
+     1
+    ],
+    [
+     "=",
+     "A",
+     "B"
+    ]
+   ]
+  ],
+  "out": "P\\left(X > 1 \\mid A = B\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "P",
+   [
+    ":",
+    [
+     ">",
+     "X",
+     1
+    ],
+    [
+     "=",
+     "A",
+     "B"
+    ]
+   ]
+  ],
+  "out": "P\\left(X > 1 : A = B\\right)"
+ },
+ {
+  "ast": [
+   "set",
+   [
+    "|",
+    "x",
+    [
+     ">",
+     "x",
+     0
+    ]
+   ]
+  ],
+  "out": "\\left\\{ x \\mid x > 0 \\right\\}"
+ },
+ {
+  "ast": [
+   "set",
+   [
+    ":",
+    "x",
+    [
+     ">",
+     "x",
+     0
+    ]
+   ]
+  ],
+  "out": "\\left\\{ x : x > 0 \\right\\}"
+ },
+ {
+  "ast": [
+   "ldots"
+  ],
+  "out": "\\ldots"
+ },
+ {
+  "ast": [
+   "list",
+   1,
+   2,
+   3,
+   [
+    "ldots"
+   ]
+  ],
+  "out": "1, 2, 3, \\ldots"
+ },
+ {
+  "ast": [
+   "tuple",
+   1,
+   2,
+   3,
+   [
+    "ldots"
+   ]
+  ],
+  "out": "\\left( 1, 2, 3, \\ldots \\right)"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "sqrt",
+    2
+   ],
+   3
+  ],
+  "out": "\\left(\\sqrt{2}\\right)^{3}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "cbrt",
+    2
+   ],
+   3
+  ],
+  "out": "\\left(\\sqrt[3]{2}\\right)^{3}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "nthroot",
+    [
+     "tuple",
+     2,
+     4
+    ]
+   ],
+   3
+  ],
+  "out": "\\left(\\sqrt[4]{2}\\right)^{3}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "apply",
+    "nthroot",
+    2
+   ],
+   3
+  ],
+  "out": "\\left(\\sqrt{2}\\right)^{3}"
+ },
+ {
+  "ast": 1.23e-11,
+  "out": "1.23 \\cdot 10^{-11}"
+ },
+ {
+  "ast": [
+   "^",
+   1.23e-11,
+   5
+  ],
+  "out": "\\left(1.23 \\cdot 10^{-11}\\right)^{5}"
+ },
+ {
+  "ast": [
+   "^",
+   -3,
+   "x"
+  ],
+  "out": "\\left(-3\\right)^{x}"
+ },
+ {
+  "ast": [
+   "^",
+   -3,
+   2
+  ],
+  "out": "\\left(-3\\right)^{2}"
+ },
+ {
+  "ast": [
+   "^",
+   [
+    "-",
+    3
+   ],
+   2
+  ],
+  "out": "\\left(-3\\right)^{2}"
+ },
+ {
+  "ast": [
+   "apply",
+   "re",
+   "x"
+  ],
+  "out": "\\Re\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "im",
+   "x"
+  ],
+  "out": "\\Im\\left(x\\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "nCr",
+   [
+    "tuple",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\operatorname{nCr}\\left( x, y \\right)"
+ },
+ {
+  "ast": [
+   "apply",
+   "nPr",
+   [
+    "tuple",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\operatorname{nPr}\\left( x, y \\right)"
+ },
+ {
+  "ast": [
+   "binom",
+   "x",
+   "y"
+  ],
+  "out": "\\binom{x}{y}"
+ },
+ {
+  "ast": [
+   "vec",
+   "a"
+  ],
+  "out": "\\vec{a}"
+ },
+ {
+  "ast": [
+   "linesegment",
+   "A",
+   "B"
+  ],
+  "out": "\\overline{A B}"
+ },
+ {
+  "ast": [
+   "linesegment",
+   [
+    "prime",
+    "A"
+   ],
+   [
+    "prime",
+    "B"
+   ]
+  ],
+  "out": "\\overline{A' B'}"
+ },
+ {
+  "ast": [
+   "apply",
+   "floor",
+   "a"
+  ],
+  "out": "\\left\\lfloor a \\right\\rfloor"
+ },
+ {
+  "ast": [
+   "apply",
+   "ceil",
+   "a"
+  ],
+  "out": "\\left\\lceil a \\right\\rceil"
+ },
+ {
+  "ast": [
+   "apply",
+   "round",
+   "a"
+  ],
+  "out": "\\operatorname{round}\\left(a\\right)"
+ },
+ {
+  "ast": [
+   "perp",
+   "x",
+   "y"
+  ],
+  "out": "x \\perp y"
+ },
+ {
+  "ast": [
+   "^",
+   "x",
+   "perp"
+  ],
+  "out": "x^{\\perp}"
+ },
+ {
+  "ast": [
+   "_",
+   "x",
+   "perp"
+  ],
+  "out": "x_{\\perp}"
+ },
+ {
+  "ast": [
+   "parallel",
+   "x",
+   "y"
+  ],
+  "out": "x \\parallel y"
+ },
+ {
+  "ast": [
+   "*",
+   "x",
+   [
+    "+",
+    "y"
+   ]
+  ],
+  "out": "x \\left(+ y\\right)"
+ },
+ {
+  "ast": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ],
+  "out": "\\angle ABC"
+ },
+ {
+  "ast": [
+   "angle",
+   [
+    "^",
+    "A",
+    2
+   ],
+   [
+    "_",
+    "B",
+    "n"
+   ],
+   [
+    "prime",
+    "C"
+   ]
+  ],
+  "out": "\\angle A^{2}B_{n}C'"
+ },
+ {
+  "ast": [
+   "angle",
+   [
+    "+",
+    "A",
+    "B"
+   ],
+   [
+    "*",
+    "B",
+    "D"
+   ],
+   [
+    "/",
+    "x",
+    "y"
+   ]
+  ],
+  "out": "\\angle\\left( A + B, B D, \\frac{x}{y} \\right)"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "angle",
+    "A",
+    "B",
+    "C"
+   ],
+   "x"
+  ],
+  "out": "\\left( \\angle ABC \\right) x"
+ },
+ {
+  "ast": "$",
+  "out": "\\$"
+ },
+ {
+  "ast": [
+   "unit",
+   "$",
+   "x"
+  ],
+  "out": "\\$ x"
+ },
+ {
+  "ast": "%",
+  "out": "\\%"
+ },
+ {
+  "ast": [
+   "unit",
+   "x",
+   "%"
+  ],
+  "out": "x \\%"
+ },
+ {
+  "ast": "circ",
+  "out": "\\circ"
+ },
+ {
+  "ast": [
+   "unit",
+   "x",
+   "deg"
+  ],
+  "out": "x^{\\circ}"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "unit",
+    "$",
+    "x"
+   ],
+   "y"
+  ],
+  "out": "\\left(\\$ x\\right) y"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "unit",
+    "x",
+    "%"
+   ],
+   "y"
+  ],
+  "out": "\\left(x \\%\\right) y"
+ },
+ {
+  "ast": [
+   "*",
+   [
+    "unit",
+    "x",
+    "deg"
+   ],
+   "y"
+  ],
+  "out": "\\left(x^{\\circ}\\right) y"
+ },
+ {
+  "ast": [
+   "*",
+   "y",
+   [
+    "unit",
+    "$",
+    "x"
+   ]
+  ],
+  "out": "y \\left(\\$ x\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "y",
+   [
+    "unit",
+    "x",
+    "%"
+   ]
+  ],
+  "out": "y \\left(x \\%\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   "y",
+   [
+    "unit",
+    "x",
+    "deg"
+   ]
+  ],
+  "out": "y \\left(x^{\\circ}\\right)"
+ },
+ {
+  "ast": [
+   "pm",
+   3
+  ],
+  "out": "\\pm 3"
+ },
+ {
+  "ast": [
+   "pm",
+   "x"
+  ],
+  "out": "\\pm x"
+ },
+ {
+  "ast": [
+   "+",
+   5,
+   [
+    "pm",
+    3
+   ]
+  ],
+  "out": "5 \\pm 3"
+ },
+ {
+  "ast": [
+   "+",
+   5,
+   [
+    "pm",
+    3
+   ],
+   [
+    "pm",
+    4
+   ]
+  ],
+  "out": "5 \\pm 3 \\pm 4"
+ },
+ {
+  "ast": [
+   "+",
+   "a",
+   [
+    "pm",
+    "b"
+   ]
+  ],
+  "out": "a \\pm b"
+ },
+ {
+  "ast": [
+   "-",
+   [
+    "+",
+    5,
+    [
+     "pm",
+     3
+    ]
+   ]
+  ],
+  "out": "-\\left(5 \\pm 3\\right)"
+ },
+ {
+  "ast": [
+   "*",
+   2,
+   [
+    "+",
+    5,
+    [
+     "pm",
+     3
+    ]
+   ]
+  ],
+  "out": "2 \\left(5 \\pm 3\\right)"
+ }
+]

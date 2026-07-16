@@ -5,11 +5,13 @@
 pub mod expr;
 pub mod js_tree;
 pub mod num;
+pub mod output;
 pub mod parse;
 pub mod sym;
 
 pub use expr::Expr;
 pub use num::Number;
+pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};
 pub use parse::text::{TextToAst, TextToAstOptions};
 pub use parse::ParseError;

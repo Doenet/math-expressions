@@ -8,15 +8,214 @@
 //! since first-match ordering is semantic (e.g. "**" before "*", "!=" is a
 //! rule but "!" is too).
 //!
-//! Token types are the JS token_type strings verbatim; the parser is a
-//! line-by-line port and string tokens keep it mechanical. An enum can come
-//! later once fixtures pass.
+//! Token types are the `Tok` enum; its `Display` impl reproduces the JS
+//! token_type strings, which error messages embed.
 
+use std::rc::Rc;
 use std::sync::OnceLock;
+
+/// Token types for both lexer flavours. The JS lexer used strings ("NUMBER",
+/// "^", ...); an enum makes every comparison compile-checked. `Display`
+/// yields the original JS token_type string, which error messages embed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tok {
+    // Control
+    Eof,
+    Invalid,
+    Space,
+    // Literals / identifiers
+    Number,
+    Var,
+    VarMultiChar,
+    LatexCommand,
+    Infinity,
+    Ldots,
+    // Operators and punctuation
+    Times,
+    Slash,
+    Plus,
+    Minus,
+    Pm,
+    Caret,
+    Bang,
+    Prime,
+    Underscore,
+    Pipe,
+    /// A LaTeX `\left|`-style opening pipe (must open an absolute value).
+    PipeL,
+    LParen,
+    RParen,
+    LBracket,
+    RBracket,
+    LBrace,
+    RBrace,
+    /// LaTeX `\{` / `\}` set braces (plain `{`/`}` are grouping).
+    SetLBrace,
+    SetRBrace,
+    LAngle,
+    RAngle,
+    LFloor,
+    RFloor,
+    LCeil,
+    RCeil,
+    Comma,
+    Colon,
+    Mid,
+    Amp,
+    Linebreak,
+    BeginEnvironment,
+    EndEnvironment,
+    Sqrt,
+    // Logic and quantifiers
+    And,
+    Or,
+    Not,
+    Forall,
+    Exists,
+    // Relations
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    In,
+    NotIn,
+    Ni,
+    NotNi,
+    Subset,
+    NotSubset,
+    SubsetEq,
+    NotSubsetEq,
+    Superset,
+    NotSuperset,
+    SupersetEq,
+    NotSupersetEq,
+    // Set / statement operators
+    Union,
+    Intersect,
+    RightArrow,
+    LeftArrow,
+    LeftRightArrow,
+    Implies,
+    ImpliedBy,
+    Iff,
+    Perp,
+    Parallel,
+    Angle,
+    Int,
+}
+
+impl Tok {
+    /// Operator name used in the expression tree for tokens that map straight
+    /// to an operator (what the JS derived via `token_type.toLowerCase()`).
+    pub fn op_name(self) -> &'static str {
+        match self {
+            Tok::Implies => "implies",
+            Tok::ImpliedBy => "impliedby",
+            Tok::Iff => "iff",
+            Tok::RightArrow => "rightarrow",
+            Tok::LeftArrow => "leftarrow",
+            Tok::LeftRightArrow => "leftrightarrow",
+            Tok::Forall => "forall",
+            Tok::Exists => "exists",
+            Tok::Perp => "perp",
+            Tok::Parallel => "parallel",
+            Tok::Plus => "+",
+            Tok::Minus => "-",
+            _ => unreachable!("no operator name for {:?}", self),
+        }
+    }
+}
+
+impl std::fmt::Display for Tok {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The JS token_type strings, for error messages ("Expecting )").
+        f.write_str(match self {
+            Tok::Eof => "EOF",
+            Tok::Invalid => "INVALID",
+            Tok::Space => "SPACE",
+            Tok::Number => "NUMBER",
+            Tok::Var => "VAR",
+            Tok::VarMultiChar => "VARMULTICHAR",
+            Tok::LatexCommand => "LATEXCOMMAND",
+            Tok::Infinity => "INFINITY",
+            Tok::Ldots => "LDOTS",
+            Tok::Times => "*",
+            Tok::Slash => "/",
+            Tok::Plus => "+",
+            Tok::Minus => "-",
+            Tok::Pm => "PM",
+            Tok::Caret => "^",
+            Tok::Bang => "!",
+            Tok::Prime => "'",
+            Tok::Underscore => "_",
+            Tok::Pipe => "|",
+            Tok::PipeL => "|L",
+            Tok::LParen => "(",
+            Tok::RParen => ")",
+            Tok::LBracket => "[",
+            Tok::RBracket => "]",
+            Tok::LBrace => "{",
+            Tok::RBrace => "}",
+            Tok::SetLBrace => "LBRACE",
+            Tok::SetRBrace => "RBRACE",
+            Tok::LAngle => "LANGLE",
+            Tok::RAngle => "RANGLE",
+            Tok::LFloor => "LFLOOR",
+            Tok::RFloor => "RFLOOR",
+            Tok::LCeil => "LCEIL",
+            Tok::RCeil => "RCEIL",
+            Tok::Comma => ",",
+            Tok::Colon => ":",
+            Tok::Mid => "MID",
+            Tok::Amp => "&",
+            Tok::Linebreak => "LINEBREAK",
+            Tok::BeginEnvironment => "BEGINENVIRONMENT",
+            Tok::EndEnvironment => "ENDENVIRONMENT",
+            Tok::Sqrt => "SQRT",
+            Tok::And => "AND",
+            Tok::Or => "OR",
+            Tok::Not => "NOT",
+            Tok::Forall => "FORALL",
+            Tok::Exists => "EXISTS",
+            Tok::Eq => "=",
+            Tok::Ne => "NE",
+            Tok::Lt => "<",
+            Tok::Le => "LE",
+            Tok::Gt => ">",
+            Tok::Ge => "GE",
+            Tok::In => "IN",
+            Tok::NotIn => "NOTIN",
+            Tok::Ni => "NI",
+            Tok::NotNi => "NOTNI",
+            Tok::Subset => "SUBSET",
+            Tok::NotSubset => "NOTSUBSET",
+            Tok::SubsetEq => "SUBSETEQ",
+            Tok::NotSubsetEq => "NOTSUBSETEQ",
+            Tok::Superset => "SUPERSET",
+            Tok::NotSuperset => "NOTSUPERSET",
+            Tok::SupersetEq => "SUPERSETEQ",
+            Tok::NotSupersetEq => "NOTSUPERSETEQ",
+            Tok::Union => "UNION",
+            Tok::Intersect => "INTERSECT",
+            Tok::RightArrow => "RIGHTARROW",
+            Tok::LeftArrow => "LEFTARROW",
+            Tok::LeftRightArrow => "LEFTRIGHTARROW",
+            Tok::Implies => "IMPLIES",
+            Tok::ImpliedBy => "IMPLIEDBY",
+            Tok::Iff => "IFF",
+            Tok::Perp => "PERP",
+            Tok::Parallel => "PARALLEL",
+            Tok::Angle => "ANGLE",
+            Tok::Int => "INT",
+        })
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    pub ttype: &'static str,
+    pub ttype: Tok,
     /// Token text after rule replacement (e.g. "α" lexes with text "alpha").
     pub text: String,
     /// The exact input text matched (used in error messages).
@@ -24,7 +223,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn simple(ttype: &'static str, s: &str) -> Token {
+    fn simple(ttype: Tok, s: &str) -> Token {
         Token {
             ttype,
             text: s.to_string(),
@@ -33,10 +232,14 @@ impl Token {
     }
 }
 
+/// A saved lexer position. The input is behind `Rc`, so saving/restoring —
+/// which the parsers do at every backtrack point — is O(1); only `unput`
+/// (rare: symbol splitting, Leibniz backtracking) copies the string.
 #[derive(Debug, Clone)]
 pub struct LexerState {
-    pub input: String,
-    pub location: usize,
+    input: Rc<String>,
+    offset: usize,
+    location: usize,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -46,9 +249,12 @@ enum Flavor {
 }
 
 pub struct Lexer {
-    /// Remaining (unconsumed) input.
-    pub input: String,
-    /// Byte offset into the original input at the end of the last match.
+    /// The working input (shared with saved states; copy-on-write on unput).
+    input: Rc<String>,
+    /// Byte offset of the cursor into `input`.
+    offset: usize,
+    /// Error-reporting location: bytes consumed minus bytes unput (matches
+    /// the JS lexer's counter, which error positions are reported against).
     pub location: usize,
     sci_notation: bool,
     flavor: Flavor,
@@ -82,7 +288,7 @@ enum Pat {
 
 struct Rule {
     pat: Pat,
-    ttype: &'static str,
+    ttype: Tok,
     replace: Option<&'static str>,
 }
 
@@ -199,28 +405,28 @@ impl Rule {
     }
 }
 
-fn l(pat: &'static str, ttype: &'static str) -> Rule {
+fn l(pat: &'static str, ttype: Tok) -> Rule {
     Rule {
         pat: Pat::Lit(pat),
         ttype,
         replace: None,
     }
 }
-fn lr(pat: &'static str, ttype: &'static str, replace: &'static str) -> Rule {
+fn lr(pat: &'static str, ttype: Tok, replace: &'static str) -> Rule {
     Rule {
         pat: Pat::Lit(pat),
         ttype,
         replace: Some(replace),
     }
 }
-fn kw(pat: &'static str, ttype: &'static str) -> Rule {
+fn kw(pat: &'static str, ttype: Tok) -> Rule {
     Rule {
         pat: Pat::Kw(pat),
         ttype,
         replace: None,
     }
 }
-fn kwl(pat: &'static str, ttype: &'static str) -> Rule {
+fn kwl(pat: &'static str, ttype: Tok) -> Rule {
     Rule {
         pat: Pat::KwL(pat),
         ttype,
@@ -228,7 +434,7 @@ fn kwl(pat: &'static str, ttype: &'static str) -> Rule {
     }
 }
 /// KwL with a replacement string (e.g. `\varepsilon` → `\epsilon`).
-fn kwlr(pat: &'static str, ttype: &'static str, replace: &'static str) -> Rule {
+fn kwlr(pat: &'static str, ttype: Tok, replace: &'static str) -> Rule {
     Rule {
         pat: Pat::KwL(pat),
         ttype,
@@ -236,7 +442,7 @@ fn kwlr(pat: &'static str, ttype: &'static str, replace: &'static str) -> Rule {
     }
 }
 /// A single `Seq` rule (chunks joined by optional `\s*`).
-fn seq(chunks: &[&'static str], ttype: &'static str, boundary: bool) -> Rule {
+fn seq(chunks: &[&'static str], ttype: Tok, boundary: bool) -> Rule {
     Rule {
         pat: Pat::Seq(chunks.to_vec(), boundary),
         ttype,
@@ -251,12 +457,7 @@ const CLOSE_PREFIXES: [&str; 5] = ["\\right", "\\bigr", "\\Bigr", "\\biggr", "\\
 
 /// One rule per prefix in `prefixes`, each matching `prefix \s* delim`, all
 /// mapped to `ttype`. `boundary` adds the not-followed-by-letter constraint.
-fn family(
-    prefixes: &[&'static str],
-    delim: &'static str,
-    ttype: &'static str,
-    boundary: bool,
-) -> Vec<Rule> {
+fn family(prefixes: &[&'static str], delim: &'static str, ttype: Tok, boundary: bool) -> Vec<Rule> {
     prefixes
         .iter()
         .map(|p| seq(&[p, delim], ttype, boundary))
@@ -268,205 +469,205 @@ fn rules() -> &'static [Rule] {
     static RULES: OnceLock<Vec<Rule>> = OnceLock::new();
     RULES.get_or_init(|| {
         vec![
-            l("**", "^"),
-            l("*", "*"),
-            l("\u{B7}", "*"),   // ·
-            l("\u{2022}", "*"), // •
-            l("\u{22C5}", "*"), // ⋅
-            l("\u{D7}", "*"),   // ×
-            l("/", "/"),
-            l("-", "-"),
-            l("\u{58A}", "-"),
-            l("\u{5BE}", "-"),
-            l("\u{1806}", "-"),
-            l("\u{2010}", "-"),
-            l("\u{2011}", "-"),
-            l("\u{2012}", "-"),
-            l("\u{2013}", "-"),
-            l("\u{2014}", "-"),
-            l("\u{2015}", "-"),
-            l("\u{207B}", "-"),
-            l("\u{208B}", "-"),
-            l("\u{2212}", "-"),
-            l("\u{2E3A}", "-"),
-            l("\u{2E3B}", "-"),
-            l("\u{FE58}", "-"),
-            l("\u{FE63}", "-"),
-            l("\u{FF0D}", "-"),
-            l("+", "+"),
-            kw("plusminus", "PM"),
-            l("±", "PM"),
-            l("^", "^"),
-            l("\u{2038}", "^"), // ‸
-            l("\u{28C}", "^"),  // ʌ
-            l("\u{2032}", "'"), // prime ′
-            l("|", "|"),
-            l("(", "("),
-            l(")", ")"),
-            l("[", "["),
-            l("]", "]"),
-            l("{", "{"),
-            l("}", "}"),
-            l("\u{27E8}", "LANGLE"),
-            l("\u{27E9}", "RANGLE"),
-            l("\u{3008}", "LANGLE"),
-            l("\u{3009}", "RANGLE"),
-            l(",", ","),
-            l(":", ":"),
+            l("**", Tok::Caret),
+            l("*", Tok::Times),
+            l("\u{B7}", Tok::Times),   // ·
+            l("\u{2022}", Tok::Times), // •
+            l("\u{22C5}", Tok::Times), // ⋅
+            l("\u{D7}", Tok::Times),   // ×
+            l("/", Tok::Slash),
+            l("-", Tok::Minus),
+            l("\u{58A}", Tok::Minus),
+            l("\u{5BE}", Tok::Minus),
+            l("\u{1806}", Tok::Minus),
+            l("\u{2010}", Tok::Minus),
+            l("\u{2011}", Tok::Minus),
+            l("\u{2012}", Tok::Minus),
+            l("\u{2013}", Tok::Minus),
+            l("\u{2014}", Tok::Minus),
+            l("\u{2015}", Tok::Minus),
+            l("\u{207B}", Tok::Minus),
+            l("\u{208B}", Tok::Minus),
+            l("\u{2212}", Tok::Minus),
+            l("\u{2E3A}", Tok::Minus),
+            l("\u{2E3B}", Tok::Minus),
+            l("\u{FE58}", Tok::Minus),
+            l("\u{FE63}", Tok::Minus),
+            l("\u{FF0D}", Tok::Minus),
+            l("+", Tok::Plus),
+            kw("plusminus", Tok::Pm),
+            l("±", Tok::Pm),
+            l("^", Tok::Caret),
+            l("\u{2038}", Tok::Caret), // ‸
+            l("\u{28C}", Tok::Caret),  // ʌ
+            l("\u{2032}", Tok::Prime), // prime ′
+            l("|", Tok::Pipe),
+            l("(", Tok::LParen),
+            l(")", Tok::RParen),
+            l("[", Tok::LBracket),
+            l("]", Tok::RBracket),
+            l("{", Tok::LBrace),
+            l("}", Tok::RBrace),
+            l("\u{27E8}", Tok::LAngle),
+            l("\u{27E9}", Tok::RAngle),
+            l("\u{3008}", Tok::LAngle),
+            l("\u{3009}", Tok::RAngle),
+            l(",", Tok::Comma),
+            l(":", Tok::Colon),
             // Greek letters and named glyphs → VARMULTICHAR with replacement
-            lr("\u{3B1}", "VARMULTICHAR", "alpha"),
-            lr("\u{3B2}", "VARMULTICHAR", "beta"),
-            lr("\u{3D0}", "VARMULTICHAR", "beta"),
-            lr("\u{393}", "VARMULTICHAR", "Gamma"),
-            lr("\u{3B3}", "VARMULTICHAR", "gamma"),
-            lr("\u{394}", "VARMULTICHAR", "Delta"),
-            lr("\u{3B4}", "VARMULTICHAR", "delta"),
-            lr("\u{3B5}", "VARMULTICHAR", "epsilon"),
-            lr("\u{3F5}", "VARMULTICHAR", "epsilon"),
-            lr("\u{3B6}", "VARMULTICHAR", "zeta"),
-            lr("\u{3B7}", "VARMULTICHAR", "eta"),
-            lr("\u{398}", "VARMULTICHAR", "Theta"),
-            lr("\u{3F4}", "VARMULTICHAR", "Theta"),
-            lr("\u{3B8}", "VARMULTICHAR", "theta"),
-            lr("\u{1DBF}", "VARMULTICHAR", "theta"),
-            lr("\u{3D1}", "VARMULTICHAR", "theta"),
-            lr("\u{3B9}", "VARMULTICHAR", "iota"),
-            lr("\u{3BA}", "VARMULTICHAR", "kappa"),
-            lr("\u{39B}", "VARMULTICHAR", "Lambda"),
-            lr("\u{3BB}", "VARMULTICHAR", "lambda"),
-            lr("\u{3BC}", "VARMULTICHAR", "mu"),
-            lr("\u{B5}", "VARMULTICHAR", "mu"),
-            lr("\u{3BD}", "VARMULTICHAR", "nu"),
-            lr("\u{39E}", "VARMULTICHAR", "Xi"),
-            lr("\u{3BE}", "VARMULTICHAR", "xi"),
-            lr("\u{3A0}", "VARMULTICHAR", "Pi"),
-            lr("\u{3C0}", "VARMULTICHAR", "pi"),
-            lr("\u{3D6}", "VARMULTICHAR", "pi"),
-            lr("\u{3C1}", "VARMULTICHAR", "rho"),
-            lr("\u{3F1}", "VARMULTICHAR", "rho"),
-            lr("\u{3A3}", "VARMULTICHAR", "Sigma"),
-            lr("\u{3C3}", "VARMULTICHAR", "sigma"),
-            lr("\u{3C2}", "VARMULTICHAR", "sigma"),
-            lr("\u{3C4}", "VARMULTICHAR", "tau"),
-            lr("\u{3A5}", "VARMULTICHAR", "Upsilon"),
-            lr("\u{3C5}", "VARMULTICHAR", "upsilon"),
-            lr("\u{3A6}", "VARMULTICHAR", "Phi"),
-            lr("\u{3C6}", "VARMULTICHAR", "phi"),
-            lr("\u{3D5}", "VARMULTICHAR", "phi"),
-            lr("\u{3A8}", "VARMULTICHAR", "Psi"),
-            lr("\u{3C8}", "VARMULTICHAR", "psi"),
-            lr("\u{3A9}", "VARMULTICHAR", "Omega"),
-            lr("\u{3C9}", "VARMULTICHAR", "omega"),
-            lr("\u{2205}", "VARMULTICHAR", "emptyset"),
-            kw("oo", "INFINITY"),
-            kw("OO", "INFINITY"),
-            kw("infty", "INFINITY"),
-            kw("infinity", "INFINITY"),
-            kw("Infinity", "INFINITY"),
-            l("\u{221E}", "INFINITY"),  // ∞
-            lr("\u{212F}", "VAR", "e"), // ℯ
-            lr("\u{2660}", "VARMULTICHAR", "spade"),
-            lr("\u{2661}", "VARMULTICHAR", "heart"),
-            lr("\u{2662}", "VARMULTICHAR", "diamond"),
-            lr("\u{2663}", "VARMULTICHAR", "club"),
-            lr("\u{2605}", "VARMULTICHAR", "bigstar"),
-            lr("\u{25EF}", "VARMULTICHAR", "bigcirc"),
-            lr("\u{25CA}", "VARMULTICHAR", "lozenge"),
-            lr("\u{25B3}", "VARMULTICHAR", "bigtriangleup"),
-            lr("\u{25BD}", "VARMULTICHAR", "bigtriangledown"),
-            lr("\u{29EB}", "VARMULTICHAR", "blacklozenge"),
-            lr("\u{25A0}", "VARMULTICHAR", "blacksquare"),
-            lr("\u{25B2}", "VARMULTICHAR", "blacktriangle"),
-            lr("\u{25BC}", "VARMULTICHAR", "blacktriangledown"),
-            lr("\u{25C0}", "VARMULTICHAR", "blacktriangleleft"),
-            lr("\u{25B6}", "VARMULTICHAR", "blacktriangleright"),
-            lr("\u{25A1}", "VARMULTICHAR", "Box"),
-            lr("\u{2218}", "VARMULTICHAR", "circ"),
-            lr("\u{22C6}", "VARMULTICHAR", "star"),
-            kw("and", "AND"),
+            lr("\u{3B1}", Tok::VarMultiChar, "alpha"),
+            lr("\u{3B2}", Tok::VarMultiChar, "beta"),
+            lr("\u{3D0}", Tok::VarMultiChar, "beta"),
+            lr("\u{393}", Tok::VarMultiChar, "Gamma"),
+            lr("\u{3B3}", Tok::VarMultiChar, "gamma"),
+            lr("\u{394}", Tok::VarMultiChar, "Delta"),
+            lr("\u{3B4}", Tok::VarMultiChar, "delta"),
+            lr("\u{3B5}", Tok::VarMultiChar, "epsilon"),
+            lr("\u{3F5}", Tok::VarMultiChar, "epsilon"),
+            lr("\u{3B6}", Tok::VarMultiChar, "zeta"),
+            lr("\u{3B7}", Tok::VarMultiChar, "eta"),
+            lr("\u{398}", Tok::VarMultiChar, "Theta"),
+            lr("\u{3F4}", Tok::VarMultiChar, "Theta"),
+            lr("\u{3B8}", Tok::VarMultiChar, "theta"),
+            lr("\u{1DBF}", Tok::VarMultiChar, "theta"),
+            lr("\u{3D1}", Tok::VarMultiChar, "theta"),
+            lr("\u{3B9}", Tok::VarMultiChar, "iota"),
+            lr("\u{3BA}", Tok::VarMultiChar, "kappa"),
+            lr("\u{39B}", Tok::VarMultiChar, "Lambda"),
+            lr("\u{3BB}", Tok::VarMultiChar, "lambda"),
+            lr("\u{3BC}", Tok::VarMultiChar, "mu"),
+            lr("\u{B5}", Tok::VarMultiChar, "mu"),
+            lr("\u{3BD}", Tok::VarMultiChar, "nu"),
+            lr("\u{39E}", Tok::VarMultiChar, "Xi"),
+            lr("\u{3BE}", Tok::VarMultiChar, "xi"),
+            lr("\u{3A0}", Tok::VarMultiChar, "Pi"),
+            lr("\u{3C0}", Tok::VarMultiChar, "pi"),
+            lr("\u{3D6}", Tok::VarMultiChar, "pi"),
+            lr("\u{3C1}", Tok::VarMultiChar, "rho"),
+            lr("\u{3F1}", Tok::VarMultiChar, "rho"),
+            lr("\u{3A3}", Tok::VarMultiChar, "Sigma"),
+            lr("\u{3C3}", Tok::VarMultiChar, "sigma"),
+            lr("\u{3C2}", Tok::VarMultiChar, "sigma"),
+            lr("\u{3C4}", Tok::VarMultiChar, "tau"),
+            lr("\u{3A5}", Tok::VarMultiChar, "Upsilon"),
+            lr("\u{3C5}", Tok::VarMultiChar, "upsilon"),
+            lr("\u{3A6}", Tok::VarMultiChar, "Phi"),
+            lr("\u{3C6}", Tok::VarMultiChar, "phi"),
+            lr("\u{3D5}", Tok::VarMultiChar, "phi"),
+            lr("\u{3A8}", Tok::VarMultiChar, "Psi"),
+            lr("\u{3C8}", Tok::VarMultiChar, "psi"),
+            lr("\u{3A9}", Tok::VarMultiChar, "Omega"),
+            lr("\u{3C9}", Tok::VarMultiChar, "omega"),
+            lr("\u{2205}", Tok::VarMultiChar, "emptyset"),
+            kw("oo", Tok::Infinity),
+            kw("OO", Tok::Infinity),
+            kw("infty", Tok::Infinity),
+            kw("infinity", Tok::Infinity),
+            kw("Infinity", Tok::Infinity),
+            l("\u{221E}", Tok::Infinity),  // ∞
+            lr("\u{212F}", Tok::Var, "e"), // ℯ
+            lr("\u{2660}", Tok::VarMultiChar, "spade"),
+            lr("\u{2661}", Tok::VarMultiChar, "heart"),
+            lr("\u{2662}", Tok::VarMultiChar, "diamond"),
+            lr("\u{2663}", Tok::VarMultiChar, "club"),
+            lr("\u{2605}", Tok::VarMultiChar, "bigstar"),
+            lr("\u{25EF}", Tok::VarMultiChar, "bigcirc"),
+            lr("\u{25CA}", Tok::VarMultiChar, "lozenge"),
+            lr("\u{25B3}", Tok::VarMultiChar, "bigtriangleup"),
+            lr("\u{25BD}", Tok::VarMultiChar, "bigtriangledown"),
+            lr("\u{29EB}", Tok::VarMultiChar, "blacklozenge"),
+            lr("\u{25A0}", Tok::VarMultiChar, "blacksquare"),
+            lr("\u{25B2}", Tok::VarMultiChar, "blacktriangle"),
+            lr("\u{25BC}", Tok::VarMultiChar, "blacktriangledown"),
+            lr("\u{25C0}", Tok::VarMultiChar, "blacktriangleleft"),
+            lr("\u{25B6}", Tok::VarMultiChar, "blacktriangleright"),
+            lr("\u{25A1}", Tok::VarMultiChar, "Box"),
+            lr("\u{2218}", Tok::VarMultiChar, "circ"),
+            lr("\u{22C6}", Tok::VarMultiChar, "star"),
+            kw("and", Tok::And),
             Rule {
                 pat: Pat::Amp,
-                ttype: "AND",
+                ttype: Tok::And,
                 replace: None,
             },
-            l("\u{2227}", "AND"), // ∧
-            kw("or", "OR"),
-            l("\u{2228}", "OR"), // ∨
-            kw("not", "NOT"),
-            l("\u{AC}", "NOT"), // ¬
-            l("=", "="),
-            l("\u{1400}", "="),
-            l("\u{30A0}", "="),
-            l("!=", "NE"),
-            l("\u{2260}", "NE"), // ≠
-            l("<=", "LE"),
-            l("\u{2264}", "LE"), // ≤
-            l(">=", "GE"),
-            l("\u{2265}", "GE"), // ≥
-            l("<", "<"),
-            l(">", ">"),
-            kw("forall", "FORALL"),
-            l("\u{2200}", "FORALL"),
-            kw("exists", "EXISTS"),
-            l("\u{2203}", "EXISTS"),
-            kw("elementof", "IN"),
-            l("\u{2208}", "IN"),
-            kw("notelementof", "NOTIN"),
-            l("\u{2209}", "NOTIN"),
-            kw("containselement", "NI"),
-            l("\u{220B}", "NI"),
-            kw("notcontainselement", "NOTNI"),
-            l("\u{220C}", "NOTNI"),
-            kw("subset", "SUBSET"),
-            l("\u{2282}", "SUBSET"),
-            kw("subseteq", "SUBSETEQ"),
-            l("\u{2286}", "SUBSETEQ"),
-            kw("notsubset", "NOTSUBSET"),
-            l("\u{2284}", "NOTSUBSET"),
-            kw("notsubseteq", "NOTSUBSETEQ"),
-            l("\u{2288}", "NOTSUBSETEQ"),
-            kw("superset", "SUPERSET"),
-            l("\u{2283}", "SUPERSET"),
-            kw("superseteq", "SUPERSETEQ"),
-            l("\u{2287}", "SUPERSETEQ"),
-            kw("notsuperset", "NOTSUPERSET"),
-            l("\u{2285}", "NOTSUPERSET"),
-            kw("notsuperseteq", "NOTSUPERSETEQ"),
-            l("\u{2289}", "NOTSUPERSETEQ"),
-            kw("union", "UNION"),
-            l("\u{222A}", "UNION"),
-            kw("intersect", "INTERSECT"),
-            l("\u{2229}", "INTERSECT"),
-            kw("rightarrow", "RIGHTARROW"),
-            l("\u{2192}", "RIGHTARROW"),
-            l("\u{27F6}", "RIGHTARROW"),
-            kw("leftarrow", "LEFTARROW"),
-            l("\u{2190}", "LEFTARROW"),
-            l("\u{27F5}", "LEFTARROW"),
-            kw("leftrightarrow", "LEFTRIGHTARROW"),
-            l("\u{2194}", "LEFTRIGHTARROW"),
-            l("\u{27F7}", "LEFTRIGHTARROW"),
-            kw("implies", "IMPLIES"),
-            l("\u{21D2}", "IMPLIES"),
-            l("\u{27F9}", "IMPLIES"),
-            kw("impliedby", "IMPLIEDBY"),
-            l("\u{21D0}", "IMPLIEDBY"),
-            l("\u{27F8}", "IMPLIEDBY"),
-            kw("iff", "IFF"),
-            l("\u{21D4}", "IFF"),
-            l("\u{27FA}", "IFF"),
-            kw("perp", "PERP"),
-            l("\u{27C2}", "PERP"),
-            kw("parallel", "PARALLEL"),
-            l("\u{2225}", "PARALLEL"),
-            kw("angle", "ANGLE"),
-            l("\u{2220}", "ANGLE"),
-            kw("int", "INT"),
-            l("\u{222B}", "INT"),
-            l("!", "!"),
-            l("'", "'"),
-            l("_", "_"),
-            l("...", "LDOTS"),
+            l("\u{2227}", Tok::And), // ∧
+            kw("or", Tok::Or),
+            l("\u{2228}", Tok::Or), // ∨
+            kw("not", Tok::Not),
+            l("\u{AC}", Tok::Not), // ¬
+            l("=", Tok::Eq),
+            l("\u{1400}", Tok::Eq),
+            l("\u{30A0}", Tok::Eq),
+            l("!=", Tok::Ne),
+            l("\u{2260}", Tok::Ne), // ≠
+            l("<=", Tok::Le),
+            l("\u{2264}", Tok::Le), // ≤
+            l(">=", Tok::Ge),
+            l("\u{2265}", Tok::Ge), // ≥
+            l("<", Tok::Lt),
+            l(">", Tok::Gt),
+            kw("forall", Tok::Forall),
+            l("\u{2200}", Tok::Forall),
+            kw("exists", Tok::Exists),
+            l("\u{2203}", Tok::Exists),
+            kw("elementof", Tok::In),
+            l("\u{2208}", Tok::In),
+            kw("notelementof", Tok::NotIn),
+            l("\u{2209}", Tok::NotIn),
+            kw("containselement", Tok::Ni),
+            l("\u{220B}", Tok::Ni),
+            kw("notcontainselement", Tok::NotNi),
+            l("\u{220C}", Tok::NotNi),
+            kw("subset", Tok::Subset),
+            l("\u{2282}", Tok::Subset),
+            kw("subseteq", Tok::SubsetEq),
+            l("\u{2286}", Tok::SubsetEq),
+            kw("notsubset", Tok::NotSubset),
+            l("\u{2284}", Tok::NotSubset),
+            kw("notsubseteq", Tok::NotSubsetEq),
+            l("\u{2288}", Tok::NotSubsetEq),
+            kw("superset", Tok::Superset),
+            l("\u{2283}", Tok::Superset),
+            kw("superseteq", Tok::SupersetEq),
+            l("\u{2287}", Tok::SupersetEq),
+            kw("notsuperset", Tok::NotSuperset),
+            l("\u{2285}", Tok::NotSuperset),
+            kw("notsuperseteq", Tok::NotSupersetEq),
+            l("\u{2289}", Tok::NotSupersetEq),
+            kw("union", Tok::Union),
+            l("\u{222A}", Tok::Union),
+            kw("intersect", Tok::Intersect),
+            l("\u{2229}", Tok::Intersect),
+            kw("rightarrow", Tok::RightArrow),
+            l("\u{2192}", Tok::RightArrow),
+            l("\u{27F6}", Tok::RightArrow),
+            kw("leftarrow", Tok::LeftArrow),
+            l("\u{2190}", Tok::LeftArrow),
+            l("\u{27F5}", Tok::LeftArrow),
+            kw("leftrightarrow", Tok::LeftRightArrow),
+            l("\u{2194}", Tok::LeftRightArrow),
+            l("\u{27F7}", Tok::LeftRightArrow),
+            kw("implies", Tok::Implies),
+            l("\u{21D2}", Tok::Implies),
+            l("\u{27F9}", Tok::Implies),
+            kw("impliedby", Tok::ImpliedBy),
+            l("\u{21D0}", Tok::ImpliedBy),
+            l("\u{27F8}", Tok::ImpliedBy),
+            kw("iff", Tok::Iff),
+            l("\u{21D4}", Tok::Iff),
+            l("\u{27FA}", Tok::Iff),
+            kw("perp", Tok::Perp),
+            l("\u{27C2}", Tok::Perp),
+            kw("parallel", Tok::Parallel),
+            l("\u{2225}", Tok::Parallel),
+            kw("angle", Tok::Angle),
+            l("\u{2220}", Tok::Angle),
+            kw("int", Tok::Int),
+            l("\u{222B}", Tok::Int),
+            l("!", Tok::Bang),
+            l("'", Tok::Prime),
+            l("_", Tok::Underscore),
+            l("...", Tok::Ldots),
         ]
     })
 }
@@ -482,158 +683,158 @@ fn latex_rules() -> &'static [Rule] {
     RULES.get_or_init(|| {
         let mut r: Vec<Rule> = Vec::new();
 
-        r.push(l("*", "*"));
-        r.push(l("/", "/"));
-        r.push(l("-", "-"));
-        r.push(l("+", "+"));
-        r.push(kwl("\\pm", "PM"));
-        r.push(l("^", "^"));
+        r.push(l("*", Tok::Times));
+        r.push(l("/", Tok::Slash));
+        r.push(l("-", Tok::Minus));
+        r.push(l("+", Tok::Plus));
+        r.push(kwl("\\pm", Tok::Pm));
+        r.push(l("^", Tok::Caret));
 
         // Bracket delimiters: bare form then the \left/\big... size family.
-        r.push(l("(", "("));
-        r.extend(family(&OPEN_PREFIXES, "(", "(", false));
-        r.push(l(")", ")"));
-        r.extend(family(&CLOSE_PREFIXES, ")", ")", false));
-        r.push(l("[", "["));
-        r.extend(family(&OPEN_PREFIXES, "[", "[", false));
-        r.push(l("]", "]"));
-        r.extend(family(&CLOSE_PREFIXES, "]", "]", false));
+        r.push(l("(", Tok::LParen));
+        r.extend(family(&OPEN_PREFIXES, "(", Tok::LParen, false));
+        r.push(l(")", Tok::RParen));
+        r.extend(family(&CLOSE_PREFIXES, ")", Tok::RParen, false));
+        r.push(l("[", Tok::LBracket));
+        r.extend(family(&OPEN_PREFIXES, "[", Tok::LBracket, false));
+        r.push(l("]", Tok::RBracket));
+        r.extend(family(&CLOSE_PREFIXES, "]", Tok::RBracket, false));
 
         // Pipe: bare | ; \left| ... open forms marked |L; \right| ... and the
         // non-sided \big| ... forms are plain |.
-        r.push(l("|", "|"));
-        r.extend(family(&OPEN_PREFIXES, "|", "|L", false));
-        r.extend(family(&CLOSE_PREFIXES, "|", "|", false));
+        r.push(l("|", Tok::Pipe));
+        r.extend(family(&OPEN_PREFIXES, "|", Tok::PipeL, false));
+        r.extend(family(&CLOSE_PREFIXES, "|", Tok::Pipe, false));
         r.extend(family(
             &["\\big", "\\Big", "\\bigg", "\\Bigg"],
             "|",
-            "|",
+            Tok::Pipe,
             false,
         ));
 
-        r.push(l("{", "{"));
-        r.push(l("}", "}"));
-        r.push(l("\\{", "LBRACE"));
-        r.extend(family(&OPEN_PREFIXES, "\\{", "LBRACE", false));
-        r.push(l("\\}", "RBRACE"));
-        r.extend(family(&CLOSE_PREFIXES, "\\}", "RBRACE", false));
+        r.push(l("{", Tok::LBrace));
+        r.push(l("}", Tok::RBrace));
+        r.push(l("\\{", Tok::SetLBrace));
+        r.extend(family(&OPEN_PREFIXES, "\\{", Tok::SetLBrace, false));
+        r.push(l("\\}", Tok::SetRBrace));
+        r.extend(family(&CLOSE_PREFIXES, "\\}", Tok::SetRBrace, false));
 
         // Floor / ceil / angle: word delimiters, so a letter boundary applies.
-        r.push(kwl("\\lfloor", "LFLOOR"));
-        r.extend(family(&OPEN_PREFIXES, "\\lfloor", "LFLOOR", true));
-        r.push(kwl("\\rfloor", "RFLOOR"));
-        r.extend(family(&CLOSE_PREFIXES, "\\rfloor", "RFLOOR", true));
-        r.push(kwl("\\lceil", "LCEIL"));
-        r.extend(family(&OPEN_PREFIXES, "\\lceil", "LCEIL", true));
-        r.push(kwl("\\rceil", "RCEIL"));
-        r.extend(family(&CLOSE_PREFIXES, "\\rceil", "RCEIL", true));
-        r.push(kwl("\\langle", "LANGLE"));
-        r.extend(family(&OPEN_PREFIXES, "\\langle", "LANGLE", true));
-        r.push(kwl("\\rangle", "RANGLE"));
-        r.extend(family(&CLOSE_PREFIXES, "\\rangle", "RANGLE", true));
+        r.push(kwl("\\lfloor", Tok::LFloor));
+        r.extend(family(&OPEN_PREFIXES, "\\lfloor", Tok::LFloor, true));
+        r.push(kwl("\\rfloor", Tok::RFloor));
+        r.extend(family(&CLOSE_PREFIXES, "\\rfloor", Tok::RFloor, true));
+        r.push(kwl("\\lceil", Tok::LCeil));
+        r.extend(family(&OPEN_PREFIXES, "\\lceil", Tok::LCeil, true));
+        r.push(kwl("\\rceil", Tok::RCeil));
+        r.extend(family(&CLOSE_PREFIXES, "\\rceil", Tok::RCeil, true));
+        r.push(kwl("\\langle", Tok::LAngle));
+        r.extend(family(&OPEN_PREFIXES, "\\langle", Tok::LAngle, true));
+        r.push(kwl("\\rangle", Tok::RAngle));
+        r.extend(family(&CLOSE_PREFIXES, "\\rangle", Tok::RAngle, true));
 
-        r.push(kwl("\\cdot", "*"));
-        r.push(kwl("\\div", "/"));
-        r.push(kwl("\\times", "*"));
-        r.push(l(",", ","));
-        r.push(l(":", ":"));
-        r.push(kwl("\\mid", "MID"));
+        r.push(kwl("\\cdot", Tok::Times));
+        r.push(kwl("\\div", Tok::Slash));
+        r.push(kwl("\\times", Tok::Times));
+        r.push(l(",", Tok::Comma));
+        r.push(l(":", Tok::Colon));
+        r.push(kwl("\\mid", Tok::Mid));
 
-        r.push(kwlr("\\varnothing", "LATEXCOMMAND", "\\emptyset"));
-        r.push(kwlr("\\vartheta", "LATEXCOMMAND", "\\theta"));
-        r.push(kwlr("\\varepsilon", "LATEXCOMMAND", "\\epsilon"));
-        r.push(kwlr("\\varrho", "LATEXCOMMAND", "\\rho"));
-        r.push(kwlr("\\varphi", "LATEXCOMMAND", "\\phi"));
+        r.push(kwlr("\\varnothing", Tok::LatexCommand, "\\emptyset"));
+        r.push(kwlr("\\vartheta", Tok::LatexCommand, "\\theta"));
+        r.push(kwlr("\\varepsilon", Tok::LatexCommand, "\\epsilon"));
+        r.push(kwlr("\\varrho", Tok::LatexCommand, "\\rho"));
+        r.push(kwlr("\\varphi", Tok::LatexCommand, "\\phi"));
 
-        r.push(kwl("\\infty", "INFINITY"));
+        r.push(kwl("\\infty", Tok::Infinity));
 
-        r.push(kwlr("\\asin", "LATEXCOMMAND", "\\arcsin"));
-        r.push(kwlr("\\acos", "LATEXCOMMAND", "\\arccos"));
-        r.push(kwlr("\\atan", "LATEXCOMMAND", "\\arctan"));
-        r.push(kwl("\\sqrt", "SQRT"));
+        r.push(kwlr("\\asin", Tok::LatexCommand, "\\arcsin"));
+        r.push(kwlr("\\acos", Tok::LatexCommand, "\\arccos"));
+        r.push(kwlr("\\atan", Tok::LatexCommand, "\\arctan"));
+        r.push(kwl("\\sqrt", Tok::Sqrt));
 
-        r.push(kwl("\\land", "AND"));
-        r.push(kwl("\\wedge", "AND"));
-        r.push(kwl("\\lor", "OR"));
-        r.push(kwl("\\vee", "OR"));
-        r.push(kwl("\\lnot", "NOT"));
-        r.push(kwl("\\neg", "NOT"));
+        r.push(kwl("\\land", Tok::And));
+        r.push(kwl("\\wedge", Tok::And));
+        r.push(kwl("\\lor", Tok::Or));
+        r.push(kwl("\\vee", Tok::Or));
+        r.push(kwl("\\lnot", Tok::Not));
+        r.push(kwl("\\neg", Tok::Not));
 
-        r.push(l("=", "="));
-        r.push(kwl("\\neq", "NE"));
-        r.push(kwl("\\ne", "NE"));
-        r.push(seq(&["\\not", "="], "NE", false));
-        r.push(kwl("\\leq", "LE"));
-        r.push(kwl("\\le", "LE"));
-        r.push(kwl("\\geq", "GE"));
-        r.push(kwl("\\ge", "GE"));
-        r.push(l("<", "<"));
-        r.push(kwl("\\lt", "<"));
-        r.push(l(">", ">"));
-        r.push(kwl("\\gt", ">"));
+        r.push(l("=", Tok::Eq));
+        r.push(kwl("\\neq", Tok::Ne));
+        r.push(kwl("\\ne", Tok::Ne));
+        r.push(seq(&["\\not", "="], Tok::Ne, false));
+        r.push(kwl("\\leq", Tok::Le));
+        r.push(kwl("\\le", Tok::Le));
+        r.push(kwl("\\geq", Tok::Ge));
+        r.push(kwl("\\ge", Tok::Ge));
+        r.push(l("<", Tok::Lt));
+        r.push(kwl("\\lt", Tok::Lt));
+        r.push(l(">", Tok::Gt));
+        r.push(kwl("\\gt", Tok::Gt));
 
-        r.push(kwl("\\forall", "FORALL"));
-        r.push(kwl("\\exists", "EXISTS"));
-        r.push(kwl("\\in", "IN"));
-        r.push(kwl("\\notin", "NOTIN"));
-        r.push(seq(&["\\not", "\\in"], "NOTIN", true));
-        r.push(kwl("\\ni", "NI"));
-        r.push(seq(&["\\not", "\\ni"], "NOTNI", true));
-        r.push(kwl("\\subset", "SUBSET"));
-        r.push(kwl("\\subseteq", "SUBSETEQ"));
-        r.push(seq(&["\\not", "\\subset"], "NOTSUBSET", true));
-        r.push(seq(&["\\not", "\\subseteq"], "NOTSUBSETEQ", true));
-        r.push(kwl("\\supset", "SUPERSET"));
-        r.push(kwl("\\supseteq", "SUPERSETEQ"));
-        r.push(seq(&["\\not", "\\supset"], "NOTSUPERSET", true));
-        r.push(seq(&["\\not", "\\supseteq"], "NOTSUPERSETEQ", true));
-        r.push(kwl("\\cup", "UNION"));
-        r.push(kwl("\\cap", "INTERSECT"));
+        r.push(kwl("\\forall", Tok::Forall));
+        r.push(kwl("\\exists", Tok::Exists));
+        r.push(kwl("\\in", Tok::In));
+        r.push(kwl("\\notin", Tok::NotIn));
+        r.push(seq(&["\\not", "\\in"], Tok::NotIn, true));
+        r.push(kwl("\\ni", Tok::Ni));
+        r.push(seq(&["\\not", "\\ni"], Tok::NotNi, true));
+        r.push(kwl("\\subset", Tok::Subset));
+        r.push(kwl("\\subseteq", Tok::SubsetEq));
+        r.push(seq(&["\\not", "\\subset"], Tok::NotSubset, true));
+        r.push(seq(&["\\not", "\\subseteq"], Tok::NotSubsetEq, true));
+        r.push(kwl("\\supset", Tok::Superset));
+        r.push(kwl("\\supseteq", Tok::SupersetEq));
+        r.push(seq(&["\\not", "\\supset"], Tok::NotSuperset, true));
+        r.push(seq(&["\\not", "\\supseteq"], Tok::NotSupersetEq, true));
+        r.push(kwl("\\cup", Tok::Union));
+        r.push(kwl("\\cap", Tok::Intersect));
 
-        r.push(kwl("\\to", "RIGHTARROW"));
-        r.push(kwl("\\rightarrow", "RIGHTARROW"));
-        r.push(kwl("\\longrightarrow", "RIGHTARROW"));
-        r.push(kwl("\\gets", "LEFTARROW"));
-        r.push(kwl("\\leftarrow", "LEFTARROW"));
-        r.push(kwl("\\longleftarrow", "LEFTARROW"));
-        r.push(kwl("\\leftrightarrow", "LEFTRIGHTARROW"));
-        r.push(kwl("\\longleftrightarrow", "LEFTRIGHTARROW"));
-        r.push(kwl("\\implies", "IMPLIES"));
-        r.push(kwl("\\Longrightarrow", "IMPLIES"));
-        r.push(kwl("\\Rightarrow", "IMPLIES"));
-        r.push(kwl("\\impliedby", "IMPLIEDBY"));
-        r.push(kwl("\\Longleftarrow", "IMPLIEDBY"));
-        r.push(kwl("\\Leftarrow", "IMPLIEDBY"));
-        r.push(kwl("\\iff", "IFF"));
-        r.push(kwl("\\Longleftrightarrow", "IFF"));
-        r.push(kwl("\\Leftrightarrow", "IFF"));
+        r.push(kwl("\\to", Tok::RightArrow));
+        r.push(kwl("\\rightarrow", Tok::RightArrow));
+        r.push(kwl("\\longrightarrow", Tok::RightArrow));
+        r.push(kwl("\\gets", Tok::LeftArrow));
+        r.push(kwl("\\leftarrow", Tok::LeftArrow));
+        r.push(kwl("\\longleftarrow", Tok::LeftArrow));
+        r.push(kwl("\\leftrightarrow", Tok::LeftRightArrow));
+        r.push(kwl("\\longleftrightarrow", Tok::LeftRightArrow));
+        r.push(kwl("\\implies", Tok::Implies));
+        r.push(kwl("\\Longrightarrow", Tok::Implies));
+        r.push(kwl("\\Rightarrow", Tok::Implies));
+        r.push(kwl("\\impliedby", Tok::ImpliedBy));
+        r.push(kwl("\\Longleftarrow", Tok::ImpliedBy));
+        r.push(kwl("\\Leftarrow", Tok::ImpliedBy));
+        r.push(kwl("\\iff", Tok::Iff));
+        r.push(kwl("\\Longleftrightarrow", Tok::Iff));
+        r.push(kwl("\\Leftrightarrow", Tok::Iff));
 
-        r.push(kwl("\\perp", "PERP"));
-        r.push(kwl("\\bot", "PERP"));
-        r.push(kwl("\\parallel", "PARALLEL"));
-        r.push(l("\\|", "PARALLEL"));
-        r.push(kwl("\\angle", "ANGLE"));
-        r.push(kwl("\\int", "INT"));
+        r.push(kwl("\\perp", Tok::Perp));
+        r.push(kwl("\\bot", Tok::Perp));
+        r.push(kwl("\\parallel", Tok::Parallel));
+        r.push(l("\\|", Tok::Parallel));
+        r.push(kwl("\\angle", Tok::Angle));
+        r.push(kwl("\\int", Tok::Int));
 
-        r.push(l("!", "!"));
-        r.push(l("'", "'"));
-        r.push(l("_", "_"));
-        r.push(l("&", "&"));
-        r.push(kwl("\\ldots", "LDOTS"));
-        r.push(l("\\\\", "LINEBREAK"));
+        r.push(l("!", Tok::Bang));
+        r.push(l("'", Tok::Prime));
+        r.push(l("_", Tok::Underscore));
+        r.push(l("&", Tok::Amp));
+        r.push(kwl("\\ldots", Tok::Ldots));
+        r.push(l("\\\\", Tok::Linebreak));
 
-        r.push(rule(Pat::Begin, "BEGINENVIRONMENT"));
-        r.push(rule(Pat::End, "ENDENVIRONMENT"));
-        r.push(rule(Pat::OpName, "VARMULTICHAR"));
-        r.push(rule(Pat::LatexCmd, "LATEXCOMMAND"));
-        r.push(l("\\$", "LATEXCOMMAND"));
-        r.push(l("\\%", "LATEXCOMMAND"));
+        r.push(rule(Pat::Begin, Tok::BeginEnvironment));
+        r.push(rule(Pat::End, Tok::EndEnvironment));
+        r.push(rule(Pat::OpName, Tok::VarMultiChar));
+        r.push(rule(Pat::LatexCmd, Tok::LatexCommand));
+        r.push(l("\\$", Tok::LatexCommand));
+        r.push(l("\\%", Tok::LatexCommand));
 
         r
     })
 }
 
-fn rule(pat: Pat, ttype: &'static str) -> Rule {
+fn rule(pat: Pat, ttype: Tok) -> Rule {
     Rule {
         pat,
         ttype,
@@ -795,7 +996,8 @@ impl Lexer {
     /// Text-flavor lexer.
     pub fn new(sci_notation: bool) -> Lexer {
         Lexer {
-            input: String::new(),
+            input: Rc::new(String::new()),
+            offset: 0,
             location: 0,
             sci_notation,
             flavor: Flavor::Text,
@@ -806,7 +1008,8 @@ impl Lexer {
     /// LaTeX-flavor lexer.
     pub fn new_latex(sci_notation: bool) -> Lexer {
         Lexer {
-            input: String::new(),
+            input: Rc::new(String::new()),
+            offset: 0,
             location: 0,
             sci_notation,
             flavor: Flavor::Latex,
@@ -815,58 +1018,68 @@ impl Lexer {
     }
 
     pub fn set_input(&mut self, input: &str) {
-        self.input = input.to_string();
+        self.input = Rc::new(input.to_string());
+        self.offset = 0;
         self.location = 0;
     }
 
     pub fn state(&self) -> LexerState {
         LexerState {
-            input: self.input.clone(),
+            input: Rc::clone(&self.input),
+            offset: self.offset,
             location: self.location,
         }
     }
 
     pub fn set_state(&mut self, s: LexerState) {
         self.input = s.input;
+        self.offset = s.offset;
         self.location = s.location;
     }
 
+    /// The unconsumed input.
+    fn rest(&self) -> &str {
+        &self.input[self.offset..]
+    }
+
     /// Prepend text to the remaining input (used by symbol splitting and
-    /// Leibniz-notation backtracking).
+    /// Leibniz-notation backtracking). Copies the input if a saved state
+    /// still shares it, so restoring that state undoes the unput.
     pub fn unput(&mut self, s: &str) {
         self.location = self.location.saturating_sub(s.len());
-        self.input.insert_str(0, s);
+        Rc::make_mut(&mut self.input).insert_str(self.offset, s);
     }
 
     fn consume(&mut self, n: usize) -> String {
-        let matched: String = self.input[..n].to_string();
-        self.input.drain(..n);
+        let matched = self.input[self.offset..self.offset + n].to_string();
+        self.offset += n;
         self.location += n;
         matched
     }
 
     pub fn advance(&mut self, remove_initial_space: bool) -> Token {
         // Leading whitespace (flavor-specific: LaTeX also skips \, \quad, ...)
-        let ws_len = leading_ws(&self.input, self.flavor);
+        let ws_len = leading_ws(self.rest(), self.flavor);
         if ws_len > 0 {
             let ws = self.consume(ws_len);
             if !remove_initial_space {
-                return Token::simple("SPACE", &ws);
+                return Token::simple(Tok::Space, &ws);
             }
         }
 
-        if self.input.is_empty() {
-            return Token::simple("EOF", "");
+        if self.rest().is_empty() {
+            return Token::simple(Tok::Eof, "");
         }
 
         // Number rules come first (they are prepended to the table in JS).
-        if let Some(len) = scan_number(&self.input, self.sci_notation, self.flavor) {
+        if let Some(len) = scan_number(self.rest(), self.sci_notation, self.flavor) {
             let text = self.consume(len);
-            return Token::simple("NUMBER", &text);
+            return Token::simple(Tok::Number, &text);
         }
 
-        for rule in self.rules {
-            if let Some(len) = rule.matches(&self.input) {
+        let rules = self.rules;
+        for rule in rules {
+            if let Some(len) = rule.matches(self.rest()) {
                 let original = self.consume(len);
                 let text = rule
                     .replace
@@ -882,17 +1095,17 @@ impl Lexer {
 
         // VAR is the last rule in the JS table.
         let var = match self.flavor {
-            Flavor::Text => scan_var(&self.input),
-            Flavor::Latex => scan_var_latex(&self.input),
+            Flavor::Text => scan_var(self.rest()),
+            Flavor::Latex => scan_var_latex(self.rest()),
         };
         if let Some(len) = var {
             let text = self.consume(len);
-            return Token::simple("VAR", &text);
+            return Token::simple(Tok::Var, &text);
         }
 
         // No match: INVALID, and (like the JS) do NOT consume — the parser
         // throws immediately on INVALID.
-        let first: String = self.input.chars().take(1).collect();
-        Token::simple("INVALID", &first)
+        let first: String = self.rest().chars().take(1).collect();
+        Token::simple(Tok::Invalid, &first)
     }
 }

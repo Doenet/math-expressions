@@ -43,8 +43,10 @@ pub enum BigNumber {
 impl Number {
     /// Number from an f64, demoting to Int when the value is integral —
     /// matches how JS number literals behave (JSON.stringify(3.0) == "3").
+    /// The upper bound is exclusive: `i64::MAX as f64` rounds up to 2^63,
+    /// which an `as` cast would silently saturate.
     pub fn from_f64(v: f64) -> Self {
-        if v.fract() == 0.0 && v.is_finite() && v >= i64::MIN as f64 && v <= i64::MAX as f64 {
+        if v.fract() == 0.0 && v.is_finite() && v >= i64::MIN as f64 && v < i64::MAX as f64 {
             Number::Int(v as i64)
         } else {
             Number::Float(F64::new(v))
@@ -83,16 +85,60 @@ impl Number {
     pub fn js_string(&self) -> String {
         match self {
             Number::Int(i) => i.to_string(),
-            Number::Float(f) => {
-                let v = f.get();
-                if v.fract() == 0.0 && v.is_finite() && v.abs() < 1e21 {
-                    format!("{}", v as i64)
-                } else {
-                    format!("{}", v)
-                }
-            }
+            Number::Float(f) => js_f64_to_string(f.get()),
             Number::Rat(n, d) => format!("{}/{}", n, d),
             Number::Big(_) => unimplemented!("Big arithmetic arrives in phase 4"),
         }
+    }
+}
+
+/// The shortest digit string for a positive finite f64 and its decimal
+/// exponent: `(digits, n)` with value = 0.digits × 10^n. Derived from Rust's
+/// `{:e}` formatting, which produces shortest round-trip digits like JS.
+pub(crate) fn shortest_digits(v: f64) -> (String, i64) {
+    debug_assert!(v > 0.0 && v.is_finite());
+    let es = format!("{:e}", v);
+    let (mantissa, exp) = es.split_once('e').expect("`{:e}` always has an e");
+    let exp: i64 = exp.parse().unwrap();
+    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
+    let s = digits.trim_end_matches('0');
+    let s = if s.is_empty() { "0" } else { s };
+    (s.to_string(), exp + 1)
+}
+
+/// Reproduce JavaScript `Number.prototype.toString()` for an f64, applying
+/// the ECMAScript rendering rule (which switches to exponential notation
+/// outside roughly 1e-6..1e21, where Rust's `{}` never would).
+pub(crate) fn js_f64_to_string(v: f64) -> String {
+    if v.is_nan() {
+        return "NaN".to_string();
+    }
+    if v == 0.0 {
+        return "0".to_string();
+    }
+    if v < 0.0 {
+        return format!("-{}", js_f64_to_string(-v));
+    }
+    if v.is_infinite() {
+        return "Infinity".to_string();
+    }
+    let (s, n) = shortest_digits(v);
+    let k = s.len() as i64;
+
+    if k <= n && n <= 21 {
+        format!("{}{}", s, "0".repeat((n - k) as usize))
+    } else if 0 < n && n <= 21 {
+        format!("{}.{}", &s[..n as usize], &s[n as usize..])
+    } else if -6 < n && n <= 0 {
+        format!("0.{}{}", "0".repeat((-n) as usize), s)
+    } else {
+        let e = n - 1;
+        let mantissa = if k == 1 {
+            s.to_string()
+        } else {
+            format!("{}.{}", &s[..1], &s[1..])
+        };
+        let sign = if e >= 0 { "+" } else { "-" };
+        format!("{}e{}{}", mantissa, sign, e.abs())
     }
 }

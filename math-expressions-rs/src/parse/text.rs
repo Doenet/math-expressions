@@ -18,10 +18,10 @@ use super::common::{
     atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string, P,
 };
 use super::error::ParseError;
-use super::lexer::{Lexer, LexerState, Token};
+use super::lexer::{Lexer, LexerState, Tok, Token};
 use crate::expr::{flatten, Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 type R<T> = Result<T, ParseError>;
 
@@ -69,30 +69,41 @@ impl Default for TextToAstOptions {
 }
 
 /// The units table from lib/expression/units.js — only the shape matters at
-/// parse time (prefix vs postfix); the scale closures belong to evaluation.
-fn units() -> HashMap<&'static str, bool /* prefix */> {
-    HashMap::from([("%", false), ("$", true), ("deg", false)])
+/// parse time; `Some(prefix)` says whether the unit precedes its value.
+fn unit_prefix(name: &str) -> Option<bool> {
+    match name {
+        "%" | "deg" => Some(false),
+        "$" => Some(true),
+        _ => None,
+    }
 }
 
 pub struct TextToAst {
     opts: TextToAstOptions,
     lexer: Lexer,
     token: Token,
-    units: HashMap<&'static str, bool>,
+    // The option symbol lists, as sets — looked up per identifier token.
+    applied_functions: HashSet<String>,
+    functions: HashSet<String>,
+    operators: HashSet<String>,
+    unsplit: HashSet<String>,
 }
 
 impl TextToAst {
     pub fn new(opts: TextToAstOptions) -> Self {
         let lexer = Lexer::new(opts.parse_scientific_notation);
         TextToAst {
+            applied_functions: opts.applied_function_symbols.iter().cloned().collect(),
+            functions: opts.function_symbols.iter().cloned().collect(),
+            operators: opts.operator_symbols.iter().cloned().collect(),
+            unsplit: opts.unsplit_symbols.iter().cloned().collect(),
             opts,
             lexer,
             token: Token {
-                ttype: "EOF",
+                ttype: Tok::Eof,
                 text: String::new(),
                 original: String::new(),
             },
-            units: units(),
         }
     }
 
@@ -102,7 +113,7 @@ impl TextToAst {
 
     fn advance_opts(&mut self, remove_initial_space: bool) -> R<()> {
         self.token = self.lexer.advance(remove_initial_space);
-        if self.token.ttype == "INVALID" {
+        if self.token.ttype == Tok::Invalid {
             return Err(ParseError::new(
                 format!("Invalid symbol '{}'", self.token.original),
                 self.lexer.location,
@@ -128,7 +139,7 @@ impl TextToAst {
         self.lexer.set_input(input);
         self.advance()?;
         let result = self.statement_list()?;
-        if self.token.ttype != "EOF" {
+        if self.token.ttype != Tok::Eof {
             return Err(self.err(format!("Invalid location of '{}'", self.token.original)));
         }
         Ok(flatten(result))
@@ -136,7 +147,7 @@ impl TextToAst {
 
     fn statement_list(&mut self) -> R<Expr> {
         let mut list = vec![self.statement(P::default())?];
-        while self.token.ttype == "," {
+        while self.token.ttype == Tok::Comma {
             self.advance()?;
             list.push(self.statement(P::default())?);
         }
@@ -149,7 +160,7 @@ impl TextToAst {
 
     fn statement(&mut self, p: P) -> R<Expr> {
         // three periods ... can be a statement by itself
-        if self.token.ttype == "LDOTS" {
+        if self.token.ttype == Tok::Ldots {
             self.advance()?;
             return Ok(Expr::Ldots);
         }
@@ -176,7 +187,7 @@ impl TextToAst {
             ..P::default()
         })?;
 
-        if self.token.ttype != ":" {
+        if self.token.ttype != Tok::Colon {
             return Ok(lhs);
         }
         self.advance()?;
@@ -190,7 +201,7 @@ impl TextToAst {
             ..P::default()
         })?;
 
-        if self.token.ttype != "|" {
+        if self.token.ttype != Tok::Pipe {
             return Err(self.err("statement fallback: no bar"));
         }
         self.advance()?;
@@ -211,12 +222,17 @@ impl TextToAst {
 
         while matches!(
             self.token.ttype,
-            "IMPLIES" | "IMPLIEDBY" | "IFF" | "LEFTARROW" | "RIGHTARROW" | "LEFTRIGHTARROW"
+            Tok::Implies
+                | Tok::ImpliedBy
+                | Tok::Iff
+                | Tok::LeftArrow
+                | Tok::RightArrow
+                | Tok::LeftRightArrow
         ) {
-            let operation = self.token.ttype.to_lowercase();
+            let operation = self.token.ttype.op_name();
             self.advance()?;
             let rhs = self.statement_b(fwd)?;
-            lhs = other_op(&operation, vec![lhs, rhs]);
+            lhs = other_op(operation, vec![lhs, rhs]);
         }
 
         Ok(lhs)
@@ -230,7 +246,7 @@ impl TextToAst {
         };
         let mut lhs = self.statement_c(fwd)?;
 
-        while self.token.ttype == "OR" {
+        while self.token.ttype == Tok::Or {
             self.advance()?;
             let rhs = self.statement_c(fwd)?;
             lhs = Expr::Or(vec![lhs, rhs]);
@@ -243,7 +259,7 @@ impl TextToAst {
         // AND binds tighter than OR
         let mut lhs = self.relation(p)?;
 
-        while self.token.ttype == "AND" {
+        while self.token.ttype == Tok::And {
             self.advance()?;
             let rhs = self.relation(p)?;
             lhs = Expr::And(vec![lhs, rhs]);
@@ -253,39 +269,39 @@ impl TextToAst {
     }
 
     fn relation(&mut self, p: P) -> R<Expr> {
-        if self.token.ttype == "NOT" || self.token.ttype == "!" {
+        if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.relation(p)?)));
         }
 
-        if self.token.ttype == "FORALL" || self.token.ttype == "EXISTS" {
-            let operator = self.token.ttype.to_lowercase();
+        if self.token.ttype == Tok::Forall || self.token.ttype == Tok::Exists {
+            let operator = self.token.ttype.op_name();
             self.advance()?;
-            return Ok(other_op(&operator, vec![self.relation(p)?]));
+            return Ok(other_op(operator, vec![self.relation(p)?]));
         }
 
         let mut lhs = self.expression(p)?;
 
         loop {
             let op = match self.token.ttype {
-                "=" => Some(RelOp::Eq),
-                "NE" => Some(RelOp::Ne),
-                "<" => Some(RelOp::Lt),
-                ">" => Some(RelOp::Gt),
-                "LE" => Some(RelOp::Le),
-                "GE" => Some(RelOp::Ge),
-                "IN" => Some(RelOp::In),
-                "NOTIN" => Some(RelOp::NotIn),
-                "NI" => Some(RelOp::Ni),
-                "NOTNI" => Some(RelOp::NotNi),
-                "SUBSET" => Some(RelOp::Subset),
-                "NOTSUBSET" => Some(RelOp::NotSubset),
-                "SUBSETEQ" => Some(RelOp::SubsetEq),
-                "NOTSUBSETEQ" => Some(RelOp::NotSubsetEq),
-                "SUPERSET" => Some(RelOp::Superset),
-                "NOTSUPERSET" => Some(RelOp::NotSuperset),
-                "SUPERSETEQ" => Some(RelOp::SupersetEq),
-                "NOTSUPERSETEQ" => Some(RelOp::NotSupersetEq),
+                Tok::Eq => Some(RelOp::Eq),
+                Tok::Ne => Some(RelOp::Ne),
+                Tok::Lt => Some(RelOp::Lt),
+                Tok::Gt => Some(RelOp::Gt),
+                Tok::Le => Some(RelOp::Le),
+                Tok::Ge => Some(RelOp::Ge),
+                Tok::In => Some(RelOp::In),
+                Tok::NotIn => Some(RelOp::NotIn),
+                Tok::Ni => Some(RelOp::Ni),
+                Tok::NotNi => Some(RelOp::NotNi),
+                Tok::Subset => Some(RelOp::Subset),
+                Tok::NotSubset => Some(RelOp::NotSubset),
+                Tok::SubsetEq => Some(RelOp::SubsetEq),
+                Tok::NotSubsetEq => Some(RelOp::NotSubsetEq),
+                Tok::Superset => Some(RelOp::Superset),
+                Tok::NotSuperset => Some(RelOp::NotSuperset),
+                Tok::SupersetEq => Some(RelOp::SupersetEq),
+                Tok::NotSupersetEq => Some(RelOp::NotSupersetEq),
                 _ => None,
             };
             let Some(op) = op else { break };
@@ -294,12 +310,14 @@ impl TextToAst {
             let rhs = self.expression(p)?;
 
             match op {
-                RelOp::Lt | RelOp::Le if self.token.ttype == "<" || self.token.ttype == "LE" => {
+                RelOp::Lt | RelOp::Le
+                    if self.token.ttype == Tok::Lt || self.token.ttype == Tok::Le =>
+                {
                     // sequence of multiple < or <=
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
-                    while self.token.ttype == "<" || self.token.ttype == "LE" {
-                        ops.push(if self.token.ttype == "<" {
+                    while self.token.ttype == Tok::Lt || self.token.ttype == Tok::Le {
+                        ops.push(if self.token.ttype == Tok::Lt {
                             RelOp::Lt
                         } else {
                             RelOp::Le
@@ -309,11 +327,13 @@ impl TextToAst {
                     }
                     lhs = Expr::Relation { operands, ops };
                 }
-                RelOp::Gt | RelOp::Ge if self.token.ttype == ">" || self.token.ttype == "GE" => {
+                RelOp::Gt | RelOp::Ge
+                    if self.token.ttype == Tok::Gt || self.token.ttype == Tok::Ge =>
+                {
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
-                    while self.token.ttype == ">" || self.token.ttype == "GE" {
-                        ops.push(if self.token.ttype == ">" {
+                    while self.token.ttype == Tok::Gt || self.token.ttype == Tok::Ge {
+                        ops.push(if self.token.ttype == Tok::Gt {
                             RelOp::Gt
                         } else {
                             RelOp::Ge
@@ -327,7 +347,7 @@ impl TextToAst {
                     let mut operands = vec![lhs, rhs];
                     let mut ops = vec![RelOp::Eq];
                     // check for sequence of multiple =
-                    while self.token.ttype == "=" {
+                    while self.token.ttype == Tok::Eq {
                         self.advance()?;
                         operands.push(self.expression(p)?);
                         ops.push(RelOp::Eq);
@@ -347,25 +367,25 @@ impl TextToAst {
     }
 
     fn expression(&mut self, p: P) -> R<Expr> {
-        if self.token.ttype == "NOT" || self.token.ttype == "!" {
+        if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.expression(p)?)));
         }
 
         let mut plus_begin = false;
-        if self.token.ttype == "+" {
+        if self.token.ttype == Tok::Plus {
             plus_begin = true;
             self.advance()?;
         }
 
         let mut negative_begin = false;
-        if self.token.ttype == "-" {
+        if self.token.ttype == Tok::Minus {
             negative_begin = true;
             self.advance()?;
         }
 
         let mut pm_begin = false;
-        if self.token.ttype == "PM" {
+        if self.token.ttype == Tok::Pm {
             pm_begin = true;
             self.advance()?;
         }
@@ -408,29 +428,35 @@ impl TextToAst {
 
         while matches!(
             self.token.ttype,
-            "+" | "-" | "PM" | "UNION" | "INTERSECT" | "PERP" | "PARALLEL"
+            Tok::Plus
+                | Tok::Minus
+                | Tok::Pm
+                | Tok::Union
+                | Tok::Intersect
+                | Tok::Perp
+                | Tok::Parallel
         ) {
-            let mut operation = self.token.ttype.to_lowercase();
+            let op_token = self.token.ttype;
+            // Minus and plus-minus contribute a sign to an addition.
+            let is_add = matches!(op_token, Tok::Plus | Tok::Minus | Tok::Pm);
             let mut negative = false;
             let mut pm_sign = false;
             let mut positive_then_negative = false;
 
-            if self.token.ttype == "-" {
-                operation = "+".to_string();
+            if op_token == Tok::Minus {
                 negative = true;
                 self.advance()?;
-            } else if self.token.ttype == "PM" {
-                operation = "+".to_string();
+            } else if op_token == Tok::Pm {
                 pm_sign = true;
                 self.advance()?;
             } else {
                 self.advance()?;
-                if operation == "+" {
-                    if self.token.ttype == "-" {
+                if op_token == Tok::Plus {
+                    if self.token.ttype == Tok::Minus {
                         negative = true;
                         positive_then_negative = true;
                         self.advance()?;
-                    } else if self.token.ttype == "PM" {
+                    } else if self.token.ttype == Tok::Pm {
                         pm_sign = true;
                         self.advance()?;
                     }
@@ -439,7 +465,7 @@ impl TextToAst {
 
             let rhs_opt = self.term(p)?;
 
-            if operation == "+" {
+            if is_add {
                 if rhs_opt.is_none() {
                     if let Some(l) = atom_string(&lhs) {
                         if positive_then_negative {
@@ -477,11 +503,12 @@ impl TextToAst {
                 rhs = other_op("pm", vec![rhs]);
             }
 
-            lhs = match operation.as_str() {
-                "+" => Expr::Add(vec![lhs, rhs]),
-                "union" => Expr::Union(vec![lhs, rhs]),
-                "intersect" => Expr::Intersect(vec![lhs, rhs]),
-                other => other_op(other, vec![lhs, rhs]), // perp, parallel
+            lhs = match op_token {
+                Tok::Plus | Tok::Minus | Tok::Pm => Expr::Add(vec![lhs, rhs]),
+                Tok::Union => Expr::Union(vec![lhs, rhs]),
+                Tok::Intersect => Expr::Intersect(vec![lhs, rhs]),
+                // perp, parallel
+                _ => other_op(op_token.op_name(), vec![lhs, rhs]),
             };
         }
 
@@ -492,12 +519,12 @@ impl TextToAst {
         let mut lhs = self.factor(p)?;
 
         loop {
-            if self.token.ttype == "*" {
+            if self.token.ttype == Tok::Times {
                 self.advance()?;
                 let l = lhs.take().unwrap_or(Expr::Blank);
                 let rhs = self.factor(p)?.unwrap_or(Expr::Blank);
                 lhs = Some(Expr::Mul(vec![l, rhs]));
-            } else if self.token.ttype == "/" {
+            } else if self.token.ttype == Tok::Slash {
                 self.advance()?;
                 let l = lhs.take().unwrap_or(Expr::Blank);
                 let rhs = self.factor(p)?.unwrap_or(Expr::Blank);
@@ -528,7 +555,7 @@ impl TextToAst {
                 for (ind, op) in ops.iter().enumerate() {
                     let Expr::Sym(s) = op else { continue };
                     let name = s.name();
-                    let Some(&prefix) = self.units.get(name.as_str()) else {
+                    let Some(prefix) = unit_prefix(&name) else {
                         continue;
                     };
                     if prefix && ind < n - 1 {
@@ -585,7 +612,7 @@ impl TextToAst {
             }));
         }
 
-        if self.token.ttype == "-" {
+        if self.token.ttype == Tok::Minus {
             self.advance()?;
             let f = self.factor(p)?;
             return Ok(Some(match f {
@@ -600,7 +627,7 @@ impl TextToAst {
 
         let mut result = self.non_minus_factor(p)?;
 
-        if result.is_none() && self.token.ttype == "PERP" {
+        if result.is_none() && self.token.ttype == Tok::Perp {
             result = Some(Expr::sym("perp"));
             self.advance()?;
         }
@@ -612,15 +639,15 @@ impl TextToAst {
         let mut result = self.base_factor(p)?;
 
         // allow arbitrary sequence of exponents, factorials, primes
-        while matches!(self.token.ttype, "^" | "!" | "'") {
+        while matches!(self.token.ttype, Tok::Caret | Tok::Bang | Tok::Prime) {
             let r = result.take().unwrap_or(Expr::Blank);
             result = Some(match self.token.ttype {
-                "^" => {
+                Tok::Caret => {
                     self.advance()?;
                     let superscript = self.get_subsuperscript(p)?;
                     Expr::Pow(Box::new(r), Box::new(superscript))
                 }
-                "!" => {
+                Tok::Bang => {
                     self.advance()?;
                     Expr::Apply(Box::new(Expr::sym("factorial")), vec![r])
                 }
@@ -635,10 +662,10 @@ impl TextToAst {
     }
 
     fn get_subsuperscript(&mut self, p: P) -> R<Expr> {
-        if matches!(self.token.ttype, "+" | "-" | "PERP") {
-            let subresult = self.token.ttype.to_lowercase();
+        if matches!(self.token.ttype, Tok::Plus | Tok::Minus | Tok::Perp) {
+            let subresult = self.token.ttype.op_name();
             self.advance()?;
-            return Ok(Expr::sym(&subresult));
+            return Ok(Expr::sym(subresult));
         }
         let subresult = self.base_factor(P {
             parse_absolute_value: p.parse_absolute_value,
@@ -651,27 +678,30 @@ impl TextToAst {
     fn base_factor(&mut self, p: P) -> R<Option<Expr>> {
         let mut result: Option<Expr> = None;
 
-        if self.token.ttype == "NUMBER" {
+        if self.token.ttype == Tok::Number {
             let v = parse_js_float(&self.token.text);
-            result = Some(Expr::Num(Number::from_f64(v)));
+            // A literal can overflow f64 ("1E999"); parseFloat gives Infinity.
+            result = Some(if v.is_infinite() {
+                Expr::Const(MathConst::Inf)
+            } else {
+                Expr::Num(Number::from_f64(v))
+            });
             self.advance()?;
-        } else if self.token.ttype == "INFINITY" {
+        } else if self.token.ttype == Tok::Infinity {
             result = Some(Expr::Const(MathConst::Inf));
             self.advance()?;
-        } else if self.token.ttype == "VAR" || self.token.ttype == "VARMULTICHAR" {
+        } else if self.token.ttype == Tok::Var || self.token.ttype == Tok::VarMultiChar {
             let name = self.token.text.clone();
 
-            if self.opts.applied_function_symbols.contains(&name)
-                || self.opts.function_symbols.contains(&name)
-            {
+            if self.applied_functions.contains(&name) || self.functions.contains(&name) {
                 return self.function_var(p, &name).map(Some);
-            } else if self.opts.operator_symbols.contains(&name) {
+            } else if self.operators.contains(&name) {
                 self.advance()?;
 
-                if self.token.ttype == "(" {
+                if self.token.ttype == Tok::LParen {
                     self.advance()?;
                     let args = self.statement_list()?;
-                    if self.token.ttype != ")" {
+                    if self.token.ttype != Tok::RParen {
                         return Err(self.err("Expecting )"));
                     }
                     self.advance()?;
@@ -701,8 +731,8 @@ impl TextToAst {
                 // determine if should split text into single letter factors
                 let mut split = self.opts.split_symbols;
                 if split
-                    && (self.token.ttype == "VARMULTICHAR"
-                        || self.opts.unsplit_symbols.contains(&name)
+                    && (self.token.ttype == Tok::VarMultiChar
+                        || self.unsplit.contains(&name)
                         || name.chars().count() == 1
                         || name.chars().any(|c| c.is_ascii_digit()))
                 {
@@ -731,9 +761,12 @@ impl TextToAst {
                     self.advance()?;
                 }
             }
-        } else if matches!(self.token.ttype, "(" | "[" | "{" | "LANGLE") {
+        } else if matches!(
+            self.token.ttype,
+            Tok::LParen | Tok::LBracket | Tok::LBrace | Tok::LAngle
+        ) {
             result = Some(self.bracketed(p)?);
-        } else if self.token.ttype == "|"
+        } else if self.token.ttype == Tok::Pipe
             && p.parse_absolute_value
             && (p.inside_absolute_value == 0 || !p.allow_absolute_value_closing)
         {
@@ -743,18 +776,18 @@ impl TextToAst {
                 inside_absolute_value: inside,
                 ..P::default()
             })?;
-            if self.token.ttype != "|" {
+            if self.token.ttype != Tok::Pipe {
                 return Err(self.err("Expecting |"));
             }
             self.advance()?;
             result = Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![st]));
-        } else if self.token.ttype == "ANGLE" {
+        } else if self.token.ttype == Tok::Angle {
             result = self.angle_factor(p)?;
-        } else if self.token.ttype == "INT" {
+        } else if self.token.ttype == Tok::Int {
             return self.integral_factor(p).map(Some);
         }
 
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             let r = result.unwrap_or(Expr::Blank);
             self.advance()?;
             let subscript = self.get_subsuperscript(p)?;
@@ -766,14 +799,11 @@ impl TextToAst {
 
     /// The VAR branch for function symbols (applied or unapplied).
     fn function_var(&mut self, p: P, name: &str) -> R<Expr> {
-        let must_apply = self
-            .opts
-            .applied_function_symbols
-            .contains(&name.to_string());
+        let must_apply = self.applied_functions.contains(name);
         let mut result = Expr::sym(name);
         self.advance()?;
 
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             self.advance()?;
             let subscript = self.get_subsuperscript(P {
                 parse_absolute_value: p.parse_absolute_value,
@@ -791,12 +821,12 @@ impl TextToAst {
                 result = Expr::Apply(Box::new(result), vec![Expr::Blank]);
             }
         } else {
-            while self.token.ttype == "'" {
+            while self.token.ttype == Tok::Prime {
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
 
-            while self.token.ttype == "^" {
+            while self.token.ttype == Tok::Caret {
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -805,10 +835,10 @@ impl TextToAst {
                 result = Expr::Pow(Box::new(result), Box::new(superscript));
             }
 
-            if self.token.ttype == "(" {
+            if self.token.ttype == Tok::LParen {
                 self.advance()?;
                 let parameters = self.statement_list()?;
-                if self.token.ttype != ")" {
+                if self.token.ttype != Tok::RParen {
                     return Err(self.err("Expecting )"));
                 }
                 self.advance()?;
@@ -842,10 +872,10 @@ impl TextToAst {
     fn bracketed(&mut self, _p: P) -> R<Expr> {
         let token_left = self.token.ttype;
         let (expected_right, other_right) = match token_left {
-            "(" => (")", Some("]")),
-            "[" => ("]", Some(")")),
-            "{" => ("}", None),
-            _ => ("RANGLE", None),
+            Tok::LParen => (Tok::RParen, Some(Tok::RBracket)),
+            Tok::LBracket => (Tok::RBracket, Some(Tok::RParen)),
+            Tok::LBrace => (Tok::RBrace, None),
+            _ => (Tok::RAngle, None),
         };
 
         self.advance()?;
@@ -871,7 +901,7 @@ impl TextToAst {
             let mut it = xs.into_iter();
             let a = it.next().unwrap();
             let b = it.next().unwrap();
-            let closed = if token_left == "(" {
+            let closed = if token_left == Tok::LParen {
                 (false, true)
             } else {
                 (true, false)
@@ -882,15 +912,15 @@ impl TextToAst {
             };
         } else if n_elements >= 2 {
             let kind = match token_left {
-                "(" => SeqKind::Tuple,
-                "[" => SeqKind::Array,
-                "{" => SeqKind::Set,
+                Tok::LParen => SeqKind::Tuple,
+                Tok::LBracket => SeqKind::Array,
+                Tok::LBrace => SeqKind::Set,
                 _ => SeqKind::AltVector,
             };
             if let Expr::Seq(_, xs) = result {
                 result = Expr::Seq(kind, xs);
             }
-        } else if token_left == "{" {
+        } else if token_left == Tok::LBrace {
             // singleton set (also covers set-builder | and :)
             result = Expr::Seq(SeqKind::Set, vec![result]);
         }
@@ -903,10 +933,10 @@ impl TextToAst {
     fn angle_factor(&mut self, p: P) -> R<Option<Expr>> {
         self.advance()?;
 
-        if self.token.ttype == "(" {
+        if self.token.ttype == Tok::LParen {
             self.advance()?;
             let parameters = self.statement_list()?;
-            if self.token.ttype != ")" {
+            if self.token.ttype != Tok::RParen {
                 return Err(self.err("Expecting )"));
             }
             self.advance()?;
@@ -940,12 +970,12 @@ impl TextToAst {
 
         let mut head = Expr::sym("int");
 
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             self.advance()?;
             let subscript = self.get_subsuperscript(p)?;
             head = Expr::Index(Box::new(head), Box::new(subscript));
         }
-        if self.token.ttype == "^" {
+        if self.token.ttype == Tok::Caret {
             self.advance()?;
             let superscript = self.get_subsuperscript(p)?;
             head = Expr::Pow(Box::new(head), Box::new(superscript));
@@ -984,7 +1014,7 @@ impl TextToAst {
     fn leibniz_notation(&mut self) -> R<Option<Expr>> {
         let chars: Vec<char> = self.token.text.chars().collect();
 
-        let valid_start = self.token.ttype == "VAR"
+        let valid_start = self.token.ttype == Tok::Var
             && !chars.is_empty()
             && (chars[0] == 'd' || chars[0] == '∂')
             && (chars.len() == 1 || (chars.len() == 2 && chars[1].is_ascii_alphabetic()));
@@ -1003,16 +1033,16 @@ impl TextToAst {
         } else {
             // just a d or ∂: must be followed by ^ or a variable without ∂
             self.advance()?;
-            if self.token.ttype == "VARMULTICHAR"
-                || (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
+            if self.token.ttype == Tok::VarMultiChar
+                || (self.token.ttype == Tok::Var && !self.token.text.contains('∂'))
             {
                 var1 = self.token.text.clone();
             } else {
-                if self.token.ttype != "^" {
+                if self.token.ttype != Tok::Caret {
                     return Ok(None);
                 }
                 self.advance()?;
-                if self.token.ttype != "NUMBER" {
+                if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
                 n_deriv = parse_js_float(&self.token.text);
@@ -1020,8 +1050,8 @@ impl TextToAst {
                     return Ok(None);
                 }
                 self.advance()?;
-                if (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
-                    || self.token.ttype == "VARMULTICHAR"
+                if (self.token.ttype == Tok::Var && !self.token.text.contains('∂'))
+                    || self.token.ttype == Tok::VarMultiChar
                 {
                     var1 = self.token.text.clone();
                 } else {
@@ -1031,7 +1061,7 @@ impl TextToAst {
         }
 
         self.advance()?;
-        if self.token.ttype != "/" {
+        if self.token.ttype != Tok::Slash {
             return Ok(None);
         }
 
@@ -1040,7 +1070,7 @@ impl TextToAst {
 
         loop {
             // next must be a VAR starting with the derivative symbol
-            if self.token.ttype != "VAR" || !self.token.text.starts_with(deriv_symbol) {
+            if self.token.ttype != Tok::Var || !self.token.text.starts_with(deriv_symbol) {
                 return Ok(None);
             }
 
@@ -1062,8 +1092,8 @@ impl TextToAst {
             } else {
                 // token was just the derivative symbol
                 self.advance()?;
-                if (self.token.ttype == "VAR" && !self.token.text.contains('∂'))
-                    || self.token.ttype == "VARMULTICHAR"
+                if (self.token.ttype == Tok::Var && !self.token.text.contains('∂'))
+                    || self.token.ttype == Tok::VarMultiChar
                 {
                     var2s.push(self.token.text.clone());
                 } else {
@@ -1076,14 +1106,14 @@ impl TextToAst {
             let mut last_was_space = false;
 
             self.advance_opts(false)?;
-            if self.token.ttype == "SPACE" {
+            if self.token.ttype == Tok::Space {
                 last_was_space = true;
                 self.advance()?;
             }
 
-            if self.token.ttype == "^" {
+            if self.token.ttype == Tok::Caret {
                 self.advance()?;
-                if self.token.ttype != "NUMBER" {
+                if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
                 this_exponent = parse_js_float(&self.token.text);
@@ -1092,7 +1122,7 @@ impl TextToAst {
                 }
                 last_was_space = false;
                 self.advance_opts(false)?;
-                if self.token.ttype == "SPACE" {
+                if self.token.ttype == Tok::Space {
                     last_was_space = true;
                     self.advance()?;
                 }
@@ -1108,11 +1138,11 @@ impl TextToAst {
             if exponent_sum == n_deriv {
                 // the derivative must be separated from what follows
                 if !last_was_space
-                    && (self.token.ttype == "VAR" || self.token.ttype == "VARMULTICHAR")
+                    && (self.token.ttype == Tok::Var || self.token.ttype == Tok::VarMultiChar)
                 {
                     return Ok(None);
                 }
-                if self.token.ttype == "SPACE" {
+                if self.token.ttype == Tok::Space {
                     self.advance()?;
                 }
 

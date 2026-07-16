@@ -11,9 +11,10 @@ use super::common::{
     atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string, P,
 };
 use super::error::ParseError;
-use super::lexer::{Lexer, LexerState, Token};
+use super::lexer::{Lexer, LexerState, Tok, Token};
 use crate::expr::{flatten, Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
+use std::collections::HashSet;
 
 type R<T> = Result<T, ParseError>;
 
@@ -119,24 +120,31 @@ fn unit_of(name: &str) -> Option<Unit> {
 }
 
 /// JS `this.token.token_type[0] === "|"` — the token is `|` or `|L`.
-fn is_pipe(tt: &str) -> bool {
-    tt == "|" || tt == "|L"
+fn is_pipe(tt: Tok) -> bool {
+    matches!(tt, Tok::Pipe | Tok::PipeL)
 }
 
 pub struct LatexToAst {
     opts: LatexToAstOptions,
     lexer: Lexer,
     token: Token,
+    // The option symbol lists, as sets — looked up per identifier token.
+    applied_functions: HashSet<String>,
+    functions: HashSet<String>,
+    allowed_symbols: HashSet<String>,
 }
 
 impl LatexToAst {
     pub fn new(opts: LatexToAstOptions) -> Self {
         let lexer = Lexer::new_latex(opts.parse_scientific_notation);
         LatexToAst {
+            applied_functions: opts.applied_function_symbols.iter().cloned().collect(),
+            functions: opts.function_symbols.iter().cloned().collect(),
+            allowed_symbols: opts.allowed_latex_symbols.iter().cloned().collect(),
             opts,
             lexer,
             token: Token {
-                ttype: "EOF",
+                ttype: Tok::Eof,
                 text: String::new(),
                 original: String::new(),
             },
@@ -145,7 +153,7 @@ impl LatexToAst {
 
     fn advance(&mut self) -> R<()> {
         self.token = self.lexer.advance(true);
-        if self.token.ttype == "INVALID" {
+        if self.token.ttype == Tok::Invalid {
             return Err(ParseError::new(
                 format!("Invalid symbol '{}'", self.token.original),
                 self.lexer.location,
@@ -168,20 +176,20 @@ impl LatexToAst {
     }
 
     fn is_applied(&self, name: &str) -> bool {
-        self.opts.applied_function_symbols.iter().any(|s| s == name)
+        self.applied_functions.contains(name)
     }
     fn is_function(&self, name: &str) -> bool {
-        self.opts.function_symbols.iter().any(|s| s == name)
+        self.functions.contains(name)
     }
     fn is_allowed_symbol(&self, name: &str) -> bool {
-        self.opts.allowed_latex_symbols.iter().any(|s| s == name)
+        self.allowed_symbols.contains(name)
     }
 
     pub fn convert(&mut self, input: &str) -> R<Expr> {
         self.lexer.set_input(input);
         self.advance()?;
         let result = self.statement_list()?;
-        if self.token.ttype != "EOF" {
+        if self.token.ttype != Tok::Eof {
             return Err(self.err(format!("Invalid location of '{}'", self.token.original)));
         }
         Ok(flatten(result))
@@ -189,7 +197,7 @@ impl LatexToAst {
 
     fn statement_list(&mut self) -> R<Expr> {
         let mut list = vec![self.statement(P::default())?];
-        while self.token.ttype == "," {
+        while self.token.ttype == Tok::Comma {
             self.advance()?;
             list.push(self.statement(P::default())?);
         }
@@ -201,7 +209,7 @@ impl LatexToAst {
     }
 
     fn statement(&mut self, p: P) -> R<Expr> {
-        if self.token.ttype == "LDOTS" {
+        if self.token.ttype == Tok::Ldots {
             self.advance()?;
             return Ok(Expr::Ldots);
         }
@@ -227,10 +235,14 @@ impl LatexToAst {
             ..P::default()
         })?;
 
-        if self.token.ttype != ":" && self.token.ttype != "MID" {
+        if self.token.ttype != Tok::Colon && self.token.ttype != Tok::Mid {
             return Ok(lhs);
         }
-        let operator = if self.token.ttype == ":" { ":" } else { "|" };
+        let operator = if self.token.ttype == Tok::Colon {
+            ":"
+        } else {
+            "|"
+        };
         self.advance()?;
         let rhs = self.statement_a(P::default())?;
         Ok(other_op(operator, vec![lhs, rhs]))
@@ -261,12 +273,17 @@ impl LatexToAst {
         let mut lhs = self.statement_b(fwd)?;
         while matches!(
             self.token.ttype,
-            "IMPLIES" | "IMPLIEDBY" | "IFF" | "LEFTARROW" | "RIGHTARROW" | "LEFTRIGHTARROW"
+            Tok::Implies
+                | Tok::ImpliedBy
+                | Tok::Iff
+                | Tok::LeftArrow
+                | Tok::RightArrow
+                | Tok::LeftRightArrow
         ) {
-            let operation = self.token.ttype.to_lowercase();
+            let operation = self.token.ttype.op_name();
             self.advance()?;
             let rhs = self.statement_b(fwd)?;
-            lhs = other_op(&operation, vec![lhs, rhs]);
+            lhs = other_op(operation, vec![lhs, rhs]);
         }
         Ok(lhs)
     }
@@ -278,7 +295,7 @@ impl LatexToAst {
             ..P::default()
         };
         let mut lhs = self.statement_c(fwd)?;
-        while self.token.ttype == "OR" {
+        while self.token.ttype == Tok::Or {
             self.advance()?;
             let rhs = self.statement_c(fwd)?;
             lhs = Expr::Or(vec![lhs, rhs]);
@@ -288,7 +305,7 @@ impl LatexToAst {
 
     fn statement_c(&mut self, p: P) -> R<Expr> {
         let mut lhs = self.relation(p)?;
-        while self.token.ttype == "AND" {
+        while self.token.ttype == Tok::And {
             self.advance()?;
             let rhs = self.relation(p)?;
             lhs = Expr::And(vec![lhs, rhs]);
@@ -297,38 +314,38 @@ impl LatexToAst {
     }
 
     fn relation(&mut self, p: P) -> R<Expr> {
-        if self.token.ttype == "NOT" || self.token.ttype == "!" {
+        if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.relation(p)?)));
         }
-        if self.token.ttype == "FORALL" || self.token.ttype == "EXISTS" {
-            let operator = self.token.ttype.to_lowercase();
+        if self.token.ttype == Tok::Forall || self.token.ttype == Tok::Exists {
+            let operator = self.token.ttype.op_name();
             self.advance()?;
-            return Ok(other_op(&operator, vec![self.relation(p)?]));
+            return Ok(other_op(operator, vec![self.relation(p)?]));
         }
 
         let mut lhs = self.expression(p)?;
 
         loop {
             let op = match self.token.ttype {
-                "=" => Some(RelOp::Eq),
-                "NE" => Some(RelOp::Ne),
-                "<" => Some(RelOp::Lt),
-                ">" => Some(RelOp::Gt),
-                "LE" => Some(RelOp::Le),
-                "GE" => Some(RelOp::Ge),
-                "IN" => Some(RelOp::In),
-                "NOTIN" => Some(RelOp::NotIn),
-                "NI" => Some(RelOp::Ni),
-                "NOTNI" => Some(RelOp::NotNi),
-                "SUBSET" => Some(RelOp::Subset),
-                "NOTSUBSET" => Some(RelOp::NotSubset),
-                "SUBSETEQ" => Some(RelOp::SubsetEq),
-                "NOTSUBSETEQ" => Some(RelOp::NotSubsetEq),
-                "SUPERSET" => Some(RelOp::Superset),
-                "NOTSUPERSET" => Some(RelOp::NotSuperset),
-                "SUPERSETEQ" => Some(RelOp::SupersetEq),
-                "NOTSUPERSETEQ" => Some(RelOp::NotSupersetEq),
+                Tok::Eq => Some(RelOp::Eq),
+                Tok::Ne => Some(RelOp::Ne),
+                Tok::Lt => Some(RelOp::Lt),
+                Tok::Gt => Some(RelOp::Gt),
+                Tok::Le => Some(RelOp::Le),
+                Tok::Ge => Some(RelOp::Ge),
+                Tok::In => Some(RelOp::In),
+                Tok::NotIn => Some(RelOp::NotIn),
+                Tok::Ni => Some(RelOp::Ni),
+                Tok::NotNi => Some(RelOp::NotNi),
+                Tok::Subset => Some(RelOp::Subset),
+                Tok::NotSubset => Some(RelOp::NotSubset),
+                Tok::SubsetEq => Some(RelOp::SubsetEq),
+                Tok::NotSubsetEq => Some(RelOp::NotSubsetEq),
+                Tok::Superset => Some(RelOp::Superset),
+                Tok::NotSuperset => Some(RelOp::NotSuperset),
+                Tok::SupersetEq => Some(RelOp::SupersetEq),
+                Tok::NotSupersetEq => Some(RelOp::NotSupersetEq),
                 _ => None,
             };
             let Some(op) = op else { break };
@@ -336,11 +353,13 @@ impl LatexToAst {
             let rhs = self.expression(p)?;
 
             match op {
-                RelOp::Lt | RelOp::Le if self.token.ttype == "<" || self.token.ttype == "LE" => {
+                RelOp::Lt | RelOp::Le
+                    if self.token.ttype == Tok::Lt || self.token.ttype == Tok::Le =>
+                {
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
-                    while self.token.ttype == "<" || self.token.ttype == "LE" {
-                        ops.push(if self.token.ttype == "<" {
+                    while self.token.ttype == Tok::Lt || self.token.ttype == Tok::Le {
+                        ops.push(if self.token.ttype == Tok::Lt {
                             RelOp::Lt
                         } else {
                             RelOp::Le
@@ -350,11 +369,13 @@ impl LatexToAst {
                     }
                     lhs = Expr::Relation { operands, ops };
                 }
-                RelOp::Gt | RelOp::Ge if self.token.ttype == ">" || self.token.ttype == "GE" => {
+                RelOp::Gt | RelOp::Ge
+                    if self.token.ttype == Tok::Gt || self.token.ttype == Tok::Ge =>
+                {
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
-                    while self.token.ttype == ">" || self.token.ttype == "GE" {
-                        ops.push(if self.token.ttype == ">" {
+                    while self.token.ttype == Tok::Gt || self.token.ttype == Tok::Ge {
+                        ops.push(if self.token.ttype == Tok::Gt {
                             RelOp::Gt
                         } else {
                             RelOp::Ge
@@ -367,7 +388,7 @@ impl LatexToAst {
                 RelOp::Eq => {
                     let mut operands = vec![lhs, rhs];
                     let mut ops = vec![RelOp::Eq];
-                    while self.token.ttype == "=" {
+                    while self.token.ttype == Tok::Eq {
                         self.advance()?;
                         operands.push(self.expression(p)?);
                         ops.push(RelOp::Eq);
@@ -387,23 +408,23 @@ impl LatexToAst {
     }
 
     fn expression(&mut self, p: P) -> R<Expr> {
-        if self.token.ttype == "NOT" || self.token.ttype == "!" {
+        if self.token.ttype == Tok::Not || self.token.ttype == Tok::Bang {
             self.advance()?;
             return Ok(Expr::Not(Box::new(self.expression(p)?)));
         }
 
         let mut plus_begin = false;
-        if self.token.ttype == "+" {
+        if self.token.ttype == Tok::Plus {
             plus_begin = true;
             self.advance()?;
         }
         let mut negative_begin = false;
-        if self.token.ttype == "-" {
+        if self.token.ttype == Tok::Minus {
             negative_begin = true;
             self.advance()?;
         }
         let mut pm_begin = false;
-        if self.token.ttype == "PM" {
+        if self.token.ttype == Tok::Pm {
             pm_begin = true;
             self.advance()?;
         }
@@ -444,29 +465,35 @@ impl LatexToAst {
 
         while matches!(
             self.token.ttype,
-            "+" | "-" | "PM" | "UNION" | "INTERSECT" | "PERP" | "PARALLEL"
+            Tok::Plus
+                | Tok::Minus
+                | Tok::Pm
+                | Tok::Union
+                | Tok::Intersect
+                | Tok::Perp
+                | Tok::Parallel
         ) {
-            let mut operation = self.token.ttype.to_lowercase();
+            let op_token = self.token.ttype;
+            // Minus and plus-minus contribute a sign to an addition.
+            let is_add = matches!(op_token, Tok::Plus | Tok::Minus | Tok::Pm);
             let mut negative = false;
             let mut pm_sign = false;
             let mut positive_then_negative = false;
 
-            if self.token.ttype == "-" {
-                operation = "+".to_string();
+            if op_token == Tok::Minus {
                 negative = true;
                 self.advance()?;
-            } else if self.token.ttype == "PM" {
-                operation = "+".to_string();
+            } else if op_token == Tok::Pm {
                 pm_sign = true;
                 self.advance()?;
             } else {
                 self.advance()?;
-                if operation == "+" {
-                    if self.token.ttype == "-" {
+                if op_token == Tok::Plus {
+                    if self.token.ttype == Tok::Minus {
                         negative = true;
                         positive_then_negative = true;
                         self.advance()?;
-                    } else if self.token.ttype == "PM" {
+                    } else if self.token.ttype == Tok::Pm {
                         pm_sign = true;
                         self.advance()?;
                     }
@@ -475,7 +502,7 @@ impl LatexToAst {
 
             let rhs_opt = self.term(p)?;
 
-            if operation == "+" {
+            if is_add {
                 if rhs_opt.is_none() {
                     if let Some(l) = atom_string(&lhs) {
                         if positive_then_negative {
@@ -511,11 +538,12 @@ impl LatexToAst {
                 rhs = other_op("pm", vec![rhs]);
             }
 
-            lhs = match operation.as_str() {
-                "+" => Expr::Add(vec![lhs, rhs]),
-                "union" => Expr::Union(vec![lhs, rhs]),
-                "intersect" => Expr::Intersect(vec![lhs, rhs]),
-                other => other_op(other, vec![lhs, rhs]),
+            lhs = match op_token {
+                Tok::Plus | Tok::Minus | Tok::Pm => Expr::Add(vec![lhs, rhs]),
+                Tok::Union => Expr::Union(vec![lhs, rhs]),
+                Tok::Intersect => Expr::Intersect(vec![lhs, rhs]),
+                // perp, parallel
+                _ => other_op(op_token.op_name(), vec![lhs, rhs]),
             };
         }
 
@@ -526,12 +554,12 @@ impl LatexToAst {
         let mut lhs = self.factor(p)?;
 
         loop {
-            if self.token.ttype == "*" {
+            if self.token.ttype == Tok::Times {
                 self.advance()?;
                 let l = lhs.take().unwrap_or(Expr::Blank);
                 let rhs = self.factor(p)?.unwrap_or(Expr::Blank);
                 lhs = Some(Expr::Mul(vec![l, rhs]));
-            } else if self.token.ttype == "/" {
+            } else if self.token.ttype == Tok::Slash {
                 self.advance()?;
                 let l = lhs.take().unwrap_or(Expr::Blank);
                 let rhs = self.factor(p)?.unwrap_or(Expr::Blank);
@@ -643,7 +671,7 @@ impl LatexToAst {
             }));
         }
 
-        if self.token.ttype == "-" {
+        if self.token.ttype == Tok::Minus {
             self.advance()?;
             let f = self.factor(p)?;
             return Ok(Some(match f {
@@ -657,7 +685,7 @@ impl LatexToAst {
         }
 
         let mut result = self.non_minus_factor(p)?;
-        if result.is_none() && self.token.ttype == "PERP" {
+        if result.is_none() && self.token.ttype == Tok::Perp {
             result = Some(Expr::sym("perp"));
             self.advance()?;
         }
@@ -667,15 +695,15 @@ impl LatexToAst {
     fn non_minus_factor(&mut self, p: P) -> R<Option<Expr>> {
         let mut result = self.base_factor(p)?;
 
-        while matches!(self.token.ttype, "^" | "!" | "'") {
+        while matches!(self.token.ttype, Tok::Caret | Tok::Bang | Tok::Prime) {
             let r = result.take().unwrap_or(Expr::Blank);
             result = Some(match self.token.ttype {
-                "^" => {
+                Tok::Caret => {
                     self.advance()?;
                     let superscript = self.get_subsuperscript(p)?;
                     Expr::Pow(Box::new(r), Box::new(superscript))
                 }
-                "!" => {
+                Tok::Bang => {
                     self.advance()?;
                     Expr::Apply(Box::new(Expr::sym("factorial")), vec![r])
                 }
@@ -692,7 +720,7 @@ impl LatexToAst {
     /// A single leading digit of a NUMBER token, pushing the rest back on the
     /// lexer. Used by `\frac12`, `x^23`, and operator-symbol arguments.
     fn get_single_digit_as_number(&mut self) -> R<Option<Expr>> {
-        if self.token.ttype == "NUMBER" && !self.token.text.starts_with('.') {
+        if self.token.ttype == Tok::Number && !self.token.text.starts_with('.') {
             let first = self.token.text.as_bytes()[0] as char;
             let num = (first as u8 - b'0') as i64;
             if self.token.text.len() > 1 {
@@ -709,10 +737,10 @@ impl LatexToAst {
         if let Some(num) = self.get_single_digit_as_number()? {
             return Ok(num);
         }
-        if matches!(self.token.ttype, "+" | "-" | "PERP") {
-            let subresult = self.token.ttype.to_lowercase();
+        if matches!(self.token.ttype, Tok::Plus | Tok::Minus | Tok::Perp) {
+            let subresult = self.token.ttype.op_name();
             self.advance()?;
-            return Ok(Expr::sym(&subresult));
+            return Ok(Expr::sym(subresult));
         }
         let subresult = self.base_factor(P {
             parse_absolute_value: p.parse_absolute_value,
@@ -723,33 +751,44 @@ impl LatexToAst {
     }
 
     fn base_factor(&mut self, p: P) -> R<Option<Expr>> {
-        if self.token.ttype == "BEGINENVIRONMENT" {
+        if self.token.ttype == Tok::BeginEnvironment {
             return self.matrix_environment(p).map(Some);
         }
 
         let mut result: Option<Expr> = None;
 
-        if self.token.ttype == "NUMBER" {
+        if self.token.ttype == Tok::Number {
             let v = parse_js_float(&self.token.text);
-            result = Some(Expr::Num(Number::from_f64(v)));
+            // A literal can overflow f64 ("1E999"); parseFloat gives Infinity.
+            result = Some(if v.is_infinite() {
+                Expr::Const(MathConst::Inf)
+            } else {
+                Expr::Num(Number::from_f64(v))
+            });
             self.advance()?;
-        } else if self.token.ttype == "INFINITY" {
+        } else if self.token.ttype == Tok::Infinity {
             result = Some(Expr::Const(MathConst::Inf));
             self.advance()?;
-        } else if self.token.ttype == "SQRT" {
+        } else if self.token.ttype == Tok::Sqrt {
             result = Some(self.sqrt_factor(p)?);
-        } else if matches!(self.token.ttype, "VAR" | "LATEXCOMMAND" | "VARMULTICHAR") {
+        } else if matches!(
+            self.token.ttype,
+            Tok::Var | Tok::LatexCommand | Tok::VarMultiChar
+        ) {
             match self.symbol_factor(p)? {
                 SymbolResult::Return(e) => return Ok(Some(e)),
                 SymbolResult::Continue(e) => result = e,
             }
-        } else if matches!(self.token.ttype, "(" | "[" | "{" | "LBRACE" | "LANGLE") {
+        } else if matches!(
+            self.token.ttype,
+            Tok::LParen | Tok::LBracket | Tok::LBrace | Tok::SetLBrace | Tok::LAngle
+        ) {
             result = Some(self.bracketed(p)?);
         } else if is_pipe(self.token.ttype)
             && p.parse_absolute_value
             && (p.inside_absolute_value == 0
                 || !p.allow_absolute_value_closing
-                || self.token.ttype == "|L")
+                || self.token.ttype == Tok::PipeL)
         {
             let inside = p.inside_absolute_value + 1;
             self.advance()?;
@@ -757,20 +796,20 @@ impl LatexToAst {
                 inside_absolute_value: inside,
                 ..P::default()
             })?;
-            if self.token.ttype != "|" {
+            if self.token.ttype != Tok::Pipe {
                 return Err(self.err("Expecting |"));
             }
             self.advance()?;
             result = Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![st]));
-        } else if matches!(self.token.ttype, "LFLOOR" | "LCEIL") {
+        } else if matches!(self.token.ttype, Tok::LFloor | Tok::LCeil) {
             result = Some(self.floor_ceil()?);
-        } else if self.token.ttype == "ANGLE" {
+        } else if self.token.ttype == Tok::Angle {
             result = self.angle_factor(p)?;
-        } else if self.token.ttype == "INT" {
+        } else if self.token.ttype == Tok::Int {
             return self.integral_factor(p).map(Some);
         }
 
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             let r = result.unwrap_or(Expr::Blank);
             self.advance()?;
             let subscript = self.get_subsuperscript(p)?;
@@ -795,15 +834,15 @@ impl LatexToAst {
 
         self.advance()?;
 
-        while self.token.ttype != "ENDENVIRONMENT" {
-            if self.token.ttype == "&" {
-                if last_token == "&" || last_token == "LINEBREAK" {
+        while self.token.ttype != Tok::EndEnvironment {
+            if self.token.ttype == Tok::Amp {
+                if last_token == Tok::Amp || last_token == Tok::Linebreak {
                     row.push(Expr::int(0));
                 }
                 last_token = self.token.ttype;
                 self.advance()?;
-            } else if self.token.ttype == "LINEBREAK" {
-                if last_token == "&" || last_token == "LINEBREAK" {
+            } else if self.token.ttype == Tok::Linebreak {
+                if last_token == Tok::Amp || last_token == Tok::Linebreak {
                     row.push(Expr::int(0));
                 }
                 n_cols = n_cols.max(row.len());
@@ -813,7 +852,9 @@ impl LatexToAst {
             } else {
                 // JS condition is always truthy here, so always parse an entry.
                 row.push(self.statement(P::default())?);
-                last_token = " ";
+                // Marks "just parsed an entry"; a space token never reaches
+                // here (advance strips them), so it is free as a sentinel.
+                last_token = Tok::Space;
             }
         }
 
@@ -822,7 +863,7 @@ impl LatexToAst {
             return Err(self.err(format!("Expecting \\end{{{}}}", environment)));
         }
 
-        if last_token == "&" {
+        if last_token == Tok::Amp {
             row.push(Expr::int(0));
         }
         n_cols = n_cols.max(row.len());
@@ -851,20 +892,20 @@ impl LatexToAst {
         self.advance()?;
 
         let mut root = Expr::int(2);
-        if self.token.ttype == "[" {
+        if self.token.ttype == Tok::LBracket {
             self.advance()?;
             let parameter = self.statement(P {
                 parse_absolute_value: p.parse_absolute_value,
                 ..P::default()
             })?;
-            if self.token.ttype != "]" {
+            if self.token.ttype != Tok::RBracket {
                 return Err(self.err("Expecting ]"));
             }
             self.advance()?;
             root = parameter;
         }
 
-        if self.token.ttype != "{" {
+        if self.token.ttype != Tok::LBrace {
             return Err(self.err("Expecting {"));
         }
         self.advance()?;
@@ -872,7 +913,7 @@ impl LatexToAst {
             parse_absolute_value: p.parse_absolute_value,
             ..P::default()
         })?;
-        if self.token.ttype != "}" {
+        if self.token.ttype != Tok::RBrace {
             return Err(self.err("Expecting }"));
         }
         self.advance()?;
@@ -887,10 +928,10 @@ impl LatexToAst {
     }
 
     fn floor_ceil(&mut self) -> R<Expr> {
-        let (expected_right, function_name) = if self.token.ttype == "LFLOOR" {
-            ("RFLOOR", "floor")
+        let (expected_right, function_name) = if self.token.ttype == Tok::LFloor {
+            (Tok::RFloor, "floor")
         } else {
-            ("RCEIL", "ceil")
+            (Tok::RCeil, "ceil")
         };
         self.advance()?;
         let st = self.statement(P::default())?;
@@ -906,7 +947,7 @@ impl LatexToAst {
     fn symbol_factor(&mut self, p: P) -> R<SymbolResult> {
         let mut result = self.token.text.clone();
 
-        if self.token.ttype == "LATEXCOMMAND" {
+        if self.token.ttype == Tok::LatexCommand {
             result = result[1..].to_string(); // strip leading backslash
             if !(self.is_applied(&result)
                 || self.is_function(&result)
@@ -918,7 +959,7 @@ impl LatexToAst {
                     self.token.original
                 )));
             }
-        } else if self.token.ttype == "VARMULTICHAR" {
+        } else if self.token.ttype == Tok::VarMultiChar {
             result = brace_content(&result); // \operatorname{...}
         }
 
@@ -947,7 +988,7 @@ impl LatexToAst {
         let is_log = name == "log";
         self.advance()?;
 
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             self.advance()?;
             let subscript = self.get_subsuperscript(P {
                 parse_absolute_value: p.parse_absolute_value,
@@ -965,11 +1006,11 @@ impl LatexToAst {
                 result = Expr::Apply(Box::new(result), vec![Expr::Blank]);
             }
         } else {
-            while self.token.ttype == "'" {
+            while self.token.ttype == Tok::Prime {
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
-            while self.token.ttype == "^" {
+            while self.token.ttype == Tok::Caret {
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -978,8 +1019,12 @@ impl LatexToAst {
                 result = Expr::Pow(Box::new(result), Box::new(superscript));
             }
 
-            if self.token.ttype == "{" || self.token.ttype == "(" {
-                let expected_right = if self.token.ttype == "{" { "}" } else { ")" };
+            if self.token.ttype == Tok::LBrace || self.token.ttype == Tok::LParen {
+                let expected_right = if self.token.ttype == Tok::LBrace {
+                    Tok::RBrace
+                } else {
+                    Tok::RParen
+                };
                 self.advance()?;
                 let parameters = self.statement_list()?;
                 if self.token.ttype != expected_right {
@@ -1021,7 +1066,7 @@ impl LatexToAst {
 
         let mut args: Vec<Expr> = vec![];
         for _ in 0..op.nargs {
-            if self.token.ttype == "{" {
+            if self.token.ttype == Tok::LBrace {
                 self.advance()?;
                 let new_arg = self.statement(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -1036,7 +1081,7 @@ impl LatexToAst {
                 } else {
                     args.push(new_arg);
                 }
-                if self.token.ttype != "}" {
+                if self.token.ttype != Tok::RBrace {
                     return Err(self.err("Expecting }"));
                 }
                 self.advance()?;
@@ -1044,7 +1089,7 @@ impl LatexToAst {
                 let new_arg = match self.get_single_digit_as_number()? {
                     Some(n) => n,
                     None => {
-                        if self.token.ttype == "VAR" {
+                        if self.token.ttype == Tok::Var {
                             let v = Expr::sym(&self.token.text);
                             self.advance()?;
                             v
@@ -1072,11 +1117,11 @@ impl LatexToAst {
     fn bracketed(&mut self, _p: P) -> R<Expr> {
         let token_left = self.token.ttype;
         let (expected_right, other_right) = match token_left {
-            "(" => (")", Some("]")),
-            "[" => ("]", Some(")")),
-            "{" => ("}", None),
-            "LBRACE" => ("RBRACE", None),
-            _ => ("RANGLE", None),
+            Tok::LParen => (Tok::RParen, Some(Tok::RBracket)),
+            Tok::LBracket => (Tok::RBracket, Some(Tok::RParen)),
+            Tok::LBrace => (Tok::RBrace, None),
+            Tok::SetLBrace => (Tok::SetRBrace, None),
+            _ => (Tok::RAngle, None),
         };
 
         self.advance()?;
@@ -1101,7 +1146,7 @@ impl LatexToAst {
             let mut it = xs.into_iter();
             let a = it.next().unwrap();
             let b = it.next().unwrap();
-            let closed = if token_left == "(" {
+            let closed = if token_left == Tok::LParen {
                 (false, true)
             } else {
                 (true, false)
@@ -1112,15 +1157,15 @@ impl LatexToAst {
             };
         } else if n_elements >= 2 {
             let kind = match token_left {
-                "(" | "{" => SeqKind::Tuple,
-                "[" => SeqKind::Array,
-                "LBRACE" => SeqKind::Set,
+                Tok::LParen | Tok::LBrace => SeqKind::Tuple,
+                Tok::LBracket => SeqKind::Array,
+                Tok::SetLBrace => SeqKind::Set,
                 _ => SeqKind::AltVector,
             };
             if let Expr::Seq(_, xs) = result {
                 result = Expr::Seq(kind, xs);
             }
-        } else if token_left == "LBRACE" {
+        } else if token_left == Tok::SetLBrace {
             result = Expr::Seq(SeqKind::Set, vec![result]);
         }
 
@@ -1131,8 +1176,12 @@ impl LatexToAst {
     fn angle_factor(&mut self, p: P) -> R<Option<Expr>> {
         self.advance()?;
 
-        if self.token.ttype == "{" || self.token.ttype == "(" {
-            let expected_right = if self.token.ttype == "{" { "}" } else { ")" };
+        if self.token.ttype == Tok::LBrace || self.token.ttype == Tok::LParen {
+            let expected_right = if self.token.ttype == Tok::LBrace {
+                Tok::RBrace
+            } else {
+                Tok::RParen
+            };
             self.advance()?;
             let parameters = self.statement_list()?;
             if self.token.ttype != expected_right {
@@ -1165,12 +1214,12 @@ impl LatexToAst {
         self.advance()?;
 
         let mut head = Expr::sym("int");
-        if self.token.ttype == "_" {
+        if self.token.ttype == Tok::Underscore {
             self.advance()?;
             let subscript = self.get_subsuperscript(p)?;
             head = Expr::Index(Box::new(head), Box::new(subscript));
         }
-        if self.token.ttype == "^" {
+        if self.token.ttype == Tok::Caret {
             self.advance()?;
             let superscript = self.get_subsuperscript(p)?;
             head = Expr::Pow(Box::new(head), Box::new(superscript));
@@ -1204,16 +1253,16 @@ impl LatexToAst {
     /// `\frac` token has already been consumed; returns None (caller restores
     /// state) if the shape does not match.
     fn leibniz_notation(&mut self) -> R<Option<Expr>> {
-        if self.token.ttype != "{" {
+        if self.token.ttype != Tok::LBrace {
             return Ok(None);
         }
         self.advance()?;
 
         // Numerator: d or \partial, optional ^ n, then the differentiated var.
         let deriv_symbol =
-            if self.token.ttype == "LATEXCOMMAND" && &self.token.text[1..] == "partial" {
+            if self.token.ttype == Tok::LatexCommand && &self.token.text[1..] == "partial" {
                 '∂'
-            } else if self.token.ttype == "VAR" && self.token.text == "d" {
+            } else if self.token.ttype == Tok::Var && self.token.text == "d" {
                 'd'
             } else {
                 return Ok(None);
@@ -1222,13 +1271,13 @@ impl LatexToAst {
         let mut n_deriv: f64 = 1.0;
         self.advance()?;
 
-        if self.token.ttype == "^" {
+        if self.token.ttype == Tok::Caret {
             self.advance()?;
-            let in_braces = self.token.ttype == "{";
+            let in_braces = self.token.ttype == Tok::LBrace;
             if in_braces {
                 self.advance()?;
             }
-            if self.token.ttype != "NUMBER" {
+            if self.token.ttype != Tok::Number {
                 return Ok(None);
             }
             n_deriv = parse_js_float(&self.token.text);
@@ -1237,7 +1286,7 @@ impl LatexToAst {
             }
             if in_braces {
                 self.advance()?;
-                if self.token.ttype != "}" {
+                if self.token.ttype != Tok::RBrace {
                     return Ok(None);
                 }
             }
@@ -1250,11 +1299,11 @@ impl LatexToAst {
 
         // } then {
         self.advance()?;
-        if self.token.ttype != "}" {
+        if self.token.ttype != Tok::RBrace {
             return Ok(None);
         }
         self.advance()?;
-        if self.token.ttype != "{" {
+        if self.token.ttype != Tok::LBrace {
             return Ok(None);
         }
         self.advance()?;
@@ -1266,9 +1315,9 @@ impl LatexToAst {
 
         loop {
             let matches_symbol =
-                (deriv_symbol == 'd' && self.token.ttype == "VAR" && self.token.text == "d")
+                (deriv_symbol == 'd' && self.token.ttype == Tok::Var && self.token.text == "d")
                     || (deriv_symbol == '∂'
-                        && self.token.ttype == "LATEXCOMMAND"
+                        && self.token.ttype == Tok::LatexCommand
                         && &self.token.text[1..] == "partial");
             if !matches_symbol {
                 return Ok(None);
@@ -1283,13 +1332,13 @@ impl LatexToAst {
             let mut this_exponent: f64 = 1.0;
             self.advance()?;
 
-            if self.token.ttype == "^" {
+            if self.token.ttype == Tok::Caret {
                 self.advance()?;
-                let in_braces = self.token.ttype == "{";
+                let in_braces = self.token.ttype == Tok::LBrace;
                 if in_braces {
                     self.advance()?;
                 }
-                if self.token.ttype != "NUMBER" {
+                if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
                 this_exponent = parse_js_float(&self.token.text);
@@ -1298,7 +1347,7 @@ impl LatexToAst {
                 }
                 if in_braces {
                     self.advance()?;
-                    if self.token.ttype != "}" {
+                    if self.token.ttype != Tok::RBrace {
                         return Ok(None);
                     }
                 }
@@ -1312,7 +1361,7 @@ impl LatexToAst {
                 return Ok(None);
             }
             if exponent_sum == n_deriv {
-                if self.token.ttype != "}" {
+                if self.token.ttype != Tok::RBrace {
                     return Ok(None);
                 }
                 self.advance()?;
@@ -1358,9 +1407,9 @@ impl LatexToAst {
     /// advance past it (caller advances). Returns None on mismatch.
     fn leibniz_var(&mut self) -> R<Option<String>> {
         Ok(match self.token.ttype {
-            "VAR" => Some(self.token.text.clone()),
-            "VARMULTICHAR" => Some(brace_content(&self.token.text)),
-            "LATEXCOMMAND" => {
+            Tok::Var => Some(self.token.text.clone()),
+            Tok::VarMultiChar => Some(brace_content(&self.token.text)),
+            Tok::LatexCommand => {
                 let name = self.token.text[1..].to_string();
                 if self.is_allowed_symbol(&name) {
                     Some(name)

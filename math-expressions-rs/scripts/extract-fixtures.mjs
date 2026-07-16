@@ -63,3 +63,29 @@ writeFixture(
   "bad_inputs",
   "error",
 );
+
+// The ast-to-* specs declare `const objectsToTest = [{ast, text|latex}, ...]`.
+// Slice that array literal and eval it, recording {ast, out} per entry.
+function extractArray(src, name) {
+  const startMarker = `const ${name} = [`;
+  const start = src.indexOf(startMarker);
+  if (start === -1) throw new Error(`array ${name} not found`);
+  const open = start + startMarker.length - 1;
+  const end = src.indexOf("\n];", open);
+  if (end === -1) throw new Error(`end of array ${name} not found`);
+  return eval(`(${src.slice(open, end + 2)})`);
+}
+
+function writeOutputFixture(outName, specName, outKey) {
+  const src = readFileSync(join(specDir, specName), "utf8");
+  const arr = extractArray(src, "objectsToTest");
+  const cases = arr.map((o) => ({
+    ast: encodeSpecials(o.ast),
+    out: o[outKey],
+  }));
+  writeFileSync(join(outDir, outName), JSON.stringify(cases, null, 1) + "\n");
+  console.log(`${outName}: ${cases.length} cases`);
+}
+
+writeOutputFixture("ast-to-text.json", "quick_ast-to-text.spec.js", "text");
+writeOutputFixture("ast-to-latex.json", "quick_ast-to-latex.spec.js", "latex");
