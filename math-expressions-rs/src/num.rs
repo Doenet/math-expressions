@@ -164,6 +164,122 @@ impl Number {
         }
     }
 
+    pub const fn zero() -> Number {
+        Number::Int(0)
+    }
+    pub const fn one() -> Number {
+        Number::Int(1)
+    }
+
+    pub fn is_zero(&self) -> bool {
+        match self {
+            Number::Int(i) => *i == 0,
+            Number::Rat(n, _) => *n == 0,
+            Number::Float(f) => f.get() == 0.0,
+            Number::Big(b) => match &**b {
+                BigNumber::Int(i) => i.is_zero(),
+                BigNumber::Rat(r) => r.is_zero(),
+            },
+        }
+    }
+
+    pub fn is_one(&self) -> bool {
+        matches!(self, Number::Int(1))
+    }
+
+    pub fn abs(&self) -> Number {
+        if self.is_negative() {
+            self.neg()
+        } else {
+            self.clone()
+        }
+    }
+
+    /// A finite exact rational as a `BigRational`; `None` for `Float`. The
+    /// common currency for exact arithmetic across the tiers.
+    fn to_bigrational(&self) -> Option<BigRational> {
+        match self {
+            Number::Int(i) => Some(BigRational::from_integer(BigInt::from(*i))),
+            Number::Rat(n, d) => Some(BigRational::new(BigInt::from(*n), BigInt::from(*d))),
+            Number::Big(b) => Some(match &**b {
+                BigNumber::Int(i) => BigRational::from_integer(i.clone()),
+                BigNumber::Rat(r) => r.clone(),
+            }),
+            Number::Float(_) => None,
+        }
+    }
+
+    fn is_float(&self) -> bool {
+        matches!(self, Number::Float(_))
+    }
+
+    /// Exact binary op on two exact operands, or f64 arithmetic if either is a
+    /// `Float` (float-ness is contagious — a `Float` operand marks an inexact
+    /// evaluation result). The `Int op Int` fast path stays allocation-free.
+    fn binop(
+        &self,
+        other: &Number,
+        int_checked: impl Fn(i64, i64) -> Option<i64>,
+        exact: impl Fn(BigRational, BigRational) -> BigRational,
+        float: impl Fn(f64, f64) -> f64,
+    ) -> Number {
+        if let (Number::Int(a), Number::Int(b)) = (self, other) {
+            if let Some(v) = int_checked(*a, *b) {
+                return Number::Int(v);
+            }
+        }
+        if self.is_float() || other.is_float() {
+            return Number::Float(F64::new(float(self.to_f64(), other.to_f64())));
+        }
+        Number::from_bigrational(exact(
+            self.to_bigrational().unwrap(),
+            other.to_bigrational().unwrap(),
+        ))
+    }
+
+    pub fn add(&self, other: &Number) -> Number {
+        self.binop(other, i64::checked_add, |a, b| a + b, |a, b| a + b)
+    }
+    pub fn sub(&self, other: &Number) -> Number {
+        self.binop(other, i64::checked_sub, |a, b| a - b, |a, b| a - b)
+    }
+    pub fn mul(&self, other: &Number) -> Number {
+        self.binop(other, i64::checked_mul, |a, b| a * b, |a, b| a * b)
+    }
+
+    /// Division, or `None` when dividing by (exact) zero — the caller leaves
+    /// the expression unfolded rather than fabricating an infinity (§3.6 of
+    /// the normalization note). Float ÷ 0.0 follows IEEE (±∞/NaN), matching JS.
+    pub fn checked_div(&self, other: &Number) -> Option<Number> {
+        if other.is_zero() && !self.is_float() && !other.is_float() {
+            return None;
+        }
+        Some(self.binop(
+            other,
+            |_, _| None, // never take the i64 path: division is not closed on i64
+            |a, b| a / b,
+            |a, b| a / b,
+        ))
+    }
+
+    /// Raise to an integer power. `None` only for `0` to a negative power
+    /// (an exact division by zero); `0^0 == 1`, matching JS `Math.pow`.
+    pub fn checked_pow_int(&self, exp: i64) -> Option<Number> {
+        if let Number::Float(f) = self {
+            return Some(Number::Float(F64::new(f.get().powi(exp as i32))));
+        }
+        if exp == 0 {
+            return Some(Number::one());
+        }
+        if self.is_zero() {
+            return if exp < 0 { None } else { Some(Number::zero()) };
+        }
+        let base = self.to_bigrational().unwrap();
+        let mag = bigrat_powu(base, exp.unsigned_abs());
+        let result = if exp < 0 { mag.recip() } else { mag };
+        Some(Number::from_bigrational(result))
+    }
+
     /// Parse a decimal NUMBER token to an *exact* rational (§3a). The value is
     /// `digits × 10^(exp − frac_len)`: a non-negative power of ten yields an
     /// integer (`Int`/`Big`), a negative one an exact fraction whose
@@ -244,6 +360,22 @@ impl Number {
             Number::Rat(..) | Number::Big(_) => js_f64_to_string(self.to_f64()),
         }
     }
+}
+
+/// `base^n` by exponentiation-by-squaring (n unsigned; caller handles sign).
+fn bigrat_powu(base: BigRational, mut n: u64) -> BigRational {
+    let mut result = BigRational::one();
+    let mut b = base;
+    while n > 0 {
+        if n & 1 == 1 {
+            result *= &b;
+        }
+        n >>= 1;
+        if n > 0 {
+            b = &b * &b;
+        }
+    }
+    result
 }
 
 /// Greatest common divisor of two i64s (by magnitude). `gcd(x, 0) == |x|`.

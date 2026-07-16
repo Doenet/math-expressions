@@ -1,0 +1,114 @@
+//! Canonicalization tests: exact folding, like-term/like-power combination,
+//! identity elimination, and idempotence over the whole parser fixture corpus.
+
+use math_expressions::norm::canonicalize;
+use math_expressions::{Expr, Number, TextToAst, TextToAstOptions};
+
+fn parse(s: &str) -> Expr {
+    TextToAst::new(TextToAstOptions::default())
+        .convert(s)
+        .unwrap_or_else(|e| panic!("parse {s:?}: {e}"))
+}
+
+fn canon(s: &str) -> Expr {
+    canonicalize(&parse(s))
+}
+
+/// Canonical form of `a` equals canonical form of `b` (structurally).
+fn same(a: &str, b: &str) {
+    assert_eq!(canon(a), canon(b), "canon({a:?}) vs canon({b:?})");
+}
+
+#[test]
+fn exact_constant_folding() {
+    assert_eq!(canon("1/3 + 1/6"), Expr::Num(Number::rat(1, 2)));
+    assert_eq!(canon("0.1 + 0.2"), Expr::Num(Number::rat(3, 10)));
+    assert_eq!(canon("2 * 3 + 4"), Expr::Num(Number::Int(10)));
+    assert_eq!(canon("2^10"), Expr::Num(Number::Int(1024)));
+    assert_eq!(canon("1/2"), Expr::Num(Number::rat(1, 2)));
+}
+
+#[test]
+fn like_terms_and_powers() {
+    same("x + x", "2x");
+    same("2x + 3x", "5x");
+    same("x - x", "0");
+    same("x * x", "x^2");
+    same("x^2 * x^3", "x^5");
+    same("x * x * x", "x^3");
+    same("3*x*2", "6x");
+}
+
+#[test]
+fn identity_elimination() {
+    same("x + 0", "x");
+    same("x * 1", "x");
+    same("x * 0", "0");
+    same("x^1", "x");
+    same("x^0", "1");
+    same("1^x", "1");
+}
+
+#[test]
+fn commutativity_canonicalizes() {
+    same("x + y", "y + x");
+    same("a*b*c", "c*b*a");
+    same("x*y + y*x", "2*x*y");
+}
+
+#[test]
+fn div_and_neg_rewrite_away() {
+    // Canonical form has no Div/Neg variants.
+    fn has_div_or_neg(e: &Expr) -> bool {
+        match e {
+            Expr::Div(..) | Expr::Neg(_) => true,
+            Expr::Add(xs) | Expr::Mul(xs) => xs.iter().any(has_div_or_neg),
+            Expr::Pow(a, b) => has_div_or_neg(a) || has_div_or_neg(b),
+            _ => false,
+        }
+    }
+    for s in ["a/b", "-x", "a - b", "-(x+1)", "x/y/z", "1 - 2/3"] {
+        assert!(!has_div_or_neg(&canon(s)), "{s:?} still has Div/Neg");
+    }
+}
+
+#[test]
+fn function_names_normalized() {
+    same("arcsin(x)", "asin(x)");
+    same("ln(x)", "log(x)");
+    same("arctan(y)", "atan(y)");
+}
+
+#[test]
+fn distributed_forms_are_not_equal_without_expansion() {
+    // canonicalize does not expand; `(x+1)^2` stays a power. (Expansion is a
+    // separate simplify concern; equality of these relies on the numerical
+    // stage, tested elsewhere.)
+    assert_ne!(canon("(x+1)^2"), canon("x^2 + 2x + 1"));
+}
+
+/// Canonicalization is idempotent on every expression the parser produces.
+#[test]
+fn idempotent_over_corpus() {
+    #[derive(serde::Deserialize)]
+    struct Case {
+        input: String,
+    }
+    let files = [
+        include_str!("fixtures/text-to-ast.json"),
+        include_str!("fixtures/text-to-ast-edge.json"),
+    ];
+    let mut n = 0;
+    for f in files {
+        for case in serde_json::from_str::<Vec<Case>>(f).unwrap() {
+            let Ok(expr) = TextToAst::new(TextToAstOptions::default()).convert(&case.input) else {
+                continue;
+            };
+            let once = canonicalize(&expr);
+            let twice = canonicalize(&once);
+            assert_eq!(once, twice, "not idempotent: {:?}", case.input);
+            n += 1;
+        }
+    }
+    assert!(n > 100, "expected a substantial corpus, got {n}");
+}
