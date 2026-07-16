@@ -2,7 +2,7 @@
 //! `slow_math-expressions.spec.js`. Equal pairs resolve either at the exact
 //! canonical stage (stage 1) or by numerical sampling (stage 3).
 
-use math_expressions::{equals, EqOptions, Expr, TextToAst, TextToAstOptions};
+use math_expressions::{equals, equals_syntactic, EqOptions, Expr, TextToAst, TextToAstOptions};
 
 fn parse(s: &str) -> Expr {
     TextToAst::new(TextToAstOptions::default())
@@ -79,6 +79,74 @@ fn commutativity_and_tuple_coercion() {
         ..EqOptions::default()
     };
     assert!(!equals(&parse("(1,2)"), &parse("[1,2]"), &no_coerce));
+}
+
+#[test]
+fn scaling_units() {
+    // `%` and `deg` scale away to plain numbers (units.js: `only_scales`), so
+    // they are equal to their scaled values under full equality.
+    assert!(eq("50%", "1/2"));
+    assert!(eq("50% + 1", "1.5"));
+    assert!(eq("x%", "x/100"));
+    assert!(eq("180 deg", "pi"));
+
+    // `$` is a `prefix` unit that only marks its value: it becomes a free
+    // factor, so like-`$` quantities combine (`$3 + $2 = $5`)...
+    assert!(eq("$5", "$3+$2"));
+    assert!(eq("$5", "$9-$4"));
+    assert!(eq("$xy+a$b", "$(xy+ab)"));
+    // ...but a `$` quantity is never equal to a bare number.
+    assert!(!eq("$5", "5"));
+    assert!(!eq("$x", "x"));
+}
+
+#[test]
+fn scaling_units_stay_syntactically_distinct() {
+    // Syntactic (`equalsViaSyntax`) equality does NOT desugar units, so a
+    // scaled unit and its numeric value remain structurally different — even
+    // though full `equals` treats them as equal above.
+    let o = EqOptions::default();
+    assert!(!equals_syntactic(&parse("50%"), &parse("1/2"), &o));
+    assert!(!equals_syntactic(&parse("180 deg"), &parse("pi"), &o));
+}
+
+#[test]
+fn equation_and_inequality_equivalence() {
+    // Equations compare by standard form up to any nonzero scalar: `a=b` ≡ `c=d`
+    // when `a-b` is proportional to `c-d`.
+    assert!(eq("5x + 2y = 3", "6-4y = 10x")); // factor -1/2
+    assert!(eq("5x + 2y = 3", "-(6-4y) = -10x")); // factor 1/2
+
+    // Inequalities need a *positive* factor: a negative one reverses direction.
+    assert!(eq("5q-9z < 2u+9z", "27z -5q > -4u + 5q-9z"));
+    assert!(eq("5q-9z <= 2u+9z", "27z -5q >= -4u + 5q-9z"));
+
+    // Same coefficients, opposite direction: factor -1, so not equal.
+    assert!(!eq("5q < 9z", "5q > 9z"));
+    assert!(!eq("5q <= 9z", "-5q <= -9z"));
+    // Different constants are not proportional.
+    assert!(!eq("x > 1000", "x > 1001"));
+    // A shift by a free constant / tiny number is not proportional either.
+    assert!(!eq("e^(10x)=0", "e^(10x)+C=0"));
+    assert!(!eq("cos(10x) < 0", "cos(10x)+0.0000001 < 0"));
+}
+
+#[test]
+fn equation_form_is_preserved_for_syntactic_equality() {
+    // The proportional-standard-form equivalence above is a *mathematical*
+    // check; it must NOT leak into syntactic equality, so a teacher grading the
+    // required form still distinguishes `5x+2y=3` from its rearrangement.
+    let o = EqOptions::default();
+    assert!(!equals_syntactic(
+        &parse("5x + 2y = 3"),
+        &parse("6-4y = 10x"),
+        &o
+    ));
+    assert!(!equals_syntactic(
+        &parse("5q-9z < 2u+9z"),
+        &parse("27z -5q > -4u + 5q-9z"),
+        &o
+    ));
 }
 
 #[test]

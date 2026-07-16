@@ -632,8 +632,19 @@ constant folding. Port from the JS `Expression` methods used in `equality.js`:
 - `normalize_negative_numbers` — `Neg(Num(n))` → `Num(-n)`, `Neg` → `Mul(-1, x)`
 - `evaluate_numbers` (with `max_digits`) — fold numeric subexpressions to floats
 
-(`normalize_angle_linesegment_arg_order` and `remove_scaling_units` follow when their
-geometry/unit features are ported — see §17.)
+(`normalize_angle_linesegment_arg_order` follows when the geometry feature is ported —
+see §17.)
+
+**Scaling units ✓ done** (2026-07). `desugar_units` in `src/norm/mod.rs` is the
+equality-time analogue of JS `remove_scaling_units` + numerical unit removal. Rather
+than a JS-style two-function split (scale-only vs. full removal), it rewrites the three
+units to plain arithmetic — `n% → n/100`, `n deg → n·pi/180`, `$n → $·n` — so the
+existing like-term folding and numerical sampling need no unit special-casing:
+`$3+$2 = $5` falls out of like-term combining, and `$` sampling as a free variable
+keeps `$5 ≠ 5`. Applied only in the full `equals` path, never `equalsViaSyntax`, so
+`50%` and `1/2` stay syntactically distinct (matching the `symbolic_nonequivalences`
+corpus). Parser already emitted the `["unit", …]` nodes; this closed the last gap.
+Corpus: 678 → 685/824.
 
 `normalize()` is the single entry point that takes a faithful-layer tree (§5) to the
 canonical layer: flatten → names → arith → order.
@@ -895,6 +906,19 @@ hits a pole (division by zero mod p).
 The acceptance workhorse. Sample at random complex points; accept if
 `|f(z) - g(z)|` is within tolerance at all samples (using `relative_tolerance` /
 `absolute_tolerance` / `tolerance_for_zero`).
+
+**Relation dispatch ✓ done** (2026-07, in `src/eq/mod.rs`). Before stage 3, two
+two-operand comparison relations (`=`, `<`, `≤`, plus `>`/`≥` folded by
+canonicalization) are compared by their *standard forms* `lhs - rhs`: equal iff the
+two differences are numerically **proportional** (JS `component_equals` with
+`allow_proportional`). `=` accepts any nonzero constant factor; inequalities require a
+positive real factor (a negative one reverses direction), so `5x+2y=3 ≡ 6-4y=10x` and
+`5q-9z<2u+9z ≡ 27z-5q>-4u+5q-9z`, while `5q<9z ≢ 5q>9z`. The factor is pinned at the
+first jointly-nonzero sample and verified at the rest. Deliberately **not** in
+`equalsViaSyntax` (`equals_syntactic`): the same rearranged pairs stay syntactically
+distinct, so a form-grading ("is the answer in the requested form?") check still
+separates `5x+2y=3` from `6-4y=10x`. `≠` and set relations are excluded (matches JS).
+Corpus: 685 → 691/824.
 
 **Stage 4 — discrete infinite set** (`discrete_infinite.rs`):
 Compare discrete-infinite-set expressions (e.g. periodic solution sets like
@@ -1159,8 +1183,9 @@ Each phase: write tests first, then implementation until all tests pass.
 - Matrix operations beyond basic arithmetic
 - Numerical integration (`integrateNumerically`)
 - `solve_linear`
-- Units system (`remove_units`, `add_unit`) — until ported, equality stage 1 omits
-  the JS `remove_scaling_units` normalisation step
+- Units system: the three scaling units (`%`, `deg`, `$`) are handled at equality
+  time by `desugar_units` (§7b, done). A general `add_unit`/unit-algebra layer beyond
+  these three is still out of scope.
 - `±` (plus-minus) operator
 - Piecewise functions
 - Discrete infinite sets (`create_discrete_infinite_set`, `equalsDiscreteInfinite`) —
