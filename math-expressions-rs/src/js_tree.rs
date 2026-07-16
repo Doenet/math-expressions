@@ -252,17 +252,27 @@ fn op(name: &str, args: &[Expr]) -> Value {
 fn number_to_js(n: &Number) -> Value {
     match n {
         Number::Int(i) => json!(i),
-        Number::Float(f) => {
-            let v = f.get();
-            // JSON.stringify(3.0) === "3": integral floats serialise as ints.
-            if v.fract() == 0.0 && v.is_finite() && v.abs() < 9e15 {
-                json!(v as i64)
-            } else {
-                json!(v)
-            }
-        }
-        Number::Rat(num, den) => json!(["/", num, den]),
-        Number::Big(_) => unimplemented!("Big numbers are not produced by the parser"),
+        // Exact rationals (§3a) and Big numbers project to the nearest f64 —
+        // what the JS trees actually hold — so the tree fixtures and the
+        // differential harness stay meaningful.
+        Number::Float(_) | Number::Rat(..) | Number::Big(_) => f64_to_js(n.to_f64()),
+    }
+}
+
+/// Serialise an f64 the way a JS `Tree` holds a number: integral values as
+/// ints (`JSON.stringify(3.0) === "3"`), non-finite as the `{"$": ...}`
+/// specials the fixture extraction uses (JSON has no infinity/NaN).
+fn f64_to_js(v: f64) -> Value {
+    if v.is_nan() {
+        return json!({ "$": "NaN" });
+    }
+    if v.is_infinite() {
+        return json!({ "$": if v > 0.0 { "Inf" } else { "-Inf" } });
+    }
+    if v.fract() == 0.0 && v.abs() < 9e15 {
+        json!(v as i64)
+    } else {
+        json!(v)
     }
 }
 

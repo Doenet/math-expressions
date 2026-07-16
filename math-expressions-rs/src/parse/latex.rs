@@ -758,13 +758,8 @@ impl LatexToAst {
         let mut result: Option<Expr> = None;
 
         if self.token.ttype == Tok::Number {
-            let v = parse_js_float(&self.token.text);
-            // A literal can overflow f64 ("1E999"); parseFloat gives Infinity.
-            result = Some(if v.is_infinite() {
-                Expr::Const(MathConst::Inf)
-            } else {
-                Expr::Num(Number::from_f64(v))
-            });
+            // Decimals parse to exact rationals, never floats (§3a).
+            result = Some(Expr::Num(Number::from_decimal_str(&self.token.text)));
             self.advance()?;
         } else if self.token.ttype == Tok::Infinity {
             result = Some(Expr::Const(MathConst::Inf));

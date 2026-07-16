@@ -9,8 +9,8 @@
 //! `tests/roundtrip.rs` (`parse(to_text(e))` is structurally equal to `e`).
 
 use super::{
-    deriv_var, greek_unicode, number_is_negative as is_negative, number_string, pow_suffix, prec,
-    split_sign,
+    deriv_var, f64_positional_string, greek_unicode, number_is_negative as is_negative, pow_suffix,
+    prec, split_sign,
 };
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
@@ -150,12 +150,30 @@ impl Writer<'_> {
     }
 
     fn render_number(&self, n: &Number) -> (String, u8) {
-        let s = number_string(n);
+        // Terminating decimals (all integers, and every parse-produced
+        // rational — denominator 2^a·5^b) render positionally, as atoms.
+        if let Some(dec) = n.terminating_decimal() {
+            let p = if dec.starts_with('-') {
+                prec::NEG
+            } else {
+                prec::ATOM
+            };
+            return (dec, p);
+        }
+        // A non-terminating fraction (only from later normalization) renders
+        // as `a/b`, binding like the division it re-parses to.
+        if let Some((num, den)) = n.rational_parts() {
+            let p = if num.starts_with('-') {
+                prec::NEG
+            } else {
+                prec::MUL
+            };
+            return (format!("{}/{}", num, den), p);
+        }
+        // Float: numerical-evaluation result, positional (never exponential).
+        let s = f64_positional_string(n.to_f64());
         let p = if s.starts_with('-') {
             prec::NEG
-        } else if matches!(n, Number::Rat(..)) {
-            // "a/b" re-parses as a division, so it binds like one.
-            prec::MUL
         } else {
             prec::ATOM
         };

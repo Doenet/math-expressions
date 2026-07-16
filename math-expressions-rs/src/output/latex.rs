@@ -4,7 +4,7 @@
 //! is otherwise the same precedence comparison as the text formatter.
 //! Correctness is enforced by round-tripping through the LaTeX parser.
 
-use super::{deriv_var, number_string, pow_suffix, prec, split_sign};
+use super::{deriv_var, f64_positional_string, pow_suffix, prec, split_sign};
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 
@@ -36,20 +36,7 @@ impl Writer {
     fn render(&self, e: &Expr) -> (String, u8) {
         use prec::{ADD, AND, ATOM, INDEX, MUL, NEG, NOT, OR, POW, REL, SIGN};
         match e {
-            // \frac is self-delimiting, so a rational is an atom (a bare
-            // "a/b" would re-parse as a division of the neighbours).
-            Expr::Num(Number::Rat(a, b)) => {
-                if *a < 0 {
-                    (format!("-\\frac{{{}}}{{{}}}", -a, b), NEG)
-                } else {
-                    (format!("\\frac{{{}}}{{{}}}", a, b), ATOM)
-                }
-            }
-            Expr::Num(n) => {
-                let s = number_string(n);
-                let p = if s.starts_with('-') { NEG } else { ATOM };
-                (s, p)
-            }
+            Expr::Num(n) => self.render_number(n),
             Expr::Sym(s) => {
                 let name = s.name();
                 let p = if name.contains(['+', '-']) {
@@ -99,6 +86,29 @@ impl Writer {
             } => (self.render_matrix(*rows, *cols, entries), ATOM),
             Expr::OtherOp(name, args) => self.render_other(&name.name(), args),
         }
+    }
+
+    fn render_number(&self, n: &Number) -> (String, u8) {
+        use prec::{ATOM, NEG};
+        // Terminating decimals (all integers, and every parse-produced
+        // rational) render positionally, so `0.5` round-trips as `Rat(1,2)`
+        // — rendering `\frac{1}{2}` would re-parse to a `Div`.
+        if let Some(dec) = n.terminating_decimal() {
+            let p = if dec.starts_with('-') { NEG } else { ATOM };
+            return (dec, p);
+        }
+        // A non-terminating fraction renders as `\frac` (self-delimiting, so
+        // an atom); only reachable from later normalization, not the parser.
+        if let Some((num, den)) = n.rational_parts() {
+            return match num.strip_prefix('-') {
+                Some(pos) => (format!("-\\frac{{{}}}{{{}}}", pos, den), NEG),
+                None => (format!("\\frac{{{}}}{{{}}}", num, den), ATOM),
+            };
+        }
+        // Float: numerical-evaluation result, positional (never exponential).
+        let s = f64_positional_string(n.to_f64());
+        let p = if s.starts_with('-') { NEG } else { ATOM };
+        (s, p)
     }
 
     fn join(&self, xs: &[Expr], sep: &str, ctx: u8) -> String {

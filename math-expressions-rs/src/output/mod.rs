@@ -48,21 +48,7 @@ pub(crate) fn split_sign(e: &Expr) -> (bool, std::borrow::Cow<'_, Expr>) {
 }
 
 pub(crate) fn number_is_negative(n: &Number) -> bool {
-    match n {
-        Number::Int(i) => *i < 0,
-        Number::Rat(num, _) => *num < 0,
-        Number::Float(f) => f.get() < 0.0,
-        Number::Big(_) => false,
-    }
-}
-
-pub(crate) fn number_string(n: &Number) -> String {
-    match n {
-        Number::Int(i) => i.to_string(),
-        Number::Rat(a, b) => format!("{}/{}", a, b),
-        Number::Float(f) => f64_positional_string(f.get()),
-        Number::Big(_) => unimplemented!("Big numbers not produced by the parser"),
-    }
+    n.is_negative()
 }
 
 /// A Leibniz-notation variable entry is either `x` or `(x, n)`.

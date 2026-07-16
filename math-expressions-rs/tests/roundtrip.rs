@@ -153,28 +153,26 @@ fn latex_roundtrip() {
 /// Round-trip expressions that the fixture corpus doesn't reach: negative
 /// infinity in tight positions, floats whose JS rendering would be
 /// exponential (we render positional decimal so they re-parse), and huge
-/// integral floats.
+/// exact rationals in tight positions.
 #[test]
 fn constructed_roundtrip() {
     use math_expressions::expr::MathConst;
-    use math_expressions::Number;
 
     let x = || Expr::sym("x");
     let neg_inf = || Expr::Const(MathConst::NegInf);
-    let float = |v: f64| Expr::Num(Number::from_f64(v));
+    // Exact rationals, the way §3a decimals parse.
+    let dec = |s: &str| parse_text(s).unwrap();
 
     let cases = vec![
         Expr::Mul(vec![Expr::int(2), neg_inf()]),
         Expr::Pow(Box::new(x()), Box::new(neg_inf())),
         Expr::Div(Box::new(x()), Box::new(neg_inf())),
-        float(3e-12),
-        float(-3e-12),
-        float(6.02e23),
-        float(1e300),
-        float(9.3e18), // integral but above i64::MAX: stays a Float
-        Expr::Add(vec![x(), float(-3e-12)]),
-        Expr::Mul(vec![float(1.5e-7), x()]),
-        Expr::Pow(Box::new(x()), Box::new(float(2.5e22))),
+        dec("0.000000000003"),
+        dec("-0.000000000003"),
+        dec("0.0000001"),
+        Expr::Add(vec![x(), dec("-0.000000000003")]),
+        Expr::Mul(vec![dec("0.00000015"), x()]),
+        Expr::Pow(Box::new(x()), Box::new(dec("0.5"))),
     ];
 
     let topts = text::TextOpts::default();
@@ -197,11 +195,34 @@ fn constructed_roundtrip() {
     }
 }
 
-/// Overflowing literals become Infinity (as JS parseFloat does), never a
-/// Float(inf) that the renderers can't spell.
+/// §3a: decimals parse to exact rationals, never floats. A tiny decimal keeps
+/// full precision (no f64 rounding), and an "overflow" literal that JS would
+/// round to Infinity becomes an exact big integer.
 #[test]
-fn overflow_literal_is_infinity() {
-    use math_expressions::expr::MathConst;
-    let expr = parse_text("(1E999)").unwrap();
-    assert_eq!(expr, Expr::Const(MathConst::Inf));
+fn decimals_are_exact() {
+    use math_expressions::Number;
+
+    // 0.1 + 0.2 == 0.3 structurally (the whole point of exactness).
+    let lhs = parse_text("0.1").unwrap();
+    let rhs = parse_text("0.2").unwrap();
+    let sum = parse_text("0.3").unwrap();
+    assert_eq!(lhs, Expr::Num(Number::rat(1, 10)));
+    assert_eq!(rhs, Expr::Num(Number::rat(1, 5)));
+    assert_eq!(sum, Expr::Num(Number::rat(3, 10)));
+
+    // Half is a rational, not a float.
+    assert_eq!(parse_text("0.5").unwrap(), Expr::Num(Number::rat(1, 2)));
+
+    // No float ever appears from parsing.
+    assert!(!matches!(
+        parse_text("3.14159").unwrap(),
+        Expr::Num(Number::Float(_))
+    ));
+
+    // "Overflow" literal is exact, not Infinity.
+    let big = parse_text("1E30").unwrap();
+    assert_eq!(
+        text::convert(&big, &text::TextOpts::default()),
+        "1".to_string() + &"0".repeat(30)
+    );
 }
