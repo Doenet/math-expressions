@@ -686,6 +686,11 @@ Applied during smart-constructor calls and by explicit `simplify()`:
 
 ### 7e. Higher rewrites (`simplify.rs`)
 
+> ⚠️ **Not started, and must be a redesign — see §7e′.** The JS simplifier is the
+> library's performance bottleneck (its tests are the quarantined `slow_*` suite).
+> Do not port it as-is; §7e′ records the slow-test oracle, the diagnosed root
+> causes, and the intended algorithm.
+
 Non-trivial rewrites that require pattern matching:
 - Collect common factors from `Add` terms
 - Pull perfect squares from under square roots: `sqrt(12) → 2*sqrt(3)`
@@ -693,6 +698,56 @@ Non-trivial rewrites that require pattern matching:
 - Logarithm rules: `log(a*b) → log(a)+log(b)`, `log(a^n) → n*log(a)`
 
 These are applied as rewrite rules with a convergence loop (max iterations guard).
+
+### 7e′. Simplification performance — REDESIGN, do not port the JS algorithm as-is
+
+> **Placeholder for a from-scratch simplifier.** The JS simplification code is the
+> slowest part of the library — slow enough that its tests are quarantined into a
+> separate `slow_*` suite (`package.json` runs only `vitest … spec/quick_`; the
+> `slow_*` specs are excluded from the default run). When §7e is implemented, treat
+> this as a **clean-slate design task**, not a line-by-line port. The JS behaviour is
+> the correctness oracle (via the `slow_*` fixtures); its *algorithm* is not.
+
+**Slow tests whose cost is the simplification algorithm** (the port must be *fast* on
+these, using them as the performance oracle):
+
+| Spec | Tests | Why simplify-bound |
+|---|---|---|
+| `spec/slow_simplify.spec.js` | 74 | The simplify suite itself — `evaluate_numbers`, `collect_like_terms_factors`, root/log/trig rewrites. 154 `.simplify()` calls. |
+| `spec/slow_assumptions.spec.js` | 44 | Assumption-driven simplification; every `is_positive`/`simplify`-under-assumptions path runs the same matcher. 8k lines. |
+| `spec/slow_check-symbolic-equality-numerical-errors.spec.js` | — | Symbolic equality = normalize → **simplify** → `equalsViaSyntax`; the simplify pass dominates. |
+| `spec/slow_math-expressions.spec.js` (symbolic pairs) | 14 | Full `equals` calls simplify before `equalsViaSyntax`; the symbolic-equivalence cases are simplify-bound. |
+
+(For contrast, `slow_polynomial` (GCD coefficient swell), `slow_matrix` (matrix ops),
+`slow_rational`, and `slow_check-equality-numerical-errors` (complex sampling) are slow for
+**other** reasons and are *not* simplify targets.)
+
+**Root causes diagnosed in the JS source (what NOT to reproduce):**
+1. **Combinatorial pattern matching.** `collect_like_terms_factors` matches templates with
+   `allow_permutations: true` (28 call sites), and `matchOps` in `trees/basic.js` backtracks
+   over **operand permutations** — worst-case super-polynomial in the number of terms/factors
+   of a sum/product. Large flat `Add`/`Mul` nodes blow up.
+2. **Unbounded re-normalization to a fixpoint.** `evaluate_numbers_sub` is re-run through
+   `default_order` repeatedly with a literal `// TODO: determine how often have to repeat` —
+   no principled convergence bound; each pass re-sorts and re-matches the whole tree.
+3. **Whole-tree re-sorting per pass.** `default_order` sorts the entire tree on every
+   iteration rather than maintaining order incrementally.
+
+**Design direction for the Rust simplifier (to be fleshed out when §7e starts):**
+- Canonical form already gives sorted, flattened, like-combined `Add`/`Mul` (this is `norm`,
+  done and cheap). Build rewrites *on top of the canonical invariant* so like-term collection
+  is a **linear merge over sorted operands**, never a permutation search.
+- Represent rewrite rules as a fixed, ordered set applied **bottom-up once** with an explicit,
+  small convergence bound (fuel from the §7f `Limits` context) — not "repeat until stable".
+- Key terms/factors by a cheap structural key (interned-symbol index or a hash of the canonical
+  subtree) so matching is hash/lookup, not template unification.
+- Keep it assumption-aware but assumption-*optional*: the equality path needs only the
+  assumption-free subset, so the common case must not pay for the assumptions machinery.
+- Gate everything on operation-count `fuel` (§7f) — untrusted student input.
+
+**Acceptance:** port the `slow_simplify` + simplify-bound `slow_assumptions` fixtures as a Rust
+corpus (like the equality corpus), assert identical results to JS, and set a wall-clock/`fuel`
+budget that the JS algorithm would blow. This section is the tracking stub; no code yet.
 
 ### 7f. Resource limits — decided 2026-07, NOT yet implemented
 
