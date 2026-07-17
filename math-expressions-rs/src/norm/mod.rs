@@ -18,6 +18,7 @@ use crate::num::Number;
 use std::cmp::Ordering;
 
 pub(crate) use order::cmp;
+pub(crate) use simplify::simplify_canonical;
 pub use simplify::simplify;
 pub use syntactic::normalize_syntactic;
 
@@ -419,6 +420,22 @@ fn canon_apply(head: Expr, args: Vec<Expr>) -> Expr {
                 if let Some(inv) = inverse_function_name(&f.name()) {
                     return Expr::Apply(Box::new(Expr::sym(inv)), args);
                 }
+            }
+        }
+    }
+
+    // `f^n(x)` (n ≠ −1, f in the move set): the exponent moves outside the
+    // application — `sin^2(x)` → `sin(x)^2` — so both spellings share ONE
+    // canonical form and downstream rules (e.g. the trig Pythagorean rule)
+    // match a single shape. Mirrors `pass_applied_functions` in syntactic.rs,
+    // using the same MOVE_EXPONENT_OUTSIDE set.
+    if let Expr::Pow(inner, exp) = &head {
+        if let Expr::Sym(f) = &**inner {
+            if syntactic::MOVE_EXPONENT_OUTSIDE.contains(&f.name().as_str())
+                && !matches!(&**exp, Expr::Num(Number::Int(-1)))
+            {
+                let exp = (**exp).clone();
+                return pow(canon_apply(Expr::Sym(*f), args), exp);
             }
         }
     }

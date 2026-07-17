@@ -8,7 +8,7 @@ mod finite_field;
 
 use crate::eval::{eval_complex, free_symbols, Env};
 use crate::expr::{Expr, RelOp, SeqKind};
-use crate::norm::{canonicalize, desugar_units, normalize_syntactic, simplify};
+use crate::norm::{canonicalize, desugar_units, normalize_syntactic, simplify_canonical};
 use num_complex::Complex64;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -56,15 +56,29 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     let a = desugar_units(a);
     let b = desugar_units(b);
 
-    // Stage 1: exact structural equality of the *simplified* canonical forms.
-    // `simplify` is `canonicalize` plus the heuristic rewrite clusters (§7e:
-    // radical, tuple/vector, ∞/NaN, and trig identities), run to a fixpoint — so
+    // Sequence-kind coercion runs BEFORE simplification so the tuple/vector
+    // rewrite clusters see unified kinds: `[1,2]+(3,4)` must combine
+    // componentwise when `coerce_tuples_arrays` is set, which requires the
+    // Array to already be a Tuple when the grouping rule fires. (simplify
+    // never introduces new sequence kinds, so no post-coercion is needed.)
+    let ca = canonicalize(&coerce_seqs(a, opts));
+    let cb = canonicalize(&coerce_seqs(b, opts));
+
+    // Stage 1a: fast path — most equal pairs already agree canonically, without
+    // paying for the rewrite clusters.
+    if ca == cb {
+        return true;
+    }
+
+    // Stage 1b: exact structural equality of the *simplified* canonical forms.
+    // `simplify_canonical` adds the heuristic rewrite clusters (§7e: radical,
+    // tuple/vector, ∞/NaN, and trig identities), run to a fixpoint — so
     // real-domain equalities like `sin²x+cos²x == 1` and `cbrt(-x²) == -cbrt(x²)`
     // are caught structurally here rather than left to numerical sampling (which
     // rejects the branch-cut cases). Matches the JS chain, whose stage 1 is
     // `evaluate_numbers` + name normalization + `simplify`.
-    let ca = coerce_seqs(simplify(&a), opts);
-    let cb = coerce_seqs(simplify(&b), opts);
+    let ca = simplify_canonical(ca);
+    let cb = simplify_canonical(cb);
     if ca == cb {
         return true;
     }
@@ -118,8 +132,9 @@ pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
 }
 
 /// Does the tree contain a `Blank` (missing operand)? A variant check, not a
-/// magic-symbol scan.
-fn contains_blank(e: &Expr) -> bool {
+/// magic-symbol scan. Public: callers (and the corpus tests) need to know
+/// whether `equals`'s stage-0 blank guard will reject a tree.
+pub fn contains_blank(e: &Expr) -> bool {
     match e {
         Expr::Blank => true,
         Expr::Neg(x) | Expr::Not(x) | Expr::Prime(x) => contains_blank(x),

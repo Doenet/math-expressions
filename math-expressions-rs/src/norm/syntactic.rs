@@ -51,7 +51,9 @@ const TRIG_FOR_INVERSE: &[&str] = &[
 ];
 
 /// `move_exponents_outside_for`: `f^n(x)` (n ≠ -1) becomes `(f(x))^n`.
-const MOVE_EXPONENT_OUTSIDE: &[&str] = &[
+/// Shared with `canonicalize` (canon_apply applies the same unification so the
+/// canonical layer has a single spelling for powers of applied functions).
+pub(crate) const MOVE_EXPONENT_OUTSIDE: &[&str] = &[
     "cos", "cosh", "sin", "sinh", "tan", "tanh", "sec", "sech", "csc", "csch", "cot", "coth",
     "log", "ln",
 ];
@@ -265,32 +267,35 @@ fn is_move_exponent(base: &Expr) -> bool {
     matches!(base, Expr::Sym(s) if MOVE_EXPONENT_OUTSIDE.contains(&s.name().as_str()))
 }
 
-/// Apply `f` to every immediate `Expr` child, rebuilding the node. Mirrors the
-/// full-variant structural map used elsewhere; leaves are returned unchanged.
-fn map_children(e: &Expr, f: fn(&Expr) -> Expr) -> Expr {
-    let each = |xs: &[Expr]| -> Vec<Expr> { xs.iter().map(f).collect() };
+/// Apply `f` to every immediate `Expr` child, rebuilding the node; leaves are
+/// returned unchanged. Shared by the syntactic passes and `norm::simplify`
+/// (generic over `FnMut` so callers can thread state, e.g. a change flag).
+pub(crate) fn map_children<F: FnMut(&Expr) -> Expr>(e: &Expr, mut f: F) -> Expr {
     match e {
         Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
-        Expr::Add(xs) => Expr::Add(each(xs)),
-        Expr::Mul(xs) => Expr::Mul(each(xs)),
-        Expr::And(xs) => Expr::And(each(xs)),
-        Expr::Or(xs) => Expr::Or(each(xs)),
-        Expr::Union(xs) => Expr::Union(each(xs)),
-        Expr::Intersect(xs) => Expr::Intersect(each(xs)),
+        Expr::Add(xs) => Expr::Add(xs.iter().map(&mut f).collect()),
+        Expr::Mul(xs) => Expr::Mul(xs.iter().map(&mut f).collect()),
+        Expr::And(xs) => Expr::And(xs.iter().map(&mut f).collect()),
+        Expr::Or(xs) => Expr::Or(xs.iter().map(&mut f).collect()),
+        Expr::Union(xs) => Expr::Union(xs.iter().map(&mut f).collect()),
+        Expr::Intersect(xs) => Expr::Intersect(xs.iter().map(&mut f).collect()),
         Expr::Div(a, b) => Expr::Div(Box::new(f(a)), Box::new(f(b))),
         Expr::Pow(a, b) => Expr::Pow(Box::new(f(a)), Box::new(f(b))),
         Expr::Index(a, b) => Expr::Index(Box::new(f(a)), Box::new(f(b))),
         Expr::Neg(x) => Expr::Neg(Box::new(f(x))),
         Expr::Not(x) => Expr::Not(Box::new(f(x))),
         Expr::Prime(x) => Expr::Prime(Box::new(f(x))),
-        Expr::Apply(h, xs) => Expr::Apply(Box::new(f(h)), each(xs)),
-        Expr::Seq(k, xs) => Expr::Seq(*k, each(xs)),
+        Expr::Apply(h, xs) => {
+            let h = f(h);
+            Expr::Apply(Box::new(h), xs.iter().map(&mut f).collect())
+        }
+        Expr::Seq(k, xs) => Expr::Seq(*k, xs.iter().map(&mut f).collect()),
         Expr::Interval { endpoints, closed } => Expr::Interval {
             endpoints: Box::new((f(&endpoints.0), f(&endpoints.1))),
             closed: *closed,
         },
         Expr::Relation { operands, ops } => Expr::Relation {
-            operands: each(operands),
+            operands: operands.iter().map(&mut f).collect(),
             ops: ops.clone(),
         },
         Expr::Matrix {
@@ -300,8 +305,8 @@ fn map_children(e: &Expr, f: fn(&Expr) -> Expr) -> Expr {
         } => Expr::Matrix {
             rows: *rows,
             cols: *cols,
-            entries: each(entries),
+            entries: entries.iter().map(&mut f).collect(),
         },
-        Expr::OtherOp(name, xs) => Expr::OtherOp(*name, each(xs)),
+        Expr::OtherOp(name, xs) => Expr::OtherOp(*name, xs.iter().map(&mut f).collect()),
     }
 }

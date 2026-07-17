@@ -21,7 +21,7 @@
 //!   UPDATE_KNOWN_FAILURES=1 cargo test --test simplify_corpus
 
 use math_expressions::{
-    equals, js_tree, simplify, EqOptions, Expr, TextToAst, TextToAstOptions,
+    contains_blank, equals, js_tree, simplify, EqOptions, Expr, TextToAst, TextToAstOptions,
 };
 use serde_json::Value;
 use std::collections::BTreeSet;
@@ -69,31 +69,6 @@ fn involves_nonfinite(e: &Expr) -> bool {
     }
 }
 
-/// Local mirror of `eq::contains_blank` (private): does the tree hold a `Blank`?
-fn contains_blank(e: &Expr) -> bool {
-    match e {
-        Expr::Blank => true,
-        Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Ldots => false,
-        Expr::Add(xs)
-        | Expr::Mul(xs)
-        | Expr::And(xs)
-        | Expr::Or(xs)
-        | Expr::Union(xs)
-        | Expr::Intersect(xs)
-        | Expr::Seq(_, xs)
-        | Expr::OtherOp(_, xs) => xs.iter().any(contains_blank),
-        Expr::Apply(h, xs) => contains_blank(h) || xs.iter().any(contains_blank),
-        Expr::Div(a, b) | Expr::Pow(a, b) | Expr::Index(a, b) => {
-            contains_blank(a) || contains_blank(b)
-        }
-        Expr::Neg(x) | Expr::Not(x) | Expr::Prime(x) => contains_blank(x),
-        Expr::Interval { endpoints, .. } => {
-            contains_blank(&endpoints.0) || contains_blank(&endpoints.1)
-        }
-        Expr::Relation { operands, .. } => operands.iter().any(contains_blank),
-        Expr::Matrix { entries, .. } => entries.iter().any(contains_blank),
-    }
-}
 
 /// The set of inputs where our `simplify` result is NOT `equals` to JS's
 /// `.simplify()` output (the advisory JS-agreement gaps). Also asserts the two
@@ -107,8 +82,18 @@ fn collect_js_gaps(assert_invariants: bool) -> BTreeSet<String> {
         let Some(parsed) = parse(&c.input) else {
             continue;
         };
-        let Some(simplified) = catch(|| simplify(&parsed)) else {
-            continue;
+        let simplified = match catch(|| simplify(&parsed)) {
+            Some(s) => s,
+            None => {
+                // A panicking simplify must fail the invariants test loudly —
+                // silently skipping the case would hide crashes on real inputs.
+                assert!(
+                    !assert_invariants,
+                    "simplify PANICKED on corpus input {:?}",
+                    c.input
+                );
+                continue;
+            }
         };
         let want = js_tree::from_js(&c.tree);
         let agrees = catch(|| equals(&simplified, &want, &opts)).unwrap_or(false);
@@ -129,7 +114,16 @@ fn collect_js_gaps(assert_invariants: bool) -> BTreeSet<String> {
             // *false* under complex principal branches / unsampleable. So a step
             // counts as meaning-preserving if it is either complex-`equals` to
             // the input OR equal to JS's reduced output — JS being the
-            // real-domain correctness oracle (§7e). `Blank` inputs are exempt
+            // real-domain correctness oracle (§7e).
+            //
+            // KNOWN HOLE in the `agrees ||` escape: a rewrite that changes
+            // meaning but happens to reproduce JS's tree passes unchecked (by
+            // construction it cannot be distinguished from a sanctioned
+            // real-domain identity). Acceptable while rules are designed from
+            // identities and JS is only a cross-check; if a rule is ever
+            // authored by pattern-matching JS output, tighten this to an
+            // explicit allowlist of sanctioned divergences (or a real-domain
+            // `equals` mode) instead. `Blank` inputs are exempt
             // (the equals stage-0 guard rejects them outright), as are non-finite
             // results (∞/NaN/poles): `equals` samples finite complex points and
             // has no verdict there, so it cannot judge meaning either way.

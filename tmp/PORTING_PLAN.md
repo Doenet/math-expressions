@@ -805,6 +805,35 @@ added → equality corpus **824/824**. Still open (follow-ons): broader trig/log
 rules; power-of-product expansion (`cbrt((-x)^3)`); the `slow_assumptions` corpus and
 assumption-aware subset (§11).
 
+**Review + hardening 2026-07-17** (multi-agent review of the §7e diff; all fixes landed,
+regression-tested in `tests/equality.rs`):
+- **DoS**: `extract_qth_power` trial division was unbounded — `sqrt(<19-digit prime>)`
+  stalled `equals()` 5–16 s. Now O(log) integer-nth-root for the perfect-power case,
+  divisor cap 1024 for partial extraction (large prime factors just stay under the
+  radical).
+- **∞/NaN folds were unsound with symbolic operands**: `x·∞ == ∞`, `x/0 == 1/0`,
+  `∞·(a,b) == ∞`, and `x+∞−∞ == y+∞−∞` all compared *true*. Folds now fire only when
+  every operand is a definite constant (`Num`, `Const`, zero-pole, or the constant
+  symbols `pi`/`e`/`i` — the same set the evaluator binds). Also added the missing
+  `(−∞)^n` parity arm.
+- **Coercion ordering**: `coerce_seqs` now runs *before* simplify in `equals`, so
+  `[1,2]+(3,4) == [4,6]` combines componentwise under the coercion flags.
+- **Altitude**: the `sin^2(x)` head-exponent unification moved from a double-match in
+  the trig rule into `canon_apply` (reusing syntactic.rs's MOVE_EXPONENT_OUTSIDE set) —
+  the canonical layer now has ONE spelling for powers of applied functions.
+- **Perf**: `equals` regained a canonicalize-only fast path (stage 1a) before the
+  rewrite clusters run; `rewrite` threads a fired-flag so a no-op pass skips the
+  re-canonicalize and tree compare (`simplify_canonical` entry point avoids double
+  canonicalization).
+- **Dedup**: shared `map_children` (syntactic.rs, now generic over `FnMut`),
+  `split_coeff` reused by the radical rule, `eq::contains_blank` made pub.
+- **Test hardening**: a panic in `simplify` now *fails* the corpus invariants test
+  (was silently skipped); the `agrees ||` escape in the meaning-preserving invariant is
+  documented as a known hole (acceptable while rules are identity-derived, not
+  JS-pattern-matched).
+Corpora after hardening: equality **824/824**, simplify 327/342 (same 15 documented
+gaps; `∞·i` kept working via the constant-symbol set).
+
 ### 7f. Resource limits — decided 2026-07, NOT yet implemented
 
 All expression input is untrusted (student answers), so every pass must stay

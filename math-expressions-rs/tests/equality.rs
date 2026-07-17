@@ -247,3 +247,59 @@ fn coercion_reaches_nested_positions() {
     assert!(eq("(1,2) = x", "[1,2] = x"));
     assert!(eq("x = y", "y = x"));
 }
+
+#[test]
+fn infnan_folds_are_conservative() {
+    // Regression tests from the 2026-07-17 review: ∞/NaN folding fires only on
+    // all-constant sums/products. A symbolic factor has unknown sign (`x·∞` is
+    // ±∞ or NaN depending on x), so these must NOT compare equal.
+    assert!(!eq("x*Infinity", "Infinity"));
+    assert!(!eq("x*Infinity", "y*Infinity"));
+    assert!(!eq("x/0", "1/0"));
+    assert!(!eq("x/0", "y/0"));
+    // A tuple is not a scalar: ∞·(a,b) must not collapse to ∞.
+    assert!(!eq("Infinity*(a,b)", "Infinity"));
+    // ∞ − ∞ absorbs only constant terms — never a free variable.
+    assert!(!eq("x + Infinity - Infinity", "y + Infinity - Infinity"));
+    // All-constant folds still work (matching JS .simplify()).
+    assert!(eq("Infinity + 3", "Infinity"));
+    assert!(eq("Infinity*i", "Infinity"));
+    assert!(eq("1/0", "Infinity"));
+    assert!(eq("1/Infinity", "0"));
+    // NegInf base folds by parity; negative exponent gives 0.
+    assert!(eq("(-Infinity)^2", "Infinity"));
+    assert!(eq("(-Infinity)^3", "-Infinity"));
+    assert!(eq("1/(-Infinity)", "0"));
+}
+
+#[test]
+fn radical_extraction_is_bounded() {
+    // Regression: sqrt(<19-digit prime>) previously trial-divided up to
+    // ~3·10^9 iterations inside equals() (multi-second stall). The perfect
+    // power case is now O(log) and partial extraction is capped, so this
+    // completes instantly (the test itself is the timing assertion — it would
+    // time out otherwise).
+    assert!(!eq("sqrt(9223372036854775783)", "2"));
+    // Perfect powers of any size still fold exactly.
+    assert!(eq("sqrt(4611686014132420609)", "2147483647")); // (2^31-1)^2
+    assert!(eq("sqrt(12)", "2*sqrt(3)"));
+    assert!(eq("(-8)^(1/3)", "-2"));
+}
+
+#[test]
+fn mixed_seq_kinds_combine_componentwise() {
+    // Regression: coercion must run BEFORE simplify so a coerced Array
+    // combines with a Tuple componentwise.
+    assert!(eq("[1,2]+(3,4)", "[4,6]"));
+    assert!(eq("[1,2]+(3,4)", "(4,6)"));
+    assert!(eq("[2x,y^2]", "(x+x, y*y)"));
+}
+
+#[test]
+fn applied_function_power_spellings_unify() {
+    // canon_apply moves a function-head exponent outside the application
+    // (MOVE_EXPONENT_OUTSIDE), so both spellings share one canonical form and
+    // compare equal at stage 1 — even nested where sampling cannot reach.
+    assert!(eq("sin^2(x)", "sin(x)^2"));
+    assert!(eq("x ∈ [3, sin^2(x)]", "x ∈ [3, sin(x)^2]"));
+}

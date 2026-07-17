@@ -22,7 +22,8 @@
 use crate::expr::{Expr, MathConst, SeqKind};
 use crate::num::Number;
 
-use super::{add, canonicalize, mul};
+use super::syntactic::map_children;
+use super::{add, canonicalize, mul, split_coeff};
 
 /// Max rewrite rounds. A stand-in for the §7f `Limits`/`fuel` context (not yet
 /// built): every round strictly makes progress or we stop, so this only bounds
@@ -32,9 +33,23 @@ const MAX_ROUNDS: u32 = 32;
 
 /// Simplify to a meaning-preserving canonical fixpoint (see module docs).
 pub fn simplify(e: &Expr) -> Expr {
-    let mut cur = canonicalize(e);
+    simplify_canonical(canonicalize(e))
+}
+
+/// Simplify a tree that is *already canonical*, skipping the initial
+/// canonicalize. `equals` calls this after its canonical fast path so the
+/// canonicalization it already paid for is not repeated.
+pub(crate) fn simplify_canonical(mut cur: Expr) -> Expr {
     for _ in 0..MAX_ROUNDS {
-        let next = canonicalize(&rewrite(&cur));
+        let mut fired = false;
+        let rewritten = rewrite(&cur, &mut fired);
+        // No rule applied anywhere: `cur` came out of canonicalize, so it is
+        // already the fixpoint — skip the re-canonicalize and tree compare.
+        if !fired {
+            return cur;
+        }
+        let next = canonicalize(&rewritten);
+        // Rules fired but the canonical result is unchanged (ping-pong guard).
         if next == cur {
             return next;
         }
@@ -44,67 +59,30 @@ pub fn simplify(e: &Expr) -> Expr {
 }
 
 /// One bottom-up rewriting pass: rewrite children, then apply node-local rules.
-/// The result is not necessarily canonical; `simplify` re-canonicalizes it.
-fn rewrite(e: &Expr) -> Expr {
+/// Sets `fired` when any rule applied; the result is not necessarily canonical
+/// (`simplify_canonical` re-canonicalizes after a fired pass).
+fn rewrite(e: &Expr, fired: &mut bool) -> Expr {
     // Rewrite children first (post-order), so a rule sees already-simplified
     // subtrees.
-    let e = map_children(e, rewrite);
+    let e = map_children(e, |c| rewrite(c, fired));
     // Cluster rules, in order. Each returns `Some(replacement)` if it fired.
     if let Some(r) = rule_infnan(&e) {
+        *fired = true;
         return r;
     }
     if let Some(r) = rule_trig_pythagorean(&e) {
+        *fired = true;
         return r;
     }
     if let Some(r) = rule_seq_arith(&e) {
+        *fired = true;
         return r;
     }
     if let Some(r) = rule_radical(&e) {
+        *fired = true;
         return r;
     }
     e
-}
-
-/// Apply `f` to each immediate child, rebuilding the same variant. Mirrors the
-/// traversal in `canonicalize`/`desugar_units` (a shared `fold` driver is the
-/// §5b follow-up; until then each pass spells the recursion out).
-fn map_children(e: &Expr, f: fn(&Expr) -> Expr) -> Expr {
-    match e {
-        Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
-
-        Expr::Add(xs) => Expr::Add(xs.iter().map(f).collect()),
-        Expr::Mul(xs) => Expr::Mul(xs.iter().map(f).collect()),
-        Expr::Div(a, b) => Expr::Div(Box::new(f(a)), Box::new(f(b))),
-        Expr::Pow(a, b) => Expr::Pow(Box::new(f(a)), Box::new(f(b))),
-        Expr::Neg(x) => Expr::Neg(Box::new(f(x))),
-        Expr::And(xs) => Expr::And(xs.iter().map(f).collect()),
-        Expr::Or(xs) => Expr::Or(xs.iter().map(f).collect()),
-        Expr::Not(x) => Expr::Not(Box::new(f(x))),
-        Expr::Union(xs) => Expr::Union(xs.iter().map(f).collect()),
-        Expr::Intersect(xs) => Expr::Intersect(xs.iter().map(f).collect()),
-        Expr::Apply(h, xs) => Expr::Apply(Box::new(f(h)), xs.iter().map(f).collect()),
-        Expr::Prime(x) => Expr::Prime(Box::new(f(x))),
-        Expr::Index(a, b) => Expr::Index(Box::new(f(a)), Box::new(f(b))),
-        Expr::Seq(k, xs) => Expr::Seq(*k, xs.iter().map(f).collect()),
-        Expr::Interval { endpoints, closed } => Expr::Interval {
-            endpoints: Box::new((f(&endpoints.0), f(&endpoints.1))),
-            closed: *closed,
-        },
-        Expr::Relation { operands, ops } => Expr::Relation {
-            operands: operands.iter().map(f).collect(),
-            ops: ops.clone(),
-        },
-        Expr::Matrix {
-            rows,
-            cols,
-            entries,
-        } => Expr::Matrix {
-            rows: *rows,
-            cols: *cols,
-            entries: entries.iter().map(f).collect(),
-        },
-        Expr::OtherOp(name, args) => Expr::OtherOp(*name, args.iter().map(f).collect()),
-    }
 }
 
 // ---- Cluster: ∞ / NaN folding ----
@@ -120,8 +98,17 @@ fn map_children(e: &Expr, f: fn(&Expr) -> Expr) -> Expr {
 //     not `NaN`.
 //   * no signed zero: `6/-0` folds to `+∞`, not `-∞`.
 //
-// What we DO fold: a pole `Pow(0, negative) → ∞`, infinities absorbing finite
-// operands in sums/products, `x/∞ → 0`, and `∞ − ∞ → NaN`.
+// What we DO fold: a pole `Pow(0, negative) → ∞`, infinities absorbing
+// *constant* co-operands in sums/products, `x/∞ → 0`, and `∞ − ∞ → NaN`.
+//
+// The sum/product folds fire ONLY when every operand is a constant (a `Num`, a
+// `Const`, or a zero-pole). A symbolic factor blocks the fold: `x·∞` is +∞,
+// −∞, or NaN depending on x's sign (folding it to +∞ made `x·∞ == ∞` and
+// `x/0 == 1/0` wrongly true), a `Seq` factor is not even a scalar
+// (`∞·(a,b)` must not collapse to ∞), and `x + ∞ − ∞` must not drop `x`.
+// Two *pure-constant* indeterminate forms both folding to `NaN` (and thus
+// comparing equal) is accepted: that matches JS `.simplify()`, which returns
+// the NaN literal for them.
 
 fn rule_infnan(e: &Expr) -> Option<Expr> {
     match e {
@@ -147,6 +134,19 @@ fn is_zero_pole(e: &Expr) -> bool {
         && matches!(&**x, Expr::Num(n) if n.is_negative()))
 }
 
+/// An operand whose value is a definite constant for ∞/NaN folding purposes: a
+/// number, a math constant, a zero-pole, or one of the constant *symbols*
+/// `pi`/`e`/`i` (the parsers emit these as `Sym`; the same name set the
+/// evaluator treats as bound constants — see `free_symbols`). All three are
+/// finite, nonzero, and not negative reals, so they never flip the fold's
+/// sign. Anything else (variables, function applications, sequences, …) has
+/// unknown sign / finiteness / shape and must block the fold.
+fn is_infnan_constant(e: &Expr) -> bool {
+    matches!(e, Expr::Num(_) | Expr::Const(_))
+        || is_zero_pole(e)
+        || matches!(e, Expr::Sym(s) if matches!(s.name().as_str(), "pi" | "e" | "i"))
+}
+
 fn fold_infnan_pow(base: &Expr, exp: &Expr) -> Option<Expr> {
     // A bare pole `1/0`.
     if let (Expr::Num(b), Expr::Num(x)) = (base, exp) {
@@ -163,13 +163,33 @@ fn fold_infnan_pow(base: &Expr, exp: &Expr) -> Option<Expr> {
             return Some(Expr::Const(MathConst::Inf));
         }
     }
+    // `(−∞)^n`: → 0 for n < 0; for a positive *integer* n the sign follows
+    // parity. A non-integer exponent of −∞ is complex/undefined — left alone.
+    if let (Some(MathConst::NegInf), Expr::Num(x)) = (const_of(base), exp) {
+        if x.is_negative() {
+            return Some(Expr::Num(Number::zero()));
+        }
+        if let Number::Int(k) = x {
+            if *k > 0 {
+                return Some(Expr::Const(if k % 2 == 0 {
+                    MathConst::Inf
+                } else {
+                    MathConst::NegInf
+                }));
+            }
+        }
+    }
     None
 }
 
-/// A product with an infinite factor (a `±∞` constant or a zero-pole) folds to
-/// `±∞`, or `NaN` if any factor is already `NaN`. Canonicalize has already
-/// removed any literal zero, so `0·∞` never reaches here (it is `0`).
+/// An all-constant product with an infinite factor (a `±∞` constant or a
+/// zero-pole) folds to `±∞`, or `NaN` if any factor is already `NaN`.
+/// Canonicalize has already removed any literal zero, so `0·∞` never reaches
+/// here (it is `0`); `∞·i` folds to `∞` (matching JS), since `i` is a `Const`.
 fn fold_infnan_mul(factors: &[Expr]) -> Option<Expr> {
+    if !factors.iter().all(is_infnan_constant) {
+        return None; // a symbolic factor: sign/shape unknown, do not fold
+    }
     let mut saw_infinite = false;
     let mut sign: i64 = 1;
     for f in factors {
@@ -188,8 +208,6 @@ fn fold_infnan_mul(factors: &[Expr]) -> Option<Expr> {
                         sign = -sign;
                     }
                 }
-                // Other symbolic factors (e.g. `i`) do not change the magnitude
-                // being infinite — JS treats `∞·i` as `∞`.
             }
         }
     }
@@ -203,16 +221,24 @@ fn fold_infnan_mul(factors: &[Expr]) -> Option<Expr> {
     }))
 }
 
-/// A sum with an infinite term folds to that infinity; `+∞` together with `−∞`
-/// (or any `NaN`) folds to `NaN`. Finite terms are absorbed.
+/// An all-constant sum with an infinite term folds to that infinity; `+∞`
+/// together with `−∞` (or any `NaN`) folds to `NaN`. Finite constant terms are
+/// absorbed. A symbolic term blocks the fold (`x + ∞ − ∞` must not drop `x`).
 fn fold_infnan_add(terms: &[Expr]) -> Option<Expr> {
+    if !terms.iter().all(is_infnan_constant) {
+        return None;
+    }
     let (mut pos, mut neg, mut nan) = (false, false, false);
     for t in terms {
         match const_of(t) {
             Some(MathConst::Inf) => pos = true,
             Some(MathConst::NegInf) => neg = true,
             Some(MathConst::NaN) => nan = true,
-            _ => {}
+            _ => {
+                if is_zero_pole(t) {
+                    pos = true; // a pole term is +∞ in the no-signed-zero model
+                }
+            }
         }
     }
     if !(pos || neg || nan) {
@@ -325,39 +351,23 @@ fn as_trig_square(term: &Expr) -> Option<TrigSquare> {
     })
 }
 
-/// If `e` is `sin(arg)²` or `cos(arg)²`, return the function and argument. Both
-/// canonical spellings are accepted: the power outside the application
-/// (`sin(x)^2` → `Pow(Apply(sin,[x]), 2)`) and on the function head
-/// (`sin^2(x)` → `Apply(Pow(sin, 2), [x])`) — `canonicalize` does not unify
-/// these (moving the exponent out lives in the syntactic normalizer), so a
-/// nested `sin^2(x)+cos^2(x)` keeps the head-power form.
+/// If `e` is `sin(arg)²` or `cos(arg)²`, return the function and argument.
+/// Only one spelling exists in the canonical layer: `canon_apply` moves a
+/// function-head exponent outside the application (`sin^2(x)` → `sin(x)^2`,
+/// via MOVE_EXPONENT_OUTSIDE), so `Pow(Apply(fn,[arg]), 2)` is the single
+/// canonical shape.
 fn trig_square_base(e: &Expr) -> Option<(TrigFn, Expr)> {
-    match e {
-        // Power outside the application: `(fn(arg))²`.
-        Expr::Pow(base, exp) if is_two(exp) => {
-            let Expr::Apply(head, args) = &**base else {
-                return None;
-            };
-            let (Expr::Sym(s), [arg]) = (&**head, args.as_slice()) else {
-                return None;
-            };
-            Some((trig_fn(&s.name())?, arg.clone()))
-        }
-        // Power on the function head: `fn²(arg)`.
-        Expr::Apply(head, args) => {
-            let Expr::Pow(f, exp) = &**head else {
-                return None;
-            };
-            let (Expr::Sym(s), [arg]) = (&**f, args.as_slice()) else {
-                return None;
-            };
-            if !is_two(exp) {
-                return None;
-            }
-            Some((trig_fn(&s.name())?, arg.clone()))
-        }
-        _ => None,
+    let Expr::Pow(base, exp) = e else { return None };
+    if !is_two(exp) {
+        return None;
     }
+    let Expr::Apply(head, args) = &**base else {
+        return None;
+    };
+    let (Expr::Sym(s), [arg]) = (&**head, args.as_slice()) else {
+        return None;
+    };
+    Some((trig_fn(&s.name())?, arg.clone()))
 }
 
 fn is_two(e: &Expr) -> bool {
@@ -577,7 +587,7 @@ fn fold_numeric_radical(b: &Number, p: i64, q: i64) -> Option<Expr> {
 /// out front. Returns `None` when nothing can be pulled.
 fn simplify_root(degree: i64, radicand: &Expr, root: Root) -> Option<Expr> {
     let q = u32::try_from(degree).ok()?;
-    let (coeff, rest) = split_numeric_coeff(radicand);
+    let (coeff, rest) = split_coeff(radicand.clone());
     let c = as_small_int(&coeff)?;
     if c == 0 {
         return None; // a zero radicand is canonicalized elsewhere
@@ -615,40 +625,59 @@ fn simplify_root(degree: i64, radicand: &Expr, root: Root) -> Option<Expr> {
     }
 }
 
-/// Split a radicand into (numeric coefficient, remaining non-numeric factor).
-/// `None` rest means the radicand is purely numeric.
-fn split_numeric_coeff(r: &Expr) -> (Number, Option<Expr>) {
-    match r {
-        Expr::Num(n) => (n.clone(), None),
-        Expr::Mul(fs) => {
-            if let Some(Expr::Num(n)) = fs.first() {
-                (n.clone(), Some(mul(fs[1..].to_vec())))
-            } else {
-                (Number::one(), Some(r.clone()))
-            }
-        }
-        other => (Number::one(), Some(other.clone())),
-    }
-}
-
-/// Largest `m` such that `m^q` divides `c`, with `r = c / m^q` the q-th-power-free
-/// remainder. `c >= 1`, `q >= 2`.
+/// Largest `m` such that `m^q` divides `c`, with `r = c / m^q` the
+/// q-th-power-free remainder. `c >= 1`, `q >= 2`.
+///
+/// Bounded on adversarial input (the "canonicalization must stay cheap on any
+/// input" rule — cf. the factorial and pow caps in norm/mod.rs): the
+/// perfect-power case is decided in O(log c) by an integer nth-root, and
+/// partial extraction trial-divides only up to a small cap, so
+/// `sqrt(<19-digit prime>)` cannot stall `equals()`. Beyond the cap a large
+/// prime-power factor stays under the radical — still correct, just less
+/// simplified (classroom coefficients are far below the cap).
 fn extract_qth_power(c: u64, q: u32) -> (u64, u64) {
+    // Fast path: c is a perfect q-th power.
+    let root = integer_nth_root(c, q);
+    if pow_u128(root, q) == Some(c as u128) {
+        return (root, 1);
+    }
+    const MAX_DIVISOR: u64 = 1 << 10;
     let mut m: u64 = 1;
-    let mut remaining = c as u128;
-    let mut d: u128 = 2;
-    while let Some(dq) = d.checked_pow(q) {
-        if dq > remaining {
+    let mut remaining = c;
+    let mut d: u64 = 2;
+    while d <= MAX_DIVISOR {
+        let Some(dq) = pow_u128(d, q) else { break };
+        if dq > remaining as u128 {
             break;
         }
+        let dq = dq as u64;
         if remaining.is_multiple_of(dq) {
-            m = m.saturating_mul(d as u64);
+            m *= d; // m^q divides c <= u64::MAX, so m cannot overflow
             remaining /= dq;
         } else {
             d += 1;
         }
     }
-    (m, remaining as u64)
+    (m, remaining)
+}
+
+fn pow_u128(base: u64, exp: u32) -> Option<u128> {
+    (base as u128).checked_pow(exp)
+}
+
+/// ⌊c^(1/q)⌋ via a float seed corrected exactly with integer arithmetic.
+fn integer_nth_root(c: u64, q: u32) -> u64 {
+    if c <= 1 {
+        return c;
+    }
+    let mut r = (c as f64).powf(1.0 / f64::from(q)).round() as u64;
+    while r > 0 && pow_u128(r, q).is_none_or(|v| v > c as u128) {
+        r -= 1;
+    }
+    while pow_u128(r + 1, q).is_some_and(|v| v <= c as u128) {
+        r += 1;
+    }
+    r
 }
 
 /// A `Number` that is an integer fitting in `i64`, else `None` (the radical
