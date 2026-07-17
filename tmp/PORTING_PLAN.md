@@ -632,8 +632,9 @@ constant folding. Port from the JS `Expression` methods used in `equality.js`:
 - `normalize_negative_numbers` — `Neg(Num(n))` → `Num(-n)`, `Neg` → `Mul(-1, x)`
 - `evaluate_numbers` (with `max_digits`) — fold numeric subexpressions to floats
 
-(`normalize_angle_linesegment_arg_order` follows when the geometry feature is ported —
-see §17.)
+(`normalize_angle_linesegment_arg_order` ✓ done — sorts `angle`/`linesegment` args;
+lives both in `canonicalize` for the full `equals` path and in `norm/syntactic.rs` for
+`equalsViaSyntax`. See §10.)
 
 **Scaling units ✓ done** (2026-07). `desugar_units` in `src/norm/mod.rs` is the
 equality-time analogue of JS `remove_scaling_units` + numerical unit removal. Rather
@@ -848,7 +849,15 @@ fn eval_complex(e: &Expr, bindings: &HashMap<Sym, Complex64>) -> Result<Complex6
 
 Uses `num-complex`. Same dispatch table but complex variants.
 
-### 9c. Finite field (`finite_field.rs`)
+### 9c. Finite field — ✓ done, see §10 stage 2 (`src/eq/finite_field.rs`)
+
+The finite-field evaluator lives with the equality tester (it exists only to serve the
+rejection filter) rather than under `eval/`. It uses the JS construction (`e` = primitive
+root, small primes ≡ 1 mod 4, multivalued `ZmodN`, Tonelli–Shanks), *not* a single large
+prime — that is what makes exp/trig identities hold in the field. The sketch below was the
+original plan and is superseded.
+
+<details><summary>original sketch (superseded)</summary>
 
 ```rust
 fn eval_fp(e: &Expr, bindings: &HashMap<Sym, u64>, p: u64) -> Result<u64, EvalError>
@@ -858,6 +867,8 @@ All arithmetic is `mod p`. Uses modular inverse for division. `p` is chosen to b
 prime (e.g. `998_244_353`). Same dispatch table — trig functions are approximated by
 polynomial expansion mod p (Taylor series truncated, or just not supported — the finite
 field check is mainly for polynomial equality).
+
+</details>
 
 ---
 
@@ -887,25 +898,90 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool
 **Stage 0 — blanks guard**: unless `allow_blanks`, either side containing an
 `Expr::Blank` node → false (a variant check, not a magic-symbol scan).
 
-**Stage 1 — syntactic check** (`syntax.rs`):
-Both sides pass through the full normalisation suite (§7b/§7d):
-`evaluate_numbers(max_digits=∞)` → `normalize_function_names` →
-`normalize_applied_functions` → `normalize_negative_numbers` → `simplify()`, then
-structural equality on the canonical trees. Fast accept if identical. Constant numeric
-comparison respects `allowed_error_in_numbers`.
+**Stage 1 — canonical structural check** (in `equals`):
+Both sides go through `desugar_units` then the aggressive `canonicalize`
+(≈ JS `evaluate_numbers` + name normalisations + `simplify`), then structural
+equality on the canonical trees, with `coerce_seqs` for tuple/array/vector coercion.
+Fast accept if identical. Note this is the *mathematical* accept path; it is more
+permissive than JS's `equalsViaSyntax`, which we expose separately (below).
 
-**Stage 2 — finite field check** (`finite_field.rs`):
-Rejection only, and **skipped entirely when `allowed_error_in_numbers != 0`** (fuzzy
-number matching invalidates exact modular evaluation). Assign random values in ℤ/pℤ to
-all variables, evaluate both sides; if they differ → definitively not equal. Only
-applicable to rational-function expressions; skip when the tree contains
-transcendental functions that cannot be evaluated mod p. Resample if a random point
-hits a pole (division by zero mod p).
+**`equals_syntactic` — the real `equalsViaSyntax` ✓ done** (2026-07,
+`src/norm/syntactic.rs`). A faithful port of `lib/expression/equality/syntax.js`: a
+*form* check, NOT the aggressive path. It applies only the four light passes —
+`normalize_function_names` (incl. `sqrt`/`cbrt`/`nthroot`→powers, `e^x`→`exp`,
+`f^(-1)`→`af`, `binom`→`nCr`), `normalize_applied_functions` (exponents/primes move
+outside applications), `normalize_negative_numbers`, `normalize_angle_linesegment_arg_order`
+— then compares trees *order-sensitively* (our derived `PartialEq` + `coerce_seqs`). It
+does NOT flatten, reorder, fold, combine like terms, or eliminate `Div`, so `ln(x) =
+log(x)` and `cos^(-1)(x) = arccos(x)` but `(x+y)+z ≠ z+x+y` and `3+2 ≠ 5`. This is the
+"is the answer in the requested form?" primitive for grading. The parser preserving
+operand order (it flattens `+`/`*` chains but does not reorder) is what makes an
+order-sensitive compare on the faithful tree viable. Result: `symbolic_equivalences`
+132/132 and `symbolic_nonequivalences` 200/200 — both categories now perfect.
+Geometry arg-order sorting was also added to `canonicalize` (JS applies it in the full
+chain too), fixing the `∠ABC=∠CBA` / `linesegment(A,B)=linesegment(B,A)` equivalences.
+Corpus: 691 → 811/824.
 
-**Stage 3 — complex sampling** (`complex.rs`):
-The acceptance workhorse. Sample at random complex points; accept if
-`|f(z) - g(z)|` is within tolerance at all samples (using `relative_tolerance` /
-`absolute_tolerance` / `tolerance_for_zero`).
+**Stage 2 — finite field check** (`finite_field.rs`) — **NOT ported, and now known to
+be a prerequisite for the log identities** (see below). Rejection only, and **skipped
+when `allowed_error_in_numbers != 0`**. Assign random values in ℤ/pℤ to all variables
+(transcendental subtrees keyed as opaque atoms, like the complex sampler), evaluate
+both sides *exactly*; if they differ → definitively not equal. Resample on a mod-p pole.
+
+**Stage 3 — complex sampling** (in `eq/mod.rs`, `equals_numerical`):
+Currently a **strict** sampler: agree within tolerance at *every* pole-free point, reject
+on the first disagreement. This is correct on its own but leaves *branch-cut identities*
+(e.g. `log(a^2 b) = 2 log a + log b`, `x log y = log(y^x)`) unproven — they disagree at
+complex points wherever the principal branches misalign.
+
+**Finding (2026-07): the log identities need stage 2 first.** JS's stage 3 is *lenient* —
+`find_equality_region` accepts if it finds one small neighborhood where both agree at
+≥`MINIMUM_MATCHES` (10) clustered points (analyticity ⟹ identical), *tolerating*
+branch-mismatch points up to `NUMBER_TRIES` (100). Two safety refinements beyond JS:
+(a) a **constant** expression (no free vars) is compared directly, so genuine zeros like
+`sin(pi)=0` are handled; (b) a sample point is *usable* only if finite, in bounds, AND
+**nonzero** — after canonicalization a genuine zero function never reaches here, so an
+exact `0.0` is underflow, and excluding it stops `x^sin(x)` vs `x^cos(x)` from being
+accepted where both underflow. Scales `[10,1,100,0.1,1000,0.01]` are each tried
+`NUMBER_TRIES` times; large scales first so a non-identity shows its global disagreement.
+
+**Stage 2 — finite-field rejection ✓ done** (2026-07, `src/eq/finite_field.rs`). The exact
+filter that makes stage-3 leniency safe. Both canonical trees are evaluated in ℤ/pℤ for the
+9 JS primes (≡ 1 mod 4) with variables (and opaque atoms) bound to random field elements;
+disjoint value multisets at any prime ⇒ definitely unequal. Exact modular arithmetic has no
+magnitude, so `e^(10x)` vs `e^(10x)+C` is caught. The construction: `e` = a **primitive
+root** `g`, `exp(x)=g^x`, and `sin`/`cos` use a 4th root of unity `i=g^((p-1)/4)`, so exp/
+trig identities hold in the field; `log` is NaN (⇒ log identities are *not* rejected, left
+to the sampler). Ported: `ZmodN`-style multivalued arithmetic (sqrt ⇒ two roots), Tonelli–
+Shanks, primitive roots, `powerMod`, `eulerPhi`. Subtleties found and fixed: negative-int
+exponents are reciprocals (`1/base^|k|`, so a zero base is a pole not `0`); high-precision
+decimals (float approximations of π etc.) are skipped, mirroring JS's `approximate` flag,
+so near-equal float coefficients aren't wrongly split; multivalued results reject only when
+value sets are *disjoint*. Result: **0 false positives** across the corpus's 319
+non-equivalence pairs.
+
+Together stages 2+3 fix all 6 log-expansion identities plus `(-1)^n cos^n = (-cos)^n`.
+Corpus: 816 → **823/824**. The single remaining failure is an `elementof`-set structural
+case (nested `sin^2+cos^2` inside set membership), unrelated to numeric equality.
+
+**Review finding (2026-07): unsimplified zero-functions vs `0` are a *simplify* gap, not a
+sampler gap.** The sampler skips any sample where either side is exactly `0.0` (a variable
+expression hitting exact zero is underflow — counting it, even one-sided via
+`tolerance_for_zero`, accepts `x^sin(x)` = `x^cos(x)` and even `x^sin(x)` = `0`, both of
+which underflow across whole regions). Consequence: `sin²x+cos²x−1 == 0` is unprovable
+numerically. That matches JS: its sampler *also* rejects that pair (the float residue at
+scale 10 exceeds `tolerance_for_zero`); JS accepts it in the **simplify stage** via the
+Pythagorean rewrite — the same missing §7e rule behind the `elementof` corpus failure. So
+both cases resolve together when trig simplify is ported. Constants (`sin(pi) == 0`) are
+unaffected: a no-free-symbols pair is compared directly, where a genuine zero is fine.
+
+**Branch-cut-free equality wins ✓ done** (2026-07), all via exact/deterministic routes
+(no leniency, no false-positive risk): `nthroot(x) → sqrt(x)` in `canon_apply`;
+subscripted log `log_b(x) = ln x / ln b` in `eval` (`head_evaluable`/`free_symbols` kept
+consistent) → fixes `log_2(8)=3` and `log_a(b)=log(b)/log(a)`; and complex **gamma**
+(Lanczos) for `factorial`, so the exact recurrence `Γ(n+2)=(n+1)Γ(n+1)` gives
+`(n+1)·n! = (n+1)!` and `n/n! = 1/(n-1)!`. Corpus: 811 → 816/824. (The log-expansion
+identities and `(-1)^n cos^n = (-cos)^n` were then unblocked by stage 2 — see below.)
 
 **Relation dispatch ✓ done** (2026-07, in `src/eq/mod.rs`). Before stage 3, two
 two-operand comparison relations (`=`, `<`, `≤`, plus `>`/`≥` folded by
@@ -1191,6 +1267,5 @@ Each phase: write tests first, then implementation until all tests pass.
 - Discrete infinite sets (`create_discrete_infinite_set`, `equalsDiscreteInfinite`) —
   note this is stage 4 of the `equals` chain (§10); the stub returns false until
   ported, so periodic solution sets (e.g. `x = π/4 + nπ`) compare as not-equal
-- `normalize_angle_linesegment_arg_order` (geometry-specific normalisation)
 
 These are phase 2 additions once the core is solid.

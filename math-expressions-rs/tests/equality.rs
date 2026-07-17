@@ -50,6 +50,43 @@ fn inequalities() {
 }
 
 #[test]
+fn log_and_branch_cut_identities() {
+    // These hold only off a branch cut, so they are accepted by the lenient
+    // region sampler — made safe by the finite-field rejection stage.
+    assert!(eq("log(a^2*b)", "2*log(a)+log(b)"));
+    assert!(eq("log(x^2*y/z)", "2*log(x) + log(y) - log(z)"));
+    assert!(eq("x*log(y)", "log(y^x)"));
+    assert!(eq("(-1)^n*cos(x)^n", "(-cos(x))^n"));
+    // Constant transcendental values that reduce to zero.
+    assert!(eq("sin(pi)", "0"));
+    assert!(eq("cos(pi/2)", "0"));
+}
+
+#[test]
+fn finite_field_rejects_near_misses() {
+    // Differences the *lenient* sampler alone would mask (a small or
+    // magnitude-dwarfed additive term) must still be rejected. The finite-field
+    // stage evaluates exactly in ℤ/pℤ, where magnitude cannot hide them.
+    assert!(!eq("e^(10x)", "e^(10x)+C"));
+    assert!(!eq("e^(10x)", "e^(10x)+0.0000001"));
+    assert!(!eq("sin(10x)", "sin(10x)+C"));
+    assert!(!eq("1/8 e^(2x) + 2e^(-2x)", "1/8 e^(2x)"));
+    // This one differs by exactly 1 (`sin²+cos²`), caught in the field.
+    assert!(!eq("e^(10x)", "e^(10x)+sin^2(x)+cos^2(x)"));
+    // Underflow guard: `x^sin(x)` underflows to exactly 0 across whole regions,
+    // which must not count as agreement — with another underflowing function OR
+    // with a literal 0 (one-sided zeros would match via tolerance_for_zero).
+    assert!(!eq("x^(sin(x))", "x^(cos(x))"));
+    assert!(!eq("x^(sin(x))", "0"));
+    // ...but genuine near-equal float coefficients (−4π + π = −3π) stay equal:
+    // the field skips high-precision decimals, so sampling (with tolerance) decides.
+    assert!(eq(
+        "-12.566370614359172 y^2 + 3.141592653589793 (-y)^2",
+        "-9.42477796076938 y^2"
+    ));
+}
+
+#[test]
 fn exactness_beats_float_slop() {
     // §3a payoff: these are distinct exact integers even though they collapse
     // to the same f64. The JS float path calls them equal; we do not.
@@ -110,6 +147,43 @@ fn scaling_units_stay_syntactically_distinct() {
     assert!(!equals_syntactic(&parse("180 deg"), &parse("pi"), &o));
 }
 
+// Helper for the form-check tests: syntactic equality with default options.
+fn syn(a: &str, b: &str) -> bool {
+    equals_syntactic(&parse(a), &parse(b), &EqOptions::default())
+}
+
+#[test]
+fn syntactic_equality_is_a_form_check() {
+    // `equals_syntactic` is `equalsViaSyntax`: a "is the answer in this *form*?"
+    // check. It normalizes only lightly (function-name spelling, exponents/primes
+    // outside applications, negative-number placement, geometry arg order) and
+    // then compares trees order-sensitively. It must NOT flatten, reorder, fold,
+    // combine like terms, or eliminate division.
+    assert!(!syn("(x+y)+z", "z+x+y")); // reordering is a different form
+    assert!(!syn("3+2", "5")); // no constant folding
+    assert!(!syn("(-1*2)+3*4", "10")); // no evaluation
+    assert!(!syn("(-x)*(-x)", "x^2")); // no simplification
+    assert!(!syn("(a*b)/c", "a*(b/c)")); // division not rearranged
+    assert!(!syn("++2", "2")); // structure preserved
+    assert!(!syn("x*(5+x)", "(x+5)*x")); // operand order matters
+}
+
+#[test]
+fn syntactic_equality_light_normalizations() {
+    // The four passes that DO apply, so equivalent *spellings* of the same form
+    // still match.
+    assert!(syn("ln(x)", "log(x)")); // function-name table
+    assert!(syn("arccos(x)", "acos(x)"));
+    assert!(syn("cos^(-1)(x)", "arccos(x)")); // inverse notation → a-name
+    assert!(syn("e^x", "exp(x)")); // e^x → exp(x)
+    assert!(syn("binom(n,k)", "nCr(n,k)"));
+    assert!(syn("sin^2(x)", "(sin(x))^2")); // exponent moves outside
+    assert!(syn("linesegment(A,B)", "linesegment(B,A)")); // unoriented
+    assert!(syn("angle(A,B,C)", "angle(C,B,A)"));
+    // ...but identical trees are of course still equal.
+    assert!(syn("sin(x) + cos(x)", "sin(x) + cos(x)"));
+}
+
 #[test]
 fn equation_and_inequality_equivalence() {
     // Equations compare by standard form up to any nonzero scalar: `a=b` ≡ `c=d`
@@ -147,6 +221,23 @@ fn equation_form_is_preserved_for_syntactic_equality() {
         &parse("27z -5q > -4u + 5q-9z"),
         &o
     ));
+}
+
+#[test]
+fn logs_roots_and_factorials() {
+    // Single-arg nthroot is a square root.
+    assert!(eq("nthroot(x)", "sqrt(x)"));
+    // Subscripted log evaluates by change of base (`log_b(x) = ln x / ln b`).
+    assert!(eq("log_2(8)", "3"));
+    assert!(eq("log_a(b)", "log(b)/log(a)"));
+    assert!(!eq("log_2(8)", "4"));
+    // Factorials evaluate via the gamma function, so the gamma recurrence
+    // `(n+1)·Γ(n+1) = Γ(n+2)` makes these hold at sampled (non-integer) points.
+    assert!(eq("(n+1)*n!", "(n+1)!"));
+    assert!(eq("n/n!", "1/(n-1)!"));
+    assert!(!eq("n!", "(n+1)!"));
+    // Exact integer factorial folding still applies.
+    assert!(eq("5!", "120"));
 }
 
 #[test]

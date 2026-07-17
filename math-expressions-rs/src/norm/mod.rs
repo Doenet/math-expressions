@@ -10,11 +10,14 @@
 //! layer that needs the assumptions system.
 
 pub(crate) mod order;
+pub(crate) mod syntactic;
 
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
+use std::cmp::Ordering;
 
 pub(crate) use order::cmp;
+pub use syntactic::normalize_syntactic;
 
 /// Bottom-up canonicalization: canonicalize children, then apply the smart
 /// constructor for the node.
@@ -76,14 +79,27 @@ pub fn canonicalize(e: &Expr) -> Expr {
             entries: entries.iter().map(canonicalize).collect(),
         },
         Expr::OtherOp(name, args) => {
-            let cargs: Vec<Expr> = args.iter().map(canonicalize).collect();
+            let mut cargs: Vec<Expr> = args.iter().map(canonicalize).collect();
             // `binom(n,k)` and the applied `nCr(n,k)` denote the same thing;
             // unify on the applied form so they compare equal.
             if name.name() == "binom" && cargs.len() == 2 {
-                canon_apply(Expr::sym("nCr"), cargs)
-            } else {
-                Expr::OtherOp(*name, cargs)
+                return canon_apply(Expr::sym("nCr"), cargs);
             }
+            // Unoriented geometry: `angle(A,B,C) = angle(C,B,A)` (endpoints
+            // swap, vertex fixed) and `linesegment(A,B) = linesegment(B,A)`.
+            // JS applies `normalize_angle_linesegment_arg_order` here too.
+            if name.name() == "angle"
+                && cargs.len() == 3
+                && cmp(&cargs[0], &cargs[2]) == Ordering::Greater
+            {
+                cargs.swap(0, 2);
+            } else if name.name() == "linesegment"
+                && cargs.len() == 2
+                && cmp(&cargs[0], &cargs[1]) == Ordering::Greater
+            {
+                cargs.swap(0, 1);
+            }
+            Expr::OtherOp(*name, cargs)
         }
     }
 }
@@ -406,6 +422,14 @@ fn canon_apply(head: Expr, args: Vec<Expr>) -> Expr {
     }
 
     let head = normalize_head(head);
+
+    // A single-argument `nthroot(x)` is a square root (JS
+    // `normalize_function_names`); unify with `sqrt(x)` so they compare equal.
+    if let Expr::Sym(s) = &head {
+        if s.name() == "nthroot" && args.len() == 1 {
+            return Expr::Apply(Box::new(Expr::sym("sqrt")), args);
+        }
+    }
 
     // Fold `n!` for a non-negative integer `n` (exact, promotes to Big).
     if let Expr::Sym(s) = &head {

@@ -59,7 +59,7 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
 
 /// A subtree evaluated as a single opaque sample variable: an application of an
 /// unknown function, a subscript, a prime, or an `OtherOp` (`vec`, `angle`, …).
-fn is_opaque_atom(e: &Expr) -> bool {
+pub(crate) fn is_opaque_atom(e: &Expr) -> bool {
     match e {
         Expr::Apply(head, args) => !head_evaluable(head, args.len()),
         Expr::Index(..) | Expr::Prime(_) | Expr::OtherOp(..) => true,
@@ -67,11 +67,15 @@ fn is_opaque_atom(e: &Expr) -> bool {
     }
 }
 
-/// Can `eval_apply` handle this head/arity? (A `Pow` head is `sin^2`-style.)
+/// Can `eval_apply` handle this head/arity? (A `Pow` head is `sin^2`-style; an
+/// `Index` head is a subscripted log `log_b`.)
 fn head_evaluable(head: &Expr, nargs: usize) -> bool {
     match head {
         Expr::Pow(inner, _) => head_evaluable(inner, nargs),
         Expr::Sym(s) => known_function(&s.name(), nargs),
+        Expr::Index(inner, _) => {
+            nargs == 1 && matches!(inner.as_ref(), Expr::Sym(s) if s.name() == "log")
+        }
         _ => false,
     }
 }
@@ -119,6 +123,7 @@ fn known_function(name: &str, nargs: usize) -> bool {
                 | "ceil"
                 | "round"
                 | "trace"
+                | "factorial"
         ),
         2 => matches!(name, "atan2" | "nthroot" | "nCr" | "nPr" | "mod"),
         _ => false,
@@ -126,7 +131,7 @@ fn known_function(name: &str, nargs: usize) -> bool {
 }
 
 /// A structural key identifying an opaque subtree (stable within a run).
-fn opaque_key(e: &Expr) -> String {
+pub(crate) fn opaque_key(e: &Expr) -> String {
     format!("{e:?}")
 }
 
@@ -140,6 +145,16 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
     if let Expr::Pow(inner, exp) = head {
         let base = eval_apply(inner, args, env)?;
         return Some(base.powc(eval_complex(exp, env)?));
+    }
+    // Subscripted logarithm `log_b(x) = ln(x) / ln(b)` (change of base).
+    if let Expr::Index(inner, base) = head {
+        if let (Expr::Sym(s), [arg]) = (inner.as_ref(), args) {
+            if s.name() == "log" {
+                let x = eval_complex(arg, env)?;
+                let b = eval_complex(base, env)?;
+                return Some(x.ln() / b.ln());
+            }
+        }
     }
     let Expr::Sym(s) = head else { return None };
     let name = s.name();
@@ -195,6 +210,9 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
             "ceil" => real_only(z, f64::ceil)?,
             "round" => real_only(z, f64::round)?,
             "trace" => z, // trace of a 1×1 / scalar is itself
+            // `n! = Γ(n+1)`, evaluated as a complex function so identities like
+            // `(n+1)·n! = (n+1)!` (the Γ recurrence) hold at sampled points.
+            "factorial" => gamma(z + 1.0),
             _ => return None,
         };
         return Some(r);
@@ -215,6 +233,40 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
     }
 
     None
+}
+
+/// Complex gamma function via the Lanczos approximation (g = 7, 9 coefficients),
+/// with the reflection formula for the left half-plane. Accurate to ~1e-13, so
+/// the recurrence `Γ(z+1) = z·Γ(z)` holds well within the equality tolerance —
+/// which is what lets `(n+1)·n! = (n+1)!` and `n/n! = 1/(n-1)!` pass.
+fn gamma(z: Complex64) -> Complex64 {
+    const G: f64 = 7.0;
+    const C: [f64; 9] = [
+        0.999_999_999_999_809_9,
+        676.520_368_121_885_1,
+        -1_259.139_216_722_402_8,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
+        12.507_343_278_686_905,
+        -0.138_571_095_265_720_12,
+        9.984_369_578_019_572e-6,
+        1.505_632_735_149_311_6e-7,
+    ];
+    let pi = std::f64::consts::PI;
+    if z.re < 0.5 {
+        // Reflection: Γ(z)·Γ(1-z) = π / sin(πz).
+        Complex64::new(pi, 0.0)
+            / ((Complex64::new(pi, 0.0) * z).sin() * gamma(Complex64::new(1.0, 0.0) - z))
+    } else {
+        let z = z - 1.0;
+        let mut x = Complex64::new(C[0], 0.0);
+        for (i, &c) in C.iter().enumerate().skip(1) {
+            x += c / (z + i as f64);
+        }
+        let t = z + (G + 0.5);
+        let sqrt_2pi = (2.0 * pi).sqrt();
+        Complex64::new(sqrt_2pi, 0.0) * t.powc(z + 0.5) * (-t).exp() * x
+    }
 }
 
 /// Apply a real function to a (near-)real complex value, else `None`.
@@ -284,8 +336,14 @@ pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
         | Expr::Intersect(xs)
         | Expr::Seq(_, xs) => xs.iter().for_each(|x| free_symbols(x, out)),
         // An evaluable application: descend into arguments only, not the
-        // function-name head (`sin` is not a variable).
-        Expr::Apply(_, xs) => xs.iter().for_each(|x| free_symbols(x, out)),
+        // function-name head (`sin` is not a variable) — except a subscripted
+        // log `log_b(x)` carries its base `b` as free data in the head.
+        Expr::Apply(head, xs) => {
+            xs.iter().for_each(|x| free_symbols(x, out));
+            if let Expr::Index(_, base) = head.as_ref() {
+                free_symbols(base, out);
+            }
+        }
         Expr::Interval { endpoints, .. } => {
             free_symbols(&endpoints.0, out);
             free_symbols(&endpoints.1, out);

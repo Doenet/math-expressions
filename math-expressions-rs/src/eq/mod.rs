@@ -4,9 +4,11 @@
 //! rejection (stage 2) and discrete-infinite-set (stage 4) are deferred; the
 //! remaining stages already decide the large majority of cases.
 
+mod finite_field;
+
 use crate::eval::{eval_complex, free_symbols, Env};
 use crate::expr::{Expr, RelOp, SeqKind};
-use crate::norm::{canonicalize, desugar_units};
+use crate::norm::{canonicalize, desugar_units, normalize_syntactic};
 use num_complex::Complex64;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -80,23 +82,33 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
         return relations_equal(ra, rb, opts);
     }
 
+    // Stage 2: finite-field rejection. Exact evaluation in ℤ/pℤ catches
+    // additive/structural differences that floating-point sampling can mask
+    // (`e^(10x)` vs `e^(10x)+C`), and it is the filter that makes lenient
+    // complex sampling safe. It never confirms equality — only rejects.
+    if finite_field::definitely_unequal(&ca, &cb) {
+        return false;
+    }
+
     // Stage 3: numerical agreement at random complex points.
     equals_numerical(&ca, &cb, opts)
 }
 
-/// Symbolic (syntactic) equality: canonical structural comparison only, no
-/// numerical sampling. Mirrors the JS `equalsViaSyntax` slot — though our
-/// canonical form folds constants and combines like terms, so it is strictly
-/// *more* permissive than the JS's non-folding check (e.g. we call `3+2` and
-/// `5` symbolically equal). An intentional divergence per the redesign note's
-/// baseline decision.
+/// Symbolic (syntactic) equality — the port of JS `equalsViaSyntax`. This is a
+/// *form* check: it applies only the four light normalization passes
+/// (function-name spelling, exponents/primes outside applications, negative
+/// numbers, geometry arg order) and then compares trees *order-sensitively*. It
+/// does NOT flatten, reorder, fold, combine like terms, or eliminate `Div`, so
+/// `ln(x)` equals `log(x)` but `(x+y)+z` does NOT equal `z+x+y` and `3+2` does
+/// NOT equal `5`. This is what a teacher grading "is the answer in the requested
+/// form?" needs — distinct from the aggressive [`equals`].
 pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     if !opts.allow_blanks && (contains_blank(a) || contains_blank(b)) {
         return false;
     }
-    let ca = coerce_seqs(canonicalize(a), opts);
-    let cb = coerce_seqs(canonicalize(b), opts);
-    ca == cb
+    let na = coerce_seqs(normalize_syntactic(a), opts);
+    let nb = coerce_seqs(normalize_syntactic(b), opts);
+    na == nb
 }
 
 /// Does the tree contain a `Blank` (missing operand)? A variant check, not a
@@ -184,47 +196,169 @@ fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
     recur(e, opts)
 }
 
-/// Sample both expressions at random complex points; accept if they agree
-/// within tolerance everywhere they can both be evaluated. A fixed seed keeps
-/// results reproducible (and avoids OS entropy, which is unavailable on wasm).
+// JS numerical-equality constants (lib/expression/equality/numerical.js).
+/// Clustered agreeing points needed to accept a region.
+const MINIMUM_MATCHES: usize = 10;
+/// Disagreeing base points tolerated before rejecting — branch-cut identities
+/// disagree at many points, so this must be generous.
+const NUMBER_TRIES: usize = 100;
+/// Base-point sampling radii, tried in order. Large scales first so a non-identity
+/// reveals its global disagreement before small scales probe near the origin;
+/// neighborhoods use `scale / 100`.
+const BINDING_SCALES: [f64; 6] = [10.0, 1.0, 100.0, 0.1, 1000.0, 0.01];
+/// `Number.MAX_VALUE * 1e-20` — larger magnitudes are out of bounds.
+const MAX_VALUE: f64 = f64::MAX * 1e-20;
+
+/// Numerical equality by the JS `find_equality_region` strategy: prove equality
+/// by finding **one** small neighborhood where both functions agree at several
+/// clustered points (agreement on an open set ⟹ identical, by analyticity),
+/// while *tolerating* base points that disagree — which happens for identities
+/// that hold only off a branch cut, e.g. `log(a^2 b) = 2 log a + log b`. This
+/// leniency is safe only because the finite-field filter (stage 2) has already
+/// rejected the near-misses it would otherwise accept (`e^(10x)` vs `e^(10x)+C`).
 fn equals_numerical(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     let mut vars = std::collections::BTreeSet::new();
     free_symbols(a, &mut vars);
     free_symbols(b, &mut vars);
     let vars: Vec<String> = vars.into_iter().collect();
 
-    let mut rng = SmallRng::seed_from_u64(0x5EED_1234_ABCD_0001);
-    let mut agreements = 0;
-    let mut attempts = 0;
-    // Keep sampling until we have enough successful (pole-free) comparisons or
-    // run out of attempts; a single disagreement is a definitive reject.
-    while agreements < opts.num_samples && attempts < opts.num_samples * 4 {
-        attempts += 1;
-        let env: Env = vars
-            .iter()
-            .map(|v| {
-                // Sample in a modest box, offset from the origin to dodge the
-                // most common poles/branch points.
-                let re = rng.random_range(-2.0..2.0) + 0.3;
-                let im = rng.random_range(-2.0..2.0) + 0.2;
-                (v.clone(), Complex64::new(re, im))
-            })
-            .collect();
-
-        let (Some(va), Some(vb)) = (eval_complex(a, &env), eval_complex(b, &env)) else {
-            // Not numerically evaluable here: can't confirm equality.
-            return false;
+    // Constant expressions (no free symbols) are a single value each — compare
+    // directly, including a genuine zero (`sin(pi) = 0`), which the region
+    // search below deliberately excludes as underflow.
+    if vars.is_empty() {
+        let env = Env::new();
+        return match (eval_complex(a, &env), eval_complex(b, &env)) {
+            (Some(va), Some(vb))
+                if va.re.is_finite()
+                    && va.im.is_finite()
+                    && vb.re.is_finite()
+                    && vb.im.is_finite() =>
+            {
+                close_numeric(va, vb, opts)
+            }
+            _ => false,
         };
-        if !va.re.is_finite() || !va.im.is_finite() || !vb.re.is_finite() || !vb.im.is_finite() {
-            continue; // hit a pole; resample
-        }
-        if close(va, vb, opts) {
-            agreements += 1;
-        } else {
-            return false;
+    }
+
+    let mut rng = SmallRng::seed_from_u64(0x5EED_1234_ABCD_0001);
+    let mut num_unequal = 0;
+    for scale in BINDING_SCALES {
+        for _ in 0..NUMBER_TRIES {
+            match find_region(a, b, &vars, scale, &mut rng, opts) {
+                Region::Equal => return true,
+                Region::Unequal => {
+                    num_unequal += 1;
+                    if num_unequal > NUMBER_TRIES {
+                        return false;
+                    }
+                }
+                Region::Skip => {}
+            }
         }
     }
-    agreements > 0
+    false
+}
+
+enum Region {
+    Equal,
+    Unequal,
+    Skip,
+}
+
+/// Sample a base point at radius `scale`; if both sides agree there, confirm
+/// across a tight neighborhood (`scale / 100`). `Equal` iff ≥ `MINIMUM_MATCHES`
+/// neighborhood points are usable and agree; `Unequal` if the base or any
+/// neighborhood point disagrees; `Skip` if too few points are usable.
+fn find_region(
+    a: &Expr,
+    b: &Expr,
+    vars: &[String],
+    scale: f64,
+    rng: &mut SmallRng,
+    opts: &EqOptions,
+) -> Region {
+    let base = sample_point(vars, scale, None, rng);
+    let (Some(va), Some(vb)) = (eval_complex(a, &base), eval_complex(b, &base)) else {
+        return Region::Skip;
+    };
+    if !usable(va, vb) {
+        return Region::Skip;
+    }
+    if !close_numeric(va, vb, opts) {
+        return Region::Unequal;
+    }
+
+    let mut finite_tries = 0;
+    for _ in 0..100 {
+        let near = sample_point(vars, scale / 100.0, Some(&base), rng);
+        let (Some(va2), Some(vb2)) = (eval_complex(a, &near), eval_complex(b, &near)) else {
+            continue;
+        };
+        if !usable(va2, vb2) {
+            continue;
+        }
+        finite_tries += 1;
+        if !close_numeric(va2, vb2, opts) {
+            return Region::Unequal;
+        }
+        if finite_tries >= MINIMUM_MATCHES {
+            return Region::Equal;
+        }
+    }
+    Region::Skip
+}
+
+/// A sample point is usable if both values are finite, in bounds, and nonzero.
+/// An exact `0.0` from a *variable* expression is underflow (canonicalization
+/// folds genuine zero functions before this stage), and letting it count —
+/// whether as a both-zero "agreement" or a one-sided `tolerance_for_zero`
+/// match — accepts distinct functions that underflow across a region
+/// (`x^sin(x)` vs `x^cos(x)`, or vs a literal `0`). Note this makes an
+/// unsimplified identically-zero expression (e.g. `sin²x+cos²x−1`) unprovable
+/// against `0` at this stage; JS decides that pair in its *simplify* stage
+/// (Pythagorean rewrite, §7e — not yet ported), not numerically.
+fn usable(va: Complex64, vb: Complex64) -> bool {
+    va.re.is_finite()
+        && va.im.is_finite()
+        && vb.re.is_finite()
+        && vb.im.is_finite()
+        && va.norm() < MAX_VALUE
+        && vb.norm() < MAX_VALUE
+        && va.norm() > 0.0
+        && vb.norm() > 0.0
+}
+
+/// Sample each variable uniformly in a `scale`-radius complex box, optionally
+/// centered on a prior point (for neighborhood probing). Mirrors JS
+/// `randomComplexBindings`.
+fn sample_point(vars: &[String], scale: f64, center: Option<&Env>, rng: &mut SmallRng) -> Env {
+    vars.iter()
+        .map(|v| {
+            let c = center
+                .and_then(|c| c.get(v).copied())
+                .unwrap_or(Complex64::new(0.0, 0.0));
+            let re = c.re + rng.random_range(-scale..scale);
+            let im = c.im + rng.random_range(-scale..scale);
+            (v.clone(), Complex64::new(re, im))
+        })
+        .collect()
+}
+
+/// Tolerance test matching JS `find_equality_region`: scale by the smaller
+/// magnitude, and treat a genuine zero specially.
+fn close_numeric(va: Complex64, vb: Complex64, opts: &EqOptions) -> bool {
+    let min_mag = va.norm().min(vb.norm());
+    let max_mag = va.norm().max(vb.norm());
+    if max_mag == 0.0 {
+        return true;
+    }
+    let mut tol = (min_mag * opts.relative_tolerance).min(0.1 * min_mag);
+    if tol == 0.0 && (va.norm() == 0.0 || vb.norm() == 0.0) {
+        tol += opts.tolerance_for_zero;
+    } else {
+        tol += opts.absolute_tolerance;
+    }
+    (va - vb).norm() < tol
 }
 
 /// A two-operand comparison relation, reduced to `(lhs, rhs, op)` with `op` one
