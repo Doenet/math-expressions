@@ -13,8 +13,8 @@ pub mod parse;
 pub mod sym;
 
 pub use eq::{equals, equals_syntactic, EqOptions};
-pub use expr::Expr;
-pub use norm::{canonicalize, desugar_units};
+pub use expr::{Expr, MathConst};
+pub use norm::{canonicalize, desugar_units, simplify};
 pub use num::Number;
 pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};

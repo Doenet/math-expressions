@@ -10,6 +10,7 @@
 //! layer that needs the assumptions system.
 
 pub(crate) mod order;
+pub(crate) mod simplify;
 pub(crate) mod syntactic;
 
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
@@ -17,6 +18,7 @@ use crate::num::Number;
 use std::cmp::Ordering;
 
 pub(crate) use order::cmp;
+pub use simplify::simplify;
 pub use syntactic::normalize_syntactic;
 
 /// Bottom-up canonicalization: canonicalize children, then apply the smart

@@ -745,9 +745,65 @@ these, using them as the performance oracle):
   assumption-free subset, so the common case must not pay for the assumptions machinery.
 - Gate everything on operation-count `fuel` (§7f) — untrusted student input.
 
-**Acceptance:** port the `slow_simplify` + simplify-bound `slow_assumptions` fixtures as a Rust
-corpus (like the equality corpus), assert identical results to JS, and set a wall-clock/`fuel`
-budget that the JS algorithm would blow. This section is the tracking stub; no code yet.
+**Oracle — decided 2026-07-17: own-reducedness metric, NOT tree-match to JS.** The
+earlier "assert identical results to JS" wording is superseded — matching JS's exact
+tree conventions (arg order, `Neg` vs `Mul(-1,·)`, `Div` shape) contradicts the
+clean-slate mandate, and JS `.simplify()` output is convention-laden. Instead the
+simplifier is judged on two intrinsic properties, with JS only a correctness
+cross-check:
+- **meaning-preserving**: `equals(simplify(e), e)` for every input (correctness).
+- **reduced (fixpoint)**: `simplify(simplify(e)) == simplify(e)` structurally — no
+  rule applies twice; this is our definition of "fully reduced", independent of JS.
+- **JS cross-check (advisory)**: `equals(simplify(e), js_simplify(e))` — confirms we
+  didn't reduce past or short of JS's *meaning*, without copying its *form*.
+
+**Baseline measured 2026-07-17** (`tests/simplify_corpus.rs`, 342 real inputs
+harvested from `slow_simplify.spec.js` by `scripts/generate-simplify-corpus.mjs`):
+the existing aggressive `canonicalize` already matches JS `.simplify()` structurally
+138/342 and semantically 289/342. The 53 semantic misses cluster into three in-scope
+targets: **∞/NaN folding** (~22: `1/0→∞`, `0/0→NaN`, `0·∞→NaN` — arith-layer),
+**tuple/vector componentwise arithmetic** (~13: `(a,b)+(c,d)→(a+c,b+d)`,
+`c·(a,b)→(ca,cb)`), and **radical simplification** (~7: `(-8)^(1/3)→-2`,
+`cbrt(-x²)→-cbrt(x²)`, pull perfect powers from roots — also unblocks the last
+equality-corpus failure). Blank-containing inputs (~3) are false misses (the equals
+blank-guard), not gaps. The other ~150 structural-only diffs are pure form and are
+*not* failures under the reducedness oracle.
+
+**Acceptance:** all three clusters reduce to a meaning-preserving fixpoint; the corpus
+harness snapshots remaining reducedness gaps (known-failures list, shrink over time,
+same pattern as the equality corpus); everything gated on operation-count `fuel` (§7f).
+
+**Status 2026-07-17 — scaffold + all three clusters landed** (`src/norm/simplify.rs`,
+`simplify` exported). `simplify` runs a bottom-up rewrite to a canonical fixpoint
+(bounded by `MAX_ROUNDS`, a `fuel` stand-in until §7f lands). Corpus:
+**289 → 327/342** agree with JS `.simplify()`, and the two hard invariants
+(meaning-preserving, idempotent fixpoint) hold across the corpus.
+- **tuple/vector arithmetic** (+14): scalar·seq distribution and componentwise
+  addition of same-kind/length vector-like sequences (Tuple/Array/Vector/AltVector),
+  which together also cover subtraction and mixed shapes via the fixpoint loop.
+- **radical simplification** (+13): odd-root sign pulling (`cbrt(-x²)→-cbrt(x²)`),
+  perfect q-th-power extraction from integer coefficients (`cbrt(-16x⁴)→-2·cbrt(2x⁴)`,
+  `sqrt(12)→2√3`), and exact numeric powers (`(-8)^(1/3)→-2`). Real-domain identities,
+  so validated against JS output (the complex `equals` correctly rejects them).
+- **∞/NaN folding** (+11): poles (`1/0→∞`), infinity absorption in ±/·, `x/∞→0`,
+  `∞−∞→NaN`.
+- **trig Pythagorean** (equality-corpus only): `C·sin(θ)² + C·cos(θ)² → C`, matching
+  both `sin(x)^2` and `sin^2(x)` canonical spellings. Doesn't move the simplify-corpus
+  number (JS `.simplify()` doesn't apply it either), but wired into `equals` stage 1 it
+  closes the last equality-corpus gap → **824/824**.
+
+The 15 residual gaps are all intended/irreducible, not simplifier bugs: 10 **exact-model
+divergences** where our answer is the correct CAS choice and JS follows float semantics
+(`0·∞`/`0/0`→`0`, `0^0`→`1`, signed-zero `6/-0`→`+∞`); 3 **blank artifacts** (`equals`'
+stage-0 guard can't compare `Blank`s); 1 **deferred** power-of-product expansion
+(`cbrt((-x)^3)`); 1 **`equals` float/rational bridging** quirk (`0.5·7`→exact `7/2` vs
+JS `3.5`). The corpus's meaning-preserving invariant exempts blank and non-finite results
+(outside `equals`' finite-complex-sampling domain), mirroring the equality path.
+
+Done since: `simplify` wired into `equals` stage 1 (§10) and the trig Pythagorean rule
+added → equality corpus **824/824**. Still open (follow-ons): broader trig/log identity
+rules; power-of-product expansion (`cbrt((-x)^3)`); the `slow_assumptions` corpus and
+assumption-aware subset (§11).
 
 ### 7f. Resource limits — decided 2026-07, NOT yet implemented
 
@@ -1016,8 +1072,22 @@ value sets are *disjoint*. Result: **0 false positives** across the corpus's 319
 non-equivalence pairs.
 
 Together stages 2+3 fix all 6 log-expansion identities plus `(-1)^n cos^n = (-cos)^n`.
-Corpus: 816 → **823/824**. The single remaining failure is an `elementof`-set structural
-case (nested `sin^2+cos^2` inside set membership), unrelated to numeric equality.
+Corpus: 816 → **823/824**. The single remaining failure was an `elementof`-set structural
+case (nested `sin^2+cos^2` inside set membership), unrelated to numeric equality —
+**closed 2026-07-17 → 824/824** by wiring `simplify` (§7e) into stage 1 and adding the
+trig Pythagorean rule (see below).
+
+**Stage 1 uses `simplify`, not just `canonicalize` ✓ done** (2026-07-17). The stage-1
+structural compare now runs `simplify` (canonicalize + the §7e rewrite clusters, incl. the
+trig Pythagorean identity) on both sides, matching JS's `evaluate_numbers` + name
+normalization + `simplify` chain. This lets real-domain structural identities be decided
+here instead of by sampling. The `sin²+cos²` inside `elementof` reduces to `1` on both
+sides, so the trees become identical — the case sampling could never reach (an `elementof`
+relation is not numerically evaluable). No equality-corpus regressions; the
+known-failures snapshot is now **empty**. A subtlety found: `canonicalize` does *not* move a
+function-head exponent outside its application (that lives in the syntactic normalizer), so
+`sin^2(x)` stays `Apply(Pow(sin,2),[x])` while `sin(x)^2` is `Pow(Apply(sin,[x]),2)`; the
+trig rule (`norm/simplify.rs::trig_square_base`) matches **both** spellings.
 
 **Review finding (2026-07): unsimplified zero-functions vs `0` are a *simplify* gap, not a
 sampler gap.** The sampler skips any sample where either side is exactly `0.0` (a variable

@@ -8,7 +8,7 @@ mod finite_field;
 
 use crate::eval::{eval_complex, free_symbols, Env};
 use crate::expr::{Expr, RelOp, SeqKind};
-use crate::norm::{canonicalize, desugar_units, normalize_syntactic};
+use crate::norm::{canonicalize, desugar_units, normalize_syntactic, simplify};
 use num_complex::Complex64;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -56,9 +56,15 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     let a = desugar_units(a);
     let b = desugar_units(b);
 
-    // Stage 1: exact structural equality of canonical forms.
-    let ca = coerce_seqs(canonicalize(&a), opts);
-    let cb = coerce_seqs(canonicalize(&b), opts);
+    // Stage 1: exact structural equality of the *simplified* canonical forms.
+    // `simplify` is `canonicalize` plus the heuristic rewrite clusters (§7e:
+    // radical, tuple/vector, ∞/NaN, and trig identities), run to a fixpoint — so
+    // real-domain equalities like `sin²x+cos²x == 1` and `cbrt(-x²) == -cbrt(x²)`
+    // are caught structurally here rather than left to numerical sampling (which
+    // rejects the branch-cut cases). Matches the JS chain, whose stage 1 is
+    // `evaluate_numbers` + name normalization + `simplify`.
+    let ca = coerce_seqs(simplify(&a), opts);
+    let cb = coerce_seqs(simplify(&b), opts);
     if ca == cb {
         return true;
     }
