@@ -134,3 +134,39 @@ fn symmetric_relations_canonicalize() {
     // Directional relations are NOT symmetric.
     assert_ne!(canon("x < y"), canon("y < x"));
 }
+
+#[test]
+fn pow_distribution_keeps_mul_flat() {
+    // Regression (2026-07-18 review): when like-power combining inside mul()
+    // produces an integer power of a product, the power-of-product rule
+    // returns a Mul — its factors must merge with the surrounding product,
+    // not nest (Mul inside Mul breaks the flat canonical invariant and
+    // silently degrades stage-1 structural equality).
+    let a = canonicalize(&parse("z (x y)^(1/2) (x y)^(3/2)"));
+    let b = canonicalize(&parse("z x^2 y^2"));
+    assert_eq!(a, b, "canonical forms must be identical (flat)");
+    // Distributed factors must also combine with existing ones.
+    let a = canonicalize(&parse("x^(-2) (x y)^(1/2) (x y)^(3/2)"));
+    let b = canonicalize(&parse("y^2"));
+    assert_eq!(a, b, "x's must cancel after distribution");
+}
+
+#[test]
+fn limits_are_scoped_and_effective() {
+    use math_expressions::limits::{self, Limits};
+    use math_expressions::norm::expand; // via re-export? use crate path below if needed
+    // Tight expand cap: a modest power-of-sum bails to the unexpanded form.
+    let e = parse("(a+b)^6");
+    let strict = Limits {
+        max_expand_terms: 5,
+        ..Limits::default()
+    };
+    let under = limits::with(strict, || expand(&e));
+    assert!(
+        matches!(under, Expr::Pow(..)),
+        "expected unexpanded under tight cap, got {under:?}"
+    );
+    // Restored afterwards: same input expands normally.
+    let after = expand(&e);
+    assert!(matches!(after, Expr::Add(_)), "limits not restored");
+}

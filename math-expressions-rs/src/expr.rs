@@ -172,6 +172,35 @@ impl Expr {
     pub fn int(v: i64) -> Expr {
         Expr::Num(Number::Int(v))
     }
+
+    /// All immediate child expressions (empty for leaves). The single
+    /// full-variant read-only traversal — predicates like [`Expr::any_subexpr`]
+    /// and the crate's contains-X checks are built on it, so a new variant
+    /// needs exactly one match arm here (the compiler enforces it).
+    pub fn children(&self) -> Vec<&Expr> {
+        match self {
+            Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => vec![],
+            Expr::Add(xs)
+            | Expr::Mul(xs)
+            | Expr::And(xs)
+            | Expr::Or(xs)
+            | Expr::Union(xs)
+            | Expr::Intersect(xs)
+            | Expr::Seq(_, xs)
+            | Expr::OtherOp(_, xs) => xs.iter().collect(),
+            Expr::Apply(h, xs) => std::iter::once(&**h).chain(xs.iter()).collect(),
+            Expr::Div(a, b) | Expr::Pow(a, b) | Expr::Index(a, b) => vec![a, b],
+            Expr::Neg(x) | Expr::Not(x) | Expr::Prime(x) => vec![x],
+            Expr::Interval { endpoints, .. } => vec![&endpoints.0, &endpoints.1],
+            Expr::Relation { operands, .. } => operands.iter().collect(),
+            Expr::Matrix { entries, .. } => entries.iter().collect(),
+        }
+    }
+
+    /// Does `pred` hold for this expression or any subexpression?
+    pub fn any_subexpr(&self, pred: &dyn Fn(&Expr) -> bool) -> bool {
+        pred(self) || self.children().into_iter().any(|c| c.any_subexpr(pred))
+    }
 }
 
 /// Flatten nested associative operators, porting flatten.js exactly:

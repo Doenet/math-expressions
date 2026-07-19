@@ -1,0 +1,7646 @@
+[
+ {
+  "assume": null,
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": null,
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "F",
+   "negative": "U",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x >= 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "F",
+   "negative": "U",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "F",
+   "negative": "U",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "F",
+   "negative": "U",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "F",
+   "negative": "U",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x <= 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x != 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = 3",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x = -2",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 2",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x < -1",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "T",
+   "positive": "U",
+   "negative": "F",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x elementof R",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "x > 0 and y < 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "5",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "-3",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "1/2",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "0",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "F",
+   "nonnegative": "T",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "pi",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "e",
+  "verdicts": {
+   "integer": "F",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "i",
+  "verdicts": {
+   "integer": "F",
+   "real": "F",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "-x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x^2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x^3",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x-1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "2*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "1/x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "abs(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "exp(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "sqrt(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "sin(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "log(x)",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x^2+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x+y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "-y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "n+1",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "2*n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "n^2",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "n/2",
+  "verdicts": {
+   "integer": "U",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "n*n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "T",
+   "positive": "T",
+   "negative": "F",
+   "nonpositive": "F"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "-n",
+  "verdicts": {
+   "integer": "T",
+   "real": "T",
+   "complex": "T",
+   "nonzero": "T",
+   "nonnegative": "F",
+   "positive": "F",
+   "negative": "T",
+   "nonpositive": "T"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x + pi",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "pi*x",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "exp(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "abs(x)+1",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ },
+ {
+  "assume": "n elementof Z and n > 0",
+  "expr": "x^2*y",
+  "verdicts": {
+   "integer": "U",
+   "real": "U",
+   "complex": "U",
+   "nonzero": "U",
+   "nonnegative": "U",
+   "positive": "U",
+   "negative": "U",
+   "nonpositive": "U"
+  }
+ }
+]

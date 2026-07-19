@@ -9,7 +9,9 @@
 //! simplification (root pulling, trig/log identities) is a separate, deferred
 //! layer that needs the assumptions system.
 
+pub(crate) mod expand;
 pub(crate) mod order;
+pub(crate) mod present;
 pub(crate) mod simplify;
 pub(crate) mod syntactic;
 
@@ -17,9 +19,12 @@ use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 use std::cmp::Ordering;
 
+pub(crate) use expand::expand_core;
 pub(crate) use order::cmp;
-pub(crate) use simplify::simplify_canonical;
-pub use simplify::simplify;
+pub(crate) use present::present;
+pub(crate) use simplify::{simplify_canonical, simplify_core};
+pub use expand::expand;
+pub use simplify::{simplify, simplify_with};
 pub use syntactic::normalize_syntactic;
 
 /// Bottom-up canonicalization: canonicalize children, then apply the smart
@@ -292,15 +297,35 @@ pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
     }
 
     let mut out = Vec::with_capacity(parts.len() + 1);
+    let mut refold = false;
     for (base, exp) in parts {
         match pow(base, exp) {
             // A folded power may collapse to a number (e.g. exponent 0 → 1).
             Expr::Num(n) => coeff = coeff.mul(&n),
+            // A combined power may come back as a *product* (the integer
+            // power-of-product rule: `(x·y)^(1/2)·(x·y)^(3/2)` combines to
+            // `(x·y)^2`, which distributes to `x²·y²`). Its factors must merge
+            // with the others — pushing it whole would nest a Mul inside a Mul
+            // and break the flat canonical invariant.
+            Expr::Mul(xs) => {
+                refold = true;
+                out.extend(xs);
+            }
             other => out.push(other),
         }
     }
     if coeff.is_zero() {
         return Expr::Num(Number::zero());
+    }
+    // Re-run the combining pass so distributed factors pair up with the rest
+    // (e.g. an existing `x⁻²` cancels the distributed `x²`). Terminates: the
+    // distribution only fires for Mul bases, and its output powers have
+    // non-Mul bases, so nesting strictly decreases each round.
+    if refold {
+        if !coeff.is_one() {
+            out.push(Expr::Num(coeff));
+        }
+        return mul(out);
     }
     out.sort_by(cmp);
     if out.is_empty() {
@@ -327,6 +352,25 @@ pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
         }
         if e.is_one() {
             return base;
+        }
+    }
+    // Flatten a nested power when the OUTER exponent is an integer:
+    // `(b^a)^k = b^(a·k)` (repeated multiplication/division), valid for any base
+    // and integer `k`. Restricting to integer `k` avoids the `(x^2)^(1/2) = |x|`
+    // trap. This lets e.g. `x·(x^2)^(-1)` collapse to `x^(-1)` and removable
+    // singularities like `d/dx((y/x)·x)` reduce to 0. (§7d nested-Pow flatten.)
+    if let Expr::Pow(inner_base, inner_exp) = &base {
+        if as_int(&exp).is_some() {
+            let combined = mul(vec![(**inner_exp).clone(), exp]);
+            return pow((**inner_base).clone(), combined);
+        }
+    }
+    // Distribute an integer power over a product: `(a·b)^k = a^k·b^k` (valid for
+    // any factors and integer `k`). Extracts numeric coefficients (`(2x)^(-1) =
+    // x^(-1)/2`) and enables cancellations like `x·(2x)^(-1) → 1/2`.
+    if let Expr::Mul(factors) = &base {
+        if as_int(&exp).is_some() {
+            return mul(factors.iter().map(|f| pow(f.clone(), exp.clone())).collect());
         }
     }
     if let Expr::Num(b) = &base {
@@ -497,10 +541,11 @@ fn canon_relation(mut operands: Vec<Expr>, ops: Vec<RelOp>) -> Expr {
 }
 
 fn factorial_of(n: i64) -> Option<Number> {
-    // Cap the fold: canonicalization must stay cheap on any user input, and
-    // `(10^12)!` would otherwise loop forever. Beyond the cap the node stays
-    // an application (structural equality still works).
-    if !(0..=10_000).contains(&n) {
+    // Cap the fold (limits::current().max_factorial): canonicalization must
+    // stay cheap on any user input, and `(10^12)!` would otherwise loop
+    // forever. Beyond the cap the node stays an application (structural
+    // equality still works).
+    if !(0..=crate::limits::current().max_factorial).contains(&n) {
         return None;
     }
     let mut acc = Number::one();

@@ -101,6 +101,87 @@ impl Number {
         }
     }
 
+    /// Round to `d` decimal places, ties away from zero. Negative `d` rounds to
+    /// tens / hundreds / … Exact for rational values (so `2.345` → `2.35`, no
+    /// float ambiguity); f64-based for `Float`.
+    ///
+    /// Extreme `d` is resolved *semantically* rather than computed: the scale
+    /// 10^|d| is materialized as a `BigInt`, so a hostile `d` (e.g. from the
+    /// wasm boundary) must neither allocate gigabytes nor grind debug-mode
+    /// bignum arithmetic. Beyond ±4000 decimal places: a very positive `d`
+    /// returns the value unchanged (no classroom value has finer structure);
+    /// a very negative `d` compares the rounding unit to the value's magnitude
+    /// (smaller → 0, larger → unchanged, with tie behaviour at those
+    /// astronomical scales deliberately approximate).
+    pub fn round_to_decimals(&self, d: i32) -> Number {
+        let max_scale = crate::limits::current().max_round_decimals;
+        let d64 = i64::from(d);
+        if d64 > max_scale {
+            return self.clone();
+        }
+        if d64 < -max_scale {
+            return match self.magnitude_log10() {
+                // |value| far below the rounding unit → rounds to zero.
+                Some(k) if k < -d64 => Number::Int(0),
+                // Coarse rounding of an even more astronomical value: leading
+                // digits dominate; unchanged is the bounded approximation.
+                Some(_) => self.clone(),
+                None => self.clone(), // zero / NaN
+            };
+        }
+        // Fast path: an integer value is unchanged by rounding to ≥ 0 decimals.
+        let is_int_value = matches!(self, Number::Int(_))
+            || matches!(self, Number::Big(b) if matches!(&**b, BigNumber::Int(_)));
+        if d >= 0 && is_int_value {
+            return self.clone();
+        }
+        match self.to_bigrational() {
+            Some(r) => {
+                let pow10 = BigInt::from(10).pow(d.unsigned_abs());
+                let scale = if d >= 0 {
+                    BigRational::from_integer(pow10)
+                } else {
+                    BigRational::new(BigInt::one(), pow10)
+                };
+                let rounded = (&r * &scale).round(); // half away from zero
+                Number::from_bigrational(rounded / scale)
+            }
+            None => {
+                let f = 10f64.powi(d);
+                Number::from_f64((self.to_f64() * f).round() / f)
+            }
+        }
+    }
+
+    /// `⌊log10 |self|⌋` — the decimal place of the leading significant digit —
+    /// or `None` for zero/NaN. Uses f64 when the magnitude is in f64 range;
+    /// for `Big` values beyond it (where `to_f64()` is ±∞ or underflows to 0),
+    /// falls back to bit lengths (accuracy ±1, which only shifts a
+    /// significant-figures boundary by one digit at ≳10³⁰⁸ magnitudes — the
+    /// point is a sane finite result, not an unbounded/overflowing one).
+    pub fn magnitude_log10(&self) -> Option<i64> {
+        if self.is_zero() {
+            return None;
+        }
+        let f = self.to_f64().abs();
+        if f.is_finite() && f > 0.0 {
+            return Some(f.log10().floor() as i64);
+        }
+        if f.is_nan() {
+            return None;
+        }
+        // Exact value outside f64 range: approximate from bit lengths.
+        let (num_bits, den_bits) = match self {
+            Number::Big(b) => match &**b {
+                BigNumber::Int(i) => (i.bits() as i64, 0i64),
+                BigNumber::Rat(r) => (r.numer().bits() as i64, r.denom().bits() as i64),
+            },
+            // Small variants always fit f64; unreachable in practice.
+            _ => return None,
+        };
+        Some(((num_bits - den_bits) as f64 * std::f64::consts::LOG10_2).floor() as i64)
+    }
+
     pub fn to_f64(&self) -> f64 {
         match self {
             Number::Int(i) => *i as f64,
@@ -283,7 +364,9 @@ impl Number {
         // cheap on any input; `2^(10^12)` is not a number to materialize).
         // |±1| is exempt: its powers stay one digit.
         let base_bits = base.numer().bits().max(base.denom().bits());
-        if base_bits > 1 && exp.unsigned_abs().saturating_mul(base_bits) > 1_000_000 {
+        if base_bits > 1
+            && exp.unsigned_abs().saturating_mul(base_bits) > crate::limits::current().max_pow_bits
+        {
             return None;
         }
         let mag = bigrat_powu(base, exp.unsigned_abs());

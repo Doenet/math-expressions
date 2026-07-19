@@ -19,30 +19,54 @@
 //! radical simplification. Each is assumption-free (the equality path needs only
 //! that subset; full assumption-aware rewriting is deferred with §11).
 
+use crate::assumptions::{is_nonnegative, is_real, Assumptions};
 use crate::expr::{Expr, MathConst, SeqKind};
 use crate::num::Number;
 
 use super::syntactic::map_children;
 use super::{add, canonicalize, mul, split_coeff};
 
-/// Max rewrite rounds. A stand-in for the §7f `Limits`/`fuel` context (not yet
-/// built): every round strictly makes progress or we stop, so this only bounds
-/// pathological non-convergence on adversarial input. Generous — real inputs
-/// converge in 1–2 rounds.
-const MAX_ROUNDS: u32 = 32;
+// Max rewrite rounds: limits::current().max_simplify_rounds (§7f). Every
+// round strictly makes progress or we stop, so this only bounds pathological
+// non-convergence on adversarial input; real inputs converge in 1–2 rounds.
 
-/// Simplify to a meaning-preserving canonical fixpoint (see module docs).
+/// Simplify to a meaning-preserving fixpoint (see module docs), returned in
+/// display form (`norm::present`): polynomial term order, division instead of
+/// negative exponents, explicit `Neg`. Internal code that needs the canonical
+/// shape uses [`simplify_core`] instead.
 pub fn simplify(e: &Expr) -> Expr {
-    simplify_canonical(canonicalize(e))
+    super::present(&simplify_core(e))
+}
+
+/// Simplify under variable assumptions: everything `simplify` does, plus the
+/// assumption-aware rules (JS `simplify(assumptions)`), e.g.
+/// `sqrt(x²) → x` under `x > 0` and `sqrt(x²) → |x|` under `x ∈ R`.
+pub fn simplify_with(e: &Expr, assumptions: &Assumptions) -> Expr {
+    super::present(&simplify_core_with(e, assumptions))
+}
+
+/// [`simplify`] without the final presentation pass: the result is canonical,
+/// for internal callers that pattern-match on canonical shapes.
+pub(crate) fn simplify_core(e: &Expr) -> Expr {
+    simplify_core_with(e, &Assumptions::new())
+}
+
+/// [`simplify_with`] without the final presentation pass.
+pub(crate) fn simplify_core_with(e: &Expr, assumptions: &Assumptions) -> Expr {
+    simplify_rounds(canonicalize(e), assumptions)
 }
 
 /// Simplify a tree that is *already canonical*, skipping the initial
 /// canonicalize. `equals` calls this after its canonical fast path so the
 /// canonicalization it already paid for is not repeated.
-pub(crate) fn simplify_canonical(mut cur: Expr) -> Expr {
-    for _ in 0..MAX_ROUNDS {
+pub(crate) fn simplify_canonical(cur: Expr) -> Expr {
+    simplify_rounds(cur, &Assumptions::new())
+}
+
+fn simplify_rounds(mut cur: Expr, assumptions: &Assumptions) -> Expr {
+    for _ in 0..crate::limits::current().max_simplify_rounds {
         let mut fired = false;
-        let rewritten = rewrite(&cur, &mut fired);
+        let rewritten = rewrite(&cur, &mut fired, assumptions);
         // No rule applied anywhere: `cur` came out of canonicalize, so it is
         // already the fixpoint — skip the re-canonicalize and tree compare.
         if !fired {
@@ -61,10 +85,16 @@ pub(crate) fn simplify_canonical(mut cur: Expr) -> Expr {
 /// One bottom-up rewriting pass: rewrite children, then apply node-local rules.
 /// Sets `fired` when any rule applied; the result is not necessarily canonical
 /// (`simplify_canonical` re-canonicalizes after a fired pass).
-fn rewrite(e: &Expr, fired: &mut bool) -> Expr {
+fn rewrite(e: &Expr, fired: &mut bool, assumptions: &Assumptions) -> Expr {
     // Rewrite children first (post-order), so a rule sees already-simplified
     // subtrees.
-    let e = map_children(e, |c| rewrite(c, fired));
+    let e = map_children(e, |c| rewrite(c, fired, assumptions));
+    if !assumptions.is_empty() {
+        if let Some(r) = rule_assumptions(&e, assumptions) {
+            *fired = true;
+            return r;
+        }
+    }
     // Cluster rules, in order. Each returns `Some(replacement)` if it fired.
     if let Some(r) = rule_infnan(&e) {
         *fired = true;
@@ -83,6 +113,70 @@ fn rewrite(e: &Expr, fired: &mut bool) -> Expr {
         return r;
     }
     e
+}
+
+// ---- Cluster: assumption-aware rules ----
+//
+// Active only under a non-empty [`Assumptions`] context (JS
+// `simplify(assumptions)`). `sqrt` of even powers resolves by the base's
+// known sign (`sqrt(x²) → x` when `x ≥ 0`, `→ |x|` when merely real), and —
+// a deliberate divergence from the JS, which never rewrites `abs` — `|u|`
+// itself simplifies away when the sign is known: `|u| → u` under `u ≥ 0`,
+// `|u| → −u` under `u ≤ 0`. Composed, `sqrt(x²) | x<0` → `−x` (JS: `|x|`).
+
+fn rule_assumptions(e: &Expr, a: &Assumptions) -> Option<Expr> {
+    let Expr::Apply(head, args) = e else {
+        return None;
+    };
+    let (Expr::Sym(f), [arg]) = (&**head, args.as_slice()) else {
+        return None;
+    };
+    if f.name() == "abs" {
+        if is_nonnegative(arg, a) == Some(true) {
+            return Some(arg.clone());
+        }
+        if crate::assumptions::is_nonpositive(arg, a) == Some(true) {
+            return Some(super::mul(vec![Expr::int(-1), arg.clone()]));
+        }
+        return None;
+    }
+    if f.name() != "sqrt" {
+        return None;
+    }
+    // sqrt of an even power, or of a product of even powers.
+    let root = even_power_root(arg)?;
+    if is_nonnegative(&root, a) == Some(true) {
+        Some(root)
+    } else if is_real(&root, a) == Some(true) {
+        Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![root]))
+    } else {
+        None
+    }
+}
+
+/// If `u` is `v^(2k)` or a product of such factors, the square root's
+/// magnitude candidate `v^k · …` (before sign resolution).
+fn even_power_root(u: &Expr) -> Option<Expr> {
+    fn factor_root(f: &Expr) -> Option<Expr> {
+        let Expr::Pow(base, exp) = f else {
+            return None;
+        };
+        let Expr::Num(Number::Int(k)) = &**exp else {
+            return None;
+        };
+        if *k <= 0 || k % 2 != 0 {
+            return None;
+        }
+        Some(super::pow((**base).clone(), Expr::Num(Number::Int(k / 2))))
+    }
+    match u {
+        Expr::Pow(..) => factor_root(u),
+        Expr::Mul(fs) => {
+            let roots = fs.iter().map(factor_root).collect::<Option<Vec<_>>>()?;
+            Some(super::mul(roots))
+        }
+        _ => None,
+    }
 }
 
 // ---- Cluster: ∞ / NaN folding ----
@@ -144,7 +238,7 @@ fn is_zero_pole(e: &Expr) -> bool {
 fn is_infnan_constant(e: &Expr) -> bool {
     matches!(e, Expr::Num(_) | Expr::Const(_))
         || is_zero_pole(e)
-        || matches!(e, Expr::Sym(s) if matches!(s.name().as_str(), "pi" | "e" | "i"))
+        || matches!(e, Expr::Sym(s) if crate::sym::is_constant_symbol(&s.name()))
 }
 
 fn fold_infnan_pow(base: &Expr, exp: &Expr) -> Option<Expr> {
@@ -641,11 +735,10 @@ fn extract_qth_power(c: u64, q: u32) -> (u64, u64) {
     if pow_u128(root, q) == Some(c as u128) {
         return (root, 1);
     }
-    const MAX_DIVISOR: u64 = 1 << 10;
     let mut m: u64 = 1;
     let mut remaining = c;
     let mut d: u64 = 2;
-    while d <= MAX_DIVISOR {
+    while d <= crate::limits::current().max_trial_divisor {
         let Some(dq) = pow_u128(d, q) else { break };
         if dq > remaining as u128 {
             break;

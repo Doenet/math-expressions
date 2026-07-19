@@ -1,6 +1,14 @@
 {
     "name": "math-expressions Node & Rust DevContainer",
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+    // Hard 20 GB memory cap. Setting --memory-swap equal to --memory disables
+    // swap for the container, so a runaway allocation (e.g. an exponential
+    // expand() repro) is OOM-killed promptly instead of swap-thrashing and
+    // freezing the whole container.
+    "runArgs": [
+        "--memory=20g",
+        "--memory-swap=20g"
+    ],
     "features": {
         "ghcr.io/devcontainers/features/node:1": {
             "version": "latest"

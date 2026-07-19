@@ -9,6 +9,18 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Sym(u32);
 
+/// The symbol names that denote mathematical constants rather than free
+/// variables (the parsers emit `pi`/`e`/`i` as plain symbols, matching the JS
+/// convention). Single source of truth — the evaluator's sampling filter, the
+/// ∞/NaN fold guard, and `evaluate_to_constant`'s closedness check must all
+/// agree on this set.
+pub const CONSTANT_SYMBOLS: &[&str] = &["pi", "e", "i"];
+
+/// Is `name` one of the constant symbols (`pi`, `e`, `i`)?
+pub fn is_constant_symbol(name: &str) -> bool {
+    CONSTANT_SYMBOLS.contains(&name)
+}
+
 thread_local! {
     static INTERNER: RefCell<Interner> = RefCell::new(Interner::default());
 }

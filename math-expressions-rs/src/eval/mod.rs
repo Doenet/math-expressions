@@ -48,7 +48,23 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
             .try_fold(Complex64::ONE, |acc, x| Some(acc * eval_complex(x, env)?))?,
         Expr::Div(a, b) => eval_complex(a, env)? / eval_complex(b, env)?,
         Expr::Neg(x) => -eval_complex(x, env)?,
-        Expr::Pow(b, e) => eval_complex(b, env)?.powc(eval_complex(e, env)?),
+        Expr::Pow(b, e) => {
+            let base = eval_complex(b, env)?;
+            let exp = eval_complex(e, env)?;
+            // Real base with a small integer exponent: exact real powi —
+            // `powc` goes through exp/ln and yields 3² = 9.000000000000002,
+            // which mathjs (real pow) does not. Matches mathjs fidelity and
+            // removes float noise from the sampler.
+            if base.im == 0.0
+                && exp.im == 0.0
+                && exp.re.fract() == 0.0
+                && exp.re.abs() <= i32::MAX as f64
+            {
+                Complex64::new(base.re.powi(exp.re as i32), 0.0)
+            } else {
+                base.powc(exp)
+            }
+        }
 
         Expr::Apply(head, args) => eval_apply(head, args, env)?,
 
@@ -316,9 +332,9 @@ pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
     }
     match e {
         Expr::Sym(s) => {
-            // `pi`/`e`/`i` are constants, not sample variables.
+            // Constant symbols (`pi`/`e`/`i`) are not sample variables.
             let name = s.name();
-            if !matches!(name.as_str(), "pi" | "e" | "i") {
+            if !crate::sym::is_constant_symbol(&name) {
                 out.insert(name);
             }
         }

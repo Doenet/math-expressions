@@ -15,3 +15,10 @@ bower_components
 tmp/
 target
 Cargo.lock
+
+# math-expressions-rs (wasm-bindgen output)
+/math-expressions-rs/pkg/
+
+# playground (node_modules covered by the pattern above)
+/playground/dist/
+/playground/.wireit/

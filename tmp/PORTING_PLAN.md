@@ -699,6 +699,112 @@ Non-trivial rewrites that require pattern matching:
 
 These are applied as rewrite rules with a convergence loop (max iterations guard).
 
+### 7i″. Review hardening ✓ done 2026-07-18
+
+A second multi-agent review of the diff/expand/ops/wasm work found 10 issues; all
+fixed (regression-tested with bounded parameters — the review itself froze the
+container twice by empirically reproducing the blowups, hence the new devcontainer
+20 GB memory cap and the analytical-verification policy):
+- **expand blowup (DoS)**: `distribute_product` now combines like terms after
+  every factor (`(a+b)^64` = 65 live terms, was 2⁶⁴ clones) and bails to the
+  unexpanded product past a 4 000-raw-term cap. Div arm keeps the denominator
+  *unexpanded* (doc contract + mathjs parity) and routes through the same
+  capped distributor.
+- **Rounding DoS ×2**: `round_to_decimals` resolves |d| > 4000 semantically
+  (unchanged / zero-by-magnitude) instead of materializing 10^|d|;
+  `round_numbers_to_precision` locates the leading digit via the new
+  `Number::magnitude_log10` (f64 when finite, bit-length fallback for Big
+  values beyond f64 range) with i64 arithmetic — no more i32 overflow on
+  pasted `1e-400` / 350-digit literals. (First clamp draft used ±10⁶: memory-
+  safe but ground debug-mode bignum for minutes; semantic resolution replaced it.)
+- **diff catch-all**: undifferentiable shapes containing the variable (tuples,
+  relations, subscripts…) now yield an opaque `derivative(e, var)` OtherOp
+  (samples as an opaque atom) instead of a false `0`.
+- **variables()**: Apply heads dropped wholesale (JS `tree.slice(2)` parity) —
+  `f'(x)` no longer leaks `f` as a variable.
+- **wasm `evaluate_to_constant`** returns `Option<f64>` (JS `number|undefined`,
+  preserving upstream's null-vs-value) with a magnitude-relative imaginary
+  tolerance.
+- **finite_field pole-conservatism**: since nested-pow flattening, `1/x^a` is
+  `Pow(x, Mul(-1,a))`; a zero base with a non-literal exponent is now NaN
+  (skip prime) in the generic pow path, restoring the reciprocal-pole
+  semantics the literal-negative-exponent branch used to guarantee.
+- **NEW BUG caught by the review's scratch probes**: `mul()`'s like-power
+  combining can produce an integer power of a product, which the distribution
+  rule returns as a `Mul` — previously pushed *nested* into the outer product,
+  breaking the flat-Mul canonical invariant (`z·(xy)^{1/2}·(xy)^{3/2}` →
+  `Mul([z, Mul([x²,y²])])`). `mul()` now refolds distributed factors so they
+  merge/cancel (`x⁻²·(xy)^{1/2}·(xy)^{3/2}` → `y²`). Regression in
+  `tests/norm.rs`. Note: `equals("(x^2)^(1/2)", "x")` is *true* and correct —
+  the JS oracle returns true (lenient branch-cut region acceptance, same
+  mechanism as the log identities).
+- **Structure**: `Expr::children()` / `Expr::any_subexpr(pred)` are now the
+  single read-only traversal (contains_var / contains_blank /
+  involves_nonfinite are one-liners over it); `sym::CONSTANT_SYMBOLS` +
+  `is_constant_symbol` is the single source for the `pi`/`e`/`i` set.
+
+Deferred from the review (recorded, not fixed): the §7f `Limits{fuel}` context
+(5 ad-hoc caps now exist — the plan's own trigger has fired); diff's O(n²)
+`contains_var` rescans (per-call template parsing ✓ fixed 2026-07-18 with a
+*thread-local* parse cache — a global OnceLock would leak one thread's Sym ids
+into another's interner); corpus
+snapshot-machinery dedup across the 5 corpus tests; generator-script helper
+dedup; `constants_to_floats` ignoring the `Const(MathConst::Pi/E)` spelling.
+
+### 7h″. Number normalization ✓ done 2026-07-18
+
+`src/ops.rs` + `Number::round_to_decimals`: `constants_to_floats` (pi/e → float,
+`i` kept), `round_numbers_to_decimals(n)`, `round_numbers_to_precision(n)` (sig
+figs). Rounding is **exact on rationals** (ties away from zero) — since user
+decimals are exact `Rat`, `2.345` is exactly `469/200` and rounds to `2.35` with
+no float ambiguity (matches JS's intended output, which JS itself only gets via
+float correction). Tests: `tests/number_ops.rs` (JS-verified values). Also on the
+wasm `Expression`.
+
+### 7g″. Numeric evaluation: `evaluate` / `evaluate_to_constant` ✓ done 2026-07-18
+
+`src/ops.rs`, built on `eval_complex`:
+- `evaluate(e, &HashMap<String,f64>) -> Option<Complex64>` — evaluate at real
+  bindings; `None` on unbound var / non-finite result. **Complex principal
+  branch, matching mathjs `.evaluate`**: `x^(1/3)` at `x=-8` is `1+i√3`, not `-2`.
+- `evaluate_to_constant(e) -> Option<Complex64>` — `None` if the *original*
+  expression has any genuine free variable (`pi`/`e`/`i` excluded, and it does
+  NOT cancel first, so `x−x` → `None` not `0`); otherwise **simplify** then
+  evaluate, so real-domain reductions apply (`(-8)^(1/3)` → `-2`). This free-var-
+  first + simplify behaviour was reverse-engineered from the differential corpus
+  (11 cancellation cases like `x−x`, `y/y` initially diverged).
+Tests: `tests/evaluate.rs` + `tests/evaluate_corpus.rs` (differential, random
+real bindings, **499/500**; the 1 snapshot failure is a log branch-cut sign tie
+at a negative-real argument — inherent to complex `powc`/`ln` at the cut).
+
+### 7f″. Utilities: `substitute` and `variables` ✓ done 2026-07-18
+
+`src/ops.rs`: `substitute(e, &HashMap<String,Expr>)` (simultaneous, one-pass, no
+simplification — `x²` with `x→2` is `2²` not `4`; `{x:y, y:x}` swaps) and
+`variables(e) -> Vec<String>` (free variable names in first-appearance order,
+deduped; `pi`/`e`/`i` included as they are ordinary symbols, function-application
+heads excluded). `diff.rs`'s template substitution now reuses `ops::substitute`.
+Tests: `tests/ops.rs` (hand cases) + `tests/ops_corpus.rs` (differential:
+`variables` matches JS's array *exactly* incl. order, `substitute` via `equals`,
+200 random inputs). Note: `.factor()` is NOT in this library version (no
+polynomial layer needed for the public API).
+
+### 7e″. Expansion (`expand`) ✓ done 2026-07-18
+
+`me.expand()` (mathjs-backed) is ported in `src/norm/expand.rs` (`pub fn expand`):
+distribute multiplication / division-numerator / negation over sums,
+multinomial-expand non-negative integer powers of sums (capped at
+`MAX_EXPAND_POWER = 64` for untrusted input), recursing everywhere incl. function
+args; denominators and non-integer/negative powers are left intact. Built on the
+canonical smart constructors, so output is canonical and like-terms-combined.
+Tests: `tests/expand.rs` (hand cases) + `tests/expand_corpus.rs` (differential vs
+JS `.expand()`, **246/247**, the 1 snapshot failure a degenerate `…/(2−2)`
+division-by-zero). **Finding:** mathjs `expand` HANGS on some inputs (a
+product-of-sums divided/wrapped by a sum, e.g.
+`((x+6)^3·(a−2)^3·(z−y)^2)/(2+6)`); Rust expands them in ~ms. The generator uses a
+killed-on-timeout subprocess; the hanging inputs are recorded and
+`does_not_hang_where_mathjs_does` asserts Rust stays bounded.
+
 ### 7e′. Simplification performance — REDESIGN, do not port the JS algorithm as-is
 
 > **Placeholder for a from-scratch simplifier.** The JS simplification code is the
@@ -756,6 +862,24 @@ cross-check:
   rule applies twice; this is our definition of "fully reduced", independent of JS.
 - **JS cross-check (advisory)**: `equals(simplify(e), js_simplify(e))` — confirms we
   didn't reduce past or short of JS's *meaning*, without copying its *form*.
+
+**Presentation layer ✓ added 2026-07-18 (`norm/present.rs`, `tests/display.rs`).**
+The canonical form is optimized for equality, not reading (`1 + x^2 + 2 x`,
+`x^(-1)` for `1/x`), which fails the "recognizable as simplest form by a calculus
+student" bar. A display-only `present` pass now converts canonical → faithful at
+the end of every user-facing operation (`simplify`, `simplify_with`, `expand`,
+`derivative`, `evaluate_numbers`, `reduce_rational`; wasm inherits): Add terms
+sort by descending total degree with graded-lex tie-break (constants/functions
+degree 0, so they land last; matches the JS oracle on every probed case including
+`-x + 2` and `x^(-n + 1)`), negative exponents become `Div` with rational
+coefficients joining the fraction bar (`(2/3)x⁻¹ → 2/(3 x)`, `(1/2)x → x/2`),
+negative leading coefficients become `Neg`, `Mul` factors sort alphabetically by
+base, and non-integer rational *exponents* display as fractions (`x^(3/2)`, not
+`x^1.5` — scoped to exponents so additive decimal folds keep the §3a decimal
+round-trip: `0.1 + 0.2 → 0.3`, not `3/10`). The pass is meaning-preserving and
+idempotent (`tests/display.rs` asserts both), and internal consumers that
+pattern-match canonical shapes use the unpresented cores (`simplify_core`,
+`expand_core` — `eq/`, `grade.rs` coefficient extraction, `evaluate_to_constant`).
 
 **Baseline measured 2026-07-17** (`tests/simplify_corpus.rs`, 342 real inputs
 harvested from `slow_simplify.spec.js` by `scripts/generate-simplify-corpus.mjs`):
@@ -834,7 +958,23 @@ regression-tested in `tests/equality.rs`):
 Corpora after hardening: equality **824/824**, simplify 327/342 (same 15 documented
 gaps; `∞·i` kept working via the constant-symbol set).
 
-### 7f. Resource limits — decided 2026-07, NOT yet implemented
+### 7f. Resource limits — ✓ Limits context done 2026-07-18
+
+**`src/limits.rs`**: one `Limits` struct owns all deterministic caps (previously
+seven scattered constants): `max_expand_power`, `max_expand_terms`,
+`max_simplify_rounds`, `max_trial_divisor`, `max_factorial`, `max_residues`,
+`max_round_decimals`, `max_pow_bits`. Defaults = the former constants. Sites
+read a thread-local via `limits::current()` (no signature churn; single-threaded
+WASM, same precedent as Sym interning); embedders scope overrides with
+`limits::with(custom, || …)` (panic-safe restore). All counts are operations/
+sizes, never wall-clock — verdicts identical on every machine. Scoped-override
+behaviour is tested (`limits_are_scoped_and_effective` in tests/norm.rs).
+Remaining §7f items (below) unchanged: stack-safety follow-ups are still
+deferred, and the host-timeout embedder wall still applies.
+
+<details><summary>original decision notes</summary>
+
+### (original) Resource limits — decided 2026-07
 
 All expression input is untrusted (student answers), so every pass must stay
 bounded on adversarial input. Current state: `Number` folds are capped
@@ -863,12 +1003,30 @@ pipeline polynomial in input size. Agreed follow-ups, in order:
    (web worker / task kill) makes it impossible. Document in the WASM
    bindings (§13) when they land.
 
+</details>
+
 ---
 
-## 8. Polynomial layer (`src/poly/`)
+## 8. Polynomial layer (`src/poly/`) — ✓ core done 2026-07-18 (scoped)
 
-The polynomial layer exists separately from the expression tree — an `Expr` is converted
-into a polynomial for coefficient-level algorithms, then converted back.
+**Implemented** (`src/poly/mod.rs`, crate-internal): the recursive dense
+multivariate model of §8c over **ℚ only** (no Domain enum — the one public
+consumer needs ℚ), with add/mul/shift, exact division, pseudo-remainder,
+content/primitive-part, and **primitive-PRS GCD**. Ground gcd uses the
+integer-primitive rational convention (`gcd(p1/q1, p2/q2) = gcd(p1q2, p2q1)/(q1q2)`),
+which both normalizes results and bounds PRS coefficient swell. Deterministic
+caps: degree ≤ 64 per variable, PRS/division steps ≤ 128 (§7f).
+
+**Consumer**: `ops::reduce_rational` (public + wasm) — bottom-up over the
+canonical tree, splits each `Mul` into numerator/denominator (negative-integer
+`Pow` factors), converts both to polynomials over the shared variables,
+cancels the GCD, normalizes rational content into a single numerator scalar,
+and re-canonicalizes. JS-oracle cases: `(x²−1)/(x−1) → x+1`,
+`(x²−5x+6)/(x²−4) → (x−3)/(x+2)`, multivariate `(x²−y²)/(x−y) → x+y`;
+non-polynomial fractions (`sin x / x`, `π/x`) untouched. Tests:
+`tests/reduce_rational.rs` (canonical structural equality + value
+preservation). NOT implemented from the original sketch (no consumer):
+Domain ℤ/𝔽p, factoring, `solve_linear` — see §17.
 
 ### 8a. Domain (`domain.rs`)
 
@@ -1024,16 +1182,30 @@ pub struct EqOptions {
     pub relative_tolerance: f64,             // default 1e-12
     pub absolute_tolerance: f64,             // default 0.0
     pub tolerance_for_zero: f64,             // default 1e-15
-    pub allowed_error_in_numbers: f64,       // default 0.0
+    pub allowed_error_in_numbers: f64,       // default 0.0; != 0 ⇒ collapse numeric leaves before stage 1 (§18, #372)
     pub include_error_in_number_exponents: bool,  // default false
     pub allowed_error_is_absolute: bool,     // default false
     pub allow_blanks: bool,                  // default false
-    pub coerce_tuples_arrays: bool,          // default true
+    pub coerce_tuples_arrays: bool,          // default true; pattern matching must reuse this too (§18, #797)
     pub coerce_vectors: bool,                // default true
 }
 
 pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool
 ```
+
+**Fuzzy number matching ✓ done 2026-07-18** (`allowed_error_in_numbers`,
+`include_error_in_number_exponents`, `allowed_error_is_absolute` on `EqOptions`):
+stage 1 gains a fuzzy structural compare (`fuzzy_tree_eq`, port of
+`trees/basic.js equal` — numbers within `max(1e-14, err)·min|l,r|` relative or
+`max(1e-14·min, err)` absolute; `Pow` exponents exact unless included); the
+finite-field stage is skipped when an error is allowed (exact arithmetic would
+reject what the allowance accepts, JS parity); and the sampler adds a
+**first-order sensitivity tolerance** (port of the JS `tolerance_function`):
+numbers in the first argument are replaced by parameters, and
+`err · Σᵢ ∂f/∂pᵢ · valᵢ` is evaluated at each sample point as extra tolerance
+(built with the already-ported `derivative`). Constant expressions honour it
+too. JS-oracle tests in tests/equality.rs (`3.14 = π` at 1%, exponent
+exemption, absolute mode, …).
 
 **Stage 0 — blanks guard**: unless `allow_blanks`, either side containing an
 `Expr::Blank` node → false (a variant check, not a magic-symbol scan).
@@ -1150,10 +1322,31 @@ distinct, so a form-grading ("is the answer in the requested form?") check still
 separates `5x+2y=3` from `6-4y=10x`. `≠` and set relations are excluded (matches JS).
 Corpus: 685 → 691/824.
 
-**Stage 4 — discrete infinite set** (`discrete_infinite.rs`):
-Compare discrete-infinite-set expressions (e.g. periodic solution sets like
-`x = π/4 + nπ`). Stubbed initially — see §17; the stub returns false, matching a
-plain not-equal outcome.
+**Stage 4 — discrete infinite set ✓ done 2026-07-18** (`src/eq/discrete_infinite.rs`,
+port of `lib/expression/equality/discrete_infinite_set.js` + `sets.js`):
+- Sets are unions of arithmetic progressions, `OtherOp("discrete_infinite_set",
+  [Seq(Tuple,[offset, period, min_index, max_index]),…])`; built by
+  `create_discrete_infinite_set(offsets, periods, min, max)` (offsets/periods may
+  be lists). Exported: `create_discrete_infinite_set`, `match_discrete_infinite`
+  (partial-credit score 0..1, JS `match_partial` parity incl. tuple-level
+  residue-fraction coverage).
+- Containment = residue-class covering after normalizing by the candidate's
+  period. Symbolic offsets work because only *ratios/differences* must fold to
+  numbers, which canonical like-term/power combining does exactly
+  (`(π/4)/π → ¼`, `(a+3)/3 − a/3 → 1`). Residue count capped at 10 000
+  (JS unbounded) — conservative not-contained beyond.
+- Also the listed-sequence form: `{0+7k, k≥0}` equals the *user-typable*
+  `"0, 7, 14, 21, ..."` (list ending in ldots, ≥3 elements, integer min_index).
+- **Chain position differs from JS deliberately**: dispatched BEFORE the
+  finite-field/sampling stages (type-directed, like relations) — those stages
+  treat the set's OtherOp as an opaque atom and would definitively reject pairs
+  stage 4 accepts; JS's versions merely fail to conclude, so it can run last.
+- Divergence (documented): JS needs an explicit `c ≠ 0` assumption to fold
+  `2c/c`; our assumption-free canonicalizer folds it unconditionally (the
+  `x/x → 1` class), so such pairs compare equal without assumptions.
+- Tests: `tests/sets.rs` — all of `quick_sets.spec.js` except the assumptions
+  case (basic/overcounting/partial scores ×13/symbolic offsets/list
+  comparison/simplified sets).
 
 The seeded RNG (deterministic for reproducible tests) uses `rand::SeedableRng` with a
 fixed seed, same approach as `seedrandom` in the JS.
@@ -1163,7 +1356,62 @@ pairs: `sin²x + cos²x = 1`, `(x+1)² = x²+2x+1`, `x²-1 = (x-1)(x+1)`, etc.
 
 ---
 
-## 11. Assumptions (`src/assumptions/`)
+## 11. Assumptions (`src/assumptions/`) — ✓ core done 2026-07-18
+
+`src/assumptions/mod.rs`. Design differs from the sketch below (kept for
+reference): facts are stored as **canonical relation `Expr`s** per variable
+(no separate `Assumption` enum — the relation tree is already the right
+representation), and derivation happens at **query time** instead of storage
+time (no `derived` map; `x = 3` answers `is_positive` by adopting the
+literal's facts).
+
+- **Storage**: `Assumptions { by_var: HashMap<String, Vec<Expr>> }` with
+  `add` (canonicalizes, splits `And` conjuncts, files under every mentioned
+  variable), `get` (facts re-conjoined, JS `get_assumptions` shape), `remove`,
+  `clear`. NOT ported: generic assumptions (`add_generic_assumption`),
+  `not_commutative`.
+- **Queries** (the eight three-valued predicates of `element_of_sets.js`,
+  `Option<bool>` = JS true/false/undefined): `is_integer`, `is_real`,
+  `is_complex`, `is_nonzero`, `is_nonnegative`, `is_positive`, `is_negative`,
+  `is_nonpositive`. Clean-slate bottom-up `Facts` inference over the canonical
+  tree (~450 lines vs the JS's ~2100 of AST matching): literals exact; `pi`/`e`
+  positive transcendentals; `i` complex-not-real; variables from their stored
+  bounds (`x>c`, `∈ Z/Q/R/C`, `≠0`, `= literal`); closure rules for
+  Add/Mul/Pow/abs/exp/sqrt/sin/cos/tan/log. JS conservatisms deliberately
+  mirrored: unassumed variables fully unknown (no default-real), odd-power
+  signs not inferred (`x³|x<0` → U), no interval arithmetic on sums
+  (`x−3|x>4` → U), `x≠0` gives nonzero-ness without realness.
+- **Validation**: `tests/fixtures/assumptions-corpus.json`
+  (`scripts/generate-assumptions-corpus.mjs` — deterministic enumeration, 14
+  assumption contexts × 39 expressions × 8 queries = 4368 verdicts from the JS
+  oracle). Result: **0 definite T-vs-F conflicts** (hard-asserted:
+  `no_definite_conflicts_with_js`) and **4363/4368 agree**; the 5 snapshotted
+  divergences are all *our-definite/JS-unknown strengthenings that are
+  mathematically correct* (real squares `x·x` ≥ 0; `log` of nonzero is
+  complex). Hand tests in `tests/assumptions.rs`.
+- **Assumption-aware simplification ✓ done 2026-07-18**:
+  `simplify_with(e, &Assumptions)` threads the context through the rewrite
+  rounds; the assumption cluster (active only when facts exist) resolves
+  `sqrt` of even powers by the base's known sign — `sqrt(x²) → x` under
+  `x ≥ 0`, `→ |x|` when merely real (JS parity confirmed by probe: `x < 0`
+  yields `|x|`, NOT `−x`, and `abs` itself is never rewritten). Products and
+  higher even powers included (`sqrt(x²y²) → xy`, `sqrt(x⁴) → x²`). Tests in
+  `tests/doenet_utils.rs`.
+- **Generic assumptions ✓ done 2026-07-18**: `add_generic`/`remove_generic` —
+  patterns in the designated variable `x` applied to any variable without
+  specific facts (specific facts win; a pattern mentioning the target variable
+  as a different symbol is skipped, JS parity).
+- **Finite-set membership ✓ done 2026-07-18** (§18/DoenetML #1504):
+  `grade::evaluate_membership` — `3 ∈ {1,2,3}` → `Some(true)` (value-level via
+  `equals`, so `2/2 ∈ {1}` holds), definitively false only for closed
+  candidates/members, `None` for symbolic uncertainty; `∋`/`∌` orientations
+  fold via canonicalization.
+- **abs under assumptions ✓ done 2026-07-18 — deliberate divergence from JS**
+  (user-mandated): `|u| → u` under `u ≥ 0`, `|u| → −u` under `u ≤ 0` (JS never
+  rewrites `abs`); composed, `sqrt(x²) | x<0 → −x` where JS stops at `|x|`.
+- Still open: `slow_assumptions` broader corpus.
+
+<details><summary>original design sketch</summary>
 
 ```rust
 pub struct Assumptions {
@@ -1183,14 +1431,7 @@ pub enum Assumption {
 }
 ```
 
-Port `lib/assumptions/assumptions.js` logic for:
-- `add_assumption(tree)` — parse an `Expr` relation into an `Assumption`, add to `by_var`
-- `get_assumptions(var)` — return all facts about a variable
-- `calculate_derived_assumptions()` — transitive inference (if `x = 3`, infer `x > 0`)
-
-Port `lib/assumptions/element_of_sets.js` for set membership logic.
-
-**TDD milestone**: port a representative subset of `slow_assumptions.spec.js`.
+</details>
 
 ---
 
@@ -1370,19 +1611,83 @@ Each phase: write tests first, then implementation until all tests pass.
   (port from `slow_math-expressions.spec.js`)
 
 ### Phase 7 — WASM bindings and browser smoke test (week 9)
-- `src/lib.rs` bindings
-- `wasm-pack build`
-- Drop-in JS wrapper maintaining the existing math-expressions API surface
-- Manual smoke test: parse `"sin^2 x + cos^2 x"`, check `equals("1")` returns true
-- Differential test harness: the JS library stays runnable as the reference oracle —
-  generate random expressions (and replay the fixture corpus), run both
-  implementations' parse/`equals`, diff the JSON trees and verdicts. Catches fidelity
-  drift that fixture tests miss; keep it running in CI from here on.
+- WASM bindings ✓ **done 2026-07-18** (`src/wasm.rs`, gated `#[cfg(target_arch =
+  "wasm32")]`). An opaque `Expression` handle owns the parsed tree; only
+  primitives/strings cross the boundary (no tree serialisation). Exposed:
+  `parse_text` / `parse_latex` (→ `Result<Expression, JsError>`), and methods
+  `to_text`, `to_latex`, `equals`, `simplify`, `expand`, `derivative(var)`,
+  `variables()` (→ JS string array), `evaluate_to_constant()` (→ f64 / NaN).
+  `wasm-bindgen` is a wasm32-only dependency, so native builds/tests are
+  untouched; `crate-type = ["cdylib", "rlib"]` keeps the rlib for tests.
+  Build + smoke test are one script: `scripts/build-wasm.sh` (cargo build
+  --target wasm32 → `wasm-bindgen --target nodejs` → `pkg/` → runs
+  `scripts/wasm-smoke.cjs`). Smoke test: **14/14** (round-trip, equals incl.
+  `sin²+cos²==1`, simplify, expand, derivative incl. chain rule, variables,
+  evaluate_to_constant, latex parse). `pkg/` is gitignored (build output).
+  Follow-ups: `substitute`/`evaluate`-with-bindings and complex results need a
+  map/richer boundary type (serde-wasm-bindgen); browser (vs nodejs) target.
+- Differential test harness ✓ **done 2026-07-17** (`scripts/generate-fuzz-tests.mjs`
+  + `tests/autogenerated_fuzz_tests.rs`, fixture `autogenerated-fuzz-tests.json`). A
+  seeded grammar generates random text expressions; the JS library is the oracle.
+  Cases are **pruned by structural signature** (operator/function makeup): a candidate
+  is kept only if its signature is not already covered by the hand-written/corpus tests
+  or another kept case. The existing corpora cover ~430 signatures; the novel space is
+  1000+ and has yielded ZERO divergences, so the fixture keeps only a **bounded sample**
+  (caps 60 parse / 40 equals) as coverage insurance rather than thousands of near-clones.
+  Three checks, all green (no snapshots — any divergence is a real regression):
+  - **parse fidelity** — `to_js(parse(input))` vs JS `.tree` (faithful layer, exact).
+  - **equals agreement** — Rust `equals(a,b)` vs JS verdict.
+  - **hang resistance** — see below.
+  Teeth verified by planting a corrupted tree / flipped verdict (tests fail as expected).
+  **Finding — JS `equals` hangs (infinite loop in its sampler) on some inputs; Rust does
+  not.** Minimal case: `abs(-pi) == 4` (no large exponent). JS never returns; Rust
+  answers `false` in ~0.3 ms. Three confirmed hangs are recorded in the fixture's
+  `jsHangs` and asserted responsive by `does_not_hang_where_js_does`. The generator
+  computes verdicts in a killed-on-timeout subprocess so a hang can't stall generation.
+  This is a real robustness win for the port over the reference library.
+  Still to do: the WASM bindings themselves (bullets above); optionally replay the
+  existing fixture corpora through the same diff.
 
 ### Phase 8 — Assumptions and differentiation (week 10)
-- Assumptions system
-- Symbolic differentiation (port `lib/expression/differentiation.js`)
-- Tests: assumptions subset, differentiation cases
+- Assumptions system — NOT started.
+- Symbolic differentiation ✓ **done 2026-07-18** (`src/diff.rs`, `derivative(e, var)`).
+  **Key finding:** the public `me.derivative(var)` does NOT use the hand-written
+  `derivative_with_story` in `differentiation.js` (that is only the pedagogical
+  step-by-step "story"); it delegates to **mathjs** `math.derivative`. So the port
+  targets mathjs's *behaviour*: standard sum/product/quotient/power/chain rules plus a
+  function-derivative table extracted verbatim from mathjs output (incl. hyperbolics and
+  inverse-trig; the table entries are text templates in a placeholder, substituted with
+  the argument — same shape as the JS). Result is `simplify`d. Correctness is checked
+  against the JS oracle via `equals` (semantic), so tree shape need not match.
+  - Tests: `tests/diff.rs` (hand cases per rule) + `tests/derivative_corpus.rs`
+    (differential: random differentiable inputs, JS `.derivative('x')` oracle,
+    `equals`-compared). **298/300**; the 2 snapshot failures are degenerate/limitation
+    classes, not diff bugs: `x/(y−y)` (division by zero) and a zero-function that needs
+    distributive expansion to reduce to exact `0` (the sampler can't confirm a
+    zero-function — the documented `sin²+cos²−1==0` class).
+  - **Simplify gaps found & fixed via the corpus** (both in the `pow` smart constructor,
+    always-valid for integer outer exponents): nested-power flattening `(x^a)^k → x^(a·k)`
+    (§7d, was never implemented) and power-of-product distribution `(a·b)^k → a^k·b^k`.
+    These let removable singularities like `d/dx((y/x)·x)` reduce to 0, and bumped the
+    simplify corpus 327 → 328 with no equality-corpus regression (still 824/824).
+  - Not ported: the `derivative_with_story` explanation text; multi-arg / non-symbol
+    heads (atan2, log-with-base) fall back to prime notation.
+  - **Follow-up (cross-cutting) — re-evaluate string-literal usage; migrate built-in
+    *names* to an enum.** Built-in function dispatch is currently scattered raw-string
+    matching on `Sym::name()`: the evaluator's dispatch table (`eval/mod.rs`), the trig/
+    root/name-normalisation passes (`norm/simplify.rs`, `norm/syntactic.rs`, `norm/mod.rs`
+    — ~24 `name() == "…"` sites plus several `match name().as_str()` blocks), and
+    `outer_derivative`'s table keys (`diff.rs`) all spell `"sin"`/`"cos"`/`"sqrt"`/… by
+    hand, with alias handling (`arcsin`/`asin`, `ln`/`log`) repeated per site. Audit these
+    and back the built-in-function identity with a single `BuiltinFn` enum resolved once (at
+    parse or first-normalise), so the scattered matches become exhaustive `match`es the
+    compiler checks and alias-collapsing lives in one place. Same play as the §6a token-
+    string→enum conversion — do it once the corpora (equality/simplify/derivative) are the
+    safety net, decide then whether `Apply` heads carry `BuiltinFn` or stay `Sym` with the
+    enum as a resolved-on-lookup view. Scope note: this targets the *keys/names*. The
+    `outer_derivative` RHS templates stay verbatim strings — they are whole expressions kept
+    as the mathjs oracle (§15 Phase 8) — but their runtime-parse `.expect` (`diff.rs`) could
+    move to a compile-time-checked build once the keys are an enum.
 
 ---
 
@@ -1418,8 +1723,138 @@ Each phase: write tests first, then implementation until all tests pass.
   these three is still out of scope.
 - `±` (plus-minus) operator
 - Piecewise functions
-- Discrete infinite sets (`create_discrete_infinite_set`, `equalsDiscreteInfinite`) —
-  note this is stage 4 of the `equals` chain (§10); the stub returns false until
-  ported, so periodic solution sets (e.g. `x = π/4 + nπ`) compare as not-equal
+- ~~Discrete infinite sets~~ ✓ ported 2026-07-18 — see §10 stage 4
+  (`src/eq/discrete_infinite.rs`)
+- The JS method tail subsumed by the canonical layer and deliberately not
+  given 1:1 ports: `clean`, `default_order`, `collapse_unary_minus`,
+  `normalize_negative_numbers` (all inside `canonicalize`), `remove_scaling_units`
+  (`desugar_units`), template `match`/`collect_like_terms_factors` (the §7e′
+  redesign replaced pattern-matching simplification), `equalWithSignErrors`/
+  `equalSpecifiedSignErrors`, `isAnalytic`, `set_small_zero`, `to_intervals`,
+  `expand_relations`, `substitute_abs`, sub/superscript string conversions,
+  vector/matrix method aliases (`dot_prod`, `cross_prod`, `vector_add`, …;
+  componentwise tuple arithmetic lives in `simplify`'s seq cluster), and the
+  mathjs passthroughs (`toXML`, `math`, `f`).
+
+**DoenetML utilities ✓ done 2026-07-18** (`src/ops.rs`, JS-probed semantics):
+`get_component`/`substitute_component` (0-based sequence indexing),
+`subscripts_to_strings`/`strings_to_subscripts` (`x_1` ↔ flat symbol, numeric
+suffix restored as a number), `to_intervals` (2-element `(a,b)`/`[a,b]` →
+open/closed `Interval`, recursing through unions; other shapes untouched).
+Fuzzy grading `allowed_error_in_numbers` is done under §10.
+
+**Grading helpers ✓ done 2026-07-18** (`src/grade.rs`, JS-oracle tests in
+tests/grade.rs): `equal_specified_sign_errors`/`equal_with_sign_errors`
+(single-position subtree negations, recursive for n > 1; returns the smallest
+error count); `solve_linear` (simplify under assumptions → expanded
+lhs−rhs=0 → linear-coefficient extraction on the canonical sum — no template
+matcher needed — with provably-nonzero coefficient required, inequality
+direction flipping for provably-negative coefficients, `None` when the sign is
+unknown; handles symbolic coefficients under `a ≠ 0`); and
+`evaluate_membership` (§18).
+
+**Public-surface status 2026-07-18**: everything else on the JS `me.*` /
+expression-method surface is ported: parse (text/latex), to_text/to_latex,
+equals (+syntactic, +discrete, +partial-credit sets), simplify, expand,
+derivative, evaluate / evaluate_to_constant / evaluate_numbers, substitute,
+variables, functions, operators, reduce_rational, rounding/constants
+normalization, create_discrete_infinite_set, assumptions core (§11), all under
+§7f limits, all reachable from JS via the wasm bindings (§13).
 
 These are phase 2 additions once the core is solid.
+
+---
+
+## 18. Upstream behaviour bugs (DoenetML issues) this port should address
+
+Surveyed the open [Doenet/DoenetML issues](https://github.com/Doenet/DoenetML/issues)
+(2026-07) for ones whose root cause is `math-expressions` behaviour (parsing,
+equality, simplification, evaluation, solving) rather than rendering/components. Each is
+recorded here with the diagnosed root cause and the fix, cross-referenced to the section
+that owns it. The clean-slate port is the natural place to fix most of these correctly
+rather than patch the JS.
+
+### In scope — actionable within the current port
+
+| Issue | Symptom | Owning §  | Fix direction |
+|---|---|---|---|
+| [#1504](https://github.com/Doenet/DoenetML/issues/1504) | `containselement`/`∋` always `false` in a `<boolean>` (parses fine in `<math>`) | §11, §10 | Evaluate set membership to a truth value; reversed operators fold to `elementof` with operands swapped |
+| [#372](https://github.com/Doenet/DoenetML/issues/372) | symbolic equality + `allowedErrorInNumbers` rejects `0.3333` for `1/3` | §10 stage 1 | Under `allowed_error_in_numbers != 0`, collapse numeric-only subtrees to `Float` *before* the structural compare |
+| [#797](https://github.com/Doenet/DoenetML/issues/797) | `matchesPattern` ignores the tuple≈vector≈interval convention `equals` honours | §10 (`coerce_seqs`), §5 (`SeqKind`) | Pattern matcher must run the same seq-kind coercion `equals` uses before comparing |
+| [#187](https://github.com/Doenet/DoenetML/issues/187) | `matchBlanks` conflates a genuine blank (`/2`) with unparseable input | §5 (`Blank`), §10 (`allow_blanks`) | The dedicated `Blank` variant already distinguishes blank from invalid math — the enabling change for changing `matchBlanks`'s default/semantics |
+| [#1337](https://github.com/Doenet/DoenetML/issues/1337) | round-off near function-domain endpoints | §3a | Exact-decimal literals remove the parse-time float error; residual endpoint clamping is component-side |
+
+Detail:
+
+- **#1504 — set membership must produce a boolean.** `<math>` parses `x elementof
+  {x,y,z}`, `∈`, `containselement`, `∋` correctly, but `<boolean>` returns `false` for the
+  reversed forms (`containselement`/`∋`). Root cause is truth-value *evaluation* of
+  membership, not parsing. In the port, the `element_of_sets` logic (§11, ported from
+  `lib/assumptions/element_of_sets.js` — cf. the in-progress `lib/assumptions/element_of_sets.ts`)
+  must decide membership when the set is an explicit finite `Seq(Set, …)`, and
+  `RelOp::In`/its reverse (`∋`/`containselement`) must canonicalise to a single oriented
+  relation so both directions evaluate identically. Note the equality corpus already
+  exercises `sin²+cos²` *inside* `elementof` (§10, closed 2026-07-17); extend that path to
+  return a decided boolean rather than only structural equality.
+
+- **#372 — tolerance must reach inside fractions.** Symbolic equality compares syntax
+  trees, so `1/3` (a `Mul(1, Pow(3,−1))`) never structurally matches the number `0.3333`,
+  yet `0.999/3.001` *is* accepted because it stays a division node. The port's stage-1
+  compare (§10) already folds constants exactly; add: when `EqOptions.allowed_error_in_numbers
+  != 0`, evaluate numeric-only subtrees to `Float` on both sides before comparing, so a bare
+  decimal and an exact fraction reduce to comparable numbers within tolerance. Effectively
+  `allowed_error_in_numbers` should imply numeric-leaf collapse (JS `simplifyOnCompare="numbers"`).
+  Interaction to preserve: stage 2 (finite-field) is already skipped when
+  `allowed_error_in_numbers != 0` (§10), so this only affects stages 1/3.
+
+- **#797 — pattern matching must reuse the seq-kind coercion.** `equals` treats a bare
+  `(5,4)` tuple as equal to a vector or open interval via `coerce_seqs` (§10; the JS
+  `coerce_tuple_array_vectors` in `lib/expression/equality/coersion.js`). `matchesPattern`
+  is a DoenetML component, but it relies on this library convention and currently ignores
+  it. If/when a pattern-matching primitive is exposed from the port, it must thread the
+  `coerce_tuples_arrays`/`coerce_vectors` flags through the match the same way `equals`
+  does — the §5 `Seq(SeqKind, …)` design already makes this a kind-equivalence check rather
+  than cross-variant special-casing, so the matcher and `equals` can share one routine.
+
+- **#187 — blanks are a first-class variant here.** The JS ambiguity (is `matchBlanks`
+  default sensible now that `/2` parses?) stems from JS conflating a blank placeholder with
+  invalid math. The port's dedicated `Expr::Blank` variant (§5) and the `allow_blanks`
+  variant check (§10 stage 0) already separate the two cleanly, which is the prerequisite
+  for DoenetML to safely change `matchBlanks`'s default.
+
+- **#1337 — exact decimals shrink the float-error surface.** Parsing all user decimals as
+  exact rationals (§3a) removes the parse/fold-time rounding this issue suspects; whatever
+  remains is domain-endpoint clamping in the `<function>`/`regionBetweenCurves` components,
+  not the expression library.
+
+### Out of scope for now — record the fix for when the feature is ported
+
+These map to features listed in §17 as not-yet-ported; noting the fix direction so it is
+not re-diagnosed later.
+
+- **#163 & #940 — spurious roots/minima at vertical asymptotes** (`<solveEquations>`
+  returns bogus solutions of `tan(x)=1` at poles; the mathjs-derivative extrema code finds
+  a spurious minimum near an asymptote). Solving/extrema is out of scope (§17, `solve_linear`
+  / numerical integration). Fix when ported: after bracketing a sign change, reject the
+  candidate unless the function value there is finite and near zero — i.e. distinguish a
+  genuine root from a `+∞ → −∞` pole crossing. The same pole guard removes #940's spurious
+  extremum.
+
+- **#709 — 4×4 eigendecomposition silently fails with a large entry** (works at `10`, fails
+  at `100` — a conditioning/robustness problem in the `numeric` library, with no error
+  surfaced). Matrix operations beyond basic arithmetic are out of scope (§17). Fix when
+  ported: use a better-conditioned eigensolver that emits an error on non-convergence
+  instead of returning an empty result (cf. upstream #1415, migrating `eigs`/`lusolve` off
+  `numeric`).
+
+### Mostly DoenetML-side — library provides only the parse
+
+- **#1000 — function domain union syntax** (`domain="(-4,-1) union (1,4)"` falls back to the
+  full real line). The port's parser already produces `Union` nodes (§5/§6), so the library
+  side is covered; the fallback is in DoenetML's `IntervalList.js`/`Function.js`, which
+  reject multi-interval domains. Library obligation: ensure a union of intervals parses and
+  round-trips cleanly so the component can consume it.
+
+- **#1300** (`\)` prematurely ends an `<m>`) and **#1263** (document the math operators) are
+  MathJax-delimiter and documentation issues respectively, not `math-expressions` behaviour;
+  listed only to mark them surveyed-and-excluded.

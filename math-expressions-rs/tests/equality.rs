@@ -303,3 +303,46 @@ fn applied_function_power_spellings_unify() {
     assert!(eq("sin^2(x)", "sin(x)^2"));
     assert!(eq("x ∈ [3, sin^2(x)]", "x ∈ [3, sin(x)^2]"));
 }
+
+#[test]
+fn reciprocal_powers_stay_pole_safe() {
+    // Since nested-pow flattening, 1/x^a canonicalizes to x^(-1·a) — the
+    // finite-field filter must stay pole-conservative on the zero-base case
+    // (regression guard for the flattened-reciprocal shape).
+    assert!(eq("1/x^a", "x^(-a)"));
+    assert!(!eq("1/x^a", "1/x^(a+1)"));
+    assert!(!eq("1/x^a", "1/y^a"));
+}
+
+#[test]
+fn allowed_error_in_numbers() {
+    // JS-oracle verdicts (probed against me.equals with the same options).
+    let fuzzy = |err: f64| EqOptions {
+        allowed_error_in_numbers: err,
+        ..EqOptions::default()
+    };
+    let feq = |a: &str, b: &str, o: &EqOptions| equals(&parse(a), &parse(b), o);
+
+    assert!(feq("3.14", "pi", &fuzzy(0.01)));
+    assert!(!feq("3.1", "pi", &fuzzy(0.001)));
+    assert!(feq("2.0001*x", "2*x", &fuzzy(1e-3)));
+    assert!(!feq("2.0001*x", "2*x", &fuzzy(1e-6)));
+    assert!(feq("3.14*sin(x)", "pi*sin(x)", &fuzzy(0.01)));
+    assert!(feq("1/3.14", "1/pi", &fuzzy(0.01)));
+    assert!(!feq("5", "5.05", &fuzzy(0.001)));
+    // Exponents are exempt unless included explicitly.
+    assert!(!feq("x^2.0002", "x^2", &fuzzy(1e-3)));
+    let with_exp = EqOptions {
+        include_error_in_number_exponents: true,
+        ..fuzzy(1e-3)
+    };
+    assert!(feq("x^2.0002", "x^2", &with_exp));
+    // Absolute mode.
+    let abs = EqOptions {
+        allowed_error_is_absolute: true,
+        ..fuzzy(0.1)
+    };
+    assert!(feq("5", "5.05", &abs));
+    // Default (0) keeps exact semantics.
+    assert!(!feq("3.14", "pi", &EqOptions::default()));
+}

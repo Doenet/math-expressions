@@ -1,0 +1,7 @@
+[
+  "n elementof Z | n*n | negative: js=U rust=F",
+  "n elementof Z | n*n | nonnegative: js=U rust=T",
+  "x != 0 | log(x) | complex: js=U rust=T",
+  "x elementof R | x*x | negative: js=U rust=F",
+  "x elementof R | x*x | nonnegative: js=U rust=T"
+]

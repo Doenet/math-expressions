@@ -1,0 +1,2883 @@
+[
+ {
+  "input": "-8",
+  "binds": {},
+  "evaluated": {
+   "re": -8,
+   "im": 0
+  },
+  "constant": {
+   "re": -8,
+   "im": 0
+  }
+ },
+ {
+  "input": "(x / 9)",
+  "binds": {
+   "x": -2
+  },
+  "evaluated": {
+   "re": -0.2222222222222222,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z + (z + y)) + (-3 * x))",
+  "binds": {
+   "z": -2.81,
+   "y": -2.54,
+   "x": -0.8
+  },
+  "evaluated": {
+   "re": -5.76,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x / (z / 3))",
+  "binds": {
+   "x": -1.94,
+   "z": -2.56
+  },
+  "evaluated": {
+   "re": 2.2734375,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y * (x)^3)",
+  "binds": {
+   "y": 0.25,
+   "x": -2.88
+  },
+  "evaluated": {
+   "re": -5.9719679999999995,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "8",
+  "binds": {},
+  "evaluated": {
+   "re": 8,
+   "im": 0
+  },
+  "constant": {
+   "re": 8,
+   "im": 0
+  }
+ },
+ {
+  "input": "((7 - 9) - sin(y))",
+  "binds": {
+   "y": -1.53
+  },
+  "evaluated": {
+   "re": -1.0008320547285239,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "cos((x - y))",
+  "binds": {
+   "x": 0.85,
+   "y": -2.72
+  },
+  "evaluated": {
+   "re": -0.9096285273579443,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(sin(x) + y)",
+  "binds": {
+   "x": -1.2,
+   "y": 0.1
+  },
+  "evaluated": {
+   "re": -0.8320390859672263,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "z",
+  "binds": {
+   "z": -0.51
+  },
+  "evaluated": {
+   "re": -0.51,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(8 * (x + z))",
+  "binds": {
+   "x": -0.72,
+   "z": -1.95
+  },
+  "evaluated": {
+   "re": -21.36,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "2",
+  "binds": {},
+  "evaluated": {
+   "re": 2,
+   "im": 0
+  },
+  "constant": {
+   "re": 2,
+   "im": 0
+  }
+ },
+ {
+  "input": "(sqrt(3))^3",
+  "binds": {},
+  "evaluated": {
+   "re": 5.196152422706631,
+   "im": 0
+  },
+  "constant": {
+   "re": 5.196152422706631,
+   "im": 0
+  }
+ },
+ {
+  "input": "x",
+  "binds": {
+   "x": -1.65
+  },
+  "evaluated": {
+   "re": -1.65,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "1",
+  "binds": {},
+  "evaluated": {
+   "re": 1,
+   "im": 0
+  },
+  "constant": {
+   "re": 1,
+   "im": 0
+  }
+ },
+ {
+  "input": "(tan(z) - x)",
+  "binds": {
+   "z": 0.94,
+   "x": -0.58
+  },
+  "evaluated": {
+   "re": 1.9492344810875624,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(abs(-x) / ((z * y) / -y))",
+  "binds": {
+   "x": -0.18,
+   "z": -1.34,
+   "y": 0.07
+  },
+  "evaluated": {
+   "re": 0.13432835820895522,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(8 + cos(y))",
+  "binds": {
+   "y": -0.12
+  },
+  "evaluated": {
+   "re": 8.992808635853866,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((3 + (9 + z)) * -9)",
+  "binds": {
+   "z": 1.15
+  },
+  "evaluated": {
+   "re": -118.35000000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(2 * y)",
+  "binds": {
+   "y": -2.92
+  },
+  "evaluated": {
+   "re": -5.84,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((9 / 7))^2",
+  "binds": {},
+  "evaluated": {
+   "re": 1.6530612244897962,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.6530612244897962,
+   "im": 0
+  }
+ },
+ {
+  "input": "-1",
+  "binds": {},
+  "evaluated": {
+   "re": -1,
+   "im": 0
+  },
+  "constant": {
+   "re": -1,
+   "im": 0
+  }
+ },
+ {
+  "input": "((-y / (x + 7)) * log((7)^3))",
+  "binds": {
+   "y": -2.73,
+   "x": -0.19
+  },
+  "evaluated": {
+   "re": 2.3402355537096944,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "9",
+  "binds": {},
+  "evaluated": {
+   "re": 9,
+   "im": 0
+  },
+  "constant": {
+   "re": 9,
+   "im": 0
+  }
+ },
+ {
+  "input": "((-x * (y - 9)) / -(1 + 1))",
+  "binds": {
+   "x": 0.25,
+   "y": -2.17
+  },
+  "evaluated": {
+   "re": -1.39625,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "4",
+  "binds": {},
+  "evaluated": {
+   "re": 4,
+   "im": 0
+  },
+  "constant": {
+   "re": 4,
+   "im": 0
+  }
+ },
+ {
+  "input": "(7 + 1)",
+  "binds": {},
+  "evaluated": {
+   "re": 8,
+   "im": 0
+  },
+  "constant": {
+   "re": 8,
+   "im": 0
+  }
+ },
+ {
+  "input": "(z + (6)^2)",
+  "binds": {
+   "z": 2.55
+  },
+  "evaluated": {
+   "re": 38.55,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "tan((1)^3)",
+  "binds": {},
+  "evaluated": {
+   "re": 1.5574077246549023,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.5574077246549023,
+   "im": 0
+  }
+ },
+ {
+  "input": "((x * y) + (y)^2)",
+  "binds": {
+   "x": -1.84,
+   "y": 2.31
+  },
+  "evaluated": {
+   "re": 1.0857,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(z - 5)",
+  "binds": {
+   "z": -1.61
+  },
+  "evaluated": {
+   "re": -6.61,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "log(-z)",
+  "binds": {
+   "z": -2.14
+  },
+  "evaluated": {
+   "re": 0.7608058290337602,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(7 / x)",
+  "binds": {
+   "x": 2.68
+  },
+  "evaluated": {
+   "re": 2.6119402985074625,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs(8)",
+  "binds": {},
+  "evaluated": {
+   "re": 8,
+   "im": 0
+  },
+  "constant": {
+   "re": 8,
+   "im": 0
+  }
+ },
+ {
+  "input": "(2 * x)",
+  "binds": {
+   "x": 2.96
+  },
+  "evaluated": {
+   "re": 5.92,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((3 + 4) + y) - 7)",
+  "binds": {
+   "y": -1.66
+  },
+  "evaluated": {
+   "re": -1.6600000000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x / exp(7))",
+  "binds": {
+   "x": -2.03
+  },
+  "evaluated": {
+   "re": -0.0018511203900756679,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y + x) * y)",
+  "binds": {
+   "y": 0.38,
+   "x": 0.41
+  },
+  "evaluated": {
+   "re": 0.3002,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-1 - (y)^2)",
+  "binds": {
+   "y": -2.95
+  },
+  "evaluated": {
+   "re": -9.7025,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z / 1) + -y)",
+  "binds": {
+   "z": -2.48,
+   "y": -2.66
+  },
+  "evaluated": {
+   "re": 0.18000000000000016,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(4 + sqrt(x))",
+  "binds": {
+   "x": 0.9
+  },
+  "evaluated": {
+   "re": 4.948683298050514,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "y",
+  "binds": {
+   "y": 0.66
+  },
+  "evaluated": {
+   "re": 0.66,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((3 - 2))^3",
+  "binds": {},
+  "evaluated": {
+   "re": 1,
+   "im": 0
+  },
+  "constant": {
+   "re": 1,
+   "im": 0
+  }
+ },
+ {
+  "input": "(log(sin(z)) - (5 / z))",
+  "binds": {
+   "z": -2.38
+  },
+  "evaluated": {
+   "re": 1.7298853206609142,
+   "im": 3.141592653589793
+  },
+  "constant": null
+ },
+ {
+  "input": "((y + 5))^2",
+  "binds": {
+   "y": 2.3
+  },
+  "evaluated": {
+   "re": 53.29,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-atan((z / 5))",
+  "binds": {
+   "z": -0.67
+  },
+  "evaluated": {
+   "re": 0.13320649683492863,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "3",
+  "binds": {},
+  "evaluated": {
+   "re": 3,
+   "im": 0
+  },
+  "constant": {
+   "re": 3,
+   "im": 0
+  }
+ },
+ {
+  "input": "(6 / x)",
+  "binds": {
+   "x": 2.96
+  },
+  "evaluated": {
+   "re": 2.027027027027027,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs((cos(x))^2)",
+  "binds": {
+   "x": 1.47
+  },
+  "evaluated": {
+   "re": 0.010125538219657868,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "tan((abs(2) - z))",
+  "binds": {
+   "z": 2.85
+  },
+  "evaluated": {
+   "re": -1.1383327132284395,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-9",
+  "binds": {},
+  "evaluated": {
+   "re": -9,
+   "im": 0
+  },
+  "constant": {
+   "re": -9,
+   "im": 0
+  }
+ },
+ {
+  "input": "((3 + x) + -z)",
+  "binds": {
+   "x": 2.37,
+   "z": -2.79
+  },
+  "evaluated": {
+   "re": 8.16,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(3)^3",
+  "binds": {},
+  "evaluated": {
+   "re": 27,
+   "im": 0
+  },
+  "constant": {
+   "re": 27,
+   "im": 0
+  }
+ },
+ {
+  "input": "((x * x) * z)",
+  "binds": {
+   "x": 1.79,
+   "z": -0.7
+  },
+  "evaluated": {
+   "re": -2.24287,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(atan(y) - (6 * y))",
+  "binds": {
+   "y": 1.78
+  },
+  "evaluated": {
+   "re": -9.621059515636928,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "sqrt((y * x))",
+  "binds": {
+   "y": 1.26,
+   "x": -0.39
+  },
+  "evaluated": {
+   "re": 4.2923826635099674e-17,
+   "im": 0.7009992867328754
+  },
+  "constant": null
+ },
+ {
+  "input": "(((x / 8) + y))^2",
+  "binds": {
+   "x": -0.57,
+   "y": -1.97
+  },
+  "evaluated": {
+   "re": 4.166701562499999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "5",
+  "binds": {},
+  "evaluated": {
+   "re": 5,
+   "im": 0
+  },
+  "constant": {
+   "re": 5,
+   "im": 0
+  }
+ },
+ {
+  "input": "((z)^3)^3",
+  "binds": {
+   "z": 0.94
+  },
+  "evaluated": {
+   "re": 0.5729948022286164,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y - 2))^2",
+  "binds": {
+   "y": -0.52
+  },
+  "evaluated": {
+   "re": 6.3504000000000005,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(7 + (2 + x))",
+  "binds": {
+   "x": 0.61
+  },
+  "evaluated": {
+   "re": 9.61,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x * ((4 / z) - y))",
+  "binds": {
+   "x": 1.08,
+   "z": 0.38,
+   "y": -1.39
+  },
+  "evaluated": {
+   "re": 12.869621052631581,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs(x)",
+  "binds": {
+   "x": 1
+  },
+  "evaluated": {
+   "re": 1,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "6",
+  "binds": {},
+  "evaluated": {
+   "re": 6,
+   "im": 0
+  },
+  "constant": {
+   "re": 6,
+   "im": 0
+  }
+ },
+ {
+  "input": "-y",
+  "binds": {
+   "y": -0.57
+  },
+  "evaluated": {
+   "re": 0.57,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(abs((x + y)))^2",
+  "binds": {
+   "x": 2.53,
+   "y": 1.28
+  },
+  "evaluated": {
+   "re": 14.516099999999996,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(sin(6))^3",
+  "binds": {},
+  "evaluated": {
+   "re": -0.021814811956275375,
+   "im": 0
+  },
+  "constant": {
+   "re": -0.021814811956275375,
+   "im": 0
+  }
+ },
+ {
+  "input": "((8 + (5 + y)) + ((1 * 5) + 5))",
+  "binds": {
+   "y": -1.45
+  },
+  "evaluated": {
+   "re": 21.55,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "7",
+  "binds": {},
+  "evaluated": {
+   "re": 7,
+   "im": 0
+  },
+  "constant": {
+   "re": 7,
+   "im": 0
+  }
+ },
+ {
+  "input": "(8 * z)",
+  "binds": {
+   "z": 2.53
+  },
+  "evaluated": {
+   "re": 20.24,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(atan(y) - (z + 6))",
+  "binds": {
+   "y": -1.59,
+   "z": -1.03
+  },
+  "evaluated": {
+   "re": -5.979375348510952,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs((1 / (x)^3))",
+  "binds": {
+   "x": -2.66
+  },
+  "evaluated": {
+   "re": 0.053131868622316135,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(tan(-z) + tan(y))",
+  "binds": {
+   "z": 1.74,
+   "y": -2.27
+  },
+  "evaluated": {
+   "re": 7.042690444809114,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(tan(x) + abs(x))",
+  "binds": {
+   "x": -2.03
+  },
+  "evaluated": {
+   "re": 4.052419084504567,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((1)^2 - (6 * x))",
+  "binds": {
+   "x": -1.92
+  },
+  "evaluated": {
+   "re": 12.52,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs((z)^3)",
+  "binds": {
+   "z": -1.95
+  },
+  "evaluated": {
+   "re": 7.414874999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-x",
+  "binds": {
+   "x": 0.78
+  },
+  "evaluated": {
+   "re": -0.78,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-(y * y)",
+  "binds": {
+   "y": 0.7
+  },
+  "evaluated": {
+   "re": -0.48999999999999994,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-((x + x) / (6 + 4))",
+  "binds": {
+   "x": 0.21
+  },
+  "evaluated": {
+   "re": -0.041999999999999996,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(1 * -9)",
+  "binds": {},
+  "evaluated": {
+   "re": -9,
+   "im": 0
+  },
+  "constant": {
+   "re": -9,
+   "im": 0
+  }
+ },
+ {
+  "input": "tan(abs(z))",
+  "binds": {
+   "z": -1.2
+  },
+  "evaluated": {
+   "re": 2.5721516221263188,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs(5)",
+  "binds": {},
+  "evaluated": {
+   "re": 5,
+   "im": 0
+  },
+  "constant": {
+   "re": 5,
+   "im": 0
+  }
+ },
+ {
+  "input": "--z",
+  "binds": {
+   "z": -1.23
+  },
+  "evaluated": {
+   "re": -1.23,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((z / y) - exp(2)) + z)",
+  "binds": {
+   "z": -1.5,
+   "y": 0.83
+  },
+  "evaluated": {
+   "re": -10.6962850145933,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x)^2",
+  "binds": {
+   "x": -2.73
+  },
+  "evaluated": {
+   "re": 7.4529,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs(z)",
+  "binds": {
+   "z": -1.4
+  },
+  "evaluated": {
+   "re": 1.4,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "atan(abs(1))",
+  "binds": {},
+  "evaluated": {
+   "re": 0.7853981633974483,
+   "im": 0
+  },
+  "constant": {
+   "re": 0.7853981633974483,
+   "im": 0
+  }
+ },
+ {
+  "input": "(((z - y) * z) / x)",
+  "binds": {
+   "z": 2.53,
+   "y": -1.58,
+   "x": 1.32
+  },
+  "evaluated": {
+   "re": 7.877499999999998,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((sin(3) - (x - 6)) * (z / z))",
+  "binds": {
+   "x": 0.64,
+   "z": -2.73
+  },
+  "evaluated": {
+   "re": 5.501120008059868,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "sqrt(z)",
+  "binds": {
+   "z": 0.29
+  },
+  "evaluated": {
+   "re": 0.5385164807134504,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-2",
+  "binds": {},
+  "evaluated": {
+   "re": -2,
+   "im": 0
+  },
+  "constant": {
+   "re": -2,
+   "im": 0
+  }
+ },
+ {
+  "input": "(2)^2",
+  "binds": {},
+  "evaluated": {
+   "re": 4,
+   "im": 0
+  },
+  "constant": {
+   "re": 4,
+   "im": 0
+  }
+ },
+ {
+  "input": "--x",
+  "binds": {
+   "x": 0.78
+  },
+  "evaluated": {
+   "re": 0.78,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "exp(cos(1))",
+  "binds": {},
+  "evaluated": {
+   "re": 1.7165256995489035,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.7165256995489035,
+   "im": 0
+  }
+ },
+ {
+  "input": "(x + 6)",
+  "binds": {
+   "x": 0.19
+  },
+  "evaluated": {
+   "re": 6.19,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(abs(x) * 2)",
+  "binds": {
+   "x": 0.54
+  },
+  "evaluated": {
+   "re": 1.08,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x - x)",
+  "binds": {
+   "x": -0.3
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((x)^2 - (8 + x)) / 9)",
+  "binds": {
+   "x": 2.16
+  },
+  "evaluated": {
+   "re": -0.6104888888888889,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((y)^2 * x) / ((z * z) / atan(y)))",
+  "binds": {
+   "y": -1.34,
+   "x": 2.93,
+   "z": 1.59
+  },
+  "evaluated": {
+   "re": -1.9347283131811621,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "exp((x + z))",
+  "binds": {
+   "x": 1.02,
+   "z": 1.16
+  },
+  "evaluated": {
+   "re": 8.84630625872088,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "tan((z / z))",
+  "binds": {
+   "z": -2.9
+  },
+  "evaluated": {
+   "re": 1.5574077246549023,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((8 * z) + (3)^2)",
+  "binds": {
+   "z": -1.47
+  },
+  "evaluated": {
+   "re": -2.76,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y)^2 - 1)",
+  "binds": {
+   "y": 2.76
+  },
+  "evaluated": {
+   "re": 6.617599999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((7 / z) * (x * 9))",
+  "binds": {
+   "z": -1.3,
+   "x": 0.81
+  },
+  "evaluated": {
+   "re": -39.25384615384615,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(6 / z)",
+  "binds": {
+   "z": 0.46
+  },
+  "evaluated": {
+   "re": 13.043478260869565,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y + 4) * z)",
+  "binds": {
+   "y": -2.12,
+   "z": 1.76
+  },
+  "evaluated": {
+   "re": 3.3087999999999997,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y / y)",
+  "binds": {
+   "y": 2.83
+  },
+  "evaluated": {
+   "re": 1,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x / 3) - (7)^3)",
+  "binds": {
+   "x": -0.19
+  },
+  "evaluated": {
+   "re": -343.06333333333333,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-(y + x)",
+  "binds": {
+   "y": 0.3,
+   "x": 2.47
+  },
+  "evaluated": {
+   "re": -2.77,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(sqrt(cos(z)) / ((x * 2))^3)",
+  "binds": {
+   "z": -1.97,
+   "x": -2.92
+  },
+  "evaluated": {
+   "re": -1.9166422938500742e-19,
+   "im": -0.0031301144055322977
+  },
+  "constant": null
+ },
+ {
+  "input": "(5)^3",
+  "binds": {},
+  "evaluated": {
+   "re": 125,
+   "im": 0
+  },
+  "constant": {
+   "re": 125,
+   "im": 0
+  }
+ },
+ {
+  "input": "(((1 + 6) / z) - ((8 + x) / -3))",
+  "binds": {
+   "z": -1.42,
+   "x": -1.52
+  },
+  "evaluated": {
+   "re": -2.769577464788733,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x + (y - x)) * ((y - 9) + 7))",
+  "binds": {
+   "x": -1.44,
+   "y": -2.11
+  },
+  "evaluated": {
+   "re": 8.672099999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x / 6))^3",
+  "binds": {
+   "x": -0.96
+  },
+  "evaluated": {
+   "re": -0.004096000000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z * (7 + z)) + y)",
+  "binds": {
+   "z": -1.37,
+   "y": -1.73
+  },
+  "evaluated": {
+   "re": -9.443100000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((5)^3 + (x)^3)",
+  "binds": {
+   "x": -2.08
+  },
+  "evaluated": {
+   "re": 116.001088,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y * (2)^2)",
+  "binds": {
+   "y": -2.98
+  },
+  "evaluated": {
+   "re": -11.92,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(tan((z + 7)) / (y / 3))",
+  "binds": {
+   "z": 2.02,
+   "y": -2.16
+  },
+  "evaluated": {
+   "re": 0.5950509762500085,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-cos(9)",
+  "binds": {},
+  "evaluated": {
+   "re": 0.9111302618846769,
+   "im": 0
+  },
+  "constant": {
+   "re": 0.9111302618846769,
+   "im": 0
+  }
+ },
+ {
+  "input": "atan(((4 + 8) * 1))",
+  "binds": {},
+  "evaluated": {
+   "re": 1.4876550949064553,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.4876550949064553,
+   "im": 0
+  }
+ },
+ {
+  "input": "(8)^3",
+  "binds": {},
+  "evaluated": {
+   "re": 512,
+   "im": 0
+  },
+  "constant": {
+   "re": 512,
+   "im": 0
+  }
+ },
+ {
+  "input": "-((3)^2 - -z)",
+  "binds": {
+   "z": 1.75
+  },
+  "evaluated": {
+   "re": -10.75,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y + 2)",
+  "binds": {
+   "y": 2.22
+  },
+  "evaluated": {
+   "re": 4.220000000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(1 + y)",
+  "binds": {
+   "y": -0.03
+  },
+  "evaluated": {
+   "re": 0.97,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-cos(-x)",
+  "binds": {
+   "x": 1.75
+  },
+  "evaluated": {
+   "re": 0.17824605564949209,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-x - x)",
+  "binds": {
+   "x": 2.03
+  },
+  "evaluated": {
+   "re": -4.06,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(sin(y) + y)",
+  "binds": {
+   "y": -2.73
+  },
+  "evaluated": {
+   "re": -3.1300694775924196,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(6 / 5)",
+  "binds": {},
+  "evaluated": {
+   "re": 1.2,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.2,
+   "im": 0
+  }
+ },
+ {
+  "input": "abs(tan(z))",
+  "binds": {
+   "z": -2.27
+  },
+  "evaluated": {
+   "re": 1.1891624321183722,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(cos(3) * (z - z))",
+  "binds": {
+   "z": -0.42
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "cos((y + (x - 3)))",
+  "binds": {
+   "y": 1.43,
+   "x": 2.83
+  },
+  "evaluated": {
+   "re": 0.3058169083782895,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y - ((2 + 4) + -3))",
+  "binds": {
+   "y": 2.48
+  },
+  "evaluated": {
+   "re": -0.52,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "sin((y + x))",
+  "binds": {
+   "y": 1.04,
+   "x": -0.22
+  },
+  "evaluated": {
+   "re": 0.7311458297268959,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(7 / 2)",
+  "binds": {},
+  "evaluated": {
+   "re": 3.5,
+   "im": 0
+  },
+  "constant": {
+   "re": 3.5,
+   "im": 0
+  }
+ },
+ {
+  "input": "((9 / x) / 9)",
+  "binds": {
+   "x": -1.73
+  },
+  "evaluated": {
+   "re": -0.5780346820809249,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(cos((y * 8)))^2",
+  "binds": {
+   "y": 2.72
+  },
+  "evaluated": {
+   "re": 0.9475151593630098,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y)^3",
+  "binds": {
+   "y": -1.19
+  },
+  "evaluated": {
+   "re": -1.6851589999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y - y) * x)",
+  "binds": {
+   "y": -1.32,
+   "x": 1.08
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z / (x - z)) * ((x - y) + (y / 8)))",
+  "binds": {
+   "z": -2.25,
+   "x": 0.22,
+   "y": -1.68
+  },
+  "evaluated": {
+   "re": -1.539473684210526,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x - y)",
+  "binds": {
+   "x": 2.27,
+   "y": -0.51
+  },
+  "evaluated": {
+   "re": 2.7800000000000002,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((2 * 1) * z) * 8)",
+  "binds": {
+   "z": 1.55
+  },
+  "evaluated": {
+   "re": 24.8,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(z / x)",
+  "binds": {
+   "z": 2.24,
+   "x": -0.02
+  },
+  "evaluated": {
+   "re": -112.00000000000001,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-(2 - 7)",
+  "binds": {},
+  "evaluated": {
+   "re": 5,
+   "im": 0
+  },
+  "constant": {
+   "re": 5,
+   "im": 0
+  }
+ },
+ {
+  "input": "atan(1)",
+  "binds": {},
+  "evaluated": {
+   "re": 0.7853981633974483,
+   "im": 0
+  },
+  "constant": {
+   "re": 0.7853981633974483,
+   "im": 0
+  }
+ },
+ {
+  "input": "((z * 1) * (6 * x))",
+  "binds": {
+   "z": 0.69,
+   "x": -1.21
+  },
+  "evaluated": {
+   "re": -5.009399999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(1 * 7)",
+  "binds": {},
+  "evaluated": {
+   "re": 7,
+   "im": 0
+  },
+  "constant": {
+   "re": 7,
+   "im": 0
+  }
+ },
+ {
+  "input": "((y)^2 - z)",
+  "binds": {
+   "y": -0.58,
+   "z": 1.71
+  },
+  "evaluated": {
+   "re": -1.3736,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "cos(z)",
+  "binds": {
+   "z": -1.59
+  },
+  "evaluated": {
+   "re": -0.01920249290169265,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(4 / x)",
+  "binds": {
+   "x": 2.11
+  },
+  "evaluated": {
+   "re": 1.8957345971563981,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "atan(-6)",
+  "binds": {},
+  "evaluated": {
+   "re": -1.4056476493802699,
+   "im": 0
+  },
+  "constant": {
+   "re": -1.4056476493802699,
+   "im": 0
+  }
+ },
+ {
+  "input": "((6 / y) + x)",
+  "binds": {
+   "y": -0.11,
+   "x": -2.28
+  },
+  "evaluated": {
+   "re": -56.82545454545455,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((8)^3 - (exp(3) / (x)^3))",
+  "binds": {
+   "x": 1.57
+  },
+  "evaluated": {
+   "re": 506.8097952777538,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5 - (x)^2)",
+  "binds": {
+   "x": -0.4
+  },
+  "evaluated": {
+   "re": 4.84,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5)^2",
+  "binds": {},
+  "evaluated": {
+   "re": 25,
+   "im": 0
+  },
+  "constant": {
+   "re": 25,
+   "im": 0
+  }
+ },
+ {
+  "input": "((atan(4))^3 + -(4)^2)",
+  "binds": {},
+  "evaluated": {
+   "re": -13.669487684540613,
+   "im": 0
+  },
+  "constant": {
+   "re": -13.669487684540613,
+   "im": 0
+  }
+ },
+ {
+  "input": "atan((x - 4))",
+  "binds": {
+   "x": -0.33
+  },
+  "evaluated": {
+   "re": -1.3438288162362853,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(sin(9) - ((z / 2) + (1)^2))",
+  "binds": {
+   "z": 2.34
+  },
+  "evaluated": {
+   "re": -1.7578815147582434,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-3",
+  "binds": {},
+  "evaluated": {
+   "re": -3,
+   "im": 0
+  },
+  "constant": {
+   "re": -3,
+   "im": 0
+  }
+ },
+ {
+  "input": "tan((4 - 9))",
+  "binds": {},
+  "evaluated": {
+   "re": 3.380515006246586,
+   "im": 0
+  },
+  "constant": {
+   "re": 3.380515006246586,
+   "im": 0
+  }
+ },
+ {
+  "input": "(x / (z)^2)",
+  "binds": {
+   "x": -1.53,
+   "z": 0.85
+  },
+  "evaluated": {
+   "re": -2.11764705882353,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y / (y - 2)) + ((z - z) + y))",
+  "binds": {
+   "y": 1.03,
+   "z": 2.82
+  },
+  "evaluated": {
+   "re": -0.03185567010309276,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((8 - x))^2",
+  "binds": {
+   "x": -1.49
+  },
+  "evaluated": {
+   "re": 90.0601,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y / 8)",
+  "binds": {
+   "y": -1.58
+  },
+  "evaluated": {
+   "re": -0.1975,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x / 4) * exp(4))",
+  "binds": {
+   "x": -0.8
+  },
+  "evaluated": {
+   "re": -10.919630006628848,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "exp(atan(z))",
+  "binds": {
+   "z": 0.75
+  },
+  "evaluated": {
+   "re": 1.9031323020708528,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-(8)^3 + (exp(y) + z))",
+  "binds": {
+   "y": 0.93,
+   "z": 1.49
+  },
+  "evaluated": {
+   "re": -507.97549082238214,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((4)^2 + 2))^3",
+  "binds": {},
+  "evaluated": {
+   "re": 5832,
+   "im": 0
+  },
+  "constant": {
+   "re": 5832,
+   "im": 0
+  }
+ },
+ {
+  "input": "(y + -1)",
+  "binds": {
+   "y": 1
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x + (z)^2)",
+  "binds": {
+   "x": -1.42,
+   "z": 2.4
+  },
+  "evaluated": {
+   "re": 4.34,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z - x) / y)",
+  "binds": {
+   "z": 2.18,
+   "x": 0.7,
+   "y": -1.48
+  },
+  "evaluated": {
+   "re": -1.0000000000000002,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5 * z)",
+  "binds": {
+   "z": 1.29
+  },
+  "evaluated": {
+   "re": 6.45,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x * (3 - y))",
+  "binds": {
+   "x": 0.83,
+   "y": 1.8
+  },
+  "evaluated": {
+   "re": 0.9959999999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-(z / y) + 7)",
+  "binds": {
+   "z": -1.22,
+   "y": -1.64
+  },
+  "evaluated": {
+   "re": 6.2560975609756095,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-z",
+  "binds": {
+   "z": -2.85
+  },
+  "evaluated": {
+   "re": 2.85,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(6 - (tan(z) * x))",
+  "binds": {
+   "z": 0.11,
+   "x": 2.76
+  },
+  "evaluated": {
+   "re": 5.6951695241535685,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((exp(x) * -5) - (-5 - cos(x)))",
+  "binds": {
+   "x": 2.89
+  },
+  "evaluated": {
+   "re": -85.93506517198003,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(z + z)",
+  "binds": {
+   "z": 0.79
+  },
+  "evaluated": {
+   "re": 1.58,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z - x) / abs(x))",
+  "binds": {
+   "z": -2.37,
+   "x": -2.67
+  },
+  "evaluated": {
+   "re": 0.1123595505617977,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((-3 * 4))^3",
+  "binds": {},
+  "evaluated": {
+   "re": -1728,
+   "im": 0
+  },
+  "constant": {
+   "re": -1728,
+   "im": 0
+  }
+ },
+ {
+  "input": "-(y)^2",
+  "binds": {
+   "y": -0.56
+  },
+  "evaluated": {
+   "re": -0.31360000000000005,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y / y))^2",
+  "binds": {
+   "y": 2.43
+  },
+  "evaluated": {
+   "re": 1,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x * 2)",
+  "binds": {
+   "x": -0.75
+  },
+  "evaluated": {
+   "re": -1.5,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-y)^2",
+  "binds": {
+   "y": 1.54
+  },
+  "evaluated": {
+   "re": 2.3716,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-tan(sin(8))",
+  "binds": {},
+  "evaluated": {
+   "re": -1.5215471809431986,
+   "im": 0
+  },
+  "constant": {
+   "re": -1.5215471809431986,
+   "im": 0
+  }
+ },
+ {
+  "input": "(7 - 5)",
+  "binds": {},
+  "evaluated": {
+   "re": 2,
+   "im": 0
+  },
+  "constant": {
+   "re": 2,
+   "im": 0
+  }
+ },
+ {
+  "input": "((-9)^2 + atan((9 - 4)))",
+  "binds": {},
+  "evaluated": {
+   "re": 82.37340076694501,
+   "im": 0
+  },
+  "constant": {
+   "re": 82.37340076694501,
+   "im": 0
+  }
+ },
+ {
+  "input": "tan(z)",
+  "binds": {
+   "z": 0
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(6 / (x / y))",
+  "binds": {
+   "x": 0.12,
+   "y": -1.78
+  },
+  "evaluated": {
+   "re": -89,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((1 - z) * sin(7))",
+  "binds": {
+   "z": 1.82
+  },
+  "evaluated": {
+   "re": -0.5387290109494071,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(exp(x) - (y + z))",
+  "binds": {
+   "x": 0.68,
+   "y": 1.76,
+   "z": 1.56
+  },
+  "evaluated": {
+   "re": -1.3461222677695526,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-exp(sqrt(9))",
+  "binds": {},
+  "evaluated": {
+   "re": -20.085536923187668,
+   "im": 0
+  },
+  "constant": {
+   "re": -20.085536923187668,
+   "im": 0
+  }
+ },
+ {
+  "input": "((sin(x))^2 - abs((z * x)))",
+  "binds": {
+   "x": -0.24,
+   "z": 0.72
+  },
+  "evaluated": {
+   "re": -0.11629746138964209,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x / x) * (y - (9 / 8)))",
+  "binds": {
+   "x": -0.84,
+   "y": 2.71
+  },
+  "evaluated": {
+   "re": 1.585,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(tan((x / 7)) / (z)^3)",
+  "binds": {
+   "x": -1.95,
+   "z": 0.6
+  },
+  "evaluated": {
+   "re": -1.3241123304882876,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "atan(7)",
+  "binds": {},
+  "evaluated": {
+   "re": 1.4288992721907328,
+   "im": 0
+  },
+  "constant": {
+   "re": 1.4288992721907328,
+   "im": 0
+  }
+ },
+ {
+  "input": "((7 - (y / 6)) - 3)",
+  "binds": {
+   "y": 2.89
+  },
+  "evaluated": {
+   "re": 3.5183333333333335,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5 / (3 / 4))",
+  "binds": {},
+  "evaluated": {
+   "re": 6.666666666666667,
+   "im": 0
+  },
+  "constant": {
+   "re": 6.666666666666667,
+   "im": 0
+  }
+ },
+ {
+  "input": "((y)^3 - (4 / 4))",
+  "binds": {
+   "y": 2.84
+  },
+  "evaluated": {
+   "re": 21.906303999999995,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((2 - 2) / x)",
+  "binds": {
+   "x": 2.62
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((7 / y) + x) - 2)",
+  "binds": {
+   "y": 1.41,
+   "x": 0.07
+  },
+  "evaluated": {
+   "re": 3.0345390070921994,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((2 - (7 / y)) / exp((6)^2))",
+  "binds": {
+   "y": 0.4
+  },
+  "evaluated": {
+   "re": -3.595260386877533e-15,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((2 + (x * 4)) / ((2 + x) / (x * 4)))",
+  "binds": {
+   "x": 1.69
+  },
+  "evaluated": {
+   "re": 16.048130081300815,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "sin(atan((7 * y)))",
+  "binds": {
+   "y": -1
+  },
+  "evaluated": {
+   "re": -0.9899494936611666,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs((8 * z))",
+  "binds": {
+   "z": 2.69
+  },
+  "evaluated": {
+   "re": 21.52,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "sin(log(3))",
+  "binds": {},
+  "evaluated": {
+   "re": 0.890577041667747,
+   "im": 0
+  },
+  "constant": {
+   "re": 0.890577041667747,
+   "im": 0
+  }
+ },
+ {
+  "input": "((8 * atan(8)) - ((6)^2 + x))",
+  "binds": {
+   "x": 1.5
+  },
+  "evaluated": {
+   "re": -25.92846934201492,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(4 * sin((x - x)))",
+  "binds": {
+   "x": -2.61
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "exp((exp(x))^3)",
+  "binds": {
+   "x": -0.1
+  },
+  "evaluated": {
+   "re": 2.097651154070046,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "atan(log(z))",
+  "binds": {
+   "z": -2.43
+  },
+  "evaluated": {
+   "re": 1.4798781448817753,
+   "im": 0.301345163592111
+  },
+  "constant": null
+ },
+ {
+  "input": "((-z - atan(x)) * 5)",
+  "binds": {
+   "z": 0.77,
+   "x": -1.58
+  },
+  "evaluated": {
+   "re": 1.182640689684824,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(abs(2) / tan(y))",
+  "binds": {
+   "y": 2.47
+  },
+  "evaluated": {
+   "re": -2.5161987808142183,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(2 / (x / x))",
+  "binds": {
+   "x": 0.94
+  },
+  "evaluated": {
+   "re": 2,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "abs(7)",
+  "binds": {},
+  "evaluated": {
+   "re": 7,
+   "im": 0
+  },
+  "constant": {
+   "re": 7,
+   "im": 0
+  }
+ },
+ {
+  "input": "((2 + y))^3",
+  "binds": {
+   "y": 0.98
+  },
+  "evaluated": {
+   "re": 26.463592,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x - (y + 1))",
+  "binds": {
+   "x": 1.38,
+   "y": -0.11
+  },
+  "evaluated": {
+   "re": 0.4899999999999999,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5 / ((z - z))^2)",
+  "binds": {
+   "z": 1.42
+  },
+  "evaluated": null,
+  "constant": null
+ },
+ {
+  "input": "(-(z + 2))^2",
+  "binds": {
+   "z": -2.9
+  },
+  "evaluated": {
+   "re": 0.8099999999999998,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y - y))^2",
+  "binds": {
+   "y": -0.77
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(y + (y - (7 * 8)))",
+  "binds": {
+   "y": -0.57
+  },
+  "evaluated": {
+   "re": -57.14,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((1 + x))^3",
+  "binds": {
+   "x": -2.95
+  },
+  "evaluated": {
+   "re": -7.414875000000002,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((x + x) - (9 / 3)) + 6)",
+  "binds": {
+   "x": 2.96
+  },
+  "evaluated": {
+   "re": 8.92,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((4 - z) - (z + x)) / (atan(y))^3)",
+  "binds": {
+   "z": 2.37,
+   "x": 2.98,
+   "y": -2.49
+  },
+  "evaluated": {
+   "re": 2.2136070468457745,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((y / 9) + y)",
+  "binds": {
+   "y": 1.55
+  },
+  "evaluated": {
+   "re": 1.7222222222222223,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z - 3) - (z - 5))",
+  "binds": {
+   "z": 2.44
+  },
+  "evaluated": {
+   "re": 2,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((6 - z))^2",
+  "binds": {
+   "z": 2.77
+  },
+  "evaluated": {
+   "re": 10.4329,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z + 4) * atan(y))",
+  "binds": {
+   "z": -2.62,
+   "y": -0.79
+  },
+  "evaluated": {
+   "re": -0.9226867237403927,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((-2 / (z + x)))^2",
+  "binds": {
+   "z": -2.88,
+   "x": -1.13
+  },
+  "evaluated": {
+   "re": 0.24875467192368209,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "exp(2)",
+  "binds": {},
+  "evaluated": {
+   "re": 7.38905609893065,
+   "im": 0
+  },
+  "constant": {
+   "re": 7.38905609893065,
+   "im": 0
+  }
+ },
+ {
+  "input": "(y / log(5))",
+  "binds": {
+   "y": -0.66
+  },
+  "evaluated": {
+   "re": -0.4100810568093438,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((x)^2 * cos(2))",
+  "binds": {
+   "x": -2.81
+  },
+  "evaluated": {
+   "re": -3.285937036059891,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "tan((4 / y))",
+  "binds": {
+   "y": -2.15
+  },
+  "evaluated": {
+   "re": 3.3551179201943286,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "-(7 + y)",
+  "binds": {
+   "y": -0.24
+  },
+  "evaluated": {
+   "re": -6.76,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((4 + 9) * (y / 4)) / (-x)^3)",
+  "binds": {
+   "y": 0.42,
+   "x": -2.21
+  },
+  "evaluated": {
+   "re": 0.12646077247057377,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-x * ((y - x))^2)",
+  "binds": {
+   "x": -2.47,
+   "y": -0.92
+  },
+  "evaluated": {
+   "re": 5.934175000000002,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(z * cos(8))",
+  "binds": {
+   "z": 2.72
+  },
+  "evaluated": {
+   "re": -0.39576009195942885,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((7 * z))^3",
+  "binds": {
+   "z": -0.81
+  },
+  "evaluated": {
+   "re": -182.28426299999998,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(-9 * atan(4))",
+  "binds": {},
+  "evaluated": {
+   "re": -11.932358973012294,
+   "im": 0
+  },
+  "constant": {
+   "re": -11.932358973012294,
+   "im": 0
+  }
+ },
+ {
+  "input": "(y - y)",
+  "binds": {
+   "y": 1.72
+  },
+  "evaluated": {
+   "re": 0,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(x / ((9 / x) - y))",
+  "binds": {
+   "x": 2.58,
+   "y": 0.62
+  },
+  "evaluated": {
+   "re": 0.899464893789525,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "log((z * y))",
+  "binds": {
+   "z": 0.22,
+   "y": -2.64
+  },
+  "evaluated": {
+   "re": -0.5433488154715508,
+   "im": 3.141592653589793
+  },
+  "constant": null
+ },
+ {
+  "input": "(z - 4)",
+  "binds": {
+   "z": -1.51
+  },
+  "evaluated": {
+   "re": -5.51,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "cos((x)^2)",
+  "binds": {
+   "x": -0.18
+  },
+  "evaluated": {
+   "re": 0.9994751659148957,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(5 - -z)",
+  "binds": {
+   "z": -2.11
+  },
+  "evaluated": {
+   "re": 2.89,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "(((z - z) + 1) * (abs(x) + z))",
+  "binds": {
+   "z": -2.91,
+   "x": 1.08
+  },
+  "evaluated": {
+   "re": -1.83,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "cos(1)",
+  "binds": {},
+  "evaluated": {
+   "re": 0.5403023058681398,
+   "im": 0
+  },
+  "constant": {
+   "re": 0.5403023058681398,
+   "im": 0
+  }
+ },
+ {
+  "input": "(3)^2",
+  "binds": {},
+  "evaluated": {
+   "re": 9,
+   "im": 0
+  },
+  "constant": {
+   "re": 9,
+   "im": 0
+  }
+ },
+ {
+  "input": "cos(sqrt((1 + 7)))",
+  "binds": {},
+  "evaluated": {
+   "re": -0.9513631281258474,
+   "im": 0
+  },
+  "constant": {
+   "re": -0.9513631281258474,
+   "im": 0
+  }
+ },
+ {
+  "input": "(tan(y) - 4)",
+  "binds": {
+   "y": -0.24
+  },
+  "evaluated": {
+   "re": -4.244716702714465,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((z)^2 - (y)^3)",
+  "binds": {
+   "z": -1.22,
+   "y": -2.86
+  },
+  "evaluated": {
+   "re": 24.882055999999995,
+   "im": 0
+  },
+  "constant": null
+ },
+ {
+  "input": "((5 + (5 / z)) + x)",
+  "binds": {
+   "z": -2.43,
+   "x": 0.61
+  },
+  "evaluated": {
+   "re": 3.55238683127572,
+   "im": 0
+  },
+  "constant": null
+ }
+]

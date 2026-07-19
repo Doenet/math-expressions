@@ -46,27 +46,16 @@ fn catch<T>(f: impl FnOnce() -> T) -> Option<T> {
 /// Does the tree involve a value outside `equals`'s finite-sampling domain — an
 /// ∞/NaN constant, or a `Pow(0, negative)` division-by-zero pole?
 fn involves_nonfinite(e: &Expr) -> bool {
-    use math_expressions::Expr::*;
+    use math_expressions::Expr::{Const, Num, Pow};
     use math_expressions::MathConst::{Inf, NaN, NegInf};
-    match e {
-        Const(c) => matches!(c, Inf | NegInf | NaN),
+    e.any_subexpr(&|c| match c {
+        Const(k) => matches!(k, Inf | NegInf | NaN),
         Pow(b, x) => {
-            let pole = matches!(&**b, Num(n) if n.to_f64() == 0.0)
-                && matches!(&**x, Num(n) if n.to_f64() < 0.0);
-            pole || involves_nonfinite(b) || involves_nonfinite(x)
+            matches!(&**b, Num(n) if n.to_f64() == 0.0)
+                && matches!(&**x, Num(n) if n.to_f64() < 0.0)
         }
-        Num(_) | Sym(_) | Blank | Ldots => false,
-        Add(xs) | Mul(xs) | And(xs) | Or(xs) | Union(xs) | Intersect(xs) | Seq(_, xs)
-        | OtherOp(_, xs) => xs.iter().any(involves_nonfinite),
-        Apply(h, xs) => involves_nonfinite(h) || xs.iter().any(involves_nonfinite),
-        Div(a, b) | Index(a, b) => involves_nonfinite(a) || involves_nonfinite(b),
-        Neg(x) | Not(x) | Prime(x) => involves_nonfinite(x),
-        Interval { endpoints, .. } => {
-            involves_nonfinite(&endpoints.0) || involves_nonfinite(&endpoints.1)
-        }
-        Relation { operands, .. } => operands.iter().any(involves_nonfinite),
-        Matrix { entries, .. } => entries.iter().any(involves_nonfinite),
-    }
+        _ => false,
+    })
 }
 
 

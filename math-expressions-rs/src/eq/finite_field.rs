@@ -248,6 +248,19 @@ fn eval(e: &Expr, bindings: &HashMap<String, i64>, modulus: i64) -> Ff {
             }
             // Exponent lives mod φ(modulus).
             let exp = eval(ex, bindings, euler_phi(modulus));
+            // Pole-conservatism for a zero base with a non-literal exponent:
+            // since nested-pow flattening, `1/x^a` canonicalizes to
+            // `Pow(x, Mul(-1, a))`, so the reciprocal no longer announces
+            // itself with a literal negative exponent — a sampled binding of 0
+            // would silently give `0` where the true value is a pole. Any
+            // symbolic exponent may represent a negative power, so treat
+            // 0^symbolic as NaN (the prime is skipped; the filter only ever
+            // gets *less* aggressive, which is the safe direction for a
+            // rejection-only stage).
+            if base.vals.contains(&0) && !matches!(ex.as_ref(), Expr::Num(Number::Int(k)) if *k >= 0)
+            {
+                return Ff::nan();
+            }
             base.pow(&exp)
         }
         Expr::Apply(head, args) => eval_apply(head, args, bindings, modulus),
