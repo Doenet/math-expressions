@@ -395,6 +395,12 @@ summary {
   cursor: pointer;
 }
 
+/* Deferred re-analysis pending: dim the (previous) results slightly. */
+.stale {
+  opacity: 0.55;
+  transition: opacity 0.15s ease 0.1s;
+}
+
 .results {
   width: 100%;
   border-collapse: collapse;

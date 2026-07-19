@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { loadEngines } from "./engines.js";
 import Katex from "./components/Katex.jsx";
 import Tree from "./components/Tree.jsx";
@@ -68,19 +68,22 @@ function analyze(
       : der;
 
   // Extract every primitive result (strings / trees / numbers) up front, while
-  // the handles are still live.
+  // the handles are still live. When a step failed, pass its {ok:false, error}
+  // through so the UI can show the message instead of a silent "—".
   const result = {
     tree: safe(() => engine.tree(h)),
     text: safe(() => engine.toText(h)),
     latex: safe(() => engine.toLatex(h)),
     variables: safe(() => engine.variables(h)),
     evalF: safe(() => engine.evaluate(h, bindings)),
-    simpTree: simp.ok ? safe(() => engine.tree(simp.value)) : null,
-    simpText: simp.ok ? safe(() => engine.toText(simp.value)) : null,
-    simpLatex: simp.ok ? safe(() => engine.toLatex(simp.value)) : null,
-    derText: derShown.ok ? safe(() => engine.toText(derShown.value)) : null,
-    derLatex: derShown.ok ? safe(() => engine.toLatex(derShown.value)) : null,
-    evalDer: der.ok ? safe(() => engine.evaluate(der.value, bindings)) : null,
+    simpTree: simp.ok ? safe(() => engine.tree(simp.value)) : simp,
+    simpText: simp.ok ? safe(() => engine.toText(simp.value)) : simp,
+    simpLatex: simp.ok ? safe(() => engine.toLatex(simp.value)) : simp,
+    derText: derShown.ok ? safe(() => engine.toText(derShown.value)) : derShown,
+    derLatex: derShown.ok
+      ? safe(() => engine.toLatex(derShown.value))
+      : derShown,
+    evalDer: der.ok ? safe(() => engine.evaluate(der.value, bindings)) : der,
   };
 
   // ...then free the wasm handles deterministically instead of leaking them to
@@ -129,6 +132,10 @@ function FormCol({ title, latex, text }) {
       <div className="rendered">
         {latex?.ok ? (
           <Katex tex={latex.value} display />
+        ) : latex && !latex.ok ? (
+          <span className="err" title={latex.error}>
+            error: {latex.error}
+          </span>
         ) : (
           <span className="muted">—</span>
         )}
@@ -252,29 +259,57 @@ export default function App() {
     [assumptions],
   );
 
-  const analysis = useMemo(() => {
-    if (!engines) return null;
-    const params = {
+  // Validity marker per assumption string, memoized so we don't re-parse on
+  // every render. Marked invalid only when BOTH engines reject it (a string
+  // may parse in one implementation but not the other). Rust handles freed.
+  const assumptionValidity = useMemo(() => {
+    const m = new Map();
+    if (!engines) return m;
+    for (const a of assumptions) {
+      if (m.has(a)) continue;
+      const t = a.trim();
+      if (t === "") {
+        m.set(a, true);
+        continue;
+      }
+      const jsOk = safe(() => engines.js.parse(t, "text")).ok;
+      const rustOk =
+        jsOk ||
+        safe(() => {
+          const h = engines.rust.parse(t, "text");
+          engines.rust.free(h);
+        }).ok;
+      m.set(a, jsOk || rustOk);
+    }
+    return m;
+  }, [engines, assumptions]);
+
+  // The analysis pipeline (2× parse/simplify/derivative/evaluate) is heavy —
+  // the JS library's simplify in particular can be slow on intermediate input.
+  // Deferring the params keeps typing responsive: React re-renders the inputs
+  // urgently with the previous analysis, then recomputes at deferred priority,
+  // coalescing rapid keystrokes into one analysis of the latest value.
+  const params = useMemo(
+    () => ({
       input,
       syntax,
       diffVar,
       bindings,
       assumptions: activeAssumptions,
       simplifyDeriv,
-    };
+    }),
+    [input, syntax, diffVar, bindings, activeAssumptions, simplifyDeriv],
+  );
+  const deferredParams = useDeferredValue(params);
+  const isStale = deferredParams !== params;
+
+  const analysis = useMemo(() => {
+    if (!engines) return null;
     return {
-      js: analyze(engines.js, params),
-      rust: analyze(engines.rust, params),
+      js: analyze(engines.js, deferredParams),
+      rust: analyze(engines.rust, deferredParams),
     };
-  }, [
-    engines,
-    input,
-    syntax,
-    diffVar,
-    bindings,
-    activeAssumptions,
-    simplifyDeriv,
-  ]);
+  }, [engines, deferredParams]);
 
   // Detected variables (union of both engines) drive the substitution inputs.
   const variables = useMemo(() => {
@@ -397,8 +432,7 @@ export default function App() {
         </div>
         <div className="assumptions">
           {assumptions.map((a, i) => {
-            const valid =
-              a.trim() === "" || safe(() => engines.js.parse(a, "text")).ok;
+            const valid = assumptionValidity.get(a) ?? true;
             return (
               <div key={i} className="assumption-row">
                 <input
@@ -452,171 +486,178 @@ export default function App() {
         </div>
       </section>
 
-      {/* ---- parsed ---- */}
-      <section className="card">
-        <div className="section-head">
-          <h2>Parsed expression</h2>
-          {bothParsed && (
-            <span title="Do both engines produce identical parse trees?">
-              trees {agreeBadge(treesMatch)}
-            </span>
-          )}
-        </div>
-        <div className="cols">
-          <EngineColumn title="JavaScript" res={js} />
-          <EngineColumn title="Rust (WASM)" res={rust} />
-        </div>
-      </section>
-
-      {/* ---- simplify ---- */}
-      <section className="card">
-        <div className="section-head">
-          <h2>
-            Simplified
-            {activeAssumptions.length > 0 && (
-              <span className="muted">
-                {" "}
-                · assuming {activeAssumptions.join(", ")}
+      {/* Results dim briefly while a deferred re-analysis is pending. */}
+      <div className={isStale ? "stale" : undefined}>
+        {/* ---- parsed ---- */}
+        <section className="card">
+          <div className="section-head">
+            <h2>Parsed expression</h2>
+            {bothParsed && (
+              <span title="Do both engines produce identical parse trees?">
+                trees {agreeBadge(treesMatch)}
               </span>
             )}
-          </h2>
-          {bothParsed && (
-            <span title="Do both engines simplify to identical trees?">
-              trees {agreeBadge(simpMatch)}
-            </span>
-          )}
-        </div>
-        <div className="cols">
-          <FormCol title="JavaScript" latex={js.simpLatex} text={js.simpText} />
-          <FormCol
-            title="Rust (WASM)"
-            latex={rust.simpLatex}
-            text={rust.simpText}
-          />
-        </div>
-      </section>
-
-      {/* ---- evaluate ---- */}
-      <section className="card">
-        <div className="section-head">
-          <h2>Evaluate</h2>
-          <span>result {agreeBadge(evalAgrees(js.evalF, rust.evalF))}</span>
-        </div>
-        {variables.length === 0 ? (
-          <p className="muted">
-            No free variables — the expression is constant.
-          </p>
-        ) : (
-          <>
-            <div className="bindings">
-              {variables.map((v) => (
-                <label key={v} className="binding">
-                  <span>{v} =</span>
-                  <input
-                    type="text"
-                    spellCheck={false}
-                    value={rawBindings[v] ?? ""}
-                    onChange={(e) =>
-                      setRawBindings((b) => ({ ...b, [v]: e.target.value }))
-                    }
-                  />
-                </label>
-              ))}
-            </div>
-            <p className="hint muted">
-              Values are expressions — use <code>i</code> for complex, e.g.{" "}
-              <code>2+3i</code>, <code>i</code>, or <code>pi/4</code>.
-            </p>
-          </>
-        )}
-        <table className="results">
-          <thead>
-            <tr>
-              <th></th>
-              <th>JavaScript</th>
-              <th>Rust (WASM)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="rowlabel">
-                f(<span className="muted">…</span>)
-              </td>
-              <td>
-                <EvalValue res={js.evalF} />
-              </td>
-              <td>
-                <EvalValue res={rust.evalF} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      {/* ---- derivative ---- */}
-      <section className="card">
-        <div className="section-head">
-          <h2>Derivative</h2>
-          <div className="deriv-controls">
-            <label
-              className="toggle"
-              title="Reduce the derivative with the playground simplifier, under the current assumptions"
-            >
-              <input
-                type="checkbox"
-                checked={simplifyDeriv}
-                onChange={(e) => setSimplifyDeriv(e.target.checked)}
-              />
-              simplify
-              {activeAssumptions.length > 0 ? " (under assumptions)" : ""}
-            </label>
-            <label className="diffvar">
-              d/d
-              <input
-                list="var-list"
-                value={diffVar}
-                spellCheck={false}
-                onChange={(e) => setDiffVar(e.target.value)}
-              />
-              <datalist id="var-list">
-                {variables.map((v) => (
-                  <option key={v} value={v} />
-                ))}
-              </datalist>
-            </label>
           </div>
-        </div>
-        <div className="cols">
-          <FormCol title="JavaScript" latex={js.derLatex} text={js.derText} />
-          <FormCol
-            title="Rust (WASM)"
-            latex={rust.derLatex}
-            text={rust.derText}
-          />
-        </div>
-        <table className="results">
-          <thead>
-            <tr>
-              <th></th>
-              <th>JavaScript</th>
-              <th>Rust (WASM)</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="rowlabel">f′({diffVar}) at bindings</td>
-              <td>
-                <EvalValue res={js.evalDer} />
-              </td>
-              <td>
-                <EvalValue res={rust.evalDer} />
-              </td>
-              <td>{agreeBadge(evalAgrees(js.evalDer, rust.evalDer))}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+          <div className="cols">
+            <EngineColumn title="JavaScript" res={js} />
+            <EngineColumn title="Rust (WASM)" res={rust} />
+          </div>
+        </section>
+
+        {/* ---- simplify ---- */}
+        <section className="card">
+          <div className="section-head">
+            <h2>
+              Simplified
+              {activeAssumptions.length > 0 && (
+                <span className="muted">
+                  {" "}
+                  · assuming {activeAssumptions.join(", ")}
+                </span>
+              )}
+            </h2>
+            {bothParsed && (
+              <span title="Do both engines simplify to identical trees?">
+                trees {agreeBadge(simpMatch)}
+              </span>
+            )}
+          </div>
+          <div className="cols">
+            <FormCol
+              title="JavaScript"
+              latex={js.simpLatex}
+              text={js.simpText}
+            />
+            <FormCol
+              title="Rust (WASM)"
+              latex={rust.simpLatex}
+              text={rust.simpText}
+            />
+          </div>
+        </section>
+
+        {/* ---- evaluate ---- */}
+        <section className="card">
+          <div className="section-head">
+            <h2>Evaluate</h2>
+            <span>result {agreeBadge(evalAgrees(js.evalF, rust.evalF))}</span>
+          </div>
+          {variables.length === 0 ? (
+            <p className="muted">
+              No free variables — the expression is constant.
+            </p>
+          ) : (
+            <>
+              <div className="bindings">
+                {variables.map((v) => (
+                  <label key={v} className="binding">
+                    <span>{v} =</span>
+                    <input
+                      type="text"
+                      spellCheck={false}
+                      value={rawBindings[v] ?? ""}
+                      onChange={(e) =>
+                        setRawBindings((b) => ({ ...b, [v]: e.target.value }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="hint muted">
+                Values are expressions — use <code>i</code> for complex, e.g.{" "}
+                <code>2+3i</code>, <code>i</code>, or <code>pi/4</code>.
+              </p>
+            </>
+          )}
+          <table className="results">
+            <thead>
+              <tr>
+                <th></th>
+                <th>JavaScript</th>
+                <th>Rust (WASM)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="rowlabel">
+                  f(<span className="muted">…</span>)
+                </td>
+                <td>
+                  <EvalValue res={js.evalF} />
+                </td>
+                <td>
+                  <EvalValue res={rust.evalF} />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        {/* ---- derivative ---- */}
+        <section className="card">
+          <div className="section-head">
+            <h2>Derivative</h2>
+            <div className="deriv-controls">
+              <label
+                className="toggle"
+                title="Reduce the derivative with the playground simplifier, under the current assumptions"
+              >
+                <input
+                  type="checkbox"
+                  checked={simplifyDeriv}
+                  onChange={(e) => setSimplifyDeriv(e.target.checked)}
+                />
+                simplify
+                {activeAssumptions.length > 0 ? " (under assumptions)" : ""}
+              </label>
+              <label className="diffvar">
+                d/d
+                <input
+                  list="var-list"
+                  value={diffVar}
+                  spellCheck={false}
+                  onChange={(e) => setDiffVar(e.target.value)}
+                />
+                <datalist id="var-list">
+                  {variables.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+              </label>
+            </div>
+          </div>
+          <div className="cols">
+            <FormCol title="JavaScript" latex={js.derLatex} text={js.derText} />
+            <FormCol
+              title="Rust (WASM)"
+              latex={rust.derLatex}
+              text={rust.derText}
+            />
+          </div>
+          <table className="results">
+            <thead>
+              <tr>
+                <th></th>
+                <th>JavaScript</th>
+                <th>Rust (WASM)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="rowlabel">f′({diffVar}) at bindings</td>
+                <td>
+                  <EvalValue res={js.evalDer} />
+                </td>
+                <td>
+                  <EvalValue res={rust.evalDer} />
+                </td>
+                <td>{agreeBadge(evalAgrees(js.evalDer, rust.evalDer))}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
 
       <footer>
         <p className="muted">
