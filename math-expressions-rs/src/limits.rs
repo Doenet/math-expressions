@@ -46,6 +46,12 @@ pub struct Limits {
     /// Bit-size cap on exact integer powers (`2^(10^12)` is not a number to
     /// materialize).
     pub max_pow_bits: u64,
+    /// Largest matrix dimension for elimination-based operations
+    /// (det/inverse/rref — MATRIX_PLAN §1b).
+    pub max_matrix_dim: usize,
+    /// Largest dimension for cofactor expansion over general symbolic
+    /// entries (n! terms).
+    pub max_symbolic_det_dim: usize,
 }
 
 impl Default for Limits {
@@ -59,6 +65,8 @@ impl Default for Limits {
             max_residues: 10_000,
             max_round_decimals: 4_000,
             max_pow_bits: 1_000_000,
+            max_matrix_dim: 64,
+            max_symbolic_det_dim: 6,
         }
     }
 }

@@ -223,7 +223,9 @@ pub fn desugar_units(e: &Expr) -> Expr {
 // ---- Smart constructors (assume children are already canonical) ----
 
 /// Build a canonical sum from canonical terms: flatten, fold the numeric part
-/// exactly, combine like terms (`3x + 2x → 5x`), drop zeros, sort.
+/// exactly, combine like terms (`3x + 2x → 5x`), drop zeros, sort. Literal
+/// matrices of equal dimensions fold entrywise (MATRIX_PLAN §1a); mismatched
+/// dimensions (and matrix + scalar) stay as separate unevaluated terms.
 pub(crate) fn add(terms: Vec<Expr>) -> Expr {
     let mut flat = Vec::with_capacity(terms.len());
     for t in terms {
@@ -236,7 +238,25 @@ pub(crate) fn add(terms: Vec<Expr>) -> Expr {
     let mut constant = Number::zero();
     // (rest, coefficient) for each distinct non-constant term.
     let mut parts: Vec<(Expr, Number)> = Vec::new();
+    // Entrywise accumulation per matrix dimension: (rows, cols, per-entry terms).
+    let mut mats: Vec<(u32, u32, Vec<Vec<Expr>>)> = Vec::new();
     for t in flat {
+        if let Expr::Matrix {
+            rows,
+            cols,
+            entries,
+        } = t
+        {
+            match mats.iter_mut().find(|(r, c, _)| *r == rows && *c == cols) {
+                Some((_, _, acc)) => {
+                    for (slot, e) in acc.iter_mut().zip(entries) {
+                        slot.push(e);
+                    }
+                }
+                None => mats.push((rows, cols, entries.into_iter().map(|e| vec![e]).collect())),
+            }
+            continue;
+        }
         let (coeff, rest) = split_coeff(t);
         match rest {
             None => constant = constant.add(&coeff),
@@ -247,7 +267,14 @@ pub(crate) fn add(terms: Vec<Expr>) -> Expr {
         }
     }
 
-    let mut out = Vec::with_capacity(parts.len() + 1);
+    let mut out = Vec::with_capacity(parts.len() + mats.len() + 1);
+    for (rows, cols, acc) in mats {
+        out.push(Expr::Matrix {
+            rows,
+            cols,
+            entries: acc.into_iter().map(add).collect(),
+        });
+    }
     if !constant.is_zero() {
         out.push(Expr::Num(constant));
     }
@@ -268,6 +295,13 @@ pub(crate) fn add(terms: Vec<Expr>) -> Expr {
 /// Build a canonical product from canonical factors: flatten, fold the numeric
 /// coefficient exactly, annihilate on zero, combine like powers
 /// (`x² · x³ → x⁵`), drop ones, sort.
+///
+/// Matrix factors (MATRIX_PLAN §1a) split the product into a commutative
+/// scalar segment (everything below) and an **order-preserving matrix
+/// segment**: adjacent dimension-compatible literal matrices fold via matrix
+/// multiplication, a fully-folded product absorbs the scalar part into its
+/// entries, and anything unfoldable (dimension mismatch, unevaluated matrix
+/// powers) stays as `Mul([scalars…, matrices-in-order…])`.
 pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
     let mut flat = Vec::with_capacity(factors.len());
     for f in factors {
@@ -275,6 +309,60 @@ pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
             Expr::Mul(xs) => flat.extend(xs),
             other => flat.push(other),
         }
+    }
+
+    if flat.iter().any(is_matrix_valued) {
+        let (scalars, matrices): (Vec<Expr>, Vec<Expr>) =
+            flat.into_iter().partition(|f| !is_matrix_valued(f));
+        let scalar_part = mul(scalars); // no matrices: the commutative pipeline
+        // Fold adjacent compatible literal matrices, left to right.
+        let mut seq: Vec<Expr> = Vec::with_capacity(matrices.len());
+        for m in matrices {
+            match (seq.last(), &m) {
+                (Some(Expr::Matrix { .. }), Expr::Matrix { .. }) => {
+                    let prev = seq.pop().unwrap();
+                    match matmul_literal(&prev, &m) {
+                        Some(folded) => seq.push(folded),
+                        None => {
+                            seq.push(prev);
+                            seq.push(m);
+                        }
+                    }
+                }
+                _ => seq.push(m),
+            }
+        }
+        // Fully folded: the scalar part distributes into the entries.
+        if seq.len() == 1 {
+            if let Expr::Matrix {
+                rows,
+                cols,
+                entries,
+            } = &seq[0]
+            {
+                if !matches!(&scalar_part, Expr::Num(n) if n.is_one()) {
+                    return Expr::Matrix {
+                        rows: *rows,
+                        cols: *cols,
+                        entries: entries
+                            .iter()
+                            .map(|e| mul(vec![scalar_part.clone(), e.clone()]))
+                            .collect(),
+                    };
+                }
+                return seq.pop().unwrap();
+            }
+        }
+        let mut out = match scalar_part {
+            Expr::Num(n) if n.is_one() => Vec::new(),
+            Expr::Mul(xs) => xs,
+            other => vec![other],
+        };
+        out.extend(seq);
+        return match out.len() {
+            1 => out.pop().unwrap(),
+            _ => Expr::Mul(out),
+        };
     }
 
     let mut coeff = Number::one();
@@ -346,6 +434,54 @@ pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
 /// hold without assumptions. `0` to a negative power is left unfolded (an
 /// exact division by zero — §3.6 of the redesign note).
 pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
+    // Matrix base (MATRIX_PLAN §1a): integer k ≥ 2 on a square matrix folds by
+    // binary powering, k = 0 gives the identity, k = 1 the base. Everything
+    // else (negative — inverse is Layer 2 —, symbolic, non-square) stays an
+    // unevaluated Pow. Ordered before the scalar fast paths: `A^0` must be I,
+    // not the scalar 1.
+    if let Expr::Matrix { rows, cols, .. } = &base {
+        let (rows, cols) = (*rows, *cols);
+        match as_int(&exp) {
+            Some(1) => return base,
+            Some(0) if rows == cols => return identity_matrix(rows),
+            Some(k)
+                if rows == cols
+                    && k >= 2
+                    && k <= crate::limits::current().max_expand_power =>
+            {
+                let mut acc = identity_matrix(rows);
+                let mut sq = base.clone();
+                let mut k = k as u64;
+                loop {
+                    if k & 1 == 1 {
+                        match matmul_literal(&acc, &sq) {
+                            Some(m) => acc = m,
+                            None => return Expr::Pow(Box::new(base), Box::new(exp)),
+                        }
+                    }
+                    k >>= 1;
+                    if k == 0 {
+                        return acc;
+                    }
+                    match matmul_literal(&sq, &sq) {
+                        Some(m) => sq = m,
+                        None => return Expr::Pow(Box::new(base), Box::new(exp)),
+                    }
+                }
+            }
+            // Negative integer power of an *invertible rational* matrix folds
+            // through the exact inverse (MATRIX_PLAN §1b); symbolic or
+            // singular matrices keep the unevaluated Pow (the assumption-
+            // gated inverse is `matrix::matrix_inverse`).
+            Some(k) if rows == cols && k < 0 && k > i64::MIN => {
+                if let Some(inv) = crate::matrix::invert_rational_literal(&base) {
+                    return pow(inv, Expr::int(-k));
+                }
+                return Expr::Pow(Box::new(base), Box::new(exp));
+            }
+            _ => return Expr::Pow(Box::new(base), Box::new(exp)),
+        }
+    }
     if let Expr::Num(e) = &exp {
         if e.is_zero() {
             return Expr::Num(Number::one()); // x^0 = 1, including 0^0
@@ -369,7 +505,8 @@ pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
     // any factors and integer `k`). Extracts numeric coefficients (`(2x)^(-1) =
     // x^(-1)/2`) and enables cancellations like `x·(2x)^(-1) → 1/2`.
     if let Expr::Mul(factors) = &base {
-        if as_int(&exp).is_some() {
+        // Not valid over a non-commutative (matrix) product: (A·B)² ≠ A²·B².
+        if as_int(&exp).is_some() && !factors.iter().any(is_matrix_valued) {
             return mul(factors.iter().map(|f| pow(f.clone(), exp.clone())).collect());
         }
     }
@@ -389,6 +526,72 @@ pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
 }
 
 // ---- helpers ----
+
+/// Is this canonical factor matrix-valued (a literal matrix, an unevaluated
+/// matrix power, or an unfoldable matrix product)? Such factors must not
+/// commute past each other and are excluded from scalar-only rewrites.
+pub(crate) fn is_matrix_valued(e: &Expr) -> bool {
+    match e {
+        Expr::Matrix { .. } => true,
+        Expr::Pow(b, _) => matches!(**b, Expr::Matrix { .. }),
+        Expr::Mul(fs) => fs.iter().any(is_matrix_valued),
+        _ => false,
+    }
+}
+
+/// The n×n identity matrix.
+pub(crate) fn identity_matrix(n: u32) -> Expr {
+    let entries = (0..n)
+        .flat_map(|r| (0..n).map(move |c| Expr::int(i64::from(r == c))))
+        .collect();
+    Expr::Matrix {
+        rows: n,
+        cols: n,
+        entries,
+    }
+}
+
+/// Multiply two literal matrices symbolically (entries built with the smart
+/// constructors). `None` on dimension mismatch or when the work exceeds
+/// `limits.max_expand_terms` (the caller keeps the product unevaluated).
+pub(crate) fn matmul_literal(a: &Expr, b: &Expr) -> Option<Expr> {
+    let (
+        Expr::Matrix {
+            rows: r1,
+            cols: c1,
+            entries: ea,
+        },
+        Expr::Matrix {
+            rows: r2,
+            cols: c2,
+            entries: eb,
+        },
+    ) = (a, b)
+    else {
+        return None;
+    };
+    if c1 != r2 {
+        return None;
+    }
+    let (r1, c1, c2) = (*r1 as usize, *c1 as usize, *c2 as usize);
+    if r1.saturating_mul(c1).saturating_mul(c2) > crate::limits::current().max_expand_terms {
+        return None;
+    }
+    let mut entries = Vec::with_capacity(r1 * c2);
+    for i in 0..r1 {
+        for j in 0..c2 {
+            let terms = (0..c1)
+                .map(|k| mul(vec![ea[i * c1 + k].clone(), eb[k * c2 + j].clone()]))
+                .collect();
+            entries.push(add(terms));
+        }
+    }
+    Some(Expr::Matrix {
+        rows: r1 as u32,
+        cols: c2 as u32,
+        entries,
+    })
+}
 
 /// A term split into (coefficient, remaining factor). `None` remainder means
 /// the term is a pure number.

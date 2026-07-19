@@ -19,6 +19,7 @@ pub mod expr;
 pub mod js_match;
 pub mod js_tree;
 pub mod limits;
+pub mod matrix;
 pub mod norm;
 pub mod num;
 pub mod numeric;
@@ -41,6 +42,7 @@ pub use grade::{
     equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, solve_linear,
 };
 pub use expr::{Expr, MathConst, RelOp};
+pub use matrix::{det, matmul, matrix_inverse, nullspace, rank, rref, trace, transpose};
 pub use norm::{canonicalize, desugar_units, expand, simplify, simplify_with};
 pub use num::Number;
 pub use ops::{

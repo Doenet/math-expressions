@@ -52,6 +52,11 @@ fn present_exponent(x: &Expr) -> Expr {
 
 /// `b^x` with a negative exponent displays as `1/b^(−x)`.
 fn present_pow(b: &Expr, x: &Expr) -> Expr {
+    // A matrix-valued base never moves under a fraction bar: `A^(-1)` is the
+    // inverse, not the scalar `1/A`.
+    if matches!(b, Expr::Matrix { .. }) {
+        return Expr::Pow(Box::new(present(b)), Box::new(present_exponent(x)));
+    }
     if let Some(pos) = negated_exponent(x) {
         return Expr::Div(
             Box::new(Expr::int(1)),
@@ -117,7 +122,12 @@ fn present_mul(fs: &[Expr]) -> Expr {
                 coeff_den = den;
             }
             Expr::Pow(b, x) => {
-                if let Some(pos) = negated_exponent(x) {
+                let neg_exp = if matches!(**b, Expr::Matrix { .. }) {
+                    None // A^(-1) is an inverse, not a fraction (MATRIX_PLAN §1a)
+                } else {
+                    negated_exponent(x)
+                };
+                if let Some(pos) = neg_exp {
                     den_factors.push(pow_display(present(b), present_exponent(&pos)));
                 } else {
                     num_factors.push(present(f));

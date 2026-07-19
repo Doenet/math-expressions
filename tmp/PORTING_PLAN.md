@@ -1724,12 +1724,57 @@ Each phase: write tests first, then implementation until all tests pass.
 - Guppy output
 - Matrix operations beyond basic arithmetic — **now planned as a beyond-JS
   capability**: see `tmp/MATRIX_PLAN.md` (2026-07-19; symbolic matrix algebra,
-  det/rref, and abstract eigenvalues/eigenvectors via a `RootOf` construct)
+  det/rref, and abstract eigenvalues/eigenvectors via a `RootOf` construct).
+  **Layer 1 (M1 + M2/§1b) implemented 2026-07-19**: canonical matrix
+  arithmetic (entrywise sums, segmented non-commutative products with literal
+  folding, binary powers, `A⁰ → I`, `A^(−k)` folding through the exact
+  inverse for invertible rational matrices), `transpose`/`trace`/`matmul`,
+  tiered `det` (rational elimination / polynomial Bareiss / symbolic
+  cofactor), `matrix_inverse` (assumption-gated for symbolic entries),
+  assumption-gated `rref`/`rank`/`nullspace` (`src/matrix.rs`), presentation
+  guard for matrix bases; `tests/matrix.rs` (31 tests, TDD).
 - Numerical integration (`integrateNumerically`) — future consumer of
   `tmp/ARBITRARY_PERCISION_PLAN.md` §8 (quadrature hooks); **symbolic**
   integration is now planned as a beyond-JS capability, see
   `tmp/INTEGRATION_PLAN.md` (2026-07-19; complete rational-function engine +
   curated Rubi-subset rules + hypergeometric terminal forms)
+
+### 17a. Doenet-interop surface ✓ done 2026-07-19
+
+The JS library re-exports its dependencies (`me.math` = customized mathjs
+which also smuggles in `numeric` via `math.import`; plus internals
+`me.class`/`me.utils`/`me.converters`/`me.reviver`), and Doenet consumes
+them (measured against a DoenetML clone). Everything feasible outside the
+other plans is now implemented:
+
+- **`src/numeric.rs`** — f64 replacements for Doenet's `me.math` usage:
+  `math_mod`/`gcd_f64`/`lcm_f64` (mathjs conventions), statistics
+  (`mean`/`median`/unbiased `variance`/`std_dev`/`quantile_seq` linear
+  interpolation), `lusolve` (partial-pivot elimination), and `eigs`
+  (Householder→Hessenberg + complex shifted-QR with Wilkinson shifts +
+  null-vector eigenvectors; mathjs result shape at the wasm boundary).
+  Bounded loops, `None`/NaN failures, no panics.
+- **`src/js_match.rs`** — `me.utils.match` in its default mode (the only
+  mode Doenet uses) over raw JS-tree JSON: wildcard binding, associative
+  flattening + grouping, repeated-wildcard consistency, the
+  unary-minus-of-product case; plus `flatten`/`unflattenLeft/Right`.
+- **`js_tree::try_from_js`** — non-panicking tree parsing for the wasm
+  boundary (wasm aborts on panic).
+- **`ops::round_numbers_to_precision_plus_decimals`** — the combined
+  rounding Doenet calls (f64 params: JS passes `±Infinity` to disable modes).
+- **wasm surface** — `from_ast`, `to_serialized`/`from_serialized` (the
+  `{objectType: "math-expression", tree}` reviver shape), `match_template`,
+  `flatten_ast`/`unflatten_left`/`unflatten_right`,
+  `parse_text_with_options`/`parse_latex_with_options` (JS-spelled parser
+  parameters), and the numeric bindings. Smoke: 39/39.
+- **Oracle corpus**: `scripts/generate-numeric-corpus.mjs` →
+  `tests/numeric_corpus.rs` (differential vs `me.math`, `me.utils.match`,
+  and the JS rounding; 200 cases, all green) + `tests/numeric.rs` unit cases.
+
+Deliberately NOT here: `dopri`/ODE solving → `tmp/ODE_PLAN.md`; exact
+matrix/eigen algebra → `tmp/MATRIX_PLAN.md`; `me.ZmodN` (unused by Doenet);
+mathjs `fraction`/`complex` object constructors (Doenet's uses are served by
+`evaluate_to_complex` and the exact number tower).
 - `solve_linear`
 - Units system: the three scaling units (`%`, `deg`, `$`) are handled at equality
   time by `desugar_units` (§7b, done). A general `add_unit`/unit-algebra layer beyond
