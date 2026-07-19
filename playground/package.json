@@ -1,0 +1,62 @@
+{
+  "name": "math-expressions-playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Web playground comparing the Rust (WASM) and JS math-expressions implementations",
+  "scripts": {
+    "dev": "wireit",
+    "build": "wireit",
+    "build:wasm": "wireit",
+    "preview": "wireit"
+  },
+  "wireit": {
+    "dev": {
+      "command": "vite",
+      "dependencies": [
+        "build:wasm"
+      ]
+    },
+    "build": {
+      "command": "vite build",
+      "dependencies": [
+        "build:wasm"
+      ],
+      "files": [
+        "src/**",
+        "index.html",
+        "vite.config.js",
+        "../build/math-expressions.js"
+      ],
+      "output": [
+        "dist/**"
+      ]
+    },
+    "build:wasm": {
+      "command": "bash ./rebuild-wasm.sh",
+      "files": [
+        "rebuild-wasm.sh",
+        "../math-expressions-rs/src/**",
+        "../math-expressions-rs/Cargo.toml"
+      ],
+      "output": []
+    },
+    "preview": {
+      "command": "vite preview",
+      "dependencies": [
+        "build"
+      ]
+    }
+  },
+  "dependencies": {
+    "katex": "^0.16.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11",
+    "vite-plugin-static-copy": "^1.0.6",
+    "wireit": "^0.14.9"
+  }
+}

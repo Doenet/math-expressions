@@ -28,6 +28,13 @@ monomial ordering.
 cases (see §3). Depend on `num-bigint` + `num-rational` directly for the BigInt fallback,
 identical to what both mathhook and SymPy use.
 
+**Update 2026-07-19**: the verdict above concerns the *number backend* only. For
+arbitrary-precision **evaluation** (a separate, planned feature), the techniques from
+hyperreal and its ancestor `realistic` were analyzed in depth and selectively adopted —
+see `tmp/ARBITRARY_PERCISION_PLAN.md` (scaled-integer `approx(p)` contract, guard-bit
+discipline, series kernels, bounded tri-state sign; rejected: lazy DAG + per-node caches
+in favor of a compiled evaluation tape).
+
 ---
 
 ## 1. Crate layout
