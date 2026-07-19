@@ -16,10 +16,12 @@ pub mod eq;
 pub mod eval;
 pub mod grade;
 pub mod expr;
+pub mod js_match;
 pub mod js_tree;
 pub mod limits;
 pub mod norm;
 pub mod num;
+pub mod numeric;
 pub mod ops;
 pub mod output;
 #[cfg(target_arch = "wasm32")]
@@ -45,7 +47,7 @@ pub use ops::{
     constants_to_floats, evaluate, evaluate_numbers, evaluate_to_constant, functions,
     get_component, operators, reduce_rational, round_numbers_to_decimals, strings_to_subscripts,
     subscripts_to_strings, substitute_component, to_intervals,
-    round_numbers_to_precision, substitute, variables,
+    round_numbers_to_precision, round_numbers_to_precision_plus_decimals, substitute, variables,
 };
 pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};

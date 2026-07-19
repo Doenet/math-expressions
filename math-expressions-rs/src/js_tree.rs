@@ -23,72 +23,92 @@ use serde_json::{json, Value};
 /// sees a tree deep enough to overflow. A hand-constructed `Value` could, but
 /// that is not a user-input vector.
 pub fn from_js(value: &Value) -> Expr {
+    try_from_js(value).unwrap_or_else(|e| panic!("from_js: {e}"))
+}
+
+/// Non-panicking [`from_js`] for untrusted input (the wasm `from_ast`
+/// boundary): malformed shapes become `Err` descriptions instead of panics
+/// (wasm builds abort on panic, so a bad tree from JS must not unwind).
+pub fn try_from_js(value: &Value) -> Result<Expr, String> {
     match value {
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                Expr::Num(Number::Int(i))
+                Ok(Expr::Num(Number::Int(i)))
             } else {
-                Expr::Num(Number::from_f64(n.as_f64().unwrap()))
+                Ok(Expr::Num(Number::from_f64(
+                    n.as_f64().ok_or("non-finite JSON number")?,
+                )))
             }
         }
-        Value::String(s) => Expr::sym(s),
+        Value::String(s) => Ok(Expr::sym(s)),
         Value::Object(_) => match value.get("$").and_then(Value::as_str) {
-            Some("Inf") => Expr::Const(MathConst::Inf),
-            Some("-Inf") => Expr::Const(MathConst::NegInf),
-            Some("NaN") => Expr::Const(MathConst::NaN),
-            other => panic!("from_js: unknown special {:?}", other),
+            Some("Inf") => Ok(Expr::Const(MathConst::Inf)),
+            Some("-Inf") => Ok(Expr::Const(MathConst::NegInf)),
+            Some("NaN") => Ok(Expr::Const(MathConst::NaN)),
+            other => Err(format!("unknown special {other:?}")),
         },
         Value::Array(arr) => from_js_array(arr),
-        _ => panic!("from_js: unexpected value {value}"),
+        other => Err(format!("unexpected value {other}")),
     }
 }
 
-fn from_js_array(arr: &[Value]) -> Expr {
-    let head = arr[0].as_str().unwrap_or("");
+fn from_js_array(arr: &[Value]) -> Result<Expr, String> {
+    let head = arr
+        .first()
+        .ok_or("empty array is not a tree")?
+        .as_str()
+        .ok_or("array head must be an operator string")?;
     let operands = &arr[1..];
-    let each = || operands.iter().map(from_js).collect::<Vec<_>>();
-    let boxed = |i: usize| Box::new(from_js(&operands[i]));
+    let each = || -> Result<Vec<Expr>, String> { operands.iter().map(try_from_js).collect() };
+    let boxed = |i: usize| -> Result<Box<Expr>, String> {
+        Ok(Box::new(try_from_js(operands.get(i).ok_or_else(
+            || format!("operator {head:?} is missing operand {i}"),
+        )?)?))
+    };
 
     if let Some(kind) = seq_kind(head) {
-        return Expr::Seq(kind, each());
+        return Ok(Expr::Seq(kind, each()?));
     }
     if let Some(op) = rel_op(head) {
         // binary or chained-equality relation
-        let operands = each();
+        let operands = each()?;
+        if operands.is_empty() {
+            return Err(format!("relation {head:?} has no operands"));
+        }
         let ops = vec![op; operands.len() - 1];
-        return Expr::Relation { operands, ops };
+        return Ok(Expr::Relation { operands, ops });
     }
 
-    match head {
-        "+" => Expr::Add(each()),
-        "*" => Expr::Mul(each()),
-        "/" => Expr::Div(boxed(0), boxed(1)),
-        "^" => Expr::Pow(boxed(0), boxed(1)),
-        "-" => Expr::Neg(boxed(0)),
-        "and" => Expr::And(each()),
-        "or" => Expr::Or(each()),
-        "not" => Expr::Not(boxed(0)),
-        "union" => Expr::Union(each()),
-        "intersect" => Expr::Intersect(each()),
-        "prime" => Expr::Prime(boxed(0)),
-        "_" => Expr::Index(boxed(0), boxed(1)),
+    Ok(match head {
+        "+" => Expr::Add(each()?),
+        "*" => Expr::Mul(each()?),
+        "/" => Expr::Div(boxed(0)?, boxed(1)?),
+        "^" => Expr::Pow(boxed(0)?, boxed(1)?),
+        "-" => Expr::Neg(boxed(0)?),
+        "and" => Expr::And(each()?),
+        "or" => Expr::Or(each()?),
+        "not" => Expr::Not(boxed(0)?),
+        "union" => Expr::Union(each()?),
+        "intersect" => Expr::Intersect(each()?),
+        "prime" => Expr::Prime(boxed(0)?),
+        "_" => Expr::Index(boxed(0)?, boxed(1)?),
         "ldots" => Expr::Ldots,
         "apply" => {
-            let head = boxed(0);
-            let arg = &operands[1];
+            let f = boxed(0)?;
+            let arg = operands.get(1).ok_or("apply is missing its argument")?;
             let args = match arg.as_array() {
                 Some(a) if a.first().and_then(Value::as_str) == Some("tuple") => {
-                    a[1..].iter().map(from_js).collect()
+                    a[1..].iter().map(try_from_js).collect::<Result<_, _>>()?
                 }
-                _ => vec![from_js(arg)],
+                _ => vec![try_from_js(arg)?],
             };
-            Expr::Apply(head, args)
+            Expr::Apply(f, args)
         }
         "interval" => {
-            let ep = operands[0].as_array().expect("interval endpoints");
-            let cl = operands[1].as_array().expect("interval closed");
+            let ep = tuple3(operands.first(), "interval endpoints")?;
+            let cl = tuple3(operands.get(1), "interval closed")?;
             Expr::Interval {
-                endpoints: Box::new((from_js(&ep[1]), from_js(&ep[2]))),
+                endpoints: Box::new((try_from_js(&ep[1])?, try_from_js(&ep[2])?)),
                 closed: (
                     cl[1].as_bool().unwrap_or(false),
                     cl[2].as_bool().unwrap_or(false),
@@ -96,9 +116,21 @@ fn from_js_array(arr: &[Value]) -> Expr {
             }
         }
         "lts" | "gts" => {
-            let args = operands[0].as_array().expect("lts/gts args");
-            let strict = operands[1].as_array().expect("lts/gts strict");
-            let operands: Vec<Expr> = args[1..].iter().map(from_js).collect();
+            let args = operands
+                .first()
+                .and_then(Value::as_array)
+                .ok_or("lts/gts args")?;
+            let strict = operands
+                .get(1)
+                .and_then(Value::as_array)
+                .ok_or("lts/gts strict")?;
+            if args.len() < 2 || strict.len() != args.len() - 1 + 1 {
+                return Err("lts/gts args/strict length mismatch".to_string());
+            }
+            let operands: Vec<Expr> = args[1..]
+                .iter()
+                .map(try_from_js)
+                .collect::<Result<_, _>>()?;
             let ops = strict[1..]
                 .iter()
                 .map(|b| {
@@ -114,15 +146,24 @@ fn from_js_array(arr: &[Value]) -> Expr {
             Expr::Relation { operands, ops }
         }
         "matrix" => {
-            let size = operands[0].as_array().expect("matrix size");
-            let body = operands[1].as_array().expect("matrix body");
-            let rows = size[1].as_u64().unwrap() as u32;
-            let cols = size[2].as_u64().unwrap() as u32;
+            let size = tuple3(operands.first(), "matrix size")?;
+            let body = operands
+                .get(1)
+                .and_then(Value::as_array)
+                .ok_or("matrix body")?;
+            let rows = size[1].as_u64().ok_or("matrix rows")? as u32;
+            let cols = size[2].as_u64().ok_or("matrix cols")? as u32;
+            if rows.saturating_mul(cols) > 1_000_000 {
+                return Err("matrix too large".to_string());
+            }
             let mut entries = Vec::with_capacity((rows * cols) as usize);
             for r in 0..rows as usize {
-                let row = body[r + 1].as_array().expect("matrix row");
+                let row = body
+                    .get(r + 1)
+                    .and_then(Value::as_array)
+                    .ok_or("matrix row")?;
                 for c in 0..cols as usize {
-                    entries.push(from_js(&row[c + 1]));
+                    entries.push(try_from_js(row.get(c + 1).ok_or("matrix entry")?)?);
                 }
             }
             Expr::Matrix {
@@ -133,8 +174,17 @@ fn from_js_array(arr: &[Value]) -> Expr {
         }
         // everything else (unit, pm, angle, binom, vec, linesegment,
         // derivative_leibniz, forall, arrows, implies, iff, perp, ":", "|", d)
-        other => Expr::OtherOp(crate::sym::Sym::new(other), each()),
+        other => Expr::OtherOp(crate::sym::Sym::new(other), each()?),
+    })
+}
+
+/// A `["tuple", a, b]`-shaped 3-element array (head + two entries).
+fn tuple3<'a>(v: Option<&'a Value>, what: &str) -> Result<&'a Vec<Value>, String> {
+    let arr = v.and_then(Value::as_array).ok_or_else(|| what.to_string())?;
+    if arr.len() < 3 {
+        return Err(format!("{what}: expected 3 elements"));
     }
+    Ok(arr)
 }
 
 fn seq_kind(name: &str) -> Option<SeqKind> {

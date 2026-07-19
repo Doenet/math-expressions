@@ -201,3 +201,231 @@ impl Expression {
 pub fn discrete_infinite_set(offsets: &Expression, periods: &Expression) -> Option<Expression> {
     create_discrete_infinite_set(&offsets.0, &periods.0, None, None).map(Expression)
 }
+
+// ---- JS-tree AST boundary (Doenet interop) ----
+
+/// Build an `Expression` from a JS-tree AST (JSON) — the port of
+/// `me.fromAst`. Accepts the array AST format Doenet manipulates directly.
+#[wasm_bindgen]
+pub fn from_ast(tree_json: &str) -> Result<Expression, JsError> {
+    let value: serde_json::Value =
+        serde_json::from_str(tree_json).map_err(|e| JsError::new(&e.to_string()))?;
+    crate::js_tree::try_from_js(&value)
+        .map(Expression)
+        .map_err(|e| JsError::new(&e))
+}
+
+/// Revive an expression serialized by [`Expression::to_serialized`] (or by
+/// the JS library's `toJSON`) — the port of `me.reviver`'s object shape:
+/// `{"objectType": "math-expression", "tree": ...}`.
+#[wasm_bindgen]
+pub fn from_serialized(json: &str) -> Result<Expression, JsError> {
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| JsError::new(&e.to_string()))?;
+    if value.get("objectType").and_then(serde_json::Value::as_str) != Some("math-expression") {
+        return Err(JsError::new("not a serialized math-expression"));
+    }
+    let tree = value.get("tree").ok_or_else(|| JsError::new("missing tree"))?;
+    crate::js_tree::try_from_js(tree)
+        .map(Expression)
+        .map_err(|e| JsError::new(&e))
+}
+
+/// Template match on JS-tree ASTs — the port of `me.utils.match` in its
+/// default mode. Returns the bindings object as JSON (wildcard name →
+/// subtree), or `undefined` if the tree does not match the pattern.
+#[wasm_bindgen]
+pub fn match_template(tree_json: &str, pattern_json: &str) -> Option<String> {
+    let tree: serde_json::Value = serde_json::from_str(tree_json).ok()?;
+    let pattern: serde_json::Value = serde_json::from_str(pattern_json).ok()?;
+    crate::js_match::match_template(&tree, &pattern)
+        .map(|m| serde_json::Value::Object(m).to_string())
+}
+
+/// `me.utils.flatten` on a JS-tree AST (JSON in, JSON out).
+#[wasm_bindgen]
+pub fn flatten_ast(tree_json: &str) -> Option<String> {
+    let tree: serde_json::Value = serde_json::from_str(tree_json).ok()?;
+    Some(crate::js_match::flatten_tree(&tree).to_string())
+}
+
+/// `me.utils.unflattenLeft`.
+#[wasm_bindgen]
+pub fn unflatten_left(tree_json: &str) -> Option<String> {
+    let tree: serde_json::Value = serde_json::from_str(tree_json).ok()?;
+    Some(crate::js_match::unflatten_left(&tree).to_string())
+}
+
+/// `me.utils.unflattenRight`.
+#[wasm_bindgen]
+pub fn unflatten_right(tree_json: &str) -> Option<String> {
+    let tree: serde_json::Value = serde_json::from_str(tree_json).ok()?;
+    Some(crate::js_match::unflatten_right(&tree).to_string())
+}
+
+/// Parse text with JS-style parser parameters (the port of Doenet's
+/// `new me.converters.textToAstObj({...})` pattern). `options_json` keys —
+/// all optional, JS spellings: `splitSymbols`, `unsplitSymbols`,
+/// `appliedFunctionSymbols`, `functionSymbols`, `operatorSymbols`,
+/// `allowSimplifiedFunctionApplication`, `parseLeibnizNotation`,
+/// `parseScientificNotation`.
+#[wasm_bindgen]
+pub fn parse_text_with_options(s: &str, options_json: &str) -> Result<Expression, JsError> {
+    let v: serde_json::Value =
+        serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
+    let mut o = TextToAstOptions::default();
+    read_opt_bool(&v, "splitSymbols", &mut o.split_symbols);
+    read_opt_bool(
+        &v,
+        "allowSimplifiedFunctionApplication",
+        &mut o.allow_simplified_function_application,
+    );
+    read_opt_bool(&v, "parseLeibnizNotation", &mut o.parse_leibniz_notation);
+    read_opt_bool(&v, "parseScientificNotation", &mut o.parse_scientific_notation);
+    read_opt_strings(&v, "unsplitSymbols", &mut o.unsplit_symbols);
+    read_opt_strings(&v, "appliedFunctionSymbols", &mut o.applied_function_symbols);
+    read_opt_strings(&v, "functionSymbols", &mut o.function_symbols);
+    read_opt_strings(&v, "operatorSymbols", &mut o.operator_symbols);
+    TextToAst::new(o)
+        .convert(s)
+        .map(Expression)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
+/// Parse LaTeX with JS-style parser parameters (keys: `allowedLatexSymbols`,
+/// `appliedFunctionSymbols`, `functionSymbols`,
+/// `allowSimplifiedFunctionApplication`, `parseLeibnizNotation`,
+/// `parseScientificNotation`).
+#[wasm_bindgen]
+pub fn parse_latex_with_options(s: &str, options_json: &str) -> Result<Expression, JsError> {
+    let v: serde_json::Value =
+        serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
+    let mut o = LatexToAstOptions::default();
+    read_opt_bool(
+        &v,
+        "allowSimplifiedFunctionApplication",
+        &mut o.allow_simplified_function_application,
+    );
+    read_opt_bool(&v, "parseLeibnizNotation", &mut o.parse_leibniz_notation);
+    read_opt_bool(&v, "parseScientificNotation", &mut o.parse_scientific_notation);
+    read_opt_strings(&v, "allowedLatexSymbols", &mut o.allowed_latex_symbols);
+    read_opt_strings(&v, "appliedFunctionSymbols", &mut o.applied_function_symbols);
+    read_opt_strings(&v, "functionSymbols", &mut o.function_symbols);
+    LatexToAst::new(o)
+        .convert(s)
+        .map(Expression)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
+fn read_opt_bool(v: &serde_json::Value, key: &str, target: &mut bool) {
+    if let Some(b) = v.get(key).and_then(serde_json::Value::as_bool) {
+        *target = b;
+    }
+}
+
+fn read_opt_strings(v: &serde_json::Value, key: &str, target: &mut Vec<String>) {
+    if let Some(arr) = v.get(key).and_then(serde_json::Value::as_array) {
+        *target = arr
+            .iter()
+            .filter_map(|x| x.as_str().map(str::to_string))
+            .collect();
+    }
+}
+
+#[wasm_bindgen]
+impl Expression {
+    /// Serialize in the JS library's `toJSON` shape:
+    /// `{"objectType": "math-expression", "tree": ...}` — revive with
+    /// [`from_serialized`] (or the JS `me.reviver`).
+    pub fn to_serialized(&self) -> String {
+        serde_json::json!({
+            "objectType": "math-expression",
+            "tree": crate::js_tree::to_js(&self.0),
+        })
+        .to_string()
+    }
+
+    /// `me.round_numbers_to_precision_plus_decimals` — round to `digits`
+    /// significant figures but at least `decimals` decimal places
+    /// (`±Infinity` disable a mode, matching the JS callers).
+    pub fn round_numbers_to_precision_plus_decimals(
+        &self,
+        digits: f64,
+        decimals: f64,
+    ) -> Expression {
+        Expression(ops::round_numbers_to_precision_plus_decimals(
+            &self.0, digits, decimals,
+        ))
+    }
+}
+
+// ---- f64 numeric utilities (the `me.math` replacements — see src/numeric.rs) ----
+
+#[wasm_bindgen]
+pub fn math_mod(x: f64, y: f64) -> f64 {
+    crate::numeric::math_mod(x, y)
+}
+#[wasm_bindgen]
+pub fn gcd(x: f64, y: f64) -> f64 {
+    crate::numeric::gcd_f64(x, y)
+}
+#[wasm_bindgen]
+pub fn lcm(x: f64, y: f64) -> f64 {
+    crate::numeric::lcm_f64(x, y)
+}
+#[wasm_bindgen]
+pub fn mean(data: Vec<f64>) -> f64 {
+    crate::numeric::mean(&data)
+}
+#[wasm_bindgen]
+pub fn median(data: Vec<f64>) -> f64 {
+    crate::numeric::median(&data)
+}
+/// Unbiased sample variance (mathjs default).
+#[wasm_bindgen]
+pub fn variance(data: Vec<f64>) -> f64 {
+    crate::numeric::variance(&data)
+}
+#[wasm_bindgen]
+pub fn std(data: Vec<f64>) -> f64 {
+    crate::numeric::std_dev(&data)
+}
+/// mathjs `quantileSeq` with linear interpolation.
+#[wasm_bindgen]
+pub fn quantile_seq(data: Vec<f64>, prob: f64) -> f64 {
+    crate::numeric::quantile_seq(&data, prob)
+}
+
+/// Solve `A·x = b` for an n×n row-major matrix — the mathjs `lusolve`
+/// replacement. `undefined` if singular or mis-sized.
+#[wasm_bindgen]
+pub fn lusolve(a: Vec<f64>, b: Vec<f64>, n: usize) -> Option<Vec<f64>> {
+    crate::numeric::lusolve(&a, &b, n)
+}
+
+/// Numeric eigendecomposition of a real n×n row-major matrix — the mathjs
+/// `eigs` replacement. Returns JSON in the mathjs result shape Doenet reads:
+/// `{"values": [num | {"re","im"}...], "eigenvectors": [{"value": ...,
+/// "vector": [...]}]}`. `undefined` when iteration fails to converge.
+#[wasm_bindgen]
+pub fn eigs(a: Vec<f64>, n: usize) -> Option<String> {
+    let pairs = crate::numeric::eigs(&a, n)?;
+    fn num(c: num_complex::Complex64) -> serde_json::Value {
+        if c.im == 0.0 {
+            serde_json::json!(c.re)
+        } else {
+            serde_json::json!({"re": c.re, "im": c.im})
+        }
+    }
+    let values: Vec<_> = pairs.iter().map(|p| num(p.value)).collect();
+    let eigenvectors: Vec<_> = pairs
+        .iter()
+        .map(|p| {
+            serde_json::json!({
+                "value": num(p.value),
+                "vector": p.vector.iter().map(|&v| num(v)).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+    Some(serde_json::json!({"values": values, "eigenvectors": eigenvectors}).to_string())
+}

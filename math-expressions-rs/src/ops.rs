@@ -290,6 +290,39 @@ pub fn round_numbers_to_precision(e: &Expr, sig_figs: i32) -> Expr {
     })
 }
 
+/// Round every number to `digits` significant figures but never below
+/// `decimals` decimal places — the port of
+/// `me.round_numbers_to_precision_plus_decimals` (Doenet's display rounding:
+/// "4 significant digits, at least 2 decimals"). Parameters are `f64` because
+/// the JS callers pass `±Infinity` to disable one of the modes: `digits < 1`
+/// (incl. `-Infinity`) → decimals-only; `digits > 15` (incl. `Infinity`) →
+/// unchanged; non-finite `decimals` → precision-only.
+pub fn round_numbers_to_precision_plus_decimals(e: &Expr, digits: f64, decimals: f64) -> Expr {
+    let use_precision = digits >= 1.0;
+    let sig_figs = digits.round();
+    if use_precision && sig_figs > 15.0 {
+        return e.clone();
+    }
+    let use_decimals = decimals.is_finite();
+    // No need to go much beyond the limits of double precision (JS clamps ±330).
+    let nd = decimals.round().clamp(-330.0, 330.0) as i64;
+
+    match (use_precision, use_decimals) {
+        (true, true) => map_numbers(e, &|n| {
+            let Some(k) = n.magnitude_log10() else {
+                return n.clone(); // zero / NaN
+            };
+            let d = (sig_figs as i64 - 1 - k)
+                .max(nd)
+                .clamp(i64::from(i32::MIN), i64::from(i32::MAX));
+            n.round_to_decimals(d as i32)
+        }),
+        (true, false) => round_numbers_to_precision(e, sig_figs as i32),
+        (false, true) => round_numbers_to_decimals(e, nd as i32),
+        (false, false) => e.clone(),
+    }
+}
+
 /// Apply `f` to every `Num` leaf, recursing through the whole tree.
 fn map_numbers(e: &Expr, f: &dyn Fn(&Number) -> Number) -> Expr {
     match e {
