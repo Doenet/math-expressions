@@ -1722,7 +1722,9 @@ Each phase: write tests first, then implementation until all tests pass.
 - MathML parser/output
 - GLSL output
 - Guppy output
-- Matrix operations beyond basic arithmetic
+- Matrix operations beyond basic arithmetic — **now planned as a beyond-JS
+  capability**: see `tmp/MATRIX_PLAN.md` (2026-07-19; symbolic matrix algebra,
+  det/rref, and abstract eigenvalues/eigenvectors via a `RootOf` construct)
 - Numerical integration (`integrateNumerically`)
 - `solve_linear`
 - Units system: the three scaling units (`%`, `deg`, `$`) are handled at equality

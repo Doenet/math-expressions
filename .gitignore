@@ -17,6 +17,7 @@ Cargo.lock
 
 # math-expressions-rs (wasm-bindgen output)
 /math-expressions-rs/pkg/
+/math-expressions-rs/pkg-node/
 
 # playground (node_modules covered by the pattern above)
 /playground/dist/
