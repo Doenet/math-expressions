@@ -1725,7 +1725,11 @@ Each phase: write tests first, then implementation until all tests pass.
 - Matrix operations beyond basic arithmetic — **now planned as a beyond-JS
   capability**: see `tmp/MATRIX_PLAN.md` (2026-07-19; symbolic matrix algebra,
   det/rref, and abstract eigenvalues/eigenvectors via a `RootOf` construct)
-- Numerical integration (`integrateNumerically`)
+- Numerical integration (`integrateNumerically`) — future consumer of
+  `tmp/ARBITRARY_PERCISION_PLAN.md` §8 (quadrature hooks); **symbolic**
+  integration is now planned as a beyond-JS capability, see
+  `tmp/INTEGRATION_PLAN.md` (2026-07-19; complete rational-function engine +
+  curated Rubi-subset rules + hypergeometric terminal forms)
 - `solve_linear`
 - Units system: the three scaling units (`%`, `deg`, `$`) are handled at equality
   time by `desugar_units` (§7b, done). A general `add_unit`/unit-algebra layer beyond

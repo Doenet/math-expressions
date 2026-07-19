@@ -3,8 +3,9 @@
 // opaque per-engine expression handle; the UI never touches the underlying
 // objects directly.
 //
-// Both handles are cheap to create and are garbage-collected (the wasm handles
-// via FinalizationRegistry), so we don't manually free them in this playground.
+// Ownership: callers free handles deterministically via `engine.free(h)` (a
+// no-op for JS, a real wasm free for Rust) — see freeHandle below. Relying on
+// FinalizationRegistry GC corrupted the wasm heap under rapid handle churn.
 
 // JS implementation — the bundled ESM library from the repo's build output.
 import Context from "../../build/math-expressions.js";
@@ -14,6 +15,19 @@ import Context from "../../build/math-expressions.js";
 // Vite never bundles the wasm. Loading the glue from its served location lets
 // it resolve math_expressions_bg.wasm relative to itself.
 const RUST_GLUE_URL = `${import.meta.env.BASE_URL}wasm/math_expressions.js`;
+
+/**
+ * Free a wasm-bindgen handle, tolerating already-freed / non-wasm values. The
+ * `__wbg_ptr === 0` check guards against a double free (wasm-bindgen zeroes the
+ * pointer on free), which would otherwise corrupt the wasm heap.
+ */
+function freeHandle(h) {
+  try {
+    if (h && typeof h.free === "function" && h.__wbg_ptr !== 0) h.free();
+  } catch {
+    /* not a wasm handle, or already freed */
+  }
+}
 
 /**
  * Normalise an evaluation result to `{ re, im } | null`. Accepts a real number,
@@ -66,6 +80,8 @@ const jsEngine = {
     }
   },
   derivative: (h, v) => h.derivative(v),
+  // JS handles are plain GC'd objects — nothing to free.
+  free() {},
   // Simplify under `assumptions` (relation strings, e.g. "x > 0"). The JS
   // library reads assumptions from the shared Context, so we set them around
   // the call and clear afterwards to keep them scoped to simplification.
@@ -100,25 +116,32 @@ function makeRustEngine(rust) {
     toText: (h) => h.to_text(),
     toLatex: (h) => h.to_latex(),
     variables: (h) => Array.from(h.variables()),
-    substitute(h, subs) {
-      let cur = h;
-      for (const [k, v] of Object.entries(subs)) {
-        cur = cur.substitute_var(k, rust.parse_text(String(v)));
-      }
-      return cur;
-    },
     // Substitute the (possibly complex) bindings, then evaluate to a complex
     // constant [re, im]. Returns { re, im }, or null when it can't be reduced
-    // to one (free variables, non-finite).
+    // to one (free variables, non-finite). Every intermediate wasm handle
+    // created here is freed deterministically (never `h` itself).
     evaluate(h, subs) {
+      const temps = [];
       try {
-        const pair = this.substitute(h, subs).evaluate_to_complex();
+        let cur = h;
+        for (const [k, v] of Object.entries(subs)) {
+          const val = rust.parse_text(String(v));
+          temps.push(val);
+          cur = cur.substitute_var(k, val);
+          if (cur !== h) temps.push(cur);
+        }
+        const pair = cur.evaluate_to_complex();
         return normalizeComplex(pair ? Array.from(pair) : null);
       } catch {
         return null;
+      } finally {
+        for (const t of temps) freeHandle(t);
       }
     },
     derivative: (h, v) => h.derivative(v),
+    // Free a wasm-owned handle. Deterministic freeing (rather than relying on
+    // FinalizationRegistry GC) keeps the wasm heap bounded under rapid churn.
+    free: (h) => freeHandle(h),
     // Assumptions are relation strings; the wasm binding parses them and
     // ignores any that don't parse.
     simplifyWith(h, assumptions) {

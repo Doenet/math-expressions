@@ -66,7 +66,10 @@ function analyze(
     simplifyDeriv && der.ok
       ? safe(() => engine.simplifyWith(der.value, assumptions))
       : der;
-  return {
+
+  // Extract every primitive result (strings / trees / numbers) up front, while
+  // the handles are still live.
+  const result = {
     tree: safe(() => engine.tree(h)),
     text: safe(() => engine.toText(h)),
     latex: safe(() => engine.toLatex(h)),
@@ -75,11 +78,20 @@ function analyze(
     simpTree: simp.ok ? safe(() => engine.tree(simp.value)) : null,
     simpText: simp.ok ? safe(() => engine.toText(simp.value)) : null,
     simpLatex: simp.ok ? safe(() => engine.toLatex(simp.value)) : null,
-    der,
     derText: derShown.ok ? safe(() => engine.toText(derShown.value)) : null,
     derLatex: derShown.ok ? safe(() => engine.toLatex(derShown.value)) : null,
     evalDer: der.ok ? safe(() => engine.evaluate(der.value, bindings)) : null,
   };
+
+  // ...then free the wasm handles deterministically instead of leaking them to
+  // FinalizationRegistry GC. `derShown` aliases `der` when the toggle is off,
+  // so only free it when it's a distinct result.
+  engine.free(h);
+  if (der.ok) engine.free(der.value);
+  if (simp.ok) engine.free(simp.value);
+  if (derShown.ok && derShown !== der) engine.free(derShown.value);
+
+  return result;
 }
 
 /* --------------------------- small views --------------------------- */
