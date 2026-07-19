@@ -32,17 +32,24 @@ The scripts are managed by [wireit](https://github.com/google/wireit), so the
 Rust → wasm step is a tracked dependency of the app build rather than a manual
 step you have to remember:
 
-| Script               | Runs                   | Depends on   |
-| -------------------- | ---------------------- | ------------ |
-| `npm run dev`        | `vite` (dev server)    | `build:wasm` |
-| `npm run build`      | `vite build` → `dist/` | `build:wasm` |
-| `npm run build:wasm` | `rebuild-wasm.sh`      | —            |
-| `npm run preview`    | `vite preview`         | `build`      |
+| Script               | Runs                   | Depends on                |
+| -------------------- | ---------------------- | ------------------------- |
+| `npm run dev`        | `vite` (dev server)    | `build:wasm`              |
+| `npm run build`      | `vite build` → `dist/` | `build:wasm`, `typecheck` |
+| `npm run build:wasm` | `rebuild-wasm.sh`      | —                         |
+| `npm run typecheck`  | `tsc --noEmit`         | —                         |
+| `npm run preview`    | `vite preview`         | `build`                   |
 
 `build:wasm` is fingerprinted on the Rust sources (`../math-expressions-rs/src/**`,
 `Cargo.toml`), so it only recompiles when they actually change. `dev`/`build`
 run it first automatically, so **you no longer rebuild the wasm by hand** after
 editing the Rust crate; just re-run `npm run dev`.
+
+This is a TypeScript project. Vite/esbuild strips types for dev and build (it
+does not type-check), so `npm run build` also runs `typecheck` (`tsc --noEmit`)
+as a gate — a type error fails the build. Shared types live in
+[`src/types.ts`](src/types.ts); the external JS library and the wasm glue are
+typed by the minimal interfaces there (only the members the adapter uses).
 
 `build:wasm` requires `rustup target add wasm32-unknown-unknown` and a
 `wasm-bindgen` CLI matching the `wasm-bindgen` crate version in
@@ -57,15 +64,15 @@ editing the Rust crate; just re-run `npm run dev`.
   file.
 - **Rust**: `build:wasm` compiles the crate to a browser-targeted wasm-bindgen
   package in **`../math-expressions-rs/pkg/`** (not vendored into this project).
-  `vite.config.js` resolves that location and uses
+  `vite.config.ts` resolves that location and uses
   [`vite-plugin-static-copy`](https://github.com/sapphi-red/vite-plugin-static-copy)
   to serve `math_expressions.js` + `math_expressions_bg.wasm` under `/wasm/`.
-  `src/engines.js` then loads the glue at runtime via a dynamic `import()` of
+  `src/engines.ts` then loads the glue at runtime via a dynamic `import()` of
   that URL, so Vite never bundles the wasm — the static copy is its sole
   delivery, and the glue resolves the `.wasm` relative to its own served URL.
 
 Both engines are hidden behind one adapter interface in
-[`src/engines.js`](src/engines.js).
+[`src/engines.ts`](src/engines.ts).
 
 ## Notes
 

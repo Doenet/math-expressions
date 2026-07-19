@@ -1,26 +1,40 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { loadEngines } from "./engines.js";
-import Katex from "./components/Katex.jsx";
-import Tree from "./components/Tree.jsx";
+import { loadEngines } from "./engines";
+import Katex from "./components/Katex";
+import Tree from "./components/Tree";
+import type {
+  Analysis,
+  Complex,
+  Engine,
+  EngineParams,
+  Engines,
+  SafeResult,
+  Syntax,
+} from "./types";
 
 /* ----------------------------- helpers ----------------------------- */
 
 /** Run `fn`, capturing exceptions as a tagged result. */
-function safe(fn) {
+function safe<T>(fn: () => T): SafeResult<T> {
   try {
     return { ok: true, value: fn() };
   } catch (e) {
-    return { ok: false, error: e?.message ?? String(e) };
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
-function formatFloat(v) {
+/** The value of a successful result, else undefined. */
+function okValue<T>(r: SafeResult<T> | undefined): T | undefined {
+  return r?.ok ? r.value : undefined;
+}
+
+function formatFloat(v: number): string {
   if (Number.isInteger(v)) return String(v);
   return String(Number(v.toPrecision(12)));
 }
 
 /** Format a `{ re, im }` value, collapsing negligible parts (a + b i / b i / a). */
-function formatComplex({ re, im }) {
+function formatComplex({ re, im }: Complex): string {
   const tol = 1e-9 * Math.max(1, Math.abs(re), Math.abs(im));
   const imZero = Math.abs(im) <= tol;
   const reZero = Math.abs(re) <= tol;
@@ -31,14 +45,14 @@ function formatComplex({ re, im }) {
   return `${formatFloat(re)} ${im < 0 ? "−" : "+"} ${imPart}`;
 }
 
-function deepEqual(a, b) {
+function deepEqual(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b)) {
     return a.length === b.length && a.every((x, i) => deepEqual(x, b[i]));
   }
   return a === b;
 }
 
-const EXAMPLES = [
+const EXAMPLES: { label: string; input: string; syntax: Syntax }[] = [
   { label: "sin²+cos²", input: "sin^2(x) + cos^2(x)", syntax: "text" },
   { label: "cubic", input: "x^3 + 2x - 1", syntax: "text" },
   { label: "e^(xy)", input: "e^(x y)", syntax: "text" },
@@ -48,10 +62,9 @@ const EXAMPLES = [
 ];
 
 /** Analyse one expression with one engine; every step is individually guarded. */
-function analyze(
-  engine,
-  { input, syntax, diffVar, bindings, assumptions, simplifyDeriv },
-) {
+function analyze<H>(engine: Engine<H>, params: EngineParams): Analysis {
+  const { input, syntax, diffVar, bindings, assumptions, simplifyDeriv } =
+    params;
   const parsed = safe(() => engine.parse(input, syntax));
   if (!parsed.ok) return { parseError: parsed.error };
   const h = parsed.value;
@@ -70,7 +83,7 @@ function analyze(
   // Extract every primitive result (strings / trees / numbers) up front, while
   // the handles are still live. When a step failed, pass its {ok:false, error}
   // through so the UI can show the message instead of a silent "—".
-  const result = {
+  const result: Analysis = {
     tree: safe(() => engine.tree(h)),
     text: safe(() => engine.toText(h)),
     latex: safe(() => engine.toLatex(h)),
@@ -99,8 +112,8 @@ function analyze(
 
 /* --------------------------- small views --------------------------- */
 
-/** Render an evaluation result (`safe` wrapping `{ re, im } | null`). */
-function EvalValue({ res }) {
+/** Render an evaluation result (`safe` wrapping `Complex | null`). */
+function EvalValue({ res }: { res?: SafeResult<Complex | null> }) {
   if (!res) return <span className="muted">—</span>;
   if (!res.ok)
     return (
@@ -113,7 +126,7 @@ function EvalValue({ res }) {
   return <span className="num">{formatComplex(v)}</span>;
 }
 
-function Code({ res }) {
+function Code({ res }: { res?: SafeResult<string> }) {
   if (!res) return <span className="muted">—</span>;
   if (!res.ok)
     return (
@@ -125,7 +138,15 @@ function Code({ res }) {
 }
 
 /** A rendered-math + text column, used for simplified / derivative forms. */
-function FormCol({ title, latex, text }) {
+function FormCol({
+  title,
+  latex,
+  text,
+}: {
+  title: string;
+  latex?: SafeResult<string>;
+  text?: SafeResult<string>;
+}) {
   return (
     <div className="col">
       <h3>{title}</h3>
@@ -150,7 +171,7 @@ function FormCol({ title, latex, text }) {
   );
 }
 
-function agreeBadge(ok) {
+function agreeBadge(ok: boolean) {
   return ok ? (
     <span className="badge ok">agree ✓</span>
   ) : (
@@ -159,14 +180,7 @@ function agreeBadge(ok) {
 }
 
 /** One engine's parse/derivative column. */
-function EngineColumn({ title, res }) {
-  if (!res)
-    return (
-      <div className="col">
-        <h3>{title}</h3>
-        <p className="muted">loading…</p>
-      </div>
-    );
+function EngineColumn({ title, res }: { title: string; res: Analysis }) {
   if (res.parseError)
     return (
       <div className="col">
@@ -227,28 +241,31 @@ function EngineColumn({ title, res }) {
 /* ------------------------------- app ------------------------------- */
 
 export default function App() {
-  const [engines, setEngines] = useState(null);
-  const [loadError, setLoadError] = useState(null);
+  const [engines, setEngines] = useState<Engines | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [input, setInput] = useState("x^3 + 2x - 1");
-  const [syntax, setSyntax] = useState("text");
+  const [syntax, setSyntax] = useState<Syntax>("text");
   const [diffVar, setDiffVar] = useState("x");
-  const [rawBindings, setRawBindings] = useState({ x: "2", y: "3" });
-  const [assumptions, setAssumptions] = useState([]);
+  const [rawBindings, setRawBindings] = useState<Record<string, string>>({
+    x: "2",
+    y: "3",
+  });
+  const [assumptions, setAssumptions] = useState<string[]>([]);
   const [simplifyDeriv, setSimplifyDeriv] = useState(false);
 
   useEffect(() => {
-    loadEngines().then(setEngines, (e) =>
-      setLoadError(e?.message ?? String(e)),
+    loadEngines().then(setEngines, (e: unknown) =>
+      setLoadError(e instanceof Error ? e.message : String(e)),
     );
   }, []);
 
   // Bindings are expression strings (may be complex, e.g. "i" or "2+3i"). Every
   // non-empty entry is substituted before evaluation; extra (unused) variables
   // are harmless in both engines.
-  const bindings = useMemo(() => {
-    const out = {};
+  const bindings = useMemo<Record<string, string>>(() => {
+    const out: Record<string, string> = {};
     for (const [k, v] of Object.entries(rawBindings)) {
-      if (String(v).trim() !== "") out[k] = v;
+      if (v.trim() !== "") out[k] = v;
     }
     return out;
   }, [rawBindings]);
@@ -263,7 +280,7 @@ export default function App() {
   // every render. Marked invalid only when BOTH engines reject it (a string
   // may parse in one implementation but not the other). Rust handles freed.
   const assumptionValidity = useMemo(() => {
-    const m = new Map();
+    const m = new Map<string, boolean>();
     if (!engines) return m;
     for (const a of assumptions) {
       if (m.has(a)) continue;
@@ -289,7 +306,7 @@ export default function App() {
   // Deferring the params keeps typing responsive: React re-renders the inputs
   // urgently with the previous analysis, then recomputes at deferred priority,
   // coalescing rapid keystrokes into one analysis of the latest value.
-  const params = useMemo(
+  const params = useMemo<EngineParams>(
     () => ({
       input,
       syntax,
@@ -313,9 +330,10 @@ export default function App() {
 
   // Detected variables (union of both engines) drive the substitution inputs.
   const variables = useMemo(() => {
-    const s = new Set();
+    const s = new Set<string>();
     for (const a of [analysis?.js, analysis?.rust]) {
-      if (a?.variables?.ok) a.variables.value.forEach((v) => s.add(v));
+      const vars = a?.variables;
+      if (vars && vars.ok) vars.value.forEach((v) => s.add(v));
     }
     return [...s];
   }, [analysis]);
@@ -337,21 +355,28 @@ export default function App() {
 
   const { js, rust } = analysis;
   const bothParsed = !js.parseError && !rust.parseError;
+  const jsTree = okValue(js.tree);
+  const rustTree = okValue(rust.tree);
   const treesMatch =
     bothParsed &&
-    js.tree?.ok &&
-    rust.tree?.ok &&
-    deepEqual(js.tree.value, rust.tree.value);
+    jsTree !== undefined &&
+    rustTree !== undefined &&
+    deepEqual(jsTree, rustTree);
+  const jsSimp = okValue(js.simpTree);
+  const rustSimp = okValue(rust.simpTree);
   const simpMatch =
     bothParsed &&
-    js.simpTree?.ok &&
-    rust.simpTree?.ok &&
-    deepEqual(js.simpTree.value, rust.simpTree.value);
+    jsSimp !== undefined &&
+    rustSimp !== undefined &&
+    deepEqual(jsSimp, rustSimp);
 
-  const evalAgrees = (a, b) => {
+  const evalAgrees = (
+    a?: SafeResult<Complex | null>,
+    b?: SafeResult<Complex | null>,
+  ): boolean => {
     if (!a?.ok || !b?.ok) return false;
-    const va = a.value,
-      vb = b.value;
+    const va = a.value;
+    const vb = b.value;
     if (va === null && vb === null) return true;
     if (va && vb) {
       const scale = Math.max(1, Math.abs(va.re), Math.abs(va.im));

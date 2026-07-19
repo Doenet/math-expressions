@@ -1,7 +1,9 @@
 // Renders an AST in the JS `Tree` JSON shape (e.g. ["+", ["^", "x", 2], 1]) as
 // an indented, color-coded tree. Both engines emit this same shape.
 
-function classify(head) {
+import type { Tree as TreeValue } from "../types";
+
+function classify(head: string): string {
   const ops = new Set([
     "+",
     "-",
@@ -38,12 +40,12 @@ function classify(head) {
   return "node-head";
 }
 
-function Node({ value }) {
+function Node({ value }: { value: TreeValue }) {
   if (Array.isArray(value)) {
     const [head, ...children] = value;
     return (
       <li>
-        <span className={classify(head)}>{String(head)}</span>
+        <span className={classify(String(head))}>{String(head)}</span>
         <ul>
           {children.map((c, i) => (
             <Node key={i} value={c} />
@@ -65,7 +67,7 @@ function Node({ value }) {
   );
 }
 
-export default function Tree({ value }) {
+export default function Tree({ value }: { value: TreeValue }) {
   return (
     <ul className="ast-tree">
       <Node value={value} />

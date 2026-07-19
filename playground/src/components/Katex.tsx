@@ -2,10 +2,16 @@ import { useMemo } from "react";
 import katex from "katex";
 
 /** Render a LaTeX string to HTML, swallowing errors into a red fallback. */
-export default function Katex({ tex, display = false }) {
-  const html = useMemo(() => {
+export default function Katex({
+  tex,
+  display = false,
+}: {
+  tex: string;
+  display?: boolean;
+}) {
+  const html = useMemo<string | null>(() => {
     try {
-      return katex.renderToString(tex ?? "", {
+      return katex.renderToString(tex, {
         displayMode: display,
         throwOnError: false,
         errorColor: "#c00",

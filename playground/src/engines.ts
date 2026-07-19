@@ -7,8 +7,24 @@
 // no-op for JS, a real wasm free for Rust) — see freeHandle below. Relying on
 // FinalizationRegistry GC corrupted the wasm heap under rapid handle churn.
 
-// JS implementation — the bundled ESM library from the repo's build output.
-import Context from "../../build/math-expressions.js";
+import type {
+  Complex,
+  Engine,
+  Engines,
+  JsExpr,
+  MathExprContext,
+  RustExpr,
+  RustModule,
+  Tree,
+} from "./types";
+
+// JS implementation — the bundled ESM library from the repo's build output. The
+// bundle ships no adjacent .d.ts for this relative path (the library's types
+// live in build/index.d.ts), so type its default export as our minimal
+// MathExprContext — only the members the adapter actually uses.
+// @ts-expect-error -- no declaration file alongside the built JS bundle
+import ContextUntyped from "../../build/math-expressions.js";
+const Context: MathExprContext = ContextUntyped;
 
 // Rust implementation — the wasm-bindgen glue is static-copied to /wasm/ by
 // vite-plugin-static-copy (see vite.config.js) and loaded at runtime by URL, so
@@ -21,7 +37,7 @@ const RUST_GLUE_URL = `${import.meta.env.BASE_URL}wasm/math_expressions.js`;
  * `__wbg_ptr === 0` check guards against a double free (wasm-bindgen zeroes the
  * pointer on free), which would otherwise corrupt the wasm heap.
  */
-function freeHandle(h) {
+function freeHandle(h: RustExpr): void {
   try {
     if (h && typeof h.free === "function" && h.__wbg_ptr !== 0) h.free();
   } catch {
@@ -30,27 +46,25 @@ function freeHandle(h) {
 }
 
 /**
- * Normalise an evaluation result to `{ re, im } | null`. Accepts a real number,
- * a mathjs `Complex` (`{ re, im }`), or a `[re, im]` pair (the Rust binding).
+ * Normalise an evaluation result to `Complex | null`. Accepts a real number, a
+ * mathjs `Complex` (`{ re, im }`), or a `[re, im]` pair (the Rust binding).
  */
-function normalizeComplex(r) {
+function normalizeComplex(r: unknown): Complex | null {
   if (r === undefined || r === null) return null;
   if (typeof r === "number")
     return Number.isFinite(r) ? { re: r, im: 0 } : null;
   if (Array.isArray(r) && r.length === 2) {
-    return Number.isFinite(r[0]) && Number.isFinite(r[1])
-      ? { re: r[0], im: r[1] }
-      : null;
+    const [re, im] = r as [number, number];
+    return Number.isFinite(re) && Number.isFinite(im) ? { re, im } : null;
   }
   if (typeof r === "object" && "re" in r && "im" in r) {
-    return Number.isFinite(r.re) && Number.isFinite(r.im)
-      ? { re: r.re, im: r.im }
-      : null;
+    const { re, im } = r as Complex;
+    return Number.isFinite(re) && Number.isFinite(im) ? { re, im } : null;
   }
   return null;
 }
 
-const jsEngine = {
+const jsEngine: Engine<JsExpr> = {
   name: "JavaScript",
   parse(text, syntax) {
     return syntax === "latex"
@@ -61,20 +75,20 @@ const jsEngine = {
   toText: (h) => h.toString(),
   toLatex: (h) => h.toLatex(),
   variables: (h) => h.variables(),
-  substitute(h, subs) {
-    // subs: { varName: expressionString } — values may be complex, e.g. "2+3i".
-    const keys = Object.keys(subs);
-    if (keys.length === 0) return h;
-    const map = {};
-    for (const k of keys) map[k] = Context.fromText(String(subs[k])).tree;
-    return h.substitute(map);
-  },
   // Substitute the bindings (which may be complex expressions), then evaluate to
-  // a complex constant. Returns { re, im }, or null when it can't be reduced to
-  // one (free variables, non-finite) — matching the Rust side's null.
+  // a complex constant. Returns Complex, or null when it can't be reduced to one
+  // (free variables, non-finite) — matching the Rust side's null. JS handles are
+  // plain GC'd objects, so no freeing is needed here.
   evaluate(h, subs) {
     try {
-      return normalizeComplex(this.substitute(h, subs).evaluate({}));
+      const keys = Object.keys(subs);
+      let closed = h;
+      if (keys.length > 0) {
+        const map: Record<string, JsExpr["tree"]> = {};
+        for (const k of keys) map[k] = Context.fromText(subs[k]).tree;
+        closed = h.substitute(map);
+      }
+      return normalizeComplex(closed.evaluate({}));
     } catch {
       return null;
     }
@@ -104,7 +118,7 @@ const jsEngine = {
   equals: (a, b) => a.equals(b),
 };
 
-function makeRustEngine(rust) {
+function makeRustEngine(rust: RustModule): Engine<RustExpr> {
   return {
     name: "Rust (WASM)",
     parse(text, syntax) {
@@ -112,20 +126,22 @@ function makeRustEngine(rust) {
         ? rust.parse_latex(text)
         : rust.parse_text(text);
     },
-    tree: (h) => JSON.parse(h.tree_json()),
+    // JSON.parse returns `any`; assert the documented Tree shape at this one
+    // boundary rather than letting `any` flow into the UI untyped.
+    tree: (h) => JSON.parse(h.tree_json()) as Tree,
     toText: (h) => h.to_text(),
     toLatex: (h) => h.to_latex(),
     variables: (h) => Array.from(h.variables()),
     // Substitute the (possibly complex) bindings, then evaluate to a complex
-    // constant [re, im]. Returns { re, im }, or null when it can't be reduced
-    // to one (free variables, non-finite). Every intermediate wasm handle
-    // created here is freed deterministically (never `h` itself).
+    // constant [re, im]. Returns Complex, or null when it can't be reduced to
+    // one (free variables, non-finite). Every intermediate wasm handle created
+    // here is freed deterministically (never `h` itself).
     evaluate(h, subs) {
-      const temps = [];
+      const temps: RustExpr[] = [];
       try {
         let cur = h;
         for (const [k, v] of Object.entries(subs)) {
-          const val = rust.parse_text(String(v));
+          const val = rust.parse_text(v);
           temps.push(val);
           cur = cur.substitute_var(k, val);
           if (cur !== h) temps.push(cur);
@@ -153,8 +169,8 @@ function makeRustEngine(rust) {
 }
 
 /** Load both engines. Resolves once the wasm module is initialised. */
-export async function loadEngines() {
-  const rust = await import(/* @vite-ignore */ RUST_GLUE_URL);
+export async function loadEngines(): Promise<Engines> {
+  const rust = (await import(/* @vite-ignore */ RUST_GLUE_URL)) as RustModule;
   await rust.default(); // wasm-bindgen init()
   return { js: jsEngine, rust: makeRustEngine(rust) };
 }

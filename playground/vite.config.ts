@@ -10,7 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // own wasm-bindgen output directory. Resolve that location and static-copy its
 // browser assets into the served tree under /wasm/, instead of vendoring them
 // into the playground source. The glue is loaded at runtime by URL (see
-// src/engines.js), so Vite never bundles the wasm — this copy is its sole
+// src/engines.ts), so Vite never bundles the wasm — this copy is its sole
 // delivery. (Pattern from Doenet/DoenetML's doenetml-prototype vite.config.ts.)
 const wasmPkgDir = path.resolve(here, "../math-expressions-rs/pkg");
 

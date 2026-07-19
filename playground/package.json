@@ -8,6 +8,7 @@
     "dev": "wireit",
     "build": "wireit",
     "build:wasm": "wireit",
+    "typecheck": "wireit",
     "preview": "wireit"
   },
   "wireit": {
@@ -20,12 +21,14 @@
     "build": {
       "command": "vite build",
       "dependencies": [
-        "build:wasm"
+        "build:wasm",
+        "typecheck"
       ],
       "files": [
         "src/**",
         "index.html",
-        "vite.config.js",
+        "vite.config.ts",
+        "tsconfig.json",
         "../build/math-expressions.js"
       ],
       "output": [
@@ -38,6 +41,16 @@
         "rebuild-wasm.sh",
         "../math-expressions-rs/src/**",
         "../math-expressions-rs/Cargo.toml"
+      ],
+      "output": []
+    },
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "files": [
+        "src/**",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package-lock.json"
       ],
       "output": []
     },
@@ -54,7 +67,11 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vite-plugin-static-copy": "^1.0.6",
     "wireit": "^0.14.9"
