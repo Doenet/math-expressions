@@ -88,6 +88,10 @@ pub struct ResourceLimits {
     /// Node/operation budget for the exact-constant evaluator (`exact.rs`,
     /// FULL_SIMPLIFY §9). Bounds the S1 `is_zero` tower evaluation.
     pub max_exact_eval_ops: i64,
+    /// Cap on the number of summands `ratform` (FULL_SIMPLIFY §9, S2) will put
+    /// over a common denominator before bailing to the unchanged form —
+    /// bounds `together`/`cancel` coefficient swell.
+    pub max_ratform_terms: usize,
     /// Accepted+rejected step cap for the adaptive ODE solver.
     pub max_ode_steps: usize,
     /// Candidate singular cells per divergence-classification call.
@@ -124,6 +128,7 @@ impl Default for ResourceLimits {
             max_lrt_degree: 64,
             max_factor_degree: 64,
             max_exact_eval_ops: 10_000,
+            max_ratform_terms: 512,
             max_ode_steps: 10_000,
             max_singularity_candidates: 32,
             max_certificate_bisections: 4_096,

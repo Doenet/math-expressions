@@ -13,6 +13,7 @@ pub(crate) mod expand;
 pub(crate) mod order;
 pub(crate) mod present;
 pub(crate) mod simplify;
+pub(crate) mod special_values;
 pub(crate) mod syntactic;
 
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
@@ -25,6 +26,7 @@ pub(crate) use present::present;
 pub(crate) use simplify::{simplify_canonical, simplify_core};
 pub use expand::expand;
 pub use simplify::{simplify, simplify_logical, simplify_with};
+pub use special_values::fold_special_values;
 pub use syntactic::normalize_syntactic;
 
 /// Bottom-up canonicalization: canonicalize children, then apply the smart

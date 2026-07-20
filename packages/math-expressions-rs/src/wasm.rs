@@ -143,6 +143,14 @@ impl Expression {
         Expression(reduce_rational(&self.0))
     }
 
+    /// Put the expression over a single common denominator and reduce it to
+    /// lowest terms (FULL_SIMPLIFY S2). Non-rational subtrees (`sin x`, `√x`,
+    /// …) are held fixed as opaque kernels, so `1/sin(x) + 1/sin(x)` becomes
+    /// `2/sin(x)` and `1/(x+1) + 1/(x-1)` becomes `2x/(x^2-1)`.
+    pub fn together(&self) -> Expression {
+        Expression(crate::ratform::together(&self.0))
+    }
+
     /// Replace `var` with `value` everywhere (no simplification).
     pub fn substitute_var(&self, var: &str, value: &Expression) -> Expression {
         let map = std::collections::HashMap::from([(var.to_string(), value.0.clone())]);

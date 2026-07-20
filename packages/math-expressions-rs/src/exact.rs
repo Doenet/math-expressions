@@ -158,6 +158,41 @@ impl Exact {
         None
     }
 
+    /// This value as a canonical expression — the inverse direction of
+    /// [`exact_eval`], used by the S3 folder to emit `sin(pi/6) → 1/2`,
+    /// `sec(pi/4) → sqrt(2)`, etc.
+    pub(crate) fn to_expr(&self) -> Expr {
+        if self.terms.is_empty() {
+            return Expr::int(0);
+        }
+        let mut terms = Vec::with_capacity(self.terms.len());
+        for ((pi, e, rad), c) in &self.terms {
+            let mut factors: Vec<Expr> = vec![Expr::Num(Number::from_bigrational(c.clone()))];
+            if *pi > 0 {
+                factors.push(crate::norm::pow(
+                    Expr::Const(MathConst::Pi),
+                    Expr::int(i64::from(*pi)),
+                ));
+            }
+            if *e > 0 {
+                factors.push(crate::norm::pow(
+                    Expr::Const(MathConst::E),
+                    Expr::int(i64::from(*e)),
+                ));
+            }
+            if !rad.is_one() {
+                let radn = Expr::Num(Number::from_bigrational(BigRational::from_integer(rad.clone())));
+                let half = Expr::Num(Number::from_bigrational(BigRational::new(
+                    BigInt::one(),
+                    BigInt::from(2),
+                )));
+                factors.push(crate::norm::pow(radn, half));
+            }
+            terms.push(crate::norm::mul(factors));
+        }
+        crate::norm::canonicalize(&crate::norm::add(terms))
+    }
+
     fn pow_int(&self, k: i64, budget: &mut i64) -> Option<Exact> {
         if k == 0 {
             return Some(Exact::rat(BigRational::one()));
@@ -376,6 +411,22 @@ fn eval_trig(name: &str, arg: &Expr, budget: &mut i64) -> Option<Exact> {
     }
 }
 
+/// The exact value of `name(arg)` when `arg` is a rational multiple of π on the
+/// π/12 lattice (`sin(pi/6) → 1/2`), as a canonical expression, or `None` off
+/// the lattice, at a pole, or when the reciprocal value falls outside the
+/// single-term inversion S1 supports. Used by the S3 folder.
+pub(crate) fn trig_special_value(name: &str, arg: &Expr) -> Option<Expr> {
+    let mut budget = crate::resource_limits::current().max_exact_eval_ops;
+    let v = match name {
+        "sin" | "cos" | "tan" => eval_trig(name, arg, &mut budget)?,
+        "cot" => eval_trig("tan", arg, &mut budget)?.inverse()?,
+        "sec" => eval_trig("cos", arg, &mut budget)?.inverse()?,
+        "csc" => eval_trig("sin", arg, &mut budget)?.inverse()?,
+        _ => return None,
+    };
+    Some(v.to_expr())
+}
+
 /// sin at k·15°, k ∈ 0..24. Uses the 0..12 table and sin(θ+180°) = −sin θ.
 fn sin_lattice(k: usize) -> Exact {
     if k >= 12 {
@@ -430,29 +481,67 @@ fn tan_lattice(k: usize) -> Option<Exact> {
 /// The `_a` assumptions are accepted for forward compatibility (sign/realness
 /// reasoning is chunk S5) but not yet consulted.
 pub fn is_zero(e: &Expr, _a: &Assumptions) -> Tri {
-    // (a) structural: expand + canonicalize. Catches polynomial identities.
     let c = crate::norm::canonicalize(&crate::norm::expand(e));
-    if matches!(&c, Expr::Num(n) if n.is_zero()) {
+    let vars = free_vars(&c);
+    if let Some(v) = certify_canonical(&c, &vars) {
+        return Some(v);
+    }
+    if vars.is_empty() {
+        None
+    } else {
+        // (c) certified refuter: a single certified-nonzero sample proves the
+        // expression is not identically zero. Sampling can never *confirm*
+        // zero, so this stage only ever yields `Some(false)` or `None`.
+        refute_by_sampling(&c, &vars)
+    }
+}
+
+/// Accept-only fast path of [`is_zero`]: `true` iff `e` is *certified*
+/// identically zero by the exact stages alone — no numeric sampling. `false`
+/// means "not certified", **not** "nonzero". The right gate for callers with
+/// their own cheaper rejection test (e.g. the integration gate), since the
+/// sampling refuter burns its full arbitrary-precision budget precisely when
+/// the expression *is* zero.
+pub(crate) fn certified_zero(e: &Expr, _a: &Assumptions) -> bool {
+    let c = crate::norm::canonicalize(&crate::norm::expand(e));
+    let vars = free_vars(&c);
+    certify_canonical(&c, &vars) == Some(true)
+}
+
+/// The non-sampling certification pipeline on a canonical, expanded input:
+/// (a) structural cancellation, (d) rational normal form, (b) exact constant
+/// evaluation (variable-free only — the one stage that can also certify
+/// *nonzero*), then the RootOf reducer. `None` = undecided.
+fn certify_canonical(c: &Expr, vars: &[String]) -> Tri {
+    // (a) structural: expand + canonicalize caught polynomial identities.
+    if matches!(c, Expr::Num(n) if n.is_zero()) {
         return Some(true);
     }
-    let vars: Vec<String> = crate::ops::variables(&c)
-        .into_iter()
-        .filter(|v| !crate::sym::is_constant_symbol(v))
-        .collect();
+    // (d) rational-function normalization (S2): a rational identity whose
+    // combined numerator cancels to zero is certified zero — this decides
+    // `1/(x+1) + 1/(x-1) - 2x/(x²-1)` and the like, treating opaque kernels as
+    // independent indeterminates (sound: never `true` for a nonzero value).
+    if crate::ratform::is_identically_zero(c) {
+        return Some(true);
+    }
     if vars.is_empty() {
         // (b) exact constant evaluation. Failure falls through to the RootOf
         // decider, then to Unknown (adversarial almost-zeros land there —
         // never a wrong `Some(true)`).
-        if let Some(v) = exact_eval(&c) {
+        if let Some(v) = exact_eval(c) {
             return Some(v.is_zero());
         }
-        rootof_is_zero(&c)
-    } else {
-        // (c) certified refuter: a single certified-nonzero sample proves the
-        // expression is not identically zero. Sampling can never *confirm*
-        // zero, so this branch only ever yields `Some(false)` or `None`.
-        refute_by_sampling(&c, &vars)
+        return rootof_is_zero(c);
     }
+    None
+}
+
+/// The non-constant free variable names of `c`.
+fn free_vars(c: &Expr) -> Vec<String> {
+    crate::ops::variables(c)
+        .into_iter()
+        .filter(|v| !crate::sym::is_constant_symbol(v))
+        .collect()
 }
 
 /// Deterministic "random" rational sample points, chosen to dodge common

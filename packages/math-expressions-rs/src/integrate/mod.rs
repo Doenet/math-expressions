@@ -35,21 +35,22 @@ pub fn integrate(f: &Expr, x: &str, _assumptions: &Assumptions) -> Option<Expr> 
     let fc = canonicalize(f);
     let mut fuel = crate::resource_limits::current().max_integration_steps;
     let result = integ(&fc, x, &mut fuel)?;
-    // The gate (plan §2c): verify by differentiation. Upgraded to the certified
-    // zero-equivalence service (FULL_SIMPLIFY S1): prove `F' - f ≡ 0` exactly
-    // when the residual lands in the decidable tower, and fall back to the
-    // library's sampled equality only when `is_zero` is Unknown. Strictly
-    // stronger — a certified verdict (accept or reject) never defers to
-    // sampling, and `is_zero` never certifies a wrong answer.
+    // The gate (plan §2c): verify by differentiation. Accept iff the sampled
+    // `equals` OR the certified exact stages (FULL_SIMPLIFY S1: structural
+    // cancellation, exact constants, rational normal form) confirm
+    // `F' - f ≡ 0`. `equals` runs first because it is cheap and accepts almost
+    // every correct candidate; the certified pass then *rescues* sound
+    // antiderivatives that sampling wrongly rejects (tolerance/domain
+    // artifacts). The disjunction is order-independent, so this costs the old
+    // gate's time on the accept path. `is_zero`'s sampling-refuter stage is
+    // deliberately not used here: its certified reject duplicates the `equals`
+    // reject, and on true zeros it burns its full arbitrary-precision budget
+    // before returning Unknown (measured ~35× suite slowdown).
     let df = crate::diff::derivative(&result, x);
-    let residual = Expr::Add(vec![df.clone(), Expr::Neg(Box::new(fc.clone()))]);
-    match crate::exact::is_zero(&residual, _assumptions) {
-        Some(true) => {}
-        Some(false) => return None,
-        None => {
-            if !crate::eq::equals(&df, &fc, &crate::eq::EqOptions::default()) {
-                return None;
-            }
+    if !crate::eq::equals(&df, &fc, &crate::eq::EqOptions::default()) {
+        let residual = Expr::Add(vec![df, Expr::Neg(Box::new(fc.clone()))]);
+        if !crate::exact::certified_zero(&residual, _assumptions) {
+            return None;
         }
     }
     Some(crate::norm::simplify(&result))

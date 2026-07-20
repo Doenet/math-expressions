@@ -300,7 +300,7 @@ pub(crate) fn rational_roots(p: &UPoly) -> (Vec<BigRational>, UPoly) {
 
 /// All positive divisors of `n` (n ≥ 1), or `None` if `n` doesn't fully
 /// factor with trial division under `max_trial_divisor`.
-fn divisors_capped(n: &BigInt) -> Option<Vec<BigInt>> {
+pub(crate) fn divisors_capped(n: &BigInt) -> Option<Vec<BigInt>> {
     let cap = crate::resource_limits::current().max_trial_divisor;
     let mut rest = n.clone();
     let mut factors: Vec<(BigInt, u32)> = Vec::new();

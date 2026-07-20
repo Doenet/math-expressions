@@ -16,6 +16,7 @@ pub mod eq;
 pub mod eval;
 pub mod exact;
 pub mod factor;
+pub mod ratform;
 pub mod grade;
 pub mod expr;
 pub mod functions;
@@ -48,7 +49,7 @@ pub use eq::discrete_infinite::{create_discrete_infinite_set, match_discrete_inf
 pub use eq::{
     contains_blank, equals, equals_syntactic, equals_via_real, finite_field_evaluate, EqOptions,
 };
-pub use factor::factor;
+pub use factor::{factor, factor_terms};
 pub use integrate::integrate;
 pub use grade::{
     equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, solve_linear,
