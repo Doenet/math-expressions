@@ -475,7 +475,7 @@ pub(crate) fn isolate_real_roots(p: &[BigRational]) -> Option<Vec<(BigRational, 
 /// f64 resolution by sign bisection — one exact polynomial evaluation per
 /// step, so wide Cauchy-bound intervals (2048 halvings ≈ 616 decimal orders
 /// of magnitude) stay cheap.
-fn refine_to_f64(p: &[BigRational], mut a: BigRational, mut b: BigRational) -> Option<f64> {
+pub(crate) fn refine_to_f64(p: &[BigRational], mut a: BigRational, mut b: BigRational) -> Option<f64> {
     let two = BigRational::from_integer(BigInt::from(2));
     let sgn = |v: &BigRational| -> i8 {
         if v.is_zero() {

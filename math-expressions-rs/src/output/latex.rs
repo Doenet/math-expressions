@@ -231,11 +231,12 @@ impl Writer {
             .map(|a| self.emit(a, prec::LIST + 1))
             .collect::<Vec<_>>()
             .join(", ");
-        // Function heads with dedicated LaTeX spellings.
+        // Function heads with dedicated LaTeX spellings (`FnDef::latex_head`).
         let head_str = match head {
-            Expr::Sym(s) if s.name() == "log10" => "\\log_{10}".to_string(),
-            Expr::Sym(s) if s.name() == "re" => "\\Re".to_string(),
-            Expr::Sym(s) if s.name() == "im" => "\\Im".to_string(),
+            Expr::Sym(s) => match crate::functions::latex_apply_head(&s.name()) {
+                Some(h) => h.to_string(),
+                None => self.emit(head, prec::POW),
+            },
             _ => self.emit(head, prec::POW),
         };
         (
@@ -402,6 +403,12 @@ fn is_shorthand_angle(e: &Expr) -> bool {
 /// Symbol name → LaTeX. Multi-char names in the allowed set become control
 /// words (`\theta`); functions likewise; anything else is `\operatorname{}`.
 fn string_convert(name: &str) -> String {
+    // Function spellings carry their control word on the registry
+    // (`asin` → `\arcsin`, `ln` → `\ln`); unlisted spellings fall through
+    // to the `\operatorname{…}` path below.
+    if let Some(cmd) = crate::functions::latex_command(name) {
+        return format!("\\{}", cmd);
+    }
     let name = convert_latex_symbol(name).unwrap_or(name);
     if name.chars().count() > 1 {
         if is_allowed_latex_symbol(name) {
@@ -439,6 +446,10 @@ fn rel_symbol(op: RelOp) -> &'static str {
     }
 }
 
+/// Non-function symbols with LaTeX control words: greek letters and
+/// notation. Function names live on `FnDef::latex_commands` in
+/// `crate::functions` (Phase 2 of the improvement plan moves this list to a
+/// shared notation table too).
 const ALLOWED_LATEX_SYMBOLS: &[&str] = &[
     "alpha",
     "beta",
@@ -476,36 +487,6 @@ const ALLOWED_LATEX_SYMBOLS: &[&str] = &[
     "omega",
     "Omega",
     "partial",
-    "abs",
-    "exp",
-    "log",
-    "ln",
-    "log10",
-    "sign",
-    "sqrt",
-    "erf",
-    "cos",
-    "cosh",
-    "cot",
-    "coth",
-    "csc",
-    "csch",
-    "sec",
-    "sech",
-    "sin",
-    "sinh",
-    "tan",
-    "tanh",
-    "arcsin",
-    "arccos",
-    "arctan",
-    "arccsc",
-    "arcsec",
-    "arccot",
-    "arg",
-    "Re",
-    "Im",
-    "det",
     "angle",
     "perp",
     "circ",
@@ -517,14 +498,10 @@ fn is_allowed_latex_symbol(s: &str) -> bool {
     ALLOWED_LATEX_SYMBOLS.contains(&s)
 }
 
+/// Notation-symbol respellings (the function-name conversions `acos` →
+/// `arccos` are `FnDef::latex_commands` now).
 fn convert_latex_symbol(s: &str) -> Option<&str> {
     Some(match s {
-        "acos" => "arccos",
-        "acot" => "arccot",
-        "acsc" => "arccsc",
-        "asec" => "arcsec",
-        "asin" => "arcsin",
-        "atan" => "arctan",
         "deg" => "circ",
         "emptyset" => "varnothing",
         _ => return None,

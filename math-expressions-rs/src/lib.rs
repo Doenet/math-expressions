@@ -16,6 +16,7 @@ pub mod eq;
 pub mod eval;
 pub mod grade;
 pub mod expr;
+pub mod functions;
 pub mod integrate;
 pub mod js_match;
 pub mod js_tree;
@@ -65,5 +66,8 @@ pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};
 pub use parse::text::{TextToAst, TextToAstOptions};
 pub use parse::ParseError;
-pub use precise::{evaluate_to_precision, integrate_to_precision, Precise};
+pub use precise::{
+    evaluate_to_precision, integrate_analyzed, integrate_to_precision, IntegralVerdict, Precise,
+    SingularPoint,
+};
 pub use sym::Sym;

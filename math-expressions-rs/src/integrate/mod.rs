@@ -8,7 +8,7 @@
 //! the gate `equals(derivative(F, x), f)` — a wrong answer is discarded,
 //! never returned.
 
-mod rational;
+pub(crate) mod rational;
 
 use crate::assumptions::Assumptions;
 use crate::expr::Expr;
@@ -227,56 +227,14 @@ fn table_match(e: &Expr, x: &str) -> Option<Expr> {
             None
         }
         Expr::Apply(head, args) => {
+            // The elementary antiderivative table is `FnDef::antiderivative`
+            // in `crate::functions` (alias-aware: `arctan` finds `atan`).
             let (Expr::Sym(f), [u]) = (&**head, args.as_slice()) else {
                 return None;
             };
+            let builder = crate::functions::antiderivative_builder(&f.name())?;
             let b = linear_coeff(u, x)?;
-            let u = u.clone();
-            let g = match f.name().as_str() {
-                "sin" => mul(vec![int(-1), apply("cos", u)]),
-                "cos" => apply("sin", u),
-                "tan" => mul(vec![int(-1), apply("ln", apply("cos", u))]),
-                "cot" => apply("ln", apply("sin", u)),
-                "exp" => apply("exp", u),
-                "ln" | "log" => add(vec![
-                    mul(vec![u.clone(), apply("ln", u.clone())]),
-                    mul(vec![int(-1), u]),
-                ]),
-                "log10" => mul(vec![
-                    add(vec![
-                        mul(vec![u.clone(), apply("ln", u.clone())]),
-                        mul(vec![int(-1), u]),
-                    ]),
-                    pow(apply("ln", int(10)), int(-1)),
-                ]),
-                "sqrt" => mul(vec![
-                    Expr::Num(Number::rat(2, 3)),
-                    pow(u, Expr::Num(Number::rat(3, 2))),
-                ]),
-                "sinh" => apply("cosh", u),
-                "cosh" => apply("sinh", u),
-                "tanh" => apply("ln", apply("cosh", u)),
-                "atan" | "arctan" => add(vec![
-                    mul(vec![u.clone(), apply("atan", u.clone())]),
-                    mul(vec![
-                        Expr::Num(Number::rat(-1, 2)),
-                        apply("ln", add(vec![int(1), pow(u, int(2))])),
-                    ]),
-                ]),
-                "asin" | "arcsin" => add(vec![
-                    mul(vec![u.clone(), apply("asin", u.clone())]),
-                    apply("sqrt", add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])])),
-                ]),
-                "acos" | "arccos" => add(vec![
-                    mul(vec![u.clone(), apply("acos", u.clone())]),
-                    mul(vec![
-                        int(-1),
-                        apply("sqrt", add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])])),
-                    ]),
-                ]),
-                _ => return None,
-            };
-            Some(over(g, &b))
+            Some(over(builder(u.clone()), &b))
         }
         _ => None,
     }

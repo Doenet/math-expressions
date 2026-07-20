@@ -156,5 +156,23 @@ check("solve_ode chunk chaining", (() => {
   return Math.abs(b.last_y()[0] - Math.exp(-1)) < 1e-6;
 })());
 
+// ---- divergence classification (DIVERGENCE_PLAN) ----
+check("integrate_analyzed divergent", (() => {
+  const r = JSON.parse(P("1/x^2").integrate_analyzed("x", P("-1"), P("1"), 8));
+  return r.status === "divergent" && Math.abs(r.singularities[0].location) < 1e-9;
+})());
+check("integrate_analyzed improper value", (() => {
+  const r = JSON.parse(P("1/sqrt(x)").integrate_analyzed("x", P("0"), P("1"), 8));
+  return r.status === "value" && Math.abs(r.value - 2) < 1e-7;
+})());
+check("integrate_analyzed proper value", (() => {
+  const r = JSON.parse(P("sin(x)").integrate_analyzed("x", P("0"), P("1"), 10));
+  return r.status === "value" && Math.abs(r.value - (1 - Math.cos(1))) < 1e-9;
+})());
+check("integrate_to_precision divergence reason", (() => {
+  const s = P("tan(x)").integrate_to_precision("x", P("0"), P("2"), 8);
+  return s === undefined; // refused (divergent), same contract as before
+})());
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -34,7 +34,7 @@ fn int(i: i64) -> Expr {
 
 /// A canonical tree as a rational function in `x` over ℚ.
 /// `None` = not in ℚ(x) (symbolic coefficients, other functions, …).
-pub(super) fn expr_to_ratfun(e: &Expr, x: &str) -> Option<(UPoly, UPoly)> {
+pub(crate) fn expr_to_ratfun(e: &Expr, x: &str) -> Option<(UPoly, UPoly)> {
     let cap = crate::limits::current().max_lrt_degree;
     fn conv(e: &Expr, x: &str, cap: usize) -> Option<(UPoly, UPoly)> {
         let one = || vec![BigRational::one()];

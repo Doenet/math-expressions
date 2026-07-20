@@ -10,6 +10,9 @@ description = "Rust port of the math-expressions library (educational math CAS)"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# The size-oriented release profile lives in the WORKSPACE ROOT Cargo.toml
+# (cargo ignores profile sections in member manifests).
+
 [dependencies]
 num-bigint = "0.4"
 num-rational = "0.4"

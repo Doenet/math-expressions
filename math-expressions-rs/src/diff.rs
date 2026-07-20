@@ -155,42 +155,10 @@ fn outer_derivative(fname: &str, arg: &Expr) -> Option<Expr> {
 }
 
 /// The mathjs `d/dx f(x)` output for each supported `f`, as a text template in
-/// the placeholder `x` (equivalent forms for sqrt/cbrt). `arc*` spellings
-/// alias the `a*` names.
+/// the placeholder `x`. The table is `FnDef::derivative` in
+/// `crate::functions` (alias-aware, so `arc*` spellings find the `a*` entry).
 fn template_for(fname: &str) -> Option<&'static str> {
-    let template = match fname {
-        "sin" => "cos(x)",
-        "cos" => "-sin(x)",
-        "tan" => "sec(x)^2",
-        "sec" => "sec(x)*tan(x)",
-        "csc" => "-csc(x)*cot(x)",
-        "cot" => "-csc(x)^2",
-        "sinh" => "cosh(x)",
-        "cosh" => "sinh(x)",
-        "tanh" => "sech(x)^2",
-        "sech" => "-sech(x)*tanh(x)",
-        "csch" => "-csch(x)*coth(x)",
-        "coth" => "-csch(x)^2",
-        "asin" | "arcsin" => "1/sqrt(1 - x^2)",
-        "acos" | "arccos" => "-1/sqrt(1 - x^2)",
-        "atan" | "arctan" => "1/(x^2 + 1)",
-        "acot" | "arccot" => "-1/(x^2 + 1)",
-        "asec" | "arcsec" => "(1/sqrt(x^2 - 1))/abs(x)",
-        "acsc" | "arccsc" => "-(1/sqrt(x^2 - 1))/abs(x)",
-        "asinh" | "arcsinh" => "1/sqrt(x^2 + 1)",
-        "acosh" | "arccosh" => "1/sqrt(x^2 - 1)",
-        "atanh" | "arctanh" => "1/(1 - x^2)",
-        "acoth" | "arccoth" => "-1/(1 - x^2)",
-        "asech" | "arcsech" => "-(1/sqrt(1 - x^2))/x",
-        "acsch" | "arccsch" => "-(1/sqrt(x^2 + 1))/abs(x)",
-        "exp" => "exp(x)",
-        "log" | "ln" => "1/x",
-        "sqrt" => "1/(2*sqrt(x))",
-        "cbrt" => "1/(3*cbrt(x)^2)",
-        "abs" => "abs(x)/x",
-        _ => return None,
-    };
-    Some(template)
+    crate::functions::derivative_template(fname)
 }
 
 // ---- small faithful-layer builders ----

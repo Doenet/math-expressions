@@ -698,10 +698,10 @@ fn canon_apply(head: Expr, args: Vec<Expr>) -> Expr {
     // application — `sin^2(x)` → `sin(x)^2` — so both spellings share ONE
     // canonical form and downstream rules (e.g. the trig Pythagorean rule)
     // match a single shape. Mirrors `pass_applied_functions` in syntactic.rs,
-    // using the same MOVE_EXPONENT_OUTSIDE set.
+    // using the same `move_exponent_spellings` registry facet.
     if let Expr::Pow(inner, exp) = &head {
         if let Expr::Sym(f) = &**inner {
-            if syntactic::MOVE_EXPONENT_OUTSIDE.contains(&f.name().as_str())
+            if crate::functions::moves_exponent_outside(&f.name())
                 && !matches!(&**exp, Expr::Num(Number::Int(-1)))
             {
                 let exp = (**exp).clone();
@@ -794,23 +794,9 @@ fn factorial_of(n: i64) -> Option<Number> {
 
 /// The inverse of an invertible (trig/hyperbolic) function, using the
 /// normalized `a…` spelling. `None` for functions without a notated inverse.
+/// (Table: `FnDef::inverse` in `crate::functions`.)
 fn inverse_function_name(name: &str) -> Option<&'static str> {
-    Some(match name {
-        "sin" => "asin",
-        "cos" => "acos",
-        "tan" => "atan",
-        "sec" => "asec",
-        "csc" => "acsc",
-        "cot" => "acot",
-        "sinh" => "asinh",
-        "cosh" => "acosh",
-        "tanh" => "atanh",
-        "sech" => "asech",
-        "csch" => "acsch",
-        "coth" => "acoth",
-        // Already-inverse names spelled `arc…` normalize elsewhere.
-        _ => return None,
-    })
+    crate::functions::inverse_of(name)
 }
 
 /// Canonicalize a function head's name (`arcsin → asin`, `ln → log`, …). The
@@ -825,23 +811,8 @@ fn normalize_head(head: Expr) -> Expr {
 }
 
 /// The function-name normalization table (lib/expression/normalization/
-/// standard_form.js `function_normalizations`).
+/// standard_form.js `function_normalizations`; now `FnDef::aliases` in
+/// `crate::functions`).
 fn normalize_function_name(name: &str) -> Option<&'static str> {
-    Some(match name {
-        "ln" => "log",
-        "arccos" => "acos",
-        "arccosh" => "acosh",
-        "arcsin" => "asin",
-        "arcsinh" => "asinh",
-        "arctan" => "atan",
-        "arctanh" => "atanh",
-        "arcsec" => "asec",
-        "arcsech" => "asech",
-        "arccsc" => "acsc",
-        "arccsch" => "acsch",
-        "arccot" => "acot",
-        "arccoth" => "acoth",
-        "cosec" => "csc",
-        _ => return None,
-    })
+    crate::functions::canonical_name(name)
 }

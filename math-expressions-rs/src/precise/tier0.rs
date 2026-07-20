@@ -4,7 +4,7 @@
 //! planning pass (the magnitude information whose absence sank the §1c
 //! prototype's static planning).
 
-use super::kernels::REGISTRY;
+use super::kernels::registry;
 use super::tape::{CompiledExpr, Op};
 use crate::num::Number;
 
@@ -154,7 +154,7 @@ fn eval_op(
         }
         Op::Call(id) => {
             let x = stack.pop().unwrap();
-            let k = &REGISTRY[*id as usize];
+            let k = registry()[*id as usize];
             if !(k.domain)(x.val) {
                 return Err("function domain edge");
             }
@@ -368,7 +368,7 @@ fn ceval_op(
         }
         Op::Call(id) => {
             let x = stack.pop().unwrap();
-            let k = &REGISTRY[*id as usize];
+            let k = registry()[*id as usize];
             let v = (k.cf)(x.val);
             let d = (k.cdfm)(x.val);
             if !d.is_finite() || !v.re.is_finite() || !v.im.is_finite() {

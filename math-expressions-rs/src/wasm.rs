@@ -628,3 +628,44 @@ pub fn solve_ode_expressions(
     crate::ode::solve_ode_exprs(&comps, ind_var, &state_vars, t0, t1, &y0, tol, max_steps)
         .map(OdeSolution)
 }
+
+#[wasm_bindgen]
+impl Expression {
+    /// Three-way definite-integral analysis (DIVERGENCE_PLAN): JSON
+    /// `{"status":"value","value":…}` |
+    /// `{"status":"divergent","singularities":[{"location":…,"exact":…?}]}` |
+    /// `{"status":"unknown","reason":…}`.
+    pub fn integrate_analyzed(
+        &self,
+        var: &str,
+        a: &Expression,
+        b: &Expression,
+        digits: usize,
+    ) -> String {
+        use crate::precise::IntegralVerdict;
+        let v = crate::precise::integrate_analyzed(&self.0, var, &a.0, &b.0, digits);
+        match v {
+            IntegralVerdict::Value(p) => serde_json::json!({
+                "status": "value",
+                "value": p.to_f64(),
+                "digits": p.to_decimal_string(digits),
+            })
+            .to_string(),
+            IntegralVerdict::Divergent { at } => {
+                let sing: Vec<serde_json::Value> = at
+                    .iter()
+                    .map(|s| {
+                        serde_json::json!({
+                            "location": s.location,
+                            "exact": s.exact.as_ref().map(|e| to_text(e, &Default::default())),
+                        })
+                    })
+                    .collect();
+                serde_json::json!({"status": "divergent", "singularities": sing}).to_string()
+            }
+            IntegralVerdict::Unknown(reason) => {
+                serde_json::json!({"status": "unknown", "reason": reason}).to_string()
+            }
+        }
+    }
+}

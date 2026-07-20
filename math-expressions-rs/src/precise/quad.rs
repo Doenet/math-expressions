@@ -20,7 +20,7 @@
 //! digits; larger requests refuse rather than pretend.
 
 use super::tape::{compile, CompiledExpr, Op};
-use super::{kernels::FixId, kernels::REGISTRY, needed_bits, Precise};
+use super::{kernels::registry, kernels::FixId, needed_bits, Precise};
 use crate::expr::Expr;
 use crate::num::Number;
 use crate::precise::fix::MpFix;
@@ -30,16 +30,16 @@ const EPS: f64 = f64::EPSILON;
 
 /// A closed interval with outward-safe bounds.
 #[derive(Clone, Copy, Debug)]
-struct Iv {
-    lo: f64,
-    hi: f64,
+pub(crate) struct Iv {
+    pub(crate) lo: f64,
+    pub(crate) hi: f64,
 }
 
 impl Iv {
     fn point(v: f64) -> Iv {
         Iv { lo: v, hi: v }.widen()
     }
-    fn mag(&self) -> f64 {
+    pub(crate) fn mag(&self) -> f64 {
         self.lo.abs().max(self.hi.abs())
     }
     /// Outward padding beyond any single f64 op's rounding (≤ 2 ulp for
@@ -73,7 +73,7 @@ fn monotone(x: Iv, f: impl Fn(f64) -> f64) -> Iv {
 
 /// Conservative interval sweep of a compiled tape over `var ∈ x`.
 /// `None` = domain edge, pole, or unbounded — the caller subdivides.
-fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
+pub(crate) fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
     let mut stack: Vec<Iv> = Vec::with_capacity(tape.max_stack);
     for op in &tape.ops {
         let v: Iv = match op {
@@ -159,7 +159,7 @@ fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
             }
             Op::Call(id) => {
                 let a = stack.pop().unwrap();
-                interval_call(REGISTRY[*id as usize].fix?, a)?
+                interval_call(registry()[*id as usize].fix?, a)?
             }
         };
         if !v.ok() {
@@ -364,18 +364,70 @@ pub fn integrate_to_precision(
     {
         return Precise::Unknown("free variables besides the integration variable");
     }
-    let Ok(tape_f) = compile(&fc) else {
-        return Precise::Unknown("integrand not numerically compilable");
+    // DIVERGENCE_PLAN §1: same Value/Unknown contract, better reason.
+    if super::diverge::is_certified_divergent(&fc, var, lo, hi) {
+        return Precise::Unknown("integral diverges on the interval");
+    }
+    let (tape_f, tape_d4) = match compile_pair(&fc, var) {
+        Ok(t) => t,
+        Err(why) => return Precise::Unknown(why),
     };
-    // Fourth symbolic derivative for the Simpson remainder.
-    let mut d = fc;
+    match adaptive_quadrature(&tape_f, &tape_d4, lo, hi, digits, 0.0) {
+        Ok((total, err_total)) => package(total, err_total, digits, negate),
+        Err(why) => Precise::Unknown(why),
+    }
+}
+
+/// Compile the integrand and its 4th symbolic derivative (for the Simpson
+/// remainder) — shared with the divergence classifier's sub-interval runs.
+pub(crate) fn compile_pair(
+    fc: &Expr,
+    var: &str,
+) -> Result<(CompiledExpr, CompiledExpr), &'static str> {
+    let Ok(tape_f) = compile(fc) else {
+        return Err("integrand not numerically compilable");
+    };
+    let mut d = fc.clone();
     for _ in 0..4 {
         d = crate::norm::simplify_core(&crate::diff::derivative(&d, var));
     }
     let Ok(tape_d4) = compile(&d) else {
-        return Precise::Unknown("fourth derivative not numerically compilable");
+        return Err("fourth derivative not numerically compilable");
     };
+    Ok((tape_f, tape_d4))
+}
 
+/// Package a certified (value, error bound) at the digit target as ±1 ulp.
+pub(crate) fn package(total: f64, err_total: f64, digits: usize, negate: bool) -> Precise {
+    // The packaged answer must actually meet the digit target — never a
+    // technically-±1-ulp but uselessly wide result.
+    if err_total > 0.5 * 10f64.powi(1 - digits as i32) * total.abs().max(f64::MIN_POSITIVE) {
+        return Precise::Unknown("quadrature error target not met");
+    }
+    let total = if negate { -total } else { total };
+    if needed_bits(digits) > crate::limits::current().max_eval_precision_bits {
+        return Precise::Unknown("digits beyond max_eval_precision_bits");
+    }
+    // ±1 ulp packaging: scale so the certified error fits under one ulp.
+    let scale = err_total.max(f64::MIN_POSITIVE).log2().ceil() as i32 + 1;
+    match MpFix::from_f64(total, scale) {
+        Some(m) => Precise::Bounded(m),
+        None => Precise::Unknown("non-finite quadrature result"),
+    }
+}
+
+/// The adaptive certified-Simpson core over [lo, hi]. Terminates when the
+/// exact-resummed error meets `max(relative digit target, extra_abs_tol)` —
+/// the absolute floor lets the divergence classifier run complement pieces
+/// against an absolute error share. Returns (value, certified error bound).
+pub(crate) fn adaptive_quadrature(
+    tape_f: &CompiledExpr,
+    tape_d4: &CompiledExpr,
+    lo: f64,
+    hi: f64,
+    digits: usize,
+    extra_abs_tol: f64,
+) -> Result<(f64, f64), &'static str> {
     let max_segs = crate::limits::current().max_quadrature_segments;
     let mut heap: BinaryHeap<Seg> = BinaryHeap::new();
     let mut pending: Vec<(f64, f64, u32)> = vec![(lo, hi, 0)];
@@ -394,21 +446,22 @@ pub fn integrate_to_precision(
         while let Some((l, h, depth)) = pending.pop() {
             segs += 1;
             if segs > max_segs || depth > 60 {
-                return Precise::Unknown("quadrature budget exhausted");
+                return Err("quadrature budget exhausted");
             }
-            match eval_segment(&tape_f, &tape_d4, l, h, depth) {
+            match eval_segment(tape_f, tape_d4, l, h, depth) {
                 Some(seg) => push(seg, &mut heap, &mut sum_val, &mut sum_err),
                 None => {
                     let m = l + (h - l) / 2.0;
                     if m <= l || m >= h {
-                        return Precise::Unknown("integrand not evaluable on a minimal segment");
+                        return Err("integrand not evaluable on a minimal segment");
                     }
                     pending.push((l, m, depth + 1));
                     pending.push((m, h, depth + 1));
                 }
             }
         }
-        let tol = 0.5 * 10f64.powi(1 - digits as i32) * sum_val.abs().max(f64::MIN_POSITIVE);
+        let tol = (0.5 * 10f64.powi(1 - digits as i32) * sum_val.abs().max(f64::MIN_POSITIVE))
+            .max(extra_abs_tol);
         if sum_err <= tol {
             // The incremental tracker cancels catastrophically when huge
             // segment bounds (near-poles) are pushed and popped — a spurious
@@ -420,26 +473,25 @@ pub fn integrate_to_precision(
                 .fold((0.0f64, 0.0f64), |(v, e), s| (v + s.val, e + s.err()));
             sum_val = v;
             sum_err = e;
-            let tol = 0.5 * 10f64.powi(1 - digits as i32) * v.abs().max(f64::MIN_POSITIVE);
+            let tol = (0.5 * 10f64.powi(1 - digits as i32) * v.abs().max(f64::MIN_POSITIVE))
+                .max(extra_abs_tol);
             if e <= tol {
-                if v.abs() > 2.0 * e {
+                if v.abs() > 2.0 * e || extra_abs_tol > 0.0 {
                     break;
                 }
                 // Certified small, but indistinguishable from zero at a
                 // *relative* digit target.
-                return Precise::Unknown(
-                    "integral not resolvable from zero at the requested digits",
-                );
+                return Err("integral not resolvable from zero at the requested digits");
             }
         }
         let Some(worst) = heap.pop() else {
-            return Precise::Unknown("quadrature budget exhausted");
+            return Err("quadrature budget exhausted");
         };
         sum_val -= worst.val;
         sum_err -= worst.err();
         let m = worst.lo + (worst.hi - worst.lo) / 2.0;
         if m <= worst.lo || m >= worst.hi {
-            return Precise::Unknown("quadrature stalled at f64 resolution");
+            return Err("quadrature stalled at f64 resolution");
         }
         pending.push((worst.lo, m, worst.depth + 1));
         pending.push((m, worst.hi, worst.depth + 1));
@@ -459,24 +511,10 @@ pub fn integrate_to_precision(
         abs_total += s.val.abs();
     }
     err_total += 4.0 * EPS * abs_total; // compensated-summation slack
-    // Belt and braces: the packaged answer must actually meet the digit
-    // target — never a technically-±1-ulp but uselessly wide result.
-    if err_total > 0.5 * 10f64.powi(1 - digits as i32) * total.abs().max(f64::MIN_POSITIVE) {
-        return Precise::Unknown("quadrature error target not met");
-    }
-    let total = if negate { -total } else { total };
-    if needed_bits(digits) > crate::limits::current().max_eval_precision_bits {
-        return Precise::Unknown("digits beyond max_eval_precision_bits");
-    }
-    // ±1 ulp packaging: scale so the certified error fits under one ulp.
-    let scale = err_total.max(f64::MIN_POSITIVE).log2().ceil() as i32 + 1;
-    match MpFix::from_f64(total, scale) {
-        Some(m) => Precise::Bounded(m),
-        None => Precise::Unknown("non-finite quadrature result"),
-    }
+    Ok((total, err_total))
 }
 
-fn endpoint(e: &Expr) -> Option<f64> {
+pub(crate) fn endpoint(e: &Expr) -> Option<f64> {
     match super::evaluate_to_precision(e, 17) {
         Precise::Exact(n) => {
             let v = n.to_f64();

@@ -2,3 +2,14 @@
 members = ["math-expressions-rs"]
 default-members = ["math-expressions-rs"]
 resolver = "2"
+
+# Size-oriented release profile (tmp/IMPROVEMENT_PLAN.md Phase 0); profiles
+# must live in the workspace root or cargo ignores them. Measured 1.70 MB ->
+# 1.10 MB wasm (-35%). `panic = "abort"` also matches a standing assumption
+# at the JS boundary (js_tree.rs relies on aborting panics).
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

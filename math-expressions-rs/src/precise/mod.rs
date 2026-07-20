@@ -8,6 +8,7 @@
 //! hangs or panics; every loop is operation-counted under §7f `limits`.
 
 pub mod complex;
+pub mod diverge;
 pub mod fix;
 pub mod kernels;
 pub mod quad;
@@ -17,11 +18,12 @@ pub mod tier0;
 use crate::expr::Expr;
 use crate::num::Number;
 use fix::MpFix;
-use kernels::{Budget, FixId, REGISTRY};
+use kernels::{registry, Budget, FixId};
 use num_bigint::BigInt;
 use num_traits::{Signed, Zero};
 use tape::{arity, CompiledExpr, Op};
 
+pub use diverge::{integrate_analyzed, IntegralVerdict, SingularPoint};
 pub use quad::integrate_to_precision;
 pub use tape::{compile, CompileError};
 
@@ -455,7 +457,7 @@ fn tier2_run(
             }
             Op::Call(id) => {
                 let x = stack.pop().unwrap();
-                let out = match REGISTRY[*id as usize].fix {
+                let out = match registry()[*id as usize].fix {
                     Some(FixId::Sqrt) => kernels::sqrt_fix(&x, s, &mut budget),
                     Some(FixId::Exp) => kernels::exp_fix(&x, s, &mut budget),
                     Some(FixId::Ln) => kernels::ln_fix(&x, s, &mut budget),
@@ -688,7 +690,7 @@ fn tier2_run_complex(
                     .copied()
                     .filter(|z| z.re.is_finite() && z.im.is_finite())
                     .map(|z| {
-                        let d = (REGISTRY[*id as usize].cdfm)(z);
+                        let d = (registry()[*id as usize].cdfm)(z);
                         if d > 0.0 && d.is_finite() {
                             d.log2()
                         } else {
@@ -760,7 +762,7 @@ fn tier2_run_complex(
             }
             Op::Call(id) => {
                 let x = stack.pop().unwrap();
-                match REGISTRY[*id as usize].fix {
+                match registry()[*id as usize].fix {
                     Some(FixId::Sqrt) => complex::csqrt(&x, s, &mut budget),
                     Some(FixId::Exp) => complex::cexp(&x, s, &mut budget),
                     Some(FixId::Ln) => complex::cln(&x, s, &mut budget),

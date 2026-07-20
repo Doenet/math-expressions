@@ -99,52 +99,13 @@ fn head_evaluable(head: &Expr, nargs: usize) -> bool {
     }
 }
 
+/// Can the registry evaluate this head at this arity? (`FnDef::eval1`/
+/// `eval2` in `crate::functions` — canonical spellings only, matching the
+/// historical hardcoded list.)
 fn known_function(name: &str, nargs: usize) -> bool {
     match nargs {
-        1 => matches!(
-            name,
-            "sin"
-                | "cos"
-                | "tan"
-                | "sinh"
-                | "cosh"
-                | "tanh"
-                | "asin"
-                | "acos"
-                | "atan"
-                | "asinh"
-                | "acosh"
-                | "atanh"
-                | "sec"
-                | "csc"
-                | "cot"
-                | "sech"
-                | "csch"
-                | "coth"
-                | "asec"
-                | "acsc"
-                | "acot"
-                | "asech"
-                | "acsch"
-                | "acoth"
-                | "exp"
-                | "log"
-                | "log10"
-                | "sqrt"
-                | "cbrt"
-                | "abs"
-                | "sign"
-                | "conj"
-                | "re"
-                | "im"
-                | "arg"
-                | "floor"
-                | "ceil"
-                | "round"
-                | "trace"
-                | "factorial"
-        ),
-        2 => matches!(name, "atan2" | "nthroot" | "nCr" | "nPr" | "mod"),
+        1 => crate::functions::eval1(name).is_some(),
+        2 => crate::functions::eval2(name).is_some(),
         _ => false,
     }
 }
@@ -178,150 +139,20 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
     let Expr::Sym(s) = head else { return None };
     let name = s.name();
 
-    // Unary functions cover the common case.
+    // The per-function evaluation rules are `FnDef::eval1`/`eval2` in
+    // `crate::functions`; this dispatch only routes by arity.
     if let [arg] = args {
+        let f = crate::functions::eval1(&name)?;
         let z = eval_complex(arg, env)?;
-        let r = match name.as_str() {
-            "sin" => z.sin(),
-            "cos" => z.cos(),
-            "tan" => z.tan(),
-            "sinh" => z.sinh(),
-            "cosh" => z.cosh(),
-            "tanh" => z.tanh(),
-            "asin" => z.asin(),
-            "acos" => z.acos(),
-            "atan" => z.atan(),
-            "asinh" => z.asinh(),
-            "acosh" => z.acosh(),
-            "atanh" => z.atanh(),
-            "sec" => z.cos().inv(),
-            "csc" => z.sin().inv(),
-            "cot" => z.tan().inv(),
-            "sech" => z.cosh().inv(),
-            "csch" => z.sinh().inv(),
-            "coth" => z.tanh().inv(),
-            // Inverse reciprocal-trig via the primary inverses of 1/z.
-            "asec" => z.inv().acos(),
-            "acsc" => z.inv().asin(),
-            "acot" => z.inv().atan(),
-            "asech" => z.inv().acosh(),
-            "acsch" => z.inv().asinh(),
-            "acoth" => z.inv().atanh(),
-            "exp" => z.exp(),
-            "log" => z.ln(), // natural log (ln normalizes to log)
-            "log10" => z.log10(),
-            "sqrt" => z.sqrt(),
-            "cbrt" => z.powf(1.0 / 3.0),
-            "abs" => Complex64::new(z.norm(), 0.0),
-            "sign" => {
-                if z.norm() == 0.0 {
-                    Complex64::ZERO
-                } else {
-                    z / z.norm()
-                }
-            }
-            "conj" => z.conj(),
-            "re" => Complex64::new(z.re, 0.0),
-            "im" => Complex64::new(z.im, 0.0),
-            "arg" => Complex64::new(z.arg(), 0.0),
-            // Rounding functions are only defined on (near-)real inputs.
-            "floor" => real_only(z, f64::floor)?,
-            "ceil" => real_only(z, f64::ceil)?,
-            "round" => real_only(z, f64::round)?,
-            "trace" => z, // trace of a 1×1 / scalar is itself
-            // `n! = Γ(n+1)`, evaluated as a complex function so identities like
-            // `(n+1)·n! = (n+1)!` (the Γ recurrence) hold at sampled points.
-            "factorial" => gamma(z + 1.0),
-            _ => return None,
-        };
-        return Some(r);
+        return f(z);
     }
-
-    // Binary functions.
     if let [a, b] = args {
+        let f = crate::functions::eval2(&name)?;
         let (za, zb) = (eval_complex(a, env)?, eval_complex(b, env)?);
-        let r = match name.as_str() {
-            "atan2" => Complex64::new(za.re.atan2(zb.re), 0.0),
-            "nthroot" => za.powc(zb.inv()),
-            "nCr" => combinatorial(za, zb, false)?,
-            "nPr" => combinatorial(za, zb, true)?,
-            "mod" => Complex64::new(za.re.rem_euclid(zb.re), 0.0),
-            _ => return None,
-        };
-        return Some(r);
+        return f(za, zb);
     }
 
     None
-}
-
-/// Complex gamma function via the Lanczos approximation (g = 7, 9 coefficients),
-/// with the reflection formula for the left half-plane. Accurate to ~1e-13, so
-/// the recurrence `Γ(z+1) = z·Γ(z)` holds well within the equality tolerance —
-/// which is what lets `(n+1)·n! = (n+1)!` and `n/n! = 1/(n-1)!` pass.
-fn gamma(z: Complex64) -> Complex64 {
-    const G: f64 = 7.0;
-    const C: [f64; 9] = [
-        0.999_999_999_999_809_9,
-        676.520_368_121_885_1,
-        -1_259.139_216_722_402_8,
-        771.323_428_777_653_1,
-        -176.615_029_162_140_6,
-        12.507_343_278_686_905,
-        -0.138_571_095_265_720_12,
-        9.984_369_578_019_572e-6,
-        1.505_632_735_149_311_6e-7,
-    ];
-    let pi = std::f64::consts::PI;
-    if z.re < 0.5 {
-        // Reflection: Γ(z)·Γ(1-z) = π / sin(πz).
-        Complex64::new(pi, 0.0)
-            / ((Complex64::new(pi, 0.0) * z).sin() * gamma(Complex64::new(1.0, 0.0) - z))
-    } else {
-        let z = z - 1.0;
-        let mut x = Complex64::new(C[0], 0.0);
-        for (i, &c) in C.iter().enumerate().skip(1) {
-            x += c / (z + i as f64);
-        }
-        let t = z + (G + 0.5);
-        let sqrt_2pi = (2.0 * pi).sqrt();
-        Complex64::new(sqrt_2pi, 0.0) * t.powc(z + 0.5) * (-t).exp() * x
-    }
-}
-
-/// Apply a real function to a (near-)real complex value, else `None`.
-fn real_only(z: Complex64, f: fn(f64) -> f64) -> Option<Complex64> {
-    if z.im.abs() < 1e-9 {
-        Some(Complex64::new(f(z.re), 0.0))
-    } else {
-        None
-    }
-}
-
-/// `nCr`/`nPr` on non-negative integer arguments.
-fn combinatorial(n: Complex64, r: Complex64, ordered: bool) -> Option<Complex64> {
-    let is_int = |z: Complex64| z.im.abs() < 1e-9 && (z.re.round() - z.re).abs() < 1e-9;
-    if !is_int(n) || !is_int(r) {
-        return None;
-    }
-    let (n, r) = (n.re.round() as i64, r.re.round() as i64);
-    // The r-length product loop must stay bounded on any input; past ~10^4
-    // the f64 result is astronomically large/imprecise anyway.
-    if n < 0 || r < 0 || r > n || r > 10_000 {
-        return None;
-    }
-    // P(n,r) = n·(n-1)···(n-r+1); C(n,r) = P(n,r)/r!.
-    let mut num = 1.0f64;
-    for k in 0..r {
-        num *= (n - k) as f64;
-    }
-    if ordered {
-        return Some(Complex64::new(num, 0.0));
-    }
-    let mut den = 1.0f64;
-    for k in 1..=r {
-        den *= k as f64;
-    }
-    Some(Complex64::new(num / den, 0.0))
 }
 
 /// Collect the sample-variable keys of an expression: free symbols plus opaque

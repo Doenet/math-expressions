@@ -23,40 +23,11 @@ pub fn normalize_syntactic(e: &Expr) -> Expr {
 }
 
 // ---- Support tables (standard_form.js) ----
-
-/// `function_normalizations`: alternate spellings folded to a canonical name.
-fn function_normalization(name: &str) -> Option<&'static str> {
-    Some(match name {
-        "ln" => "log",
-        "arccos" => "acos",
-        "arccosh" => "acosh",
-        "arcsin" => "asin",
-        "arcsinh" => "asinh",
-        "arctan" => "atan",
-        "arctanh" => "atanh",
-        "arcsec" => "asec",
-        "arcsech" => "asech",
-        "arccsc" => "acsc",
-        "arccsch" => "acsch",
-        "arccot" => "acot",
-        "arccoth" => "acoth",
-        "cosec" => "csc",
-        _ => return None,
-    })
-}
-
-/// `create_trig_inverses_for`: `f^(-1)` becomes `af` for these `f`.
-const TRIG_FOR_INVERSE: &[&str] = &[
-    "cos", "cosh", "sin", "sinh", "tan", "tanh", "sec", "sech", "csc", "csch", "cot", "coth",
-];
-
-/// `move_exponents_outside_for`: `f^n(x)` (n ≠ -1) becomes `(f(x))^n`.
-/// Shared with `canonicalize` (canon_apply applies the same unification so the
-/// canonical layer has a single spelling for powers of applied functions).
-pub(crate) const MOVE_EXPONENT_OUTSIDE: &[&str] = &[
-    "cos", "cosh", "sin", "sinh", "tan", "tanh", "sec", "sech", "csc", "csch", "cot", "coth",
-    "log", "ln",
-];
+//
+// The `function_normalizations`, `create_trig_inverses_for`, and
+// `move_exponents_outside_for` tables now live on `FnDef` in
+// `crate::functions` (aliases / `inverse` / `move_exponent_spellings`);
+// the passes below query the registry.
 
 // ---- Pass 1: normalize_function_names ----
 
@@ -109,14 +80,14 @@ fn pass_function_names(e: &Expr) -> Expr {
 /// `f^(-1)` into `af` for the invertible trig/hyperbolic names.
 fn normalize_head_name(head: &Expr) -> Expr {
     match head {
-        Expr::Sym(s) => match function_normalization(&s.name()) {
+        Expr::Sym(s) => match crate::functions::canonical_name(&s.name()) {
             Some(canon) => Expr::sym(canon),
             None => head.clone(),
         },
         Expr::Pow(base, exp) if is_int(exp, -1) => {
             if let Expr::Sym(s) = base.as_ref() {
-                if TRIG_FOR_INVERSE.contains(&s.name().as_str()) {
-                    return Expr::sym(&format!("a{}", s.name()));
+                if let Some(inv) = crate::functions::inverse_of(&s.name()) {
+                    return Expr::sym(inv);
                 }
             }
             Expr::Pow(
@@ -264,7 +235,7 @@ fn is_int(e: &Expr, v: i64) -> bool {
 }
 
 fn is_move_exponent(base: &Expr) -> bool {
-    matches!(base, Expr::Sym(s) if MOVE_EXPONENT_OUTSIDE.contains(&s.name().as_str()))
+    matches!(base, Expr::Sym(s) if crate::functions::moves_exponent_outside(&s.name()))
 }
 
 /// Apply `f` to every immediate `Expr` child, rebuilding the node; leaves are

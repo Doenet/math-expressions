@@ -18,8 +18,11 @@ use num_traits::{Signed, ToPrimitive, Zero};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+/// One function's precise-evaluation obligations. Rows live on
+/// `FnDef::kernel` in `crate::functions` (one place per function); the
+/// runtime array indexed by `Op::Call(u32)` is derived from the function
+/// registry by [`registry`].
 pub struct FnKernel {
-    pub names: &'static [&'static str],
     pub f: fn(f64) -> f64,
     /// Derivative (for Tier-0 error propagation and the planning pass).
     pub df: fn(f64) -> f64,
@@ -52,148 +55,39 @@ pub enum FixId {
     Log10,
 }
 
-pub static REGISTRY: &[FnKernel] = &[
-    FnKernel {
-        names: &["sqrt"],
-        f: f64::sqrt,
-        df: |x| 0.5 / x.sqrt(),
-        domain: |x| x >= 0.0,
-        fix: Some(FixId::Sqrt),
-        cf: |z| z.sqrt(),
-        cdfm: |z| 0.5 / z.sqrt().norm().max(f64::MIN_POSITIVE),
-    },
-    FnKernel {
-        names: &["exp"],
-        f: f64::exp,
-        df: f64::exp,
-        domain: |_| true,
-        fix: Some(FixId::Exp),
-        cf: |z| z.exp(),
-        cdfm: |z| z.exp().norm(),
-    },
-    FnKernel {
-        names: &["ln", "log"],
-        f: f64::ln,
-        df: |x| 1.0 / x,
-        domain: |x| x > 0.0,
-        fix: Some(FixId::Ln),
-        cf: |z| z.ln(),
-        cdfm: |z| 1.0 / z.norm().max(f64::MIN_POSITIVE),
-    },
-    FnKernel {
-        names: &["abs"],
-        f: f64::abs,
-        df: |x| x.signum(),
-        domain: |_| true,
-        fix: Some(FixId::Abs),
-        cf: |z| Complex64::new(z.norm(), 0.0),
-        cdfm: |_| 1.0,
-    },
-    // f64-only rows (Tier-2 kernels are P3): full Tier-0 coverage so the
-    // differential harness against `evaluate_to_constant` is meaningful.
-    FnKernel {
-        names: &["sin"],
-        f: f64::sin,
-        df: f64::cos,
-        domain: |_| true,
-        fix: Some(FixId::Sin),
-        cf: |z| z.sin(),
-        cdfm: |z| z.cos().norm(),
-    },
-    FnKernel {
-        names: &["cos"],
-        f: f64::cos,
-        df: |x| -x.sin(),
-        domain: |_| true,
-        fix: Some(FixId::Cos),
-        cf: |z| z.cos(),
-        cdfm: |z| z.sin().norm(),
-    },
-    FnKernel {
-        names: &["tan"],
-        f: f64::tan,
-        df: |x| {
-            let c = x.cos();
-            1.0 / (c * c)
-        },
-        domain: |_| true,
-        fix: Some(FixId::Tan),
-        cf: |z| z.tan(),
-        cdfm: |z| { let c = z.cos().norm(); 1.0 / (c * c).max(f64::MIN_POSITIVE) },
-    },
-    FnKernel {
-        names: &["asin", "arcsin"],
-        f: f64::asin,
-        df: |x| 1.0 / (1.0 - x * x).sqrt(),
-        domain: |x| (-1.0..=1.0).contains(&x),
-        fix: Some(FixId::Asin),
-        cf: |z| z.asin(),
-        cdfm: |z| 1.0 / (Complex64::new(1.0,0.0) - z*z).sqrt().norm().max(f64::MIN_POSITIVE),
-    },
-    FnKernel {
-        names: &["acos", "arccos"],
-        f: f64::acos,
-        df: |x| -1.0 / (1.0 - x * x).sqrt(),
-        domain: |x| (-1.0..=1.0).contains(&x),
-        fix: Some(FixId::Acos),
-        cf: |z| z.acos(),
-        cdfm: |z| 1.0 / (Complex64::new(1.0,0.0) - z*z).sqrt().norm().max(f64::MIN_POSITIVE),
-    },
-    FnKernel {
-        names: &["atan", "arctan"],
-        f: f64::atan,
-        df: |x| 1.0 / (1.0 + x * x),
-        domain: |_| true,
-        fix: Some(FixId::Atan),
-        cf: |z| z.atan(),
-        cdfm: |z| 1.0 / (Complex64::new(1.0,0.0) + z*z).norm().max(f64::MIN_POSITIVE),
-    },
-    FnKernel {
-        names: &["sinh"],
-        f: f64::sinh,
-        df: f64::cosh,
-        domain: |_| true,
-        fix: Some(FixId::Sinh),
-        cf: |z| z.sinh(),
-        cdfm: |z| z.cosh().norm(),
-    },
-    FnKernel {
-        names: &["cosh"],
-        f: f64::cosh,
-        df: f64::sinh,
-        domain: |_| true,
-        fix: Some(FixId::Cosh),
-        cf: |z| z.cosh(),
-        cdfm: |z| z.sinh().norm(),
-    },
-    FnKernel {
-        names: &["tanh"],
-        f: f64::tanh,
-        df: |x| {
-            let c = x.cosh();
-            1.0 / (c * c)
-        },
-        domain: |_| true,
-        fix: Some(FixId::Tanh),
-        cf: |z| z.tanh(),
-        cdfm: |z| { let c = z.cosh().norm(); 1.0 / (c * c).max(f64::MIN_POSITIVE) },
-    },
-    FnKernel {
-        names: &["log10"],
-        f: f64::log10,
-        df: |x| 1.0 / (x * std::f64::consts::LN_10),
-        domain: |x| x > 0.0,
-        fix: Some(FixId::Log10),
-        cf: |z| z.ln() / std::f64::consts::LN_10,
-        cdfm: |z| 1.0 / (z.norm() * std::f64::consts::LN_10).max(f64::MIN_POSITIVE),
-    },
-];
+/// The kernel rows of every registered function, in `functions::ALL`
+/// order — the id space of `Op::Call(u32)`. Ids are only meaningful within
+/// a run (tapes are compiled per evaluation), so registry order changes are
+/// harmless.
+pub fn registry() -> &'static [&'static FnKernel] {
+    static R: std::sync::OnceLock<Vec<&'static FnKernel>> = std::sync::OnceLock::new();
+    R.get_or_init(|| {
+        crate::functions::ALL
+            .iter()
+            .filter_map(|d| d.kernel)
+            .collect()
+    })
+}
 
+/// Kernel id for a function spelling (name or alias, e.g. `arcsin`, `ln`).
 pub fn lookup(name: &str) -> Option<u32> {
-    REGISTRY
-        .iter()
-        .position(|k| k.names.contains(&name))
-        .map(|i| i as u32)
+    static INDEX: std::sync::OnceLock<HashMap<&'static str, u32>> = std::sync::OnceLock::new();
+    INDEX
+        .get_or_init(|| {
+            let mut m = HashMap::new();
+            let mut id = 0u32;
+            for def in crate::functions::ALL {
+                if def.kernel.is_some() {
+                    for key in std::iter::once(&def.name).chain(def.aliases) {
+                        m.insert(*key, id);
+                    }
+                    id += 1;
+                }
+            }
+            m
+        })
+        .get(name)
+        .copied()
 }
 
 /// A per-run operation budget (ticked by every series iteration).
@@ -479,7 +373,7 @@ fn atan_recip(n: i64, p: i32, budget: &mut Budget) -> Option<BigInt> {
 /// Estimated log2 magnitude of a kernel's derivative at `x` — the planning
 /// pass's transfer factor when Tier 0 recorded a usable value.
 pub fn dlog2(id: u32, x: f64) -> f64 {
-    let d = (REGISTRY[id as usize].df)(x);
+    let d = (registry()[id as usize].df)(x);
     if d == 0.0 || !d.is_finite() {
         0.0
     } else {
@@ -489,7 +383,7 @@ pub fn dlog2(id: u32, x: f64) -> f64 {
 
 /// Fallback msb estimate of `f(x)` when Tier 0 overflowed (log-domain).
 pub fn result_msb_estimate(id: u32, arg: f64) -> f64 {
-    match REGISTRY[id as usize].fix {
+    match registry()[id as usize].fix {
         Some(FixId::Exp) => arg / std::f64::consts::LN_2,
         Some(FixId::Sqrt) => arg.abs().log2().max(0.0) / 2.0,
         _ => 4.0,

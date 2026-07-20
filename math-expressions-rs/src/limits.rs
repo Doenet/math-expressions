@@ -81,6 +81,12 @@ pub struct Limits {
     pub max_lrt_degree: usize,
     /// Accepted+rejected step cap for the adaptive ODE solver.
     pub max_ode_steps: usize,
+    /// Candidate singular cells per divergence-classification call.
+    pub max_singularity_candidates: usize,
+    /// Certified-sign bisection budget across a classification call.
+    pub max_certificate_bisections: usize,
+    /// Cell-shrink iterations for tail-bounded improper evaluation.
+    pub max_improper_refinements: usize,
 }
 
 impl Default for Limits {
@@ -108,6 +114,9 @@ impl Default for Limits {
             max_integration_candidates: 64,
             max_lrt_degree: 64,
             max_ode_steps: 10_000,
+            max_singularity_candidates: 32,
+            max_certificate_bisections: 4_096,
+            max_improper_refinements: 40,
         }
     }
 }
