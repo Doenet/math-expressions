@@ -16,9 +16,12 @@ target
 Cargo.lock
 
 # math-expressions-rs (wasm-bindgen output)
-/math-expressions-rs/pkg/
-/math-expressions-rs/pkg-node/
+/packages/math-expressions-rs/pkg/
+/packages/math-expressions-rs/pkg-node/
 
 # playground (node_modules covered by the pattern above)
-/playground/dist/
-/playground/.wireit/
+/packages/playground/dist/
+/packages/playground/.wireit/
+
+# math-expressions-rs-wasm (tsc output)
+/packages/math-expressions-rs-wasm/dist/

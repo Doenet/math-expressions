@@ -8,6 +8,9 @@
     "email": "kisonecat@gmail.com",
     "url": "http://kisonecat.com/"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "vite build && npm run build:types",
     "build:types": "cp index.d.ts build/index.d.ts",

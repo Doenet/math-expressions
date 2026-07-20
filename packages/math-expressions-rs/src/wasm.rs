@@ -245,6 +245,15 @@ impl Expression {
         crate::equals(&self.0, &other.0, &o)
     }
 
+    // ---- certified zero-equivalence (FULL_SIMPLIFY S1) ----
+
+    /// Certified test for `self ≡ 0`: `true` = provably zero, `false` =
+    /// provably nonzero, `undefined` = undecided. Never certifies a wrong
+    /// answer (adversarial almost-zeros return `undefined`, not `true`).
+    pub fn is_zero(&self) -> Option<bool> {
+        crate::exact::is_zero(&self.0, &Assumptions::new())
+    }
+
     // ---- analyticity (item 7) ----
 
     /// Is this an analytic expression (only `+ - * / ^`, sequences, and

@@ -11,7 +11,7 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const specDir = join(here, "../../spec");
+const specDir = join(here, "../../../spec");
 const outDir = join(here, "../tests/fixtures");
 
 // Slice `var <name> = {...};` out of a spec file and eval it as an object

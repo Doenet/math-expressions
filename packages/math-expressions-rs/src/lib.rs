@@ -14,6 +14,7 @@ pub mod assumptions;
 pub mod diff;
 pub mod eq;
 pub mod eval;
+pub mod exact;
 pub mod factor;
 pub mod grade;
 pub mod expr;

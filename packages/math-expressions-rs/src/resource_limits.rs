@@ -85,6 +85,9 @@ pub struct ResourceLimits {
     /// is returned unfactored. Bounds the dense-coefficient allocation an
     /// adversarial exponent (`x^10^9`) would otherwise force.
     pub max_factor_degree: usize,
+    /// Node/operation budget for the exact-constant evaluator (`exact.rs`,
+    /// FULL_SIMPLIFY §9). Bounds the S1 `is_zero` tower evaluation.
+    pub max_exact_eval_ops: i64,
     /// Accepted+rejected step cap for the adaptive ODE solver.
     pub max_ode_steps: usize,
     /// Candidate singular cells per divergence-classification call.
@@ -120,6 +123,7 @@ impl Default for ResourceLimits {
             max_integration_candidates: 64,
             max_lrt_degree: 64,
             max_factor_degree: 64,
+            max_exact_eval_ops: 10_000,
             max_ode_steps: 10_000,
             max_singularity_candidates: 32,
             max_certificate_bisections: 4_096,

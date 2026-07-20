@@ -26,7 +26,7 @@ import { writeFileSync, readFileSync, writeSync } from "fs";
 import { spawnSync } from "child_process";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import me from "../../lib/math-expressions.js";
+import me from "../../../lib/math-expressions.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, "../tests/fixtures");

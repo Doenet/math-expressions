@@ -1,6 +1,6 @@
 [workspace]
-members = ["math-expressions-rs"]
-default-members = ["math-expressions-rs"]
+members = ["packages/math-expressions-rs"]
+default-members = ["packages/math-expressions-rs"]
 resolver = "2"
 
 # Size-oriented release profile (tmp/IMPROVEMENT_PLAN.md Phase 0); profiles

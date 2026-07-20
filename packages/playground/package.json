@@ -29,7 +29,7 @@
         "index.html",
         "vite.config.ts",
         "tsconfig.json",
-        "../build/math-expressions.js"
+        "../../build/math-expressions.js"
       ],
       "output": [
         "dist/**"

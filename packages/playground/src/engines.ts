@@ -23,7 +23,7 @@ import type {
 // live in build/index.d.ts), so type its default export as our minimal
 // MathExprContext — only the members the adapter actually uses.
 // @ts-expect-error -- no declaration file alongside the built JS bundle
-import ContextUntyped from "../../build/math-expressions.js";
+import ContextUntyped from "../../../build/math-expressions.js";
 const Context: MathExprContext = ContextUntyped;
 
 // Rust implementation — the wasm-bindgen glue is static-copied to /wasm/ by

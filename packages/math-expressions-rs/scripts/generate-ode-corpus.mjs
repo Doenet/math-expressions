@@ -7,7 +7,7 @@
 import { writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import me from "../../lib/math-expressions.js";
+import me from "../../../lib/math-expressions.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outPath = join(here, "../tests/fixtures/ode-corpus.json");

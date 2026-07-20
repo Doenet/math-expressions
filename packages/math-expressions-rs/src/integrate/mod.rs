@@ -35,11 +35,22 @@ pub fn integrate(f: &Expr, x: &str, _assumptions: &Assumptions) -> Option<Expr> 
     let fc = canonicalize(f);
     let mut fuel = crate::resource_limits::current().max_integration_steps;
     let result = integ(&fc, x, &mut fuel)?;
-    // The gate (plan §2c): verify by differentiation through the library's
-    // own equality. A candidate that fails is discarded.
+    // The gate (plan §2c): verify by differentiation. Upgraded to the certified
+    // zero-equivalence service (FULL_SIMPLIFY S1): prove `F' - f ≡ 0` exactly
+    // when the residual lands in the decidable tower, and fall back to the
+    // library's sampled equality only when `is_zero` is Unknown. Strictly
+    // stronger — a certified verdict (accept or reject) never defers to
+    // sampling, and `is_zero` never certifies a wrong answer.
     let df = crate::diff::derivative(&result, x);
-    if !crate::eq::equals(&df, &fc, &crate::eq::EqOptions::default()) {
-        return None;
+    let residual = Expr::Add(vec![df.clone(), Expr::Neg(Box::new(fc.clone()))]);
+    match crate::exact::is_zero(&residual, _assumptions) {
+        Some(true) => {}
+        Some(false) => return None,
+        None => {
+            if !crate::eq::equals(&df, &fc, &crate::eq::EqOptions::default()) {
+                return None;
+            }
+        }
     }
     Some(crate::norm::simplify(&result))
 }
