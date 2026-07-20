@@ -27,7 +27,7 @@ pub(crate) fn make_rootof(coeffs: &[BigRational], index: u32) -> Option<Expr> {
         p = upoly::divrem(&p, &g).0;
     }
     let d = upoly::degree(&p);
-    if d < 1 || d > crate::limits::current().max_rootof_degree || (index as usize) >= d {
+    if d < 1 || d > crate::resource_limits::current().max_rootof_degree || (index as usize) >= d {
         return None;
     }
     let ints = upoly::to_primitive_int(&p);
@@ -303,7 +303,7 @@ pub(crate) fn refine_real(poly: &[Number], index: u32, target_scale: i32) -> Opt
     }
     let seed = numeric_root(poly, index)?.re;
     let dp = upoly::derivative(&p);
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     if i64::from(-target_scale) > 4 * i64::from(lim.max_eval_precision_bits) {
         return None;
     }
@@ -443,7 +443,7 @@ pub(crate) fn refine_complex(
         return None;
     }
     let dp_msb = dpf.norm().log2().ceil() as i32;
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let w = target_scale
         .saturating_add(dp_msb)
         .saturating_sub(2 * slack_bits as i32 + 16);

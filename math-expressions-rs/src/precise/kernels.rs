@@ -144,7 +144,7 @@ pub fn exp_fix(x: &MpFix, s: i32, budget: &mut Budget) -> Option<MpFix> {
     // A |k| beyond the precision budget would materialize gigantic series
     // scales — refuse (the planner guards the planned path; this guards the
     // kernel itself, e.g. when reached through the complex sweep).
-    let cap = 8 * i64::from(crate::limits::current().max_eval_precision_bits);
+    let cap = 8 * i64::from(crate::resource_limits::current().max_eval_precision_bits);
     if (i64::from(s) - k).abs() > cap || k.abs() > cap {
         return None;
     }
@@ -296,7 +296,7 @@ pub fn const_pi(s: i32) -> MpFix {
     cached("pi", s, |s| {
         let p = s - 8;
         let mut budget = Budget {
-            remaining: i64::from(crate::limits::current().max_series_terms),
+            remaining: i64::from(crate::resource_limits::current().max_series_terms),
         };
         let a5 = atan_recip(5, p, &mut budget).unwrap_or_else(BigInt::zero);
         let a239 = atan_recip(239, p, &mut budget).unwrap_or_else(BigInt::zero);
@@ -315,7 +315,7 @@ pub fn const_ln2(s: i32) -> MpFix {
         let mut power: BigInt = &scaled_1 / 3;
         let mut sum = power.clone();
         let mut j: i64 = 0;
-        let mut budget = i64::from(crate::limits::current().max_series_terms);
+        let mut budget = i64::from(crate::resource_limits::current().max_series_terms);
         while !power.is_zero() && budget > 0 {
             budget -= 1;
             j += 1;
@@ -336,7 +336,7 @@ pub fn const_ln2(s: i32) -> MpFix {
 pub fn const_e(s: i32) -> MpFix {
     cached("e", s, |s| {
         let mut budget = Budget {
-            remaining: i64::from(crate::limits::current().max_series_terms),
+            remaining: i64::from(crate::resource_limits::current().max_series_terms),
         };
         let one = MpFix {
             mant: BigInt::from(1) << 64,
@@ -411,7 +411,7 @@ pub fn const_half_pi(s: i32) -> MpFix {
 pub fn const_ln10(s: i32) -> MpFix {
     cached("ln10", s, |s| {
         let mut budget = Budget {
-            remaining: i64::from(crate::limits::current().max_series_terms),
+            remaining: i64::from(crate::resource_limits::current().max_series_terms),
         };
         let ten = MpFix {
             mant: BigInt::from(10) << 32,
@@ -431,7 +431,7 @@ fn trig_reduce(x: &MpFix, s: i32, _budget: &mut Budget) -> Option<(MpFix, i64)> 
         None => return Some((x.at_scale(s.min(x.scale)), 0)),
         Some(m) => m,
     };
-    if msb > crate::limits::current().max_trig_arg_bits {
+    if msb > crate::resource_limits::current().max_trig_arg_bits {
         return None;
     }
     if msb <= 0 {
@@ -559,7 +559,7 @@ pub fn div_fix(a: &MpFix, b: &MpFix, s: i32) -> Option<MpFix> {
     }
     // a/b = (a.mant / b.mant) · 2^(a.scale − b.scale); deliver at s.
     let sh = i64::from(a.scale) - i64::from(b.scale) - i64::from(s);
-    let max_sh = 8 * i64::from(crate::limits::current().max_eval_precision_bits);
+    let max_sh = 8 * i64::from(crate::resource_limits::current().max_eval_precision_bits);
     if sh.abs() > max_sh {
         return None;
     }

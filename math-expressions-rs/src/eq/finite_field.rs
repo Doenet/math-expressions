@@ -59,6 +59,20 @@ pub fn definitely_unequal(a: &Expr, b: &Expr) -> bool {
     false
 }
 
+/// Evaluate `e` in ℤ/`modulus`ℤ with the given variable bindings — the port of
+/// `me.finite_field_evaluate`. Returns the possible residues (more than one
+/// when a field square root is involved), or `None` when the field cannot
+/// represent the expression (`log`, `factorial`, an unknown application, or
+/// `pi` for an odd modulus). Exponents are reduced mod φ(`modulus`), as in the
+/// JS converter.
+pub fn finite_field_evaluate(
+    e: &Expr,
+    bindings: &HashMap<String, i64>,
+    modulus: i64,
+) -> Option<Vec<i64>> {
+    eval(e, bindings, modulus).usable()
+}
+
 /// A value in ℤ/`modulus`ℤ. Multivalued because a field square root has two
 /// roots; NaN marks "this field can't represent it" (skip the prime).
 #[derive(Clone)]

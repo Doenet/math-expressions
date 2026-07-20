@@ -95,7 +95,7 @@ fn needed_bits(digits: usize) -> u32 {
 /// arbitrary-precision instead of f64.
 pub fn evaluate_to_precision(e: &Expr, digits: usize) -> Precise {
     let digits = digits.max(1);
-    if needed_bits(digits) > crate::limits::current().max_eval_precision_bits {
+    if needed_bits(digits) > crate::resource_limits::current().max_eval_precision_bits {
         return Precise::Unknown("digits beyond max_eval_precision_bits");
     }
     // Simplify FIRST, then check for free variables: bound notation like
@@ -160,7 +160,7 @@ fn real_ziv(
     digits: usize,
     est_msb: Option<i64>,
 ) -> Precise {
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let need = needed_bits(digits) as i64;
     let mut target_scale = est_msb.unwrap_or(0) - need - 16;
     for _round in 0..lim.max_ziv_rounds {
@@ -216,7 +216,7 @@ fn complex_path(tape: &CompiledExpr, bindings: &[f64], digits: usize) -> Precise
         }
         _ => None,
     };
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let need = needed_bits(digits) as i64;
     let mut target_scale = est_msb.unwrap_or(0) - need - 16;
     for _round in 0..lim.max_ziv_rounds {
@@ -264,7 +264,7 @@ fn tier2_run(
     record: &[f64],
     target_scale: i32,
 ) -> Tier2Outcome {
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let n = tape.ops.len();
 
     // Magnitude (log2 |value|) per op, with kernel fallbacks where Tier 0
@@ -551,7 +551,7 @@ fn inv_fix(x: &MpFix, s: i32) -> Option<MpFix> {
     if sh < 0 {
         return Some(MpFix::zero(s)); // |1/v| < 1 ulp at this scale
     }
-    if sh > 4 * i64::from(crate::limits::current().max_eval_precision_bits) {
+    if sh > 4 * i64::from(crate::resource_limits::current().max_eval_precision_bits) {
         return None;
     }
     let num = BigInt::from(1) << u32::try_from(sh).ok()?;
@@ -613,7 +613,7 @@ fn tier2_run_complex(
     target_scale: i32,
 ) -> Tier2Outcome2 {
     use complex::CFix;
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let n = tape.ops.len();
     let mag = |i: usize| -> f64 {
         let v = crecord.get(i).map(|z| z.norm()).unwrap_or(f64::NAN);

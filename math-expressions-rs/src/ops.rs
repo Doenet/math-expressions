@@ -240,6 +240,173 @@ pub fn to_intervals(e: &Expr) -> Expr {
     map_children(e, to_intervals)
 }
 
+// ---- units (JS remove_units / add_unit / remove_scaling_units) ----
+
+/// The known scaling-unit spellings the parsers emit (see
+/// `lib/expression/units.js`): `%`, `deg` (and its LaTeX spelling `circ`),
+/// and the prefix `$`.
+fn is_unit_symbol(e: &Expr) -> bool {
+    matches!(e, Expr::Sym(s) if matches!(s.name().as_str(), "%" | "$" | "deg" | "circ"))
+}
+
+/// The value operand of a `["unit", …]` node — the operand that is not the
+/// unit symbol itself (prefix `$` puts the symbol first, postfix units last).
+fn unit_body(args: &[Expr]) -> Option<&Expr> {
+    match args {
+        [a, b] if is_unit_symbol(a) => Some(b),
+        [a, b] if is_unit_symbol(b) => Some(a),
+        _ => None,
+    }
+}
+
+/// `me.remove_units`: strip unit annotations. With `scale_based_on_unit`, the
+/// scaling units are applied (`50%` → `1/2`, `90 deg` → `pi/2`) via
+/// [`crate::norm::desugar_units`]; without it, the bare value is kept
+/// (`50%` → `50`).
+pub fn remove_units(e: &Expr, scale_based_on_unit: bool) -> Expr {
+    if scale_based_on_unit {
+        return crate::norm::desugar_units(e);
+    }
+    if let Expr::OtherOp(name, args) = e {
+        if name.name() == "unit" {
+            if let Some(body) = unit_body(args) {
+                return remove_units(body, false);
+            }
+        }
+    }
+    map_children(e, |c| remove_units(c, false))
+}
+
+/// `me.remove_scaling_units`: drop only the *scaling* units (`%`, `deg`, `$`),
+/// rewriting them into plain arithmetic. Identical to the equality-time
+/// [`crate::norm::desugar_units`] pass.
+pub fn remove_scaling_units(e: &Expr) -> Expr {
+    crate::norm::desugar_units(e)
+}
+
+/// `me.add_unit`: wrap `e` in the given unit. `$` is a prefix unit
+/// (`unit($, e)`); everything else is postfix (`unit(e, name)`).
+pub fn add_unit(e: &Expr, unit: &str) -> Expr {
+    let args = if unit == "$" {
+        vec![Expr::sym("$"), e.clone()]
+    } else {
+        vec![e.clone(), Expr::sym(unit)]
+    };
+    Expr::OtherOp(crate::sym::Sym::new("unit"), args)
+}
+
+// ---- isAnalytic (lib/expression/analytic.js) ----
+
+/// Options for [`is_analytic`], mirroring the JS destructured defaults.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct AnalyticOpts {
+    pub allow_abs: bool,
+    pub allow_arg: bool,
+    pub allow_relation: bool,
+}
+
+/// Port of `me.isAnalytic`: is every operator one of the analytic structural
+/// operators (`+ - * / ^`, sequences, intervals) and every function an
+/// analytic one (i.e. not `abs`/`sign`/`arg`, unless explicitly allowed)?
+/// Logical/set operators and relations are non-analytic (relations pass only
+/// under `allow_relation`, and only the order relations `= le ge < >`).
+pub fn is_analytic(e: &Expr, opts: &AnalyticOpts) -> bool {
+    // Non-analytic operators the tree must not contain.
+    for op in operators(&subscripts_to_strings(e)) {
+        match op.as_str() {
+            "+" | "-" | "*" | "/" | "^" => {}
+            _ => return false, // and / or / not / union / intersect
+        }
+    }
+    // Non-analytic functions: abs, sign, arg (each gate-able).
+    let normalized = normalize_function_names(e);
+    for f in functions(&normalized) {
+        let blocked = match f.as_str() {
+            "abs" => !opts.allow_abs,
+            "arg" => !opts.allow_arg,
+            "sign" => true,
+            _ => false,
+        };
+        if blocked {
+            return false;
+        }
+    }
+    // Relations: only the order relations, only when allowed.
+    let mut ok = true;
+    fn walk_rel(e: &Expr, allow: bool, ok: &mut bool) {
+        if let Expr::Relation { ops, .. } = e {
+            if !allow {
+                *ok = false;
+            } else {
+                for op in ops {
+                    use crate::expr::RelOp;
+                    if !matches!(
+                        op,
+                        RelOp::Eq | RelOp::Le | RelOp::Ge | RelOp::Lt | RelOp::Gt
+                    ) {
+                        *ok = false;
+                    }
+                }
+            }
+        }
+        for c in e.children() {
+            walk_rel(c, allow, ok);
+        }
+    }
+    walk_rel(e, opts.allow_relation, &mut ok);
+    ok
+}
+
+// ---- granular normalization passes (JS normalization/*) ----
+
+/// `me.normalize_function_names`: fold alternate function spellings to their
+/// canonical form (`arcsin` → `asin`, `ln` → `log`, …) via the function
+/// registry's alias map. Only bare-symbol heads are rewritten.
+pub fn normalize_function_names(e: &Expr) -> Expr {
+    fn rename_head(h: &Expr) -> Expr {
+        match h {
+            Expr::Sym(s) => match crate::functions::canonical_name(&s.name()) {
+                Some(canon) => Expr::sym(canon),
+                None => h.clone(),
+            },
+            Expr::Pow(b, x) => Expr::Pow(Box::new(rename_head(b)), x.clone()),
+            Expr::Prime(x) => Expr::Prime(Box::new(rename_head(x))),
+            other => other.clone(),
+        }
+    }
+    if let Expr::Apply(head, args) = e {
+        return Expr::Apply(
+            Box::new(rename_head(head)),
+            args.iter().map(normalize_function_names).collect(),
+        );
+    }
+    map_children(e, normalize_function_names)
+}
+
+/// `me.tuples_to_vectors`: reinterpret tuple sequences as vectors.
+pub fn tuples_to_vectors(e: &Expr) -> Expr {
+    use crate::expr::SeqKind;
+    if let Expr::Seq(SeqKind::Tuple, xs) = e {
+        return Expr::Seq(
+            SeqKind::Vector,
+            xs.iter().map(tuples_to_vectors).collect(),
+        );
+    }
+    map_children(e, tuples_to_vectors)
+}
+
+/// `me.altvectors_to_vectors`: reinterpret `⟨…⟩` alt-vectors as vectors.
+pub fn altvectors_to_vectors(e: &Expr) -> Expr {
+    use crate::expr::SeqKind;
+    if let Expr::Seq(SeqKind::AltVector, xs) = e {
+        return Expr::Seq(
+            SeqKind::Vector,
+            xs.iter().map(altvectors_to_vectors).collect(),
+        );
+    }
+    map_children(e, altvectors_to_vectors)
+}
+
 fn collect_var_names(e: &Expr, out: &mut BTreeSet<String>) {
     if let Expr::Sym(s) = e {
         let name = s.name();
@@ -268,6 +435,20 @@ pub fn constants_to_floats(e: &Expr) -> Expr {
 /// Round every number in `e` to `decimals` decimal places (ties away from zero).
 pub fn round_numbers_to_decimals(e: &Expr, decimals: i32) -> Expr {
     map_numbers(e, &|n| n.round_to_decimals(decimals))
+}
+
+/// `me.set_small_zero`: replace every number whose magnitude is `< tolerance`
+/// with exact `0`. The float-noise cleanup applied after numeric evaluation
+/// (default tolerance `1e-14` on the JS side — callers pass it explicitly).
+pub fn set_small_zero(e: &Expr, tolerance: f64) -> Expr {
+    let tol = tolerance.abs();
+    map_numbers(e, &|n| {
+        if n.to_f64().abs() < tol {
+            Number::Int(0)
+        } else {
+            n.clone()
+        }
+    })
 }
 
 /// Round every number in `e` to `sig_figs` significant figures.

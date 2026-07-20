@@ -88,7 +88,7 @@ pub fn compile(e: &Expr) -> Result<CompiledExpr, CompileError> {
     let mut consts: Vec<Number> = Vec::new();
     let mut vars: Vec<String> = Vec::new();
     let mut roots: Vec<(Box<[Number]>, u32)> = Vec::new();
-    let max_ops = crate::limits::current().max_tape_ops;
+    let max_ops = crate::resource_limits::current().max_tape_ops;
 
     let mut stack = vec![Task::Visit(e)];
     while let Some(task) = stack.pop() {

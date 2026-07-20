@@ -80,6 +80,28 @@ function analyze<H>(engine: Engine<H>, params: EngineParams): Analysis {
       ? safe(() => engine.simplifyWith(der.value, assumptions))
       : der;
 
+  // Symbolic indefinite integral (Rust only — the JS engine throws
+  // "unsupported"), shown post-simplification under the current assumptions.
+  // The whole computation is guarded, and every intermediate handle is freed
+  // here so nothing leaks past this function.
+  const integral = safe((): { text: string; latex: string } | null => {
+    const raw = engine.integrate(h, diffVar);
+    if (raw === null) return null; // no elementary antiderivative
+    try {
+      const simplified = engine.simplifyWith(raw, assumptions);
+      try {
+        return {
+          text: engine.toText(simplified),
+          latex: engine.toLatex(simplified),
+        };
+      } finally {
+        if (simplified !== raw) engine.free(simplified);
+      }
+    } finally {
+      engine.free(raw);
+    }
+  });
+
   // Extract every primitive result (strings / trees / numbers) up front, while
   // the handles are still live. When a step failed, pass its {ok:false, error}
   // through so the UI can show the message instead of a silent "—".
@@ -97,6 +119,7 @@ function analyze<H>(engine: Engine<H>, params: EngineParams): Analysis {
       ? safe(() => engine.toLatex(derShown.value))
       : derShown,
     evalDer: der.ok ? safe(() => engine.evaluate(der.value, bindings)) : der,
+    integral,
   };
 
   // ...then free the wasm handles deterministically instead of leaking them to
@@ -167,6 +190,45 @@ function FormCol({
           <Code res={text} />
         </dd>
       </div>
+    </div>
+  );
+}
+
+/** One engine's integral column: the antiderivative `F + C`, or a note when
+ * there's no elementary form / the engine can't integrate symbolically. */
+function IntegralCol({
+  title,
+  res,
+}: {
+  title: string;
+  res?: SafeResult<{ text: string; latex: string } | null>;
+}) {
+  return (
+    <div className="col">
+      <h3>{title}</h3>
+      <div className="rendered">
+        {res?.ok ? (
+          res.value ? (
+            <Katex tex={`${res.value.latex} + C`} display />
+          ) : (
+            <span className="muted">no elementary antiderivative</span>
+          )
+        ) : res && !res.ok ? (
+          <span className="muted" title={res.error}>
+            {res.error}
+          </span>
+        ) : (
+          <span className="muted">—</span>
+        )}
+      </div>
+      {res?.ok && res.value && (
+        <div className="kv">
+          <dt>text</dt>
+          <dd>
+            <code>{res.value.text}</code>
+          </dd>
+        </div>
+      )}
     </div>
   );
 }
@@ -681,6 +743,30 @@ export default function App() {
               </tr>
             </tbody>
           </table>
+        </section>
+
+        {/* ---- integral ---- */}
+        <section className="card">
+          <div className="section-head">
+            <h2>
+              Integral
+              <span className="muted">
+                {" "}
+                · ∫ f d{diffVar}
+              </span>
+              {activeAssumptions.length > 0 && (
+                <span className="muted">
+                  {" "}
+                  · assuming {activeAssumptions.join(", ")}
+                </span>
+              )}
+            </h2>
+            <span className="muted">symbolic · post-simplification</span>
+          </div>
+          <div className="cols">
+            <IntegralCol title="JavaScript" res={js.integral} />
+            <IntegralCol title="Rust (WASM)" res={rust.integral} />
+          </div>
         </section>
       </div>
 

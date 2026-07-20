@@ -153,6 +153,32 @@ impl RelOp {
             RelOp::NotSupersetEq => "notsuperseteq",
         }
     }
+
+    /// The logical negation of this relation (`not(a < b)` ⇔ `a ≥ b`), used by
+    /// `simplify_logical` to push `not` through relations. Operand order is
+    /// preserved (no swap): each operator maps to its complement.
+    pub fn negate(self) -> RelOp {
+        match self {
+            RelOp::Eq => RelOp::Ne,
+            RelOp::Ne => RelOp::Eq,
+            RelOp::Lt => RelOp::Ge,
+            RelOp::Ge => RelOp::Lt,
+            RelOp::Le => RelOp::Gt,
+            RelOp::Gt => RelOp::Le,
+            RelOp::In => RelOp::NotIn,
+            RelOp::NotIn => RelOp::In,
+            RelOp::Ni => RelOp::NotNi,
+            RelOp::NotNi => RelOp::Ni,
+            RelOp::Subset => RelOp::NotSubset,
+            RelOp::NotSubset => RelOp::Subset,
+            RelOp::SubsetEq => RelOp::NotSubsetEq,
+            RelOp::NotSubsetEq => RelOp::SubsetEq,
+            RelOp::Superset => RelOp::NotSuperset,
+            RelOp::NotSuperset => RelOp::Superset,
+            RelOp::SupersetEq => RelOp::NotSupersetEq,
+            RelOp::NotSupersetEq => RelOp::SupersetEq,
+        }
+    }
 }
 
 impl SeqKind {

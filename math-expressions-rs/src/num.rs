@@ -114,7 +114,7 @@ impl Number {
     /// (smaller → 0, larger → unchanged, with tie behaviour at those
     /// astronomical scales deliberately approximate).
     pub fn round_to_decimals(&self, d: i32) -> Number {
-        let max_scale = crate::limits::current().max_round_decimals;
+        let max_scale = crate::resource_limits::current().max_round_decimals;
         let d64 = i64::from(d);
         if d64 > max_scale {
             return self.clone();
@@ -365,7 +365,7 @@ impl Number {
         // |±1| is exempt: its powers stay one digit.
         let base_bits = base.numer().bits().max(base.denom().bits());
         if base_bits > 1
-            && exp.unsigned_abs().saturating_mul(base_bits) > crate::limits::current().max_pow_bits
+            && exp.unsigned_abs().saturating_mul(base_bits) > crate::resource_limits::current().max_pow_bits
         {
             return None;
         }

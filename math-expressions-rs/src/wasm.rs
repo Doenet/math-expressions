@@ -192,6 +192,321 @@ impl Expression {
             Box::new(other.0.clone()),
         ))
     }
+
+    /// Remainder `self mod other` (JS `mod`).
+    #[wasm_bindgen(js_name = "mod")]
+    pub fn modulo(&self, other: &Expression) -> Expression {
+        Expression(Expr::OtherOp(
+            crate::sym::Sym::new("mod"),
+            vec![self.0.clone(), other.0.clone()],
+        ))
+    }
+
+    /// A structural copy (JS `copy`).
+    pub fn copy(&self) -> Expression {
+        Expression(self.0.clone())
+    }
+}
+
+// ================= WHATS_LEFT A.2 / A.3: newly exposed surface =================
+
+#[wasm_bindgen]
+impl Expression {
+    // ---- equality variants (items 10, 11) ----
+
+    /// Numerical equality by sampling real points only, gated on both sides
+    /// being analytic (JS `equalsViaReal`).
+    pub fn equals_via_real(&self, other: &Expression) -> bool {
+        crate::equals_via_real(&self.0, &other.0, &EqOptions::default())
+    }
+
+    /// Equality with grading options as JSON. Keys (all optional): numbers —
+    /// `relativeTolerance`, `absoluteTolerance`, `toleranceForZero`,
+    /// `allowedErrorInNumbers`; bools — `includeErrorInNumberExponents`,
+    /// `allowedErrorIsAbsolute`, `allowBlanks`. So `3.14 == pi` becomes true
+    /// with `{"allowedErrorInNumbers": 0.01}`.
+    pub fn equals_with_options(&self, other: &Expression, options_json: &str) -> bool {
+        let v: serde_json::Value = match serde_json::from_str(options_json) {
+            Ok(v) => v,
+            Err(_) => return self.equals(other),
+        };
+        let mut o = EqOptions::default();
+        read_opt_f64(&v, "relativeTolerance", &mut o.relative_tolerance);
+        read_opt_f64(&v, "absoluteTolerance", &mut o.absolute_tolerance);
+        read_opt_f64(&v, "toleranceForZero", &mut o.tolerance_for_zero);
+        read_opt_f64(&v, "allowedErrorInNumbers", &mut o.allowed_error_in_numbers);
+        read_opt_bool(
+            &v,
+            "includeErrorInNumberExponents",
+            &mut o.include_error_in_number_exponents,
+        );
+        read_opt_bool(&v, "allowedErrorIsAbsolute", &mut o.allowed_error_is_absolute);
+        read_opt_bool(&v, "allowBlanks", &mut o.allow_blanks);
+        crate::equals(&self.0, &other.0, &o)
+    }
+
+    // ---- analyticity (item 7) ----
+
+    /// Is this an analytic expression (only `+ - * / ^`, sequences, and
+    /// analytic functions)? `allow_abs`/`allow_arg` permit those functions;
+    /// `allow_relation` permits the order relations (JS `isAnalytic`).
+    pub fn is_analytic(&self, allow_abs: bool, allow_arg: bool, allow_relation: bool) -> bool {
+        crate::is_analytic(
+            &self.0,
+            &crate::AnalyticOpts {
+                allow_abs,
+                allow_arg,
+                allow_relation,
+            },
+        )
+    }
+
+    // ---- simplification variants (items 9, 19, 8) ----
+
+    /// Logical simplification: De Morgan / not-pushdown (JS `simplify_logical`).
+    pub fn simplify_logical(&self) -> Expression {
+        Expression(crate::simplify_logical(&self.0, &crate::Assumptions::new()))
+    }
+
+    /// Collect like terms and factors. Backed by the canonical simplifier
+    /// (JS `collect_like_terms_factors`).
+    pub fn collect_like_terms_factors(&self) -> Expression {
+        Expression(rust_simplify(&self.0))
+    }
+
+    /// Simplify rational expressions by cancelling common factors — an alias of
+    /// [`Self::reduce_rational`] (JS `simplify_ratios`).
+    pub fn simplify_ratios(&self) -> Expression {
+        Expression(reduce_rational(&self.0))
+    }
+
+    /// Factor a univariate polynomial over ℚ (item 8).
+    pub fn factor(&self) -> Expression {
+        Expression(crate::factor(&self.0))
+    }
+
+    // ---- number cleanup (item 17) ----
+
+    /// Replace every number smaller than `tolerance` in magnitude with 0
+    /// (JS `set_small_zero`).
+    pub fn set_small_zero(&self, tolerance: f64) -> Expression {
+        Expression(crate::set_small_zero(&self.0, tolerance))
+    }
+
+    // ---- units (item 14) ----
+
+    /// Strip unit annotations. With `scale_based_on_unit`, scaling units are
+    /// applied (`50%` → `1/2`); otherwise the bare value is kept.
+    pub fn remove_units(&self, scale_based_on_unit: bool) -> Expression {
+        Expression(crate::remove_units(&self.0, scale_based_on_unit))
+    }
+
+    /// Rewrite the scaling units `%`, `deg`, `$` into plain arithmetic
+    /// (JS `remove_scaling_units`).
+    pub fn remove_scaling_units(&self) -> Expression {
+        Expression(crate::remove_scaling_units(&self.0))
+    }
+
+    /// Wrap this expression in `unit` (JS `add_unit`).
+    pub fn add_unit(&self, unit: &str) -> Expression {
+        Expression(crate::add_unit(&self.0, unit))
+    }
+
+    // ---- normalization passes (item 13) ----
+
+    /// Fold alternate function spellings to canonical (`arcsin` → `asin`).
+    pub fn normalize_function_names(&self) -> Expression {
+        Expression(crate::normalize_function_names(&self.0))
+    }
+
+    /// Reinterpret tuples as vectors (JS `tuples_to_vectors`).
+    pub fn tuples_to_vectors(&self) -> Expression {
+        Expression(crate::tuples_to_vectors(&self.0))
+    }
+
+    /// Reinterpret alt-vectors as vectors (JS `altvectors_to_vectors`).
+    pub fn altvectors_to_vectors(&self) -> Expression {
+        Expression(crate::altvectors_to_vectors(&self.0))
+    }
+
+    /// Collapse subscripts into string symbols: `x_1` → the symbol `x_1`.
+    pub fn subscripts_to_strings(&self) -> Expression {
+        Expression(crate::subscripts_to_strings(&self.0))
+    }
+
+    /// Inverse of [`Self::subscripts_to_strings`].
+    pub fn strings_to_subscripts(&self) -> Expression {
+        Expression(crate::strings_to_subscripts(&self.0))
+    }
+
+    /// Convert 2-element tuples/arrays into interval notation (JS `to_intervals`).
+    pub fn to_intervals(&self) -> Expression {
+        Expression(crate::to_intervals(&self.0))
+    }
+
+    // ---- matrix / vector operations (item 12) ----
+
+    pub fn transpose(&self) -> Expression {
+        Expression(crate::transpose(&self.0))
+    }
+    pub fn trace(&self) -> Expression {
+        Expression(crate::trace(&self.0))
+    }
+    pub fn matmul(&self, other: &Expression) -> Expression {
+        Expression(crate::matmul(&self.0, &other.0))
+    }
+    /// Matrix inverse (opaque when singular or symbolic without a nonzero-det
+    /// proof under the default assumptions).
+    pub fn matrix_inverse(&self) -> Expression {
+        Expression(crate::matrix_inverse(&self.0, &crate::Assumptions::new()))
+    }
+    /// Reduced row-echelon form.
+    pub fn rref(&self) -> Expression {
+        Expression(crate::rref(&self.0, &crate::Assumptions::new()))
+    }
+    /// Matrix rank, or `undefined` when not a literal matrix under the caps.
+    pub fn rank(&self) -> Option<u32> {
+        crate::rank(&self.0, &crate::Assumptions::new())
+    }
+    /// A basis for the null space as a JSON array of column vectors (each an
+    /// array of text-syntax entries), or `undefined` on refusal.
+    pub fn nullspace(&self) -> Option<String> {
+        let basis = crate::nullspace(&self.0, &crate::Assumptions::new())?;
+        let rows: Vec<serde_json::Value> = basis
+            .iter()
+            .map(|v| {
+                let entries = match v {
+                    Expr::Matrix { entries, .. } => entries.clone(),
+                    other => vec![other.clone()],
+                };
+                serde_json::Value::Array(
+                    entries
+                        .iter()
+                        .map(|e| serde_json::json!(to_text(e, &Default::default())))
+                        .collect(),
+                )
+            })
+            .collect();
+        Some(serde_json::Value::Array(rows).to_string())
+    }
+
+    pub fn vector_add(&self, other: &Expression) -> Expression {
+        Expression(crate::vector_add(&self.0, &other.0))
+    }
+    pub fn vector_sub(&self, other: &Expression) -> Expression {
+        Expression(crate::vector_sub(&self.0, &other.0))
+    }
+    pub fn dot_prod(&self, other: &Expression) -> Expression {
+        Expression(crate::dot_prod(&self.0, &other.0))
+    }
+    pub fn cross_prod(&self, other: &Expression) -> Expression {
+        Expression(crate::cross_prod(&self.0, &other.0))
+    }
+}
+
+fn read_opt_f64(v: &serde_json::Value, key: &str, target: &mut f64) {
+    if let Some(x) = v.get(key).and_then(serde_json::Value::as_f64) {
+        *target = x;
+    }
+}
+
+/// Evaluate `e` in ℤ/`modulus`ℤ with real integer bindings (item 16). Returns
+/// the possible residues, or `undefined` when the field can't represent it.
+#[wasm_bindgen]
+pub fn finite_field_evaluate(
+    e: &Expression,
+    vars: Vec<String>,
+    values: Vec<i32>,
+    modulus: i32,
+) -> Option<Vec<i32>> {
+    if vars.len() != values.len() {
+        return None;
+    }
+    let bindings: std::collections::HashMap<String, i64> = vars
+        .into_iter()
+        .zip(values.into_iter().map(i64::from))
+        .collect();
+    crate::finite_field_evaluate(&e.0, &bindings, i64::from(modulus))
+        .map(|v| v.into_iter().map(|x| x as i32).collect())
+}
+
+// ================= assumptions handle (item 15) =================
+
+/// A mutable assumptions set. Relations are given in text syntax
+/// (`"x > 0"`, `"n elementof Z"`). Port of the JS `Assumptions` context.
+#[wasm_bindgen(js_name = Assumptions)]
+pub struct WasmAssumptions(Assumptions);
+
+#[wasm_bindgen(js_class = Assumptions)]
+impl WasmAssumptions {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> WasmAssumptions {
+        WasmAssumptions(Assumptions::new())
+    }
+
+    /// Add a relation (or an `and` of relations). Returns `false` if it fails
+    /// to parse.
+    pub fn add(&mut self, relation: &str) -> bool {
+        match TextToAst::new(TextToAstOptions::default()).convert(relation) {
+            Ok(e) => {
+                self.0.add(&e);
+                true
+            }
+            Err(_) => false,
+        }
+    }
+
+    /// Remove a previously-added relation.
+    pub fn remove(&mut self, relation: &str) {
+        if let Ok(e) = TextToAst::new(TextToAstOptions::default()).convert(relation) {
+            self.0.remove(&e);
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Simplify `expr` under these assumptions.
+    pub fn simplify(&self, expr: &Expression) -> Expression {
+        Expression(rust_simplify_with(&expr.0, &self.0))
+    }
+
+    // The eight three-valued predicates (`true` / `false` / `undefined`).
+    pub fn is_real(&self, expr: &Expression) -> Option<bool> {
+        crate::is_real(&expr.0, &self.0)
+    }
+    pub fn is_complex(&self, expr: &Expression) -> Option<bool> {
+        crate::is_complex(&expr.0, &self.0)
+    }
+    pub fn is_integer(&self, expr: &Expression) -> Option<bool> {
+        crate::is_integer(&expr.0, &self.0)
+    }
+    pub fn is_nonzero(&self, expr: &Expression) -> Option<bool> {
+        crate::is_nonzero(&expr.0, &self.0)
+    }
+    pub fn is_positive(&self, expr: &Expression) -> Option<bool> {
+        crate::is_positive(&expr.0, &self.0)
+    }
+    pub fn is_negative(&self, expr: &Expression) -> Option<bool> {
+        crate::is_negative(&expr.0, &self.0)
+    }
+    pub fn is_nonnegative(&self, expr: &Expression) -> Option<bool> {
+        crate::is_nonnegative(&expr.0, &self.0)
+    }
+    pub fn is_nonpositive(&self, expr: &Expression) -> Option<bool> {
+        crate::is_nonpositive(&expr.0, &self.0)
+    }
+}
+
+impl Default for WasmAssumptions {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Build a discrete infinite set (periodic solution set) from offsets and

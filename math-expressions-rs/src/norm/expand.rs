@@ -23,7 +23,7 @@ use crate::num::Number;
 use super::syntactic::map_children;
 use super::{add, mul, pow};
 
-// Caps (limits::current().max_expand_power / max_expand_terms): the exponent
+// Caps (resource_limits::current().max_expand_power / max_expand_terms): the exponent
 // bound on multinomial expansion, and the raw term-count bound per
 // distribution step beyond which the node is left unexpanded. Classroom
 // polynomials are far below both; they exist so a pasted product of dozens of
@@ -70,7 +70,7 @@ pub(crate) fn expand_core(e: &Expr) -> Expr {
             // Multinomial-expand a non-negative integer power of a sum.
             if let Expr::Num(Number::Int(n)) = &exp {
                 let is_sum = matches!(&base, Expr::Add(ts) if ts.len() > 1);
-                if (1..=crate::limits::current().max_expand_power).contains(n) && is_sum {
+                if (1..=crate::resource_limits::current().max_expand_power).contains(n) && is_sum {
                     let factors = vec![base.clone(); *n as usize];
                     if let Some(r) = try_distribute(&factors) {
                         return r;
@@ -98,13 +98,13 @@ fn terms_of(e: Expr) -> Vec<Expr> {
 /// sum. Like terms are combined after each factor (via the smart `add`), so the
 /// live term count tracks the *combined* size, not the raw Cartesian product.
 /// Returns `None` when a step would exceed the raw-term cap
-/// (`limits::current().max_expand_terms`) — the
+/// (`resource_limits::current().max_expand_terms`) — the
 /// caller keeps the node unexpanded.
 fn try_distribute(factors: &[Expr]) -> Option<Expr> {
     let mut acc = vec![Expr::int(1)];
     for f in factors {
         let f_terms = terms_of(f.clone());
-        if acc.len().saturating_mul(f_terms.len()) > crate::limits::current().max_expand_terms {
+        if acc.len().saturating_mul(f_terms.len()) > crate::resource_limits::current().max_expand_terms {
             return None;
         }
         let mut next = Vec::with_capacity(acc.len() * f_terms.len());

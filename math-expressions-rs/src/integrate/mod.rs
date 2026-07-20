@@ -33,7 +33,7 @@ fn depends_on(e: &Expr, x: &str) -> bool {
 /// `integrate_to_precision`.
 pub fn integrate(f: &Expr, x: &str, _assumptions: &Assumptions) -> Option<Expr> {
     let fc = canonicalize(f);
-    let mut fuel = crate::limits::current().max_integration_steps;
+    let mut fuel = crate::resource_limits::current().max_integration_steps;
     let result = integ(&fc, x, &mut fuel)?;
     // The gate (plan §2c): verify by differentiation through the library's
     // own equality. A candidate that fails is discarded.
@@ -310,7 +310,7 @@ fn usub(e: &Expr, x: &str, fuel: &mut i64) -> Option<Expr> {
     collect_candidates(e, &mut candidates);
     candidates.retain(|u| depends_on(u, x) && !matches!(u, Expr::Sym(_)));
     candidates.dedup();
-    candidates.truncate(crate::limits::current().max_integration_candidates);
+    candidates.truncate(crate::resource_limits::current().max_integration_candidates);
     for u in candidates {
         let du = canonicalize(&crate::diff::derivative(&u, x));
         if matches!(&du, Expr::Num(n) if n.is_zero()) {

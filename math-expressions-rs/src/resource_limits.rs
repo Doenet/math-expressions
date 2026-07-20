@@ -1,10 +1,12 @@
 //! Resource limits (PORTING_PLAN.md §7f).
 //!
-//! All expression input is untrusted (student answers), so every unpredictable
-//! pass is bounded. This module is the single source of truth for those
-//! bounds — previously seven ad-hoc constants scattered across the crate.
-//! Every limit counts **operations/sizes, never wall-clock**, so verdicts are
-//! identical on every machine (grading engine; reproducible tests).
+//! Note: these are *computational safety* bounds, unrelated to calculus
+//! limits (`lim`). All expression input is untrusted (student answers), so
+//! every unpredictable pass is bounded. This module is the single source of
+//! truth for those bounds — previously seven ad-hoc constants scattered
+//! across the crate. Every bound counts **operations/sizes, never
+//! wall-clock**, so verdicts are identical on every machine (grading engine;
+//! reproducible tests).
 //!
 //! The current limits live in a thread-local (WASM is single-threaded, and the
 //! crate already uses thread-local symbol interning), so no signatures change:
@@ -12,9 +14,9 @@
 //! with [`with`]:
 //!
 //! ```
-//! use math_expressions::limits::{self, Limits};
-//! let strict = Limits { max_expand_terms: 100, ..Limits::default() };
-//! let result = limits::with(strict, || {
+//! use math_expressions::resource_limits::{self, ResourceLimits};
+//! let strict = ResourceLimits { max_expand_terms: 100, ..ResourceLimits::default() };
+//! let result = resource_limits::with(strict, || {
 //!     // expand()/simplify()/equals() here run under the tighter cap
 //! });
 //! ```
@@ -25,7 +27,7 @@ use std::cell::Cell;
 /// generous: far above anything classroom input reaches, low enough that
 /// adversarial input cannot exhaust memory or stall the engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Limits {
+pub struct ResourceLimits {
     /// Largest integer exponent `expand` will multinomial-expand.
     pub max_expand_power: i64,
     /// Raw term-count cap per distribution step in `expand`; beyond it the
@@ -79,6 +81,10 @@ pub struct Limits {
     pub max_integration_candidates: usize,
     /// Degree cap for the rational integration engine (Hermite/LRT inputs).
     pub max_lrt_degree: usize,
+    /// Largest polynomial degree `factor` will process; beyond it the input
+    /// is returned unfactored. Bounds the dense-coefficient allocation an
+    /// adversarial exponent (`x^10^9`) would otherwise force.
+    pub max_factor_degree: usize,
     /// Accepted+rejected step cap for the adaptive ODE solver.
     pub max_ode_steps: usize,
     /// Candidate singular cells per divergence-classification call.
@@ -89,9 +95,9 @@ pub struct Limits {
     pub max_improper_refinements: usize,
 }
 
-impl Default for Limits {
+impl Default for ResourceLimits {
     fn default() -> Self {
-        Limits {
+        ResourceLimits {
             max_expand_power: 64,
             max_expand_terms: 4_000,
             max_simplify_rounds: 32,
@@ -113,6 +119,7 @@ impl Default for Limits {
             max_integration_steps: 256,
             max_integration_candidates: 64,
             max_lrt_degree: 64,
+            max_factor_degree: 64,
             max_ode_steps: 10_000,
             max_singularity_candidates: 32,
             max_certificate_bisections: 4_096,
@@ -122,18 +129,18 @@ impl Default for Limits {
 }
 
 thread_local! {
-    static CURRENT: Cell<Limits> = Cell::new(Limits::default());
+    static CURRENT: Cell<ResourceLimits> = Cell::new(ResourceLimits::default());
 }
 
 /// The limits in effect on this thread.
-pub fn current() -> Limits {
+pub fn current() -> ResourceLimits {
     CURRENT.with(Cell::get)
 }
 
 /// Run `f` with `limits` in effect, restoring the previous limits afterwards
 /// (including on panic/unwind).
-pub fn with<R>(limits: Limits, f: impl FnOnce() -> R) -> R {
-    struct Restore(Limits);
+pub fn with<R>(limits: ResourceLimits, f: impl FnOnce() -> R) -> R {
+    struct Restore(ResourceLimits);
     impl Drop for Restore {
         fn drop(&mut self) {
             CURRENT.with(|c| c.set(self.0));

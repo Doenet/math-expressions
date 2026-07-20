@@ -26,7 +26,7 @@ use crate::num::Number;
 use super::syntactic::map_children;
 use super::{add, canonicalize, mul, split_coeff};
 
-// Max rewrite rounds: limits::current().max_simplify_rounds (§7f). Every
+// Max rewrite rounds: resource_limits::current().max_simplify_rounds (§7f). Every
 // round strictly makes progress or we stop, so this only bounds pathological
 // non-convergence on adversarial input; real inputs converge in 1–2 rounds.
 
@@ -43,6 +43,42 @@ pub fn simplify(e: &Expr) -> Expr {
 /// `sqrt(x²) → x` under `x > 0` and `sqrt(x²) → |x|` under `x ∈ R`.
 pub fn simplify_with(e: &Expr, assumptions: &Assumptions) -> Expr {
     super::present(&simplify_core_with(e, assumptions))
+}
+
+/// Port of `me.simplify_logical`: numeric folding under assumptions, then push
+/// every `not` inward — double-negation collapse, De Morgan over `and`/`or`,
+/// and negation of relations (`not(a < b)` → `a ≥ b`). Blanks pass through
+/// untouched, matching JS. (Deviation: we also negate `le`/`ge` relations,
+/// which the JS left as a no-op.)
+pub fn simplify_logical(e: &Expr, assumptions: &Assumptions) -> Expr {
+    if crate::eq::contains_blank(e) {
+        return e.clone();
+    }
+    super::present(&push_not(&simplify_core_with(e, assumptions)))
+}
+
+/// Rewrite `not(...)` toward the leaves. Recurses into the negated operand
+/// first so nested negations collapse bottom-up.
+fn push_not(e: &Expr) -> Expr {
+    if let Expr::Not(inner) = e {
+        let inner = push_not(inner);
+        let neg = |x: &Expr| push_not(&Expr::Not(Box::new(x.clone())));
+        return match inner {
+            // Double negation.
+            Expr::Not(a) => *a,
+            // De Morgan.
+            Expr::And(xs) => Expr::Or(xs.iter().map(neg).collect()),
+            Expr::Or(xs) => Expr::And(xs.iter().map(neg).collect()),
+            // Negate a simple (unchained) relation.
+            Expr::Relation { operands, ops } if ops.len() == 1 => Expr::Relation {
+                operands,
+                ops: vec![ops[0].negate()],
+            },
+            // Nothing to push through: keep the `not`.
+            other => Expr::Not(Box::new(other)),
+        };
+    }
+    map_children(e, push_not)
 }
 
 /// [`simplify`] without the final presentation pass: the result is canonical,
@@ -64,7 +100,7 @@ pub(crate) fn simplify_canonical(cur: Expr) -> Expr {
 }
 
 fn simplify_rounds(mut cur: Expr, assumptions: &Assumptions) -> Expr {
-    for _ in 0..crate::limits::current().max_simplify_rounds {
+    for _ in 0..crate::resource_limits::current().max_simplify_rounds {
         let mut fired = false;
         let rewritten = rewrite(&cur, &mut fired, assumptions);
         // No rule applied anywhere: `cur` came out of canonicalize, so it is
@@ -738,7 +774,7 @@ fn extract_qth_power(c: u64, q: u32) -> (u64, u64) {
     let mut m: u64 = 1;
     let mut remaining = c;
     let mut d: u64 = 2;
-    while d <= crate::limits::current().max_trial_divisor {
+    while d <= crate::resource_limits::current().max_trial_divisor {
         let Some(dq) = pow_u128(d, q) else { break };
         if dq > remaining as u128 {
             break;

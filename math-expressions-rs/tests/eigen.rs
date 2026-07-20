@@ -485,16 +485,16 @@ fn symbolic_larger_matrices_return_none() {
 
 #[test]
 fn eigen_caps_are_honest_refusals() {
-    use math_expressions::limits::{self, Limits};
+    use math_expressions::resource_limits::{self, ResourceLimits};
     assert!(eigenvalues(&mat(2, 3, &["1", "2", "3", "4", "5", "6"]), &Assumptions::new()).is_none());
     assert!(eigenvalues(&parse("x"), &Assumptions::new()).is_none());
     // Degree cap: a cubic RootOf is refused under max_rootof_degree = 2.
     let a = companion(&["1", "1", "0"]);
-    let strict = Limits {
+    let strict = ResourceLimits {
         max_rootof_degree: 2,
-        ..Limits::default()
+        ..ResourceLimits::default()
     };
-    limits::with(strict, || {
+    resource_limits::with(strict, || {
         assert!(eigenvalues(&a, &Assumptions::new()).is_none());
     });
 }

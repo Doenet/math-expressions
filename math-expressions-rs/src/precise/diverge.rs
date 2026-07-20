@@ -431,7 +431,7 @@ struct ZeroCell {
 type LocatedZeros = (Vec<ZeroCell>, Vec<(f64, f64)>);
 
 fn locate_zeros(d: &Expr, var: &str, lo: f64, hi: f64) -> Option<LocatedZeros> {
-    let lim = crate::limits::current();
+    let lim = crate::resource_limits::current();
     let tape = super::tape::compile(d).ok()?;
     if tape.vars().iter().any(|v| v != var) {
         return None;
@@ -1187,7 +1187,7 @@ fn improper_value(
     let span = hi - lo;
     let cells = &classified.singular_cells;
     let mut w = span / 64.0;
-    for _ in 0..crate::limits::current().max_improper_refinements {
+    for _ in 0..crate::resource_limits::current().max_improper_refinements {
         // Certified tails at this width.
         let mut total_tail = 0.0f64;
         let mut ok = true;

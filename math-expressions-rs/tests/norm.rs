@@ -153,15 +153,15 @@ fn pow_distribution_keeps_mul_flat() {
 
 #[test]
 fn limits_are_scoped_and_effective() {
-    use math_expressions::limits::{self, Limits};
+    use math_expressions::resource_limits::{self, ResourceLimits};
     use math_expressions::norm::expand; // via re-export? use crate path below if needed
     // Tight expand cap: a modest power-of-sum bails to the unexpanded form.
     let e = parse("(a+b)^6");
-    let strict = Limits {
+    let strict = ResourceLimits {
         max_expand_terms: 5,
-        ..Limits::default()
+        ..ResourceLimits::default()
     };
-    let under = limits::with(strict, || expand(&e));
+    let under = resource_limits::with(strict, || expand(&e));
     assert!(
         matches!(under, Expr::Pow(..)),
         "expected unexpanded under tight cap, got {under:?}"

@@ -405,7 +405,7 @@ pub(crate) fn package(total: f64, err_total: f64, digits: usize, negate: bool) -
         return Precise::Unknown("quadrature error target not met");
     }
     let total = if negate { -total } else { total };
-    if needed_bits(digits) > crate::limits::current().max_eval_precision_bits {
+    if needed_bits(digits) > crate::resource_limits::current().max_eval_precision_bits {
         return Precise::Unknown("digits beyond max_eval_precision_bits");
     }
     // ±1 ulp packaging: scale so the certified error fits under one ulp.
@@ -428,7 +428,7 @@ pub(crate) fn adaptive_quadrature(
     digits: usize,
     extra_abs_tol: f64,
 ) -> Result<(f64, f64), &'static str> {
-    let max_segs = crate::limits::current().max_quadrature_segments;
+    let max_segs = crate::resource_limits::current().max_quadrature_segments;
     let mut heap: BinaryHeap<Seg> = BinaryHeap::new();
     let mut pending: Vec<(f64, f64, u32)> = vec![(lo, hi, 0)];
     let mut segs = 0usize;

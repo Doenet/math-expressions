@@ -6,6 +6,8 @@
 pub mod discrete_infinite;
 mod finite_field;
 
+pub use finite_field::finite_field_evaluate;
+
 use crate::eval::{eval_complex, free_symbols, Env};
 use crate::expr::{Expr, RelOp, SeqKind};
 use crate::norm::{canonicalize, desugar_units, normalize_syntactic, simplify_canonical};
@@ -13,9 +15,9 @@ use num_complex::Complex64;
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
-/// Options mirroring the JS `equals` parameters (PORTING_PLAN.md §10). Only the
-/// tolerances and coercion flags affect this first-cut implementation;
-/// `allowed_error_in_numbers` fuzzy matching is a documented follow-up.
+/// Options mirroring the JS `equals` parameters (PORTING_PLAN.md §10): the
+/// tolerances, coercion flags, `allowed_error_in_numbers` fuzzy matching, and
+/// the `real_only` sampling mode used by [`equals_via_real`].
 #[derive(Debug, Clone)]
 pub struct EqOptions {
     pub relative_tolerance: f64,
@@ -36,6 +38,9 @@ pub struct EqOptions {
     pub coerce_vectors: bool,
     /// Number of random complex sample points for the numerical stage.
     pub num_samples: usize,
+    /// Sample only real points in the numerical stage (the `equals_via_real`
+    /// mode). Off by default — full `equals` samples the complex plane.
+    pub real_only: bool,
 }
 
 impl Default for EqOptions {
@@ -51,6 +56,7 @@ impl Default for EqOptions {
             coerce_tuples_arrays: true,
             coerce_vectors: true,
             num_samples: 20,
+            real_only: false,
         }
     }
 }
@@ -147,6 +153,34 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
 
     // Stage 3: numerical agreement at random complex points.
     equals_numerical(&ca, &cb, opts)
+}
+
+/// Numerical equality by sampling *real* points only — the port of JS
+/// `equalsViaReal`. Both expressions must be analytic (no `abs`/`sign`/`arg`,
+/// no logical/set operators), matching the JS gate; a non-analytic operand
+/// makes this return `false`. Real-only sampling is the right tool when the
+/// functions agree on the reals but differ off the real axis (branch cuts):
+/// `sqrt(x²)` and `abs(x)`… — though `abs` itself is non-analytic, so callers
+/// use this for real-domain agreement of analytic forms.
+pub fn equals_via_real(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
+    use crate::ops::{is_analytic, AnalyticOpts};
+    if !opts.allow_blanks && (contains_blank(a) || contains_blank(b)) {
+        return false;
+    }
+    let ao = AnalyticOpts::default();
+    if !is_analytic(a, &ao) || !is_analytic(b, &ao) {
+        return false;
+    }
+    let a = desugar_units(a);
+    let b = desugar_units(b);
+    let ca = canonicalize(&coerce_seqs(a, opts));
+    let cb = canonicalize(&coerce_seqs(b, opts));
+    if ca == cb {
+        return true;
+    }
+    let mut o = opts.clone();
+    o.real_only = true;
+    equals_numerical(&ca, &cb, &o)
 }
 
 /// Symbolic (syntactic) equality — the port of JS `equalsViaSyntax`. This is a
@@ -507,7 +541,7 @@ fn find_region(
         }
     };
 
-    let base = sample_point(vars, scale, None, rng);
+    let base = sample_point(vars, scale, None, rng, opts.real_only);
     let (Some(va), Some(vb)) = (eval_complex(a, &base), eval_complex(b, &base)) else {
         return Region::Skip;
     };
@@ -523,7 +557,7 @@ fn find_region(
 
     let mut finite_tries = 0;
     for _ in 0..100 {
-        let near = sample_point(vars, scale / 100.0, Some(&base), rng);
+        let near = sample_point(vars, scale / 100.0, Some(&base), rng, opts.real_only);
         let (Some(va2), Some(vb2)) = (eval_complex(a, &near), eval_complex(b, &near)) else {
             continue;
         };
@@ -567,14 +601,24 @@ fn usable(va: Complex64, vb: Complex64) -> bool {
 /// Sample each variable uniformly in a `scale`-radius complex box, optionally
 /// centered on a prior point (for neighborhood probing). Mirrors JS
 /// `randomComplexBindings`.
-fn sample_point(vars: &[String], scale: f64, center: Option<&Env>, rng: &mut SmallRng) -> Env {
+fn sample_point(
+    vars: &[String],
+    scale: f64,
+    center: Option<&Env>,
+    rng: &mut SmallRng,
+    real_only: bool,
+) -> Env {
     vars.iter()
         .map(|v| {
             let c = center
                 .and_then(|c| c.get(v).copied())
                 .unwrap_or(Complex64::new(0.0, 0.0));
             let re = c.re + rng.random_range(-scale..scale);
-            let im = c.im + rng.random_range(-scale..scale);
+            let im = if real_only {
+                0.0
+            } else {
+                c.im + rng.random_range(-scale..scale)
+            };
             (v.clone(), Complex64::new(re, im))
         })
         .collect()

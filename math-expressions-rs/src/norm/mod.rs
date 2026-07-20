@@ -24,7 +24,7 @@ pub(crate) use order::cmp;
 pub(crate) use present::present;
 pub(crate) use simplify::{simplify_canonical, simplify_core};
 pub use expand::expand;
-pub use simplify::{simplify, simplify_with};
+pub use simplify::{simplify, simplify_logical, simplify_with};
 pub use syntactic::normalize_syntactic;
 
 /// Bottom-up canonicalization: canonicalize children, then apply the smart
@@ -459,7 +459,7 @@ pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
             Some(k)
                 if rows == cols
                     && k >= 2
-                    && k <= crate::limits::current().max_expand_power =>
+                    && k <= crate::resource_limits::current().max_expand_power =>
             {
                 let mut acc = identity_matrix(rows);
                 let mut sq = base.clone();
@@ -597,7 +597,7 @@ pub(crate) fn matmul_literal(a: &Expr, b: &Expr) -> Option<Expr> {
         return None;
     }
     let (r1, c1, c2) = (*r1 as usize, *c1 as usize, *c2 as usize);
-    if r1.saturating_mul(c1).saturating_mul(c2) > crate::limits::current().max_expand_terms {
+    if r1.saturating_mul(c1).saturating_mul(c2) > crate::resource_limits::current().max_expand_terms {
         return None;
     }
     let mut entries = Vec::with_capacity(r1 * c2);
@@ -778,11 +778,11 @@ fn canon_relation(mut operands: Vec<Expr>, ops: Vec<RelOp>) -> Expr {
 }
 
 fn factorial_of(n: i64) -> Option<Number> {
-    // Cap the fold (limits::current().max_factorial): canonicalization must
+    // Cap the fold (resource_limits::current().max_factorial): canonicalization must
     // stay cheap on any user input, and `(10^12)!` would otherwise loop
     // forever. Beyond the cap the node stays an application (structural
     // equality still works).
-    if !(0..=crate::limits::current().max_factorial).contains(&n) {
+    if !(0..=crate::resource_limits::current().max_factorial).contains(&n) {
         return None;
     }
     let mut acc = Number::one();

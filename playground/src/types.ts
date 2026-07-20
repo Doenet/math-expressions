@@ -53,6 +53,8 @@ export interface RustExpr {
   substitute_var(v: string, value: RustExpr): RustExpr;
   evaluate_to_complex(): Float64Array | undefined;
   derivative(v: string): RustExpr;
+  /** Indefinite integral in `v`; `undefined` when no elementary form is found. */
+  integrate(v: string): RustExpr | undefined;
   simplify_with_assumptions(assumptions: string[]): RustExpr;
   expand(): RustExpr;
   equals(other: RustExpr): boolean;
@@ -77,6 +79,12 @@ export interface Engine<H> {
   variables(h: H): string[];
   evaluate(h: H, subs: Record<string, string>): Complex | null;
   derivative(h: H, v: string): H;
+  /**
+   * Indefinite integral in `v`. Returns `null` when the engine found no
+   * elementary form; throws when the engine has no symbolic integration at all
+   * (the JS library) so the two cases stay distinguishable to the caller.
+   */
+  integrate(h: H, v: string): H | null;
   free(h: H): void;
   simplifyWith(h: H, assumptions: string[]): H;
   expand(h: H): H;
@@ -112,4 +120,10 @@ export interface Analysis {
   derText?: SafeResult<string>;
   derLatex?: SafeResult<string>;
   evalDer?: SafeResult<Complex | null>;
+  /**
+   * The simplified indefinite integral (text + latex), or `null` when no
+   * elementary form was found. A failed result carries the reason (e.g. the JS
+   * library not supporting symbolic integration).
+   */
+  integral?: SafeResult<{ text: string; latex: string } | null>;
 }

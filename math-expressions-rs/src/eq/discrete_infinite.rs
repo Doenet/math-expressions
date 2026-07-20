@@ -153,7 +153,7 @@ fn progression_contained(a: &Progression, b: &[Progression], match_partial: bool
         let Some((p, q)) = frac_parts(n) else {
             return 0.0;
         };
-        if p == 0 || p > crate::limits::current().max_residues {
+        if p == 0 || p > crate::resource_limits::current().max_residues {
             return 0.0; // degenerate or beyond the residue cap
         }
         let per_val = (p as f64) / (q as f64);

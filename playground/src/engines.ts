@@ -94,6 +94,11 @@ const jsEngine: Engine<JsExpr> = {
     }
   },
   derivative: (h, v) => h.derivative(v),
+  // The JS library has no symbolic integration (only `integrateNumerically`).
+  // Throw so the caller can distinguish "unsupported" from "no elementary form".
+  integrate() {
+    throw new Error("the JS library has no symbolic integration");
+  },
   // JS handles are plain GC'd objects — nothing to free.
   free() {},
   // Simplify under `assumptions` (relation strings, e.g. "x > 0"). The JS
@@ -155,6 +160,9 @@ function makeRustEngine(rust: RustModule): Engine<RustExpr> {
       }
     },
     derivative: (h, v) => h.derivative(v),
+    // Symbolic indefinite integral; the binding returns undefined when no
+    // elementary antiderivative is found, which we normalise to null.
+    integrate: (h, v) => h.integrate(v) ?? null,
     // Free a wasm-owned handle. Deterministic freeing (rather than relying on
     // FinalizationRegistry GC) keeps the wasm heap bounded under rapid churn.
     free: (h) => freeHandle(h),

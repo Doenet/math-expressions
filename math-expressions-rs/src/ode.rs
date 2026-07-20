@@ -153,7 +153,7 @@ where
 {
     let dim = y0.len();
     let tol = if tol.is_finite() && tol > 0.0 { tol } else { 1e-6 };
-    let max_steps = max_steps.min(crate::limits::current().max_ode_steps).max(1);
+    let max_steps = max_steps.min(crate::resource_limits::current().max_ode_steps).max(1);
     let mut sol = OdeSolution {
         dim,
         t0,

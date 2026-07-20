@@ -301,7 +301,7 @@ pub(crate) fn rational_roots(p: &UPoly) -> (Vec<BigRational>, UPoly) {
 /// All positive divisors of `n` (n ≥ 1), or `None` if `n` doesn't fully
 /// factor with trial division under `max_trial_divisor`.
 fn divisors_capped(n: &BigInt) -> Option<Vec<BigInt>> {
-    let cap = crate::limits::current().max_trial_divisor;
+    let cap = crate::resource_limits::current().max_trial_divisor;
     let mut rest = n.clone();
     let mut factors: Vec<(BigInt, u32)> = Vec::new();
     let mut d = BigInt::from(2u32);
@@ -445,7 +445,7 @@ pub(crate) fn isolate_real_roots(p: &[BigRational]) -> Option<Vec<(BigRational, 
     let lo = -bound.clone();
     let hi = bound;
     let total = roots_in(&chain, &lo, &hi);
-    let mut budget = crate::limits::current().max_isolation_bits;
+    let mut budget = crate::resource_limits::current().max_isolation_bits;
     let mut work = vec![(lo, hi, total)];
     let mut done = Vec::new();
     while let Some((a, b, count)) = work.pop() {
