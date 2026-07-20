@@ -223,9 +223,12 @@ fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
                 entries: each(entries, opts),
             },
             Expr::OtherOp(name, xs) => Expr::OtherOp(name, each(xs, opts)),
-            leaf @ (Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots) => {
-                leaf
-            }
+            leaf @ (Expr::Num(_)
+            | Expr::Sym(_)
+            | Expr::Const(_)
+            | Expr::RootOf { .. }
+            | Expr::Blank
+            | Expr::Ldots) => leaf,
         }
     }
     recur(e, opts)

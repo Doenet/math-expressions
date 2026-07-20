@@ -278,7 +278,7 @@ impl Number {
 
     /// A finite exact rational as a `BigRational`; `None` for `Float`. The
     /// common currency for exact arithmetic across the tiers.
-    fn to_bigrational(&self) -> Option<BigRational> {
+    pub(crate) fn to_bigrational(&self) -> Option<BigRational> {
         match self {
             Number::Int(i) => Some(BigRational::from_integer(BigInt::from(*i))),
             Number::Rat(n, d) => Some(BigRational::new(BigInt::from(*n), BigInt::from(*d))),

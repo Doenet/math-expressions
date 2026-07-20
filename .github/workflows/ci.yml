@@ -46,3 +46,40 @@ jobs:
               uses: devcontainers/ci@v0.3
               with:
                   runCmd: npm ci && npm run test:all
+
+    rust-build:
+        name: Rust build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Build the Rust crate
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: cargo build --release
+
+    rust-test:
+        name: Rust test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Run the Rust test suite
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: cargo test
+
+    playground-build:
+        name: Playground build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            # `npm run build` runs the wireit graph, which first compiles the
+            # Rust crate to wasm (build:wasm -> rebuild-wasm.sh) and then runs
+            # the typecheck and `vite build`. The pinned wasm-bindgen-cli and
+            # wasm32 target come from the devcontainer.
+            - name: Build the playground
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: cd playground && npm ci && npm run build

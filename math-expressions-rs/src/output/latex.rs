@@ -37,6 +37,15 @@ impl Writer {
         use prec::{ADD, AND, ATOM, INDEX, MUL, NEG, NOT, OR, POW, REL, SIGN};
         match e {
             Expr::Num(n) => self.render_number(n),
+            // MATRIX_PLAN §2a display form.
+            Expr::RootOf { poly, index } => (
+                format!(
+                    "\\operatorname{{Root}}_{{{}}}\\!\\left({}\\right)",
+                    index,
+                    self.emit(&crate::rootof::poly_display(poly, "t"), 0)
+                ),
+                ATOM,
+            ),
             Expr::Sym(s) => {
                 let name = s.name();
                 let p = if name.contains(['+', '-']) {

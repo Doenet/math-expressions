@@ -429,3 +429,202 @@ pub fn eigs(a: Vec<f64>, n: usize) -> Option<String> {
         .collect();
     Some(serde_json::json!({"values": values, "eigenvectors": eigenvectors}).to_string())
 }
+
+#[wasm_bindgen]
+impl Expression {
+    /// Evaluate a constant expression to `digits` significant decimal digits
+    /// (arbitrary precision). Returns the digits in normalized scientific
+    /// form (`"1.4142…e0"`), `"re + im i"` for complex values, or
+    /// `undefined` when not decidable within budget.
+    pub fn evaluate_to_precision(&self, digits: usize) -> Option<String> {
+        let p = crate::precise::evaluate_to_precision(&self.0, digits);
+        p.to_decimal_string(digits)
+    }
+}
+
+#[wasm_bindgen]
+impl Expression {
+    /// Determinant (tiered — MATRIX_PLAN §1b). Always an expression: an
+    /// opaque `det(…)` node when not decidable.
+    pub fn determinant(&self) -> Expression {
+        Expression(crate::matrix::det(&self.0))
+    }
+
+    /// Characteristic polynomial in `var`, or `undefined` when the receiver
+    /// is not a square literal matrix under the caps.
+    pub fn char_poly(&self, var: &str) -> Option<Expression> {
+        crate::matrix::char_poly(&self.0, var).map(Expression)
+    }
+
+    /// Eigenvalues with algebraic multiplicities as JSON
+    /// `[{"value": <text>, "multiplicity": n}, …]` in canonical order
+    /// (MATRIX_PLAN §2c), or `undefined` on an honest refusal.
+    pub fn eigenvalues(&self) -> Option<String> {
+        let vals = crate::matrix::eigenvalues(&self.0, &crate::Assumptions::new())?;
+        let rows: Vec<serde_json::Value> = vals
+            .iter()
+            .map(|(v, m)| {
+                serde_json::json!({
+                    "value": to_text(v, &Default::default()),
+                    "multiplicity": m,
+                })
+            })
+            .collect();
+        Some(serde_json::Value::Array(rows).to_string())
+    }
+
+    /// Eigenvectors as JSON `[{"value", "multiplicity", "basis": [[…]]}, …]`
+    /// (basis entries in text syntax; geometric multiplicity is the basis
+    /// length), or `undefined` on an honest refusal (MATRIX_PLAN §3).
+    pub fn eigenvectors(&self) -> Option<String> {
+        let pairs = crate::matrix::eigenvectors(&self.0, &crate::Assumptions::new())?;
+        let rows: Vec<serde_json::Value> = pairs
+            .iter()
+            .map(|p| {
+                let basis: Vec<Vec<String>> = p
+                    .basis
+                    .iter()
+                    .map(|v| v.iter().map(|e| to_text(e, &Default::default())).collect())
+                    .collect();
+                serde_json::json!({
+                    "value": to_text(&p.value, &Default::default()),
+                    "multiplicity": p.alg_mult,
+                    "basis": basis,
+                })
+            })
+            .collect();
+        Some(serde_json::Value::Array(rows).to_string())
+    }
+}
+
+#[wasm_bindgen]
+impl Expression {
+    /// Indefinite integral in `var` (INTEGRATION_PLAN I1+I2), gate-verified
+    /// by differentiation; `undefined` = no elementary form found.
+    pub fn integrate(&self, var: &str) -> Option<Expression> {
+        crate::integrate::integrate(&self.0, var, &crate::Assumptions::new()).map(Expression)
+    }
+
+    /// Certified definite integral over [a, b] to `digits` significant
+    /// digits (guaranteed accuracy or `undefined` — never an estimate).
+    pub fn integrate_to_precision(
+        &self,
+        var: &str,
+        a: &Expression,
+        b: &Expression,
+        digits: usize,
+    ) -> Option<String> {
+        crate::precise::integrate_to_precision(&self.0, var, &a.0, &b.0, digits)
+            .to_decimal_string(digits)
+    }
+}
+
+// ================= ODE solving (ODE_PLAN O1+O2) =================
+
+/// A computed trajectory with dense output — the `numeric.dopri` result
+/// contract: `at(t)` always returns a length-n Float64Array (§5a), and
+/// `last_t`/`last_y` support ODESystem's chunk chaining (§5b).
+#[wasm_bindgen]
+pub struct OdeSolution(crate::ode::OdeSolution);
+
+#[wasm_bindgen]
+impl OdeSolution {
+    pub fn at(&self, t: f64) -> Vec<f64> {
+        self.0.at(t)
+    }
+
+    /// Batch sampling for plotting: the states at each `ts[i]`, flattened
+    /// row-major (`n` values per abscissa).
+    pub fn at_many(&self, ts: Vec<f64>) -> Vec<f64> {
+        let mut out = Vec::with_capacity(ts.len() * self.0.dim());
+        for t in ts {
+            out.extend(self.0.at(t));
+        }
+        out
+    }
+
+    pub fn dim(&self) -> usize {
+        self.0.dim()
+    }
+    pub fn last_t(&self) -> f64 {
+        self.0.last_t()
+    }
+    pub fn last_y(&self) -> Vec<f64> {
+        self.0.last_y()
+    }
+    /// True when integration stopped before t1 (blow-up / budget) —
+    /// Doenet's warning path, never an exception or NaN samples.
+    pub fn terminated_early(&self) -> bool {
+        self.0.terminated_early
+    }
+    /// The accepted step times (diagnostics).
+    pub fn times(&self) -> Vec<f64> {
+        self.0.times().to_vec()
+    }
+}
+
+/// Drop-in for `numeric.dopri(t0, t1, y0, f, tol, maxit)`: `f` is a JS
+/// closure `(t, yArray) -> array`. One boundary crossing per RK stage; for
+/// expression right-hand sides prefer [`solve_ode_expressions`], which
+/// evaluates entirely inside wasm.
+#[wasm_bindgen]
+pub fn solve_ode(
+    f: &js_sys::Function,
+    t0: f64,
+    t1: f64,
+    y0: Vec<f64>,
+    tol: f64,
+    max_steps: usize,
+) -> OdeSolution {
+    let this = JsValue::NULL;
+    let sol = crate::ode::solve_ode_with(
+        |t, y, out| {
+            let arr = js_sys::Float64Array::from(y);
+            match f.call2(&this, &JsValue::from_f64(t), &arr.into()) {
+                Ok(v) => {
+                    let a = js_sys::Array::from(&v);
+                    if a.length() as usize != out.len() {
+                        return false;
+                    }
+                    for (i, slot) in out.iter_mut().enumerate() {
+                        match a.get(i as u32).as_f64() {
+                            Some(x) => *slot = x,
+                            None => return false,
+                        }
+                    }
+                    true
+                }
+                Err(_) => false,
+            }
+        },
+        t0,
+        t1,
+        &y0,
+        tol,
+        max_steps,
+    );
+    OdeSolution(sol)
+}
+
+/// Expression-RHS solver (plan §5c): `rhs` is a tuple/vector Expression with
+/// one component per state variable (or a single expression for n = 1),
+/// evaluated inside wasm via the compiled tape — no boundary crossings.
+/// `undefined` when the expressions reference unknown variables.
+#[wasm_bindgen]
+pub fn solve_ode_expressions(
+    rhs: &Expression,
+    ind_var: &str,
+    state_vars: Vec<String>,
+    t0: f64,
+    t1: f64,
+    y0: Vec<f64>,
+    tol: f64,
+    max_steps: usize,
+) -> Option<OdeSolution> {
+    let comps: Vec<Expr> = match &rhs.0 {
+        Expr::Seq(_, xs) => xs.clone(),
+        other => vec![other.clone()],
+    };
+    crate::ode::solve_ode_exprs(&comps, ind_var, &state_vars, t0, t1, &y0, tol, max_steps)
+        .map(OdeSolution)
+}

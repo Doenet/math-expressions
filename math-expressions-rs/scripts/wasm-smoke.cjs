@@ -82,5 +82,79 @@ check("eigs", (() => {
   return Math.abs(r.values[0] - 1) < 1e-9 && Math.abs(r.values[1] - 3) < 1e-9
     && r.eigenvectors.length === 2 && r.eigenvectors[0].vector.length === 2;
 })());
+check("evaluate_to_precision sqrt2", (() => {
+  const s = P("sqrt(2)").evaluate_to_precision(30);
+  return typeof s === "string" && s.startsWith("1.4142135623730950488016887242");
+})());
+check("evaluate_to_precision complex", (() => {
+  const s = P("sqrt(-2)").evaluate_to_precision(20);
+  return typeof s === "string" && s.includes(" i");
+})());
+check("evaluate_to_precision unknown", P("x+1").evaluate_to_precision(10) === undefined);
+
+// ---- matrix eigen surface (MATRIX_PLAN M3-M5) ----
+check("char_poly", (() => {
+  const p = me.parse_latex("\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}").char_poly("x");
+  return p !== undefined && p.equals(P("x^2 - 4x + 3"));
+})());
+check("eigenvalues rational", (() => {
+  const m = me.parse_latex("\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}");
+  const vals = JSON.parse(m.eigenvalues());
+  return vals.length === 2 && P(vals[0].value).equals(P("1")) && P(vals[1].value).equals(P("3"));
+})());
+check("eigenvalues rootof", (() => {
+  const m = me.parse_latex("\\begin{bmatrix}0&0&1\\\\1&0&1\\\\0&1&0\\end{bmatrix}");
+  const vals = JSON.parse(m.eigenvalues());
+  return vals.length === 3 && vals[0].value.includes("rootof");
+})());
+check("eigenvectors verify", (() => {
+  const m = me.parse_latex("\\begin{bmatrix}2&1\\\\1&2\\end{bmatrix}");
+  const pairs = JSON.parse(m.eigenvectors());
+  return pairs.length === 2 && pairs[0].basis.length === 1
+    && P(pairs[0].basis[0][0]).equals(P("1")) && P(pairs[0].basis[0][1]).equals(P("-1"));
+})());
+check("rootof round trip", P("rootof(t^3 - t - 1, 0)^3").equals(P("rootof(t^3 - t - 1, 0) + 1")));
+
+// ---- integration (INTEGRATION_PLAN I1+I2 + certified quadrature) ----
+check("integrate table", (() => {
+  const F = P("sin(x)").integrate("x");
+  return F !== undefined && F.equals(P("-cos(x)"));
+})());
+check("integrate rational", (() => {
+  const F = P("1/(x^2+1)").integrate("x");
+  if (F === undefined) return false;
+  // Antiderivatives differ by constants/spellings: verify by derivative.
+  return F.derivative("x").equals(P("1/(x^2+1)"));
+})());
+check("integrate honest failure", P("exp(x^2)").integrate("x") === undefined);
+check("integrate_to_precision pi", (() => {
+  const s = P("4/(1+x^2)").integrate_to_precision("x", P("0"), P("1"), 10);
+  return typeof s === "string" && s.replace(/[^0-9]/g, "").startsWith("31415926");
+})());
+
+// ---- ODE solving (ODE_PLAN O1+O2) ----
+check("solve_ode callback", (() => {
+  const sol = me.solve_ode((t, y) => [y[0]], 0, 1, new Float64Array([1]), 1e-6, 10000);
+  const v = sol.at(1)[0];
+  return !sol.terminated_early() && Math.abs(v - Math.E) < 1e-4;
+})());
+check("solve_ode_expressions harmonic", (() => {
+  const rhs = P("(v, -x)");
+  const sol = me.solve_ode_expressions(rhs, "t", ["x", "v"], 0, Math.PI, new Float64Array([1, 0]), 1e-8, 10000);
+  if (sol === undefined || sol.terminated_early()) return false;
+  const y = sol.at(Math.PI);
+  return y.length === 2 && Math.abs(y[0] + 1) < 1e-5 && Math.abs(y[1]) < 1e-5;
+})());
+check("solve_ode blow-up flag", (() => {
+  const sol = me.solve_ode((t, y) => [y[0] * y[0]], 0, 2, new Float64Array([1]), 1e-6, 10000);
+  return sol.terminated_early() && sol.last_t() < 1.01 && isFinite(sol.last_y()[0]);
+})());
+check("solve_ode chunk chaining", (() => {
+  const f = (t, y) => [-y[0] / 2];
+  const a = me.solve_ode(f, 0, 1, new Float64Array([1]), 1e-8, 10000);
+  const b = me.solve_ode(f, a.last_t(), 2, a.last_y(), 1e-8, 10000);
+  return Math.abs(b.last_y()[0] - Math.exp(-1)) < 1e-6;
+})());
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

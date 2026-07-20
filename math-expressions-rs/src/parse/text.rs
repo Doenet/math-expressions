@@ -59,7 +59,7 @@ impl Default for TextToAstOptions {
                 "sec", "sech", "asec", "asech", "arcsec", "arcsech", "sin", "sinh", "asin",
                 "asinh", "arcsin", "arcsinh", "tan", "tanh", "atan", "atan2", "atanh", "arctan",
                 "arctanh", "arg", "conj", "re", "im", "det", "trace", "nPr", "nCr", "floor",
-                "ceil", "round",
+                "ceil", "round", "rootof",
             ]),
             function_symbols: v(&["f", "g"]),
             operator_symbols: v(&["binom", "vec", "linesegment"]),

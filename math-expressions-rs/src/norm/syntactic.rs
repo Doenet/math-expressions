@@ -272,7 +272,12 @@ fn is_move_exponent(base: &Expr) -> bool {
 /// (generic over `FnMut` so callers can thread state, e.g. a change flag).
 pub(crate) fn map_children<F: FnMut(&Expr) -> Expr>(e: &Expr, mut f: F) -> Expr {
     match e {
-        Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
+        Expr::Num(_)
+        | Expr::Sym(_)
+        | Expr::Const(_)
+        | Expr::RootOf { .. }
+        | Expr::Blank
+        | Expr::Ldots => e.clone(),
         Expr::Add(xs) => Expr::Add(xs.iter().map(&mut f).collect()),
         Expr::Mul(xs) => Expr::Mul(xs.iter().map(&mut f).collect()),
         Expr::And(xs) => Expr::And(xs.iter().map(&mut f).collect()),

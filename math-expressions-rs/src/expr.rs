@@ -14,6 +14,15 @@ pub enum Expr {
     Num(Number),
     Sym(Sym),
     Const(MathConst),
+    /// The `index`-th root of the univariate polynomial with the given dense
+    /// coefficients (low → high) — MATRIX_PLAN.md §2a. A *leaf*: the
+    /// coefficients are `Number`s, not subexpressions, so traversal and
+    /// substitution treat it as an atom. Canonical invariant: primitive
+    /// integer coefficients, positive leading coefficient, squarefree;
+    /// `index` follows the canonical root order (real roots ascending, then
+    /// conjugate pairs, negative imaginary part first). Text form
+    /// `rootof(t^3 - t - 1, 2)`.
+    RootOf { poly: Box<[Number]>, index: u32 },
     /// Missing operand "＿" — a real variant, not a magic symbol.
     Blank,
     /// "..." inside lists — ["ldots"] in the JS AST.
@@ -179,7 +188,12 @@ impl Expr {
     /// needs exactly one match arm here (the compiler enforces it).
     pub fn children(&self) -> Vec<&Expr> {
         match self {
-            Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => vec![],
+            Expr::Num(_)
+            | Expr::Sym(_)
+            | Expr::Const(_)
+            | Expr::RootOf { .. }
+            | Expr::Blank
+            | Expr::Ldots => vec![],
             Expr::Add(xs)
             | Expr::Mul(xs)
             | Expr::And(xs)

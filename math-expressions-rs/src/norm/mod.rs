@@ -32,6 +32,13 @@ pub use syntactic::normalize_syntactic;
 pub fn canonicalize(e: &Expr) -> Expr {
     match e {
         Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
+        // Re-establish the canonical invariant (primitive integer squarefree
+        // coefficients) for RootOf leaves built outside the smart
+        // constructors, e.g. deserialized trees. An unrepresentable one
+        // (bad index, degree cap) is kept as-is — it is still a leaf.
+        Expr::RootOf { poly, index } => crate::rootof::coeffs_to_upoly(poly)
+            .and_then(|p| crate::rootof::make_rootof(&p, *index))
+            .unwrap_or_else(|| e.clone()),
 
         Expr::Add(ts) => add(ts.iter().map(canonicalize).collect()),
         Expr::Mul(fs) => mul(fs.iter().map(canonicalize).collect()),
@@ -178,7 +185,12 @@ pub fn desugar_units(e: &Expr) -> Expr {
             None => Expr::OtherOp(*name, args.iter().map(desugar_units).collect()),
         },
 
-        Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
+        Expr::Num(_)
+        | Expr::Sym(_)
+        | Expr::Const(_)
+        | Expr::RootOf { .. }
+        | Expr::Blank
+        | Expr::Ldots => e.clone(),
 
         Expr::Add(xs) => Expr::Add(xs.iter().map(desugar_units).collect()),
         Expr::Mul(xs) => Expr::Mul(xs.iter().map(desugar_units).collect()),
@@ -490,6 +502,17 @@ pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
             return base;
         }
     }
+    // RootOf power reduction (MATRIX_PLAN §2d): an integer exponent ≥ deg p
+    // (or negative) rewrites through t^n mod p, so polynomials in an abstract
+    // root always stay below deg p — `p(RootOf(p,k)) = 0` falls out of this
+    // plus like-term folding.
+    if matches!(base, Expr::RootOf { .. }) {
+        if let Some(k) = as_int(&exp) {
+            if let Some(reduced) = crate::rootof::power_reduced(&base, k) {
+                return reduced;
+            }
+        }
+    }
     // Flatten a nested power when the OUTER exponent is an integer:
     // `(b^a)^k = b^(a·k)` (repeated multiplication/division), valid for any base
     // and integer `k`. Restricting to integer `k` avoids the `(x^2)^(1/2) = |x|`
@@ -688,6 +711,17 @@ fn canon_apply(head: Expr, args: Vec<Expr>) -> Expr {
     }
 
     let head = normalize_head(head);
+
+    // `rootof(p, k)` with a recognizable single-variable polynomial becomes
+    // the RootOf leaf (MATRIX_PLAN §2a); anything else stays an unevaluated
+    // application.
+    if let Expr::Sym(s) = &head {
+        if s.name() == "rootof" {
+            if let Some(r) = crate::rootof::from_apply_args(&args) {
+                return r;
+            }
+        }
+    }
 
     // A single-argument `nthroot(x)` is a square root (JS
     // `normalize_function_names`); unify with `sqrt(x)` so they compare equal.

@@ -398,7 +398,7 @@ fn collect(e: &Expr, out: &mut Vec<String>, seen: &mut HashSet<String>) {
                 out.push(name);
             }
         }
-        Expr::Num(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => {}
+        Expr::Num(_) | Expr::Const(_) | Expr::RootOf { .. } | Expr::Blank | Expr::Ldots => {}
 
         // An application head is never a variable source — JS drops the head
         // wholesale (`tree.slice(2)` in lib/expression/variables.js), even a

@@ -502,3 +502,457 @@ fn rref_core(
     }
     Some((m, pivots))
 }
+
+// ================= M3/M4: char poly, eigenvalues, eigenvectors =================
+
+use crate::upoly::{self, UPoly};
+use num_complex::Complex64;
+use num_rational::BigRational;
+use num_traits::{One, ToPrimitive, Zero};
+
+/// One eigenvalue with its eigenspace (MATRIX_PLAN §3). Geometric
+/// multiplicity is `basis.len()`; a defective eigenvalue shows
+/// `basis.len() < alg_mult` (never "repaired" — §0 decision 5).
+#[derive(Debug, Clone)]
+pub struct EigenPair {
+    pub value: Expr,
+    pub alg_mult: u32,
+    pub basis: Vec<Vec<Expr>>,
+}
+
+fn as_rationals(entries: &[Expr]) -> Option<Vec<BigRational>> {
+    entries
+        .iter()
+        .map(|e| match e {
+            Expr::Num(n) => n.to_bigrational(),
+            _ => None,
+        })
+        .collect()
+}
+
+/// A canonical square literal matrix with its dimension, under the dim cap.
+fn square_literal(c: &Expr) -> Option<(usize, &[Expr])> {
+    let Expr::Matrix {
+        rows,
+        cols,
+        entries,
+    } = c
+    else {
+        return None;
+    };
+    let n = *rows as usize;
+    if rows != cols || n == 0 || n > crate::limits::current().max_matrix_dim {
+        return None;
+    }
+    Some((n, entries))
+}
+
+/// Characteristic polynomial `det(λI − A)` in `var` (monic). Rational
+/// entries go through Faddeev–LeVerrier exactly at any dimension under
+/// `max_matrix_dim`; symbolic entries through cofactor expansion of the
+/// shifted matrix under `max_symbolic_det_dim`. `None` otherwise.
+pub fn char_poly(e: &Expr, var: &str) -> Option<Expr> {
+    let c = canonicalize(e);
+    let (n, entries) = square_literal(&c)?;
+    if let Some(rats) = as_rationals(entries) {
+        let p = charpoly_rational(&rats, n);
+        return Some(upoly_in_var(&p, var));
+    }
+    if n <= crate::limits::current().max_symbolic_det_dim {
+        let lambda = Expr::sym(var);
+        let mut shifted = Vec::with_capacity(n * n);
+        for i in 0..n {
+            for j in 0..n {
+                let neg = mul(vec![Expr::int(-1), entries[i * n + j].clone()]);
+                shifted.push(if i == j {
+                    add(vec![lambda.clone(), neg])
+                } else {
+                    neg
+                });
+            }
+        }
+        return Some(det_cofactor(&shifted, n));
+    }
+    None
+}
+
+/// Faddeev–LeVerrier: `M₁ = A, c₁ = −tr M₁; Mₖ = A(Mₖ₋₁ + cₖ₋₁I),
+/// cₖ = −tr Mₖ / k`. Only ring ops and division by integers — exact over ℚ.
+/// Returns dense monic coefficients, low → high.
+fn charpoly_rational(a: &[BigRational], n: usize) -> UPoly {
+    let tr = |m: &[BigRational]| -> BigRational {
+        (0..n).map(|i| m[i * n + i].clone()).sum()
+    };
+    let matmul_r = |x: &[BigRational], y: &[BigRational]| -> Vec<BigRational> {
+        let mut out = vec![BigRational::zero(); n * n];
+        for i in 0..n {
+            for k in 0..n {
+                if x[i * n + k].is_zero() {
+                    continue;
+                }
+                for j in 0..n {
+                    out[i * n + j] += &x[i * n + k] * &y[k * n + j];
+                }
+            }
+        }
+        out
+    };
+    let mut m = a.to_vec();
+    let mut cs: Vec<BigRational> = Vec::with_capacity(n);
+    for k in 1..=n {
+        if k > 1 {
+            let c_prev = cs[k - 2].clone();
+            let mut shifted = m;
+            for i in 0..n {
+                shifted[i * n + i] += &c_prev;
+            }
+            m = matmul_r(a, &shifted);
+        }
+        let ck = -tr(&m) / BigRational::from_integer(num_bigint::BigInt::from(k));
+        cs.push(ck);
+    }
+    // p(λ) = λⁿ + c₁λ^{n−1} + … + cₙ.
+    let mut out: UPoly = Vec::with_capacity(n + 1);
+    for i in (0..n).rev() {
+        out.push(cs[i].clone());
+    }
+    out.push(BigRational::one());
+    // Leading side is already trimmed (monic); low coefficients may be zero.
+    out
+}
+
+fn upoly_in_var(p: &UPoly, var: &str) -> Expr {
+    let terms: Vec<Expr> = p
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| !c.is_zero())
+        .map(|(i, c)| {
+            let num = Expr::Num(Number::from_bigrational(c.clone()));
+            match i {
+                0 => num,
+                _ => mul(vec![
+                    num,
+                    pow(Expr::sym(var), Expr::int(i as i64)),
+                ]),
+            }
+        })
+        .collect();
+    add(terms)
+}
+
+/// One eigenvalue of a rational matrix, with everything the eigenvector
+/// stage needs: its exact `Expr`, algebraic multiplicity, the monic
+/// squarefree factor it is a root of, and a numeric value (used only for the
+/// canonical output ordering).
+struct EigenItem {
+    value: Expr,
+    mult: u32,
+    factor: UPoly,
+    z: Complex64,
+}
+
+fn numeric_of(value: &Expr) -> Option<Complex64> {
+    crate::eval::eval_complex(value, &std::collections::HashMap::new())
+}
+
+fn sort_key(z: Complex64) -> (u8, f64, f64, f64) {
+    (u8::from(z.im != 0.0), z.re, z.im.abs(), z.im)
+}
+
+/// Split the factors of the squarefree decomposition further by an
+/// accumulated list of discovered factors (M4 split-restart).
+fn refine_by_splits(f: UPoly, splits: &[UPoly]) -> Vec<UPoly> {
+    let mut pieces = vec![f];
+    for s in splits {
+        let mut next = Vec::new();
+        for piece in pieces {
+            let g = upoly::gcd(&piece, s);
+            let dg = upoly::degree(&g);
+            if dg >= 1 && dg < upoly::degree(&piece) {
+                let (q, _) = upoly::divrem(&piece, &g);
+                next.push(g);
+                next.push(q);
+            } else {
+                next.push(piece);
+            }
+        }
+        pieces = next;
+    }
+    pieces
+}
+
+/// The full root list of a monic rational char poly: closed forms where
+/// honest (rational roots, quadratic formula), `RootOf` elsewhere, in the
+/// canonical order. `None` on any cap or certification refusal.
+fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>> {
+    let mut items: Vec<EigenItem> = Vec::new();
+    for (f, m) in upoly::squarefree_decomposition(p) {
+        let (rats, rest) = upoly::rational_roots(&f);
+        for r in &rats {
+            let value = Expr::Num(Number::from_bigrational(r.clone()));
+            let z = Complex64::new(r.to_f64()?, 0.0);
+            items.push(EigenItem {
+                value,
+                mult: m,
+                factor: vec![-r.clone(), BigRational::one()],
+                z,
+            });
+        }
+        for piece in refine_by_splits(rest, splits) {
+            match upoly::degree(&piece) {
+                0 => {}
+                1 => {
+                    let r = -&piece[0] / &piece[1];
+                    let value = Expr::Num(Number::from_bigrational(r.clone()));
+                    let z = Complex64::new(r.to_f64()?, 0.0);
+                    items.push(EigenItem {
+                        value,
+                        mult: m,
+                        factor: vec![-r, BigRational::one()],
+                        z,
+                    });
+                }
+                2 => {
+                    let (a, b, c) = (&piece[2], &piece[1], &piece[0]);
+                    let disc = b * b - BigRational::from_integer(4.into()) * a * c;
+                    let sq = pow(
+                        Expr::Num(Number::from_bigrational(disc)),
+                        Expr::Num(Number::rat(1, 2)),
+                    );
+                    let half_inv = Expr::Num(Number::from_bigrational(
+                        BigRational::one() / (BigRational::from_integer(2.into()) * a),
+                    ));
+                    let neg_b = Expr::Num(Number::from_bigrational(-b));
+                    for sign in [-1i64, 1] {
+                        let value = mul(vec![
+                            half_inv.clone(),
+                            add(vec![
+                                neg_b.clone(),
+                                mul(vec![Expr::int(sign), sq.clone()]),
+                            ]),
+                        ]);
+                        let z = numeric_of(&value)?;
+                        items.push(EigenItem {
+                            value,
+                            mult: m,
+                            factor: upoly::monic(&piece),
+                            z,
+                        });
+                    }
+                }
+                d => {
+                    let root0 = crate::rootof::make_rootof(&piece, 0)?;
+                    let Expr::RootOf { poly, .. } = &root0 else {
+                        unreachable!()
+                    };
+                    for k in 0..d {
+                        let value = Expr::RootOf {
+                            poly: poly.clone(),
+                            index: k as u32,
+                        };
+                        // Ordering certification: every index must evaluate.
+                        let z = crate::rootof::numeric_root(poly, k as u32)?;
+                        items.push(EigenItem {
+                            value,
+                            mult: m,
+                            factor: upoly::monic(&piece),
+                            z,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    items.sort_by(|x, y| {
+        sort_key(x.z)
+            .partial_cmp(&sort_key(y.z))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    Some(items)
+}
+
+/// Eigenvalues with algebraic multiplicities (MATRIX_PLAN §2c): closed forms
+/// where honest, `RootOf` elsewhere, real ascending then conjugate pairs
+/// (negative imaginary part first). Symbolic entries: quadratic closed forms
+/// for 2×2 only (§8 Q1 — `RootOf` is ℚ-coefficients only). `None` = honest
+/// refusal (shape, caps, or uncertifiable ordering).
+pub fn eigenvalues(e: &Expr, _assumptions: &Assumptions) -> Option<Vec<(Expr, u32)>> {
+    let c = canonicalize(e);
+    let (n, entries) = square_literal(&c)?;
+    if let Some(rats) = as_rationals(entries) {
+        let p = charpoly_rational(&rats, n);
+        let items = eigen_items(&p, &[])?;
+        return Some(items.into_iter().map(|it| (it.value, it.mult)).collect());
+    }
+    if n == 2 {
+        // Symbolic 2×2: λ = (tr ± √(tr² − 4·det))/2.
+        let (a, b, cc, d) = (
+            entries[0].clone(),
+            entries[1].clone(),
+            entries[2].clone(),
+            entries[3].clone(),
+        );
+        let tr = add(vec![a.clone(), d.clone()]);
+        let det = add(vec![
+            mul(vec![a, d]),
+            mul(vec![Expr::int(-1), b, cc]),
+        ]);
+        let disc = add(vec![
+            pow(tr.clone(), Expr::int(2)),
+            mul(vec![Expr::int(-4), det]),
+        ]);
+        if is_zero(&disc) {
+            let value = mul(vec![Expr::Num(Number::rat(1, 2)), tr]);
+            return Some(vec![(value, 2)]);
+        }
+        let sq = pow(disc, Expr::Num(Number::rat(1, 2)));
+        let half = Expr::Num(Number::rat(1, 2));
+        let minus = mul(vec![
+            half.clone(),
+            add(vec![tr.clone(), mul(vec![Expr::int(-1), sq.clone()])]),
+        ]);
+        let plus = mul(vec![half, add(vec![tr, sq])]);
+        return Some(vec![(minus, 1), (plus, 1)]);
+    }
+    None
+}
+
+// ---- M4: nullspace over the quotient ring ℚ[t]/(f) ----
+
+/// Ring element ops: dense polys of degree < deg f, reduced after multiply.
+fn qmul(x: &[BigRational], y: &[BigRational], f: &UPoly) -> UPoly {
+    if upoly::degree(f) == 0 {
+        return Vec::new();
+    }
+    upoly::divrem(&upoly::mul(x, y), f).1
+}
+
+/// Inverse in ℚ[t]/(f), or the discovered factor when `x` is a zero divisor.
+fn qinv(x: &[BigRational], f: &UPoly) -> Result<UPoly, UPoly> {
+    let (g, s) = upoly::xgcd_mod(x, f);
+    if upoly::degree(&g) == 0 && !upoly::is_zero(&g) {
+        Ok(s)
+    } else {
+        Err(g)
+    }
+}
+
+/// Nullspace of `A − tI` over ℚ[t]/(f): reduced echelon elimination with
+/// ext-Euclid inverses. `Err(g)` reports a discovered factor of `f`
+/// (MATRIX_PLAN §3: split and restart, bounded). Basis vectors have their
+/// first nonzero component normalized to 1.
+fn quotient_nullspace(
+    a: &[BigRational],
+    n: usize,
+    f: &UPoly,
+) -> Result<Vec<Vec<UPoly>>, UPoly> {
+    // Entries of A − t·I as ring elements.
+    let mut m: Vec<UPoly> = Vec::with_capacity(n * n);
+    for i in 0..n {
+        for j in 0..n {
+            let mut p: UPoly = vec![a[i * n + j].clone()];
+            if i == j {
+                p.push(-BigRational::one());
+            }
+            upoly::trim(&mut p);
+            m.push(upoly::divrem(&p, f).1);
+        }
+    }
+    let mut pivots: Vec<usize> = Vec::new();
+    let mut row = 0usize;
+    for col in 0..n {
+        if row == n {
+            break;
+        }
+        let Some(pr) = (row..n).find(|&r| !upoly::is_zero(&m[r * n + col])) else {
+            continue;
+        };
+        if pr != row {
+            for k in 0..n {
+                m.swap(row * n + k, pr * n + k);
+            }
+        }
+        let inv = qinv(&m[row * n + col].clone(), f)?;
+        for k in 0..n {
+            m[row * n + k] = qmul(&m[row * n + k], &inv, f);
+        }
+        for r in 0..n {
+            if r == row || upoly::is_zero(&m[r * n + col]) {
+                continue;
+            }
+            let factor = m[r * n + col].clone();
+            for k in 0..n {
+                let prod = qmul(&factor, &m[row * n + k], f);
+                m[r * n + k] = upoly::sub(&m[r * n + k], &prod);
+            }
+        }
+        pivots.push(col);
+        row += 1;
+    }
+    let mut basis = Vec::new();
+    for free in (0..n).filter(|c| !pivots.contains(c)) {
+        let mut v: Vec<UPoly> = vec![Vec::new(); n];
+        v[free] = vec![BigRational::one()];
+        for (r, &pcol) in pivots.iter().enumerate() {
+            v[pcol] = upoly::sub(&[], &m[r * n + free]);
+        }
+        // Normalize the first nonzero component to 1 (ring inverse — a zero
+        // divisor here is another discovered factor).
+        if let Some(first) = v.iter().position(|c| !upoly::is_zero(c)) {
+            if v[first] != vec![BigRational::one()] {
+                let inv = qinv(&v[first].clone(), f)?;
+                for c in v.iter_mut() {
+                    *c = qmul(c, &inv, f);
+                }
+            }
+        }
+        basis.push(v);
+    }
+    Ok(basis)
+}
+
+/// Eigenvectors (MATRIX_PLAN §3): for each eigenvalue, the nullspace of
+/// `A − λI` computed over ℚ[t]/(minimal factor), components emerging as
+/// polynomials in the abstract eigenvalue. Rational literal matrices only;
+/// `None` = honest refusal.
+pub fn eigenvectors(e: &Expr, _assumptions: &Assumptions) -> Option<Vec<EigenPair>> {
+    let c = canonicalize(e);
+    let (n, entries) = square_literal(&c)?;
+    let rats = as_rationals(entries)?;
+    let p = charpoly_rational(&rats, n);
+    let mut splits: Vec<UPoly> = Vec::new();
+    // Each restart strictly refines a factor, so deg p bounds the restarts.
+    for _attempt in 0..=upoly::degree(&p) {
+        let items = eigen_items(&p, &splits)?;
+        let mut pairs = Vec::with_capacity(items.len());
+        let mut discovered: Option<UPoly> = None;
+        'items: for item in &items {
+            match quotient_nullspace(&rats, n, &item.factor) {
+                Ok(vectors) => {
+                    let basis = vectors
+                        .into_iter()
+                        .map(|v| {
+                            v.into_iter()
+                                .map(|coeffs| crate::rootof::upoly_in_root(&coeffs, &item.value))
+                                .collect::<Vec<Expr>>()
+                        })
+                        .collect();
+                    pairs.push(EigenPair {
+                        value: item.value.clone(),
+                        alg_mult: item.mult,
+                        basis,
+                    });
+                }
+                Err(g) => {
+                    discovered = Some(g);
+                    break 'items;
+                }
+            }
+        }
+        match discovered {
+            Some(g) => splits.push(g),
+            None => return Some(pairs),
+        }
+    }
+    None
+}

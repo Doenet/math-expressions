@@ -15,6 +15,7 @@ num-bigint = "0.4"
 num-rational = "0.4"
 num-traits = "0.2"
 num-complex = "0.4"
+num-integer = "0.1"
 # default-features = false is load-bearing: rand's defaults pull in getrandom,
 # which fails on wasm32-unknown-unknown. We always seed explicitly
 # (SmallRng::seed_from_u64) and never need OS entropy.
@@ -26,6 +27,7 @@ serde_json = "1"
 # but the crate compiles fine on native (the macro just isn't invoked there).
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "=0.2.126"
+js-sys = "0.3"
 
 [dev-dependencies]
 proptest = "1"

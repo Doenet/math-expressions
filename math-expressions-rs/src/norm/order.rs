@@ -19,26 +19,29 @@ fn rank(e: &Expr) -> u8 {
         Expr::Num(_) => 0,
         Expr::Const(_) => 1,
         Expr::Sym(_) => 2,
-        Expr::Blank => 3,
-        Expr::Ldots => 4,
-        Expr::Pow(..) => 5,
-        Expr::Prime(_) => 6,
-        Expr::Index(..) => 7,
-        Expr::Apply(..) => 8,
-        Expr::Mul(_) => 9,
-        Expr::Div(..) => 10,
-        Expr::Neg(_) => 11,
-        Expr::Add(_) => 12,
-        Expr::And(_) => 13,
-        Expr::Or(_) => 14,
-        Expr::Not(_) => 15,
-        Expr::Union(_) => 16,
-        Expr::Intersect(_) => 17,
-        Expr::Seq(..) => 18,
-        Expr::Interval { .. } => 19,
-        Expr::Relation { .. } => 20,
-        Expr::Matrix { .. } => 21,
-        Expr::OtherOp(..) => 22,
+        // Between Sym and Pow (MATRIX_PLAN §2a): an atom that sorts with the
+        // other irrational atoms, before compound expressions.
+        Expr::RootOf { .. } => 3,
+        Expr::Blank => 4,
+        Expr::Ldots => 5,
+        Expr::Pow(..) => 6,
+        Expr::Prime(_) => 7,
+        Expr::Index(..) => 8,
+        Expr::Apply(..) => 9,
+        Expr::Mul(_) => 10,
+        Expr::Div(..) => 11,
+        Expr::Neg(_) => 12,
+        Expr::Add(_) => 13,
+        Expr::And(_) => 14,
+        Expr::Or(_) => 15,
+        Expr::Not(_) => 16,
+        Expr::Union(_) => 17,
+        Expr::Intersect(_) => 18,
+        Expr::Seq(..) => 19,
+        Expr::Interval { .. } => 20,
+        Expr::Relation { .. } => 21,
+        Expr::Matrix { .. } => 22,
+        Expr::OtherOp(..) => 23,
     }
 }
 
@@ -84,6 +87,26 @@ pub(crate) fn cmp(a: &Expr, b: &Expr) -> Ordering {
         (Expr::Const(x), Expr::Const(y)) => const_index(*x).cmp(&const_index(*y)),
         (Expr::Sym(x), Expr::Sym(y)) => x.name().cmp(&y.name()),
         (Expr::Blank, Expr::Blank) | (Expr::Ldots, Expr::Ldots) => Ordering::Equal,
+        (
+            Expr::RootOf {
+                poly: p1,
+                index: i1,
+            },
+            Expr::RootOf {
+                poly: p2,
+                index: i2,
+            },
+        ) => p1
+            .len()
+            .cmp(&p2.len())
+            .then_with(|| {
+                p1.iter()
+                    .zip(p2.iter())
+                    .map(|(a, b)| number_cmp(a, b))
+                    .find(|o| *o != Ordering::Equal)
+                    .unwrap_or(Ordering::Equal)
+            })
+            .then_with(|| i1.cmp(i2)),
 
         (Expr::Pow(b1, e1), Expr::Pow(b2, e2)) => cmp(b1, b2).then_with(|| cmp(e1, e2)),
         (Expr::Prime(x), Expr::Prime(y)) | (Expr::Not(x), Expr::Not(y)) => cmp(x, y),

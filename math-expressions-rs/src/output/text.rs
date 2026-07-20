@@ -50,6 +50,11 @@ impl Writer<'_> {
         use prec::{ADD, AND, ATOM, INDEX, MUL, NEG, NOT, OR, POW, REL, SIGN};
         match e {
             Expr::Num(n) => self.render_number(n),
+            // Prints as its function-application spelling, which reparses to
+            // the same leaf.
+            Expr::RootOf { poly, index } => {
+                self.render(&crate::rootof::as_apply(poly, *index))
+            }
             Expr::Sym(s) => {
                 let name = s.name();
                 // Sign-string symbols (name contains + or -) re-lex as

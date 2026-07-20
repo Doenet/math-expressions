@@ -226,6 +226,9 @@ fn rel_op(name: &str) -> Option<RelOp> {
 pub fn to_js(expr: &Expr) -> Value {
     match expr {
         Expr::Num(n) => number_to_js(n),
+        // Serialized as its `rootof(p(t), k)` application; deserialization
+        // re-canonicalizes that back into the leaf.
+        Expr::RootOf { poly, index } => to_js(&crate::rootof::as_apply(poly, *index)),
         Expr::Sym(s) => Value::String(s.name()),
         Expr::Blank => Value::String("\u{ff3f}".to_string()),
         Expr::Ldots => json!(["ldots"]),
