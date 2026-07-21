@@ -1,0 +1,18 @@
+[
+  "[10 exp(7x^2/(3-sqrt(y)))] no incorrect rejected",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01+.00002)xy+(1000+.00002)q^((0.5+.00002)))",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01+.00002)xy+(1000+.00002)q^((0.5-.00002)))",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01+.00002)xy+(1000-.00002)q^((0.5+.00002)))",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01+.00002)xy+(1000-.00002)q^((0.5-.00002)))",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01-.00002)xy+(1000-.00002)q^((0.5+.00002)))",
+  "[exp(0.01xy+1000sqrt(q))] correct rejected: exp((0.01-.00002)xy+(1000-.00002)q^((0.5-.00002)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01+.00009)xy+(1000+.00009)q^((0.5+.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01+.00009)xy+(1000+.00009)q^((0.5-.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01+.00009)xy+(1000-.00009)q^((0.5+.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01+.00009)xy+(1000-.00009)q^((0.5-.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01-.00009)xy+(1000-.00009)q^((0.5+.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log((0.01-.00009)xy+(1000-.00009)q^((0.5-.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log(0.01*(1+.00009)xy+1000*(1+.00009)q^(0.5*(1+.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log(0.01*(1+.00009)xy+1000*(1-.00009)q^(0.5*(1-.00009)))",
+  "[log(0.01xy+1000sqrt(q))] correct rejected: log(0.01*(1-.00009)xy+1000*(1-.00009)q^(0.5*(1-.00009)))"
+]
