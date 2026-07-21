@@ -10,13 +10,17 @@
 //! the requested form?" check: `(x+y)+z` and `z+x+y` are NOT syntactically
 //! equal, while `ln(x)` and `log(x)`, or `cos^(-1)(x)` and `arccos(x)`, are.
 
-use crate::expr::Expr;
+use crate::expr::{flatten, Expr};
 use crate::num::Number;
 use std::cmp::Ordering;
 
-/// Apply the four `equalsViaSyntax` normalization passes, in JS order.
+/// Apply the four `equalsViaSyntax` normalization passes, in JS order. Flattens
+/// first: parsing is now faithful (keeps raw associative grouping), and this
+/// order-sensitive comparison expects flat n-ary operators (mirrors the JS,
+/// whose parser flattens before `equalsViaSyntax`).
 pub fn normalize_syntactic(e: &Expr) -> Expr {
-    let e = pass_function_names(e);
+    let e = flatten(e.clone());
+    let e = pass_function_names(&e);
     let e = pass_applied_functions(&e);
     let e = pass_negative_numbers(&e);
     pass_geometry_arg_order(&e)

@@ -14,6 +14,10 @@ use crate::{
 };
 use crate::{constants_to_floats, round_numbers_to_decimals, round_numbers_to_precision};
 use crate::{create_discrete_infinite_set, evaluate_numbers, reduce_rational};
+use crate::{
+    check_structural_comparison as rust_check_structural, StructuralComparison,
+    StructuralComparisonResult,
+};
 use wasm_bindgen::prelude::*;
 
 /// An opaque handle to a parsed math expression.
@@ -271,6 +275,41 @@ impl Expression {
         crate::equals(&self.0, &other.0, &o)
     }
 
+    // ---- structural comparison (STRUCTURAL_COMPARISON F3) ----
+
+    /// Check whether this answer has a required *structure* (distinct from value).
+    /// `comparison` is either a bare name (`"factoredCompletely"`) or an object
+    /// (`{"type":"decimal","places":3}`,
+    /// `{"type":"hasIntegrationConstant","exclude":"x"}`). Returns a JSON
+    /// `{"ok":bool,"why":string|null}`; an unrecognized comparison yields
+    /// `{"ok":false,"why":"unknown structural comparison"}`. Value-equality
+    /// against a key is separate — see [`Self::structural_equality`].
+    pub fn check_structural_comparison(&self, comparison: &str) -> String {
+        let v: serde_json::Value =
+            serde_json::from_str(comparison).unwrap_or(serde_json::Value::Null);
+        match structural_comparison_from_json(&v) {
+            Some(c) => comparison_result_to_json(&rust_check_structural(&self.0, &c)).to_string(),
+            None => comparison_result_to_json(&StructuralComparisonResult {
+                ok: false,
+                why: Some("unknown structural comparison".into()),
+            })
+            .to_string(),
+        }
+    }
+
+    /// Structural equality — the autograder primitive, a sibling to
+    /// [`Self::equals`]: `self` (the student answer) is in the form `comparison`
+    /// **and** value-equal to `key`. `comparison` uses the same JSON encoding as
+    /// [`Self::check_structural_comparison`]; an unknown comparison is `false`.
+    pub fn structural_equality(&self, key: &Expression, comparison: &str) -> bool {
+        let v: serde_json::Value =
+            serde_json::from_str(comparison).unwrap_or(serde_json::Value::Null);
+        match structural_comparison_from_json(&v) {
+            Some(c) => crate::structural_equality(&self.0, &key.0, &c, &EqOptions::default()),
+            None => false,
+        }
+    }
+
     // ---- certified zero-equivalence (FULL_SIMPLIFY S1) ----
 
     /// Certified test for `self ≡ 0`: `true` = provably zero, `false` =
@@ -443,6 +482,43 @@ fn read_opt_f64(v: &serde_json::Value, key: &str, target: &mut f64) {
     if let Some(x) = v.get(key).and_then(serde_json::Value::as_f64) {
         *target = x;
     }
+}
+
+/// Decode a `StructuralComparison` from either a bare name string or a
+/// `{"type": …}` object (STRUCTURAL_COMPARISON F3). Returns `None` for an unknown name.
+fn structural_comparison_from_json(v: &serde_json::Value) -> Option<StructuralComparison> {
+    let name = v.as_str().or_else(|| v.get("type").and_then(|t| t.as_str()))?;
+    Some(match name {
+        "reducedFraction" => StructuralComparison::ReducedFraction,
+        "mixedNumber" => StructuralComparison::MixedNumber,
+        "improperFraction" => StructuralComparison::ImproperFraction,
+        "decimal" => StructuralComparison::Decimal {
+            places: v.get("places").and_then(|p| p.as_u64()).map(|n| n as u32),
+        },
+        "exactValue" => StructuralComparison::ExactValue,
+        "combinedLikeTerms" => StructuralComparison::CombinedLikeTerms,
+        "expanded" => StructuralComparison::Expanded,
+        "factoredCompletely" => StructuralComparison::FactoredCompletely,
+        "singleFraction" => StructuralComparison::SingleFraction,
+        "noNegativeExponents" => StructuralComparison::NoNegativeExponents,
+        "radicalSimplified" => StructuralComparison::RadicalSimplified,
+        "completedSquare" => StructuralComparison::CompletedSquare,
+        "sameStructure" => StructuralComparison::SameStructure,
+        "hasIntegrationConstant" => StructuralComparison::HasIntegrationConstant {
+            exclude: v
+                .get("exclude")
+                .and_then(|e| e.as_str())
+                .map(str::to_string),
+        },
+        _ => return None,
+    })
+}
+
+fn comparison_result_to_json(r: &StructuralComparisonResult) -> serde_json::Value {
+    serde_json::json!({
+        "ok": r.ok,
+        "why": r.why,
+    })
 }
 
 /// Evaluate `e` in ℤ/`modulus`ℤ with real integer bindings (item 16). Returns

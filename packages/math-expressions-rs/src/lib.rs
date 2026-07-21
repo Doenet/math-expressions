@@ -20,6 +20,7 @@ pub mod ratform;
 pub mod grade;
 pub mod expr;
 pub mod functions;
+pub mod structural;
 pub mod integrate;
 pub mod js_match;
 pub mod js_tree;
@@ -56,6 +57,10 @@ pub use grade::{
     equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, solve_linear,
 };
 pub use expr::{Expr, MathConst, RelOp};
+pub use structural::{
+    check_structural_comparison, structural_equality, StructuralComparison,
+    StructuralComparisonResult,
+};
 pub use matrix::{
     char_poly, cross_prod, det, dot_prod, eigenvalues, eigenvectors, matmul, matrix_inverse,
     nullspace, rank, rref, trace, transpose, vector_add, vector_sub, EigenPair,

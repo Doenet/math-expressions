@@ -146,6 +146,14 @@ impl TextToAst {
         ParseError::new(msg, self.lexer.location)
     }
 
+    /// Parse to the **faithful** tree (STRUCTURAL_COMPARISON §3, inverted design): the
+    /// result keeps the raw associative *grouping* (`convert` no longer applies
+    /// the whole-tree `flatten`), so form analysis can see the tree closer to
+    /// as-typed. Individual terms are still locally flattened for unit
+    /// detection. `flatten` is now the leading step of the *consumers* that
+    /// need a canonical shape — `normalize_syntactic`, the output formatters,
+    /// `js_tree::to_js`, and `check_structural_comparison` — while the value
+    /// path (`equals`/`simplify`/…) flattens implicitly via `canonicalize`.
     pub fn convert(&mut self, input: &str) -> R<Expr> {
         self.lexer.set_input(input);
         self.depth = 0;
@@ -154,7 +162,7 @@ impl TextToAst {
         if self.token.ttype != Tok::Eof {
             return Err(self.err(format!("Invalid location of '{}'", self.token.original)));
         }
-        Ok(flatten(result))
+        Ok(result)
     }
 
     fn statement_list(&mut self) -> R<Expr> {

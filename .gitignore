@@ -11,6 +11,7 @@ node_modules
 bower_components
 
 .vscode
+.claude
 tmp/
 target
 Cargo.lock

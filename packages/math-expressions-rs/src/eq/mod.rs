@@ -191,14 +191,17 @@ pub fn equals_via_real(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     equals_numerical(&ca, &cb, &o)
 }
 
-/// Symbolic (syntactic) equality — the port of JS `equalsViaSyntax`. This is a
-/// *form* check: it applies only the four light normalization passes
+/// Whole-tree structural equality — the port of JS `equalsViaSyntax`, and the
+/// JS-parity convenience name for the
+/// [`SameStructure`](crate::StructuralComparison::SameStructure) structural comparison
+/// (`equals_syntactic(a, b, o)` == `structural_equality(a, b, &SameStructure, o)`).
+/// This is a *form* check: it applies only the four light normalization passes
 /// (function-name spelling, exponents/primes outside applications, negative
 /// numbers, geometry arg order) and then compares trees *order-sensitively*. It
-/// does NOT flatten, reorder, fold, combine like terms, or eliminate `Div`, so
-/// `ln(x)` equals `log(x)` but `(x+y)+z` does NOT equal `z+x+y` and `3+2` does
-/// NOT equal `5`. This is what a teacher grading "is the answer in the requested
-/// form?" needs — distinct from the aggressive [`equals`].
+/// does NOT reorder, fold, combine like terms, or eliminate `Div`, so `ln(x)`
+/// equals `log(x)` but `(x+y)+z` does NOT equal `z+x+y` and `3+2` does NOT equal
+/// `5`. "Is the answer in the requested form?" — distinct from the value-level
+/// [`equals`]. See [`crate::structural`] for the full value-vs-structural map.
 pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     if !opts.allow_blanks && (contains_blank(a) || contains_blank(b)) {
         return false;

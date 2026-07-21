@@ -223,12 +223,20 @@ fn rel_op(name: &str) -> Option<RelOp> {
     })
 }
 
+/// Serialize an `Expr` to the JS `Tree` JSON shape. Flattens first: parsing is
+/// now faithful (keeps raw associative grouping), but the JS reference AST is
+/// flat (`["+", a, b, c]`, not `["+", ["+", a, b], c]`), so consumers such as
+/// the wasm `tree_json` stay JS-compatible. Idempotent on already-flat trees.
 pub fn to_js(expr: &Expr) -> Value {
+    to_js_rec(&crate::expr::flatten(expr.clone()))
+}
+
+fn to_js_rec(expr: &Expr) -> Value {
     match expr {
         Expr::Num(n) => number_to_js(n),
         // Serialized as its `rootof(p(t), k)` application; deserialization
         // re-canonicalizes that back into the leaf.
-        Expr::RootOf { poly, index } => to_js(&crate::rootof::as_apply(poly, *index)),
+        Expr::RootOf { poly, index } => to_js_rec(&crate::rootof::as_apply(poly, *index)),
         Expr::Sym(s) => Value::String(s.name()),
         Expr::Blank => Value::String("\u{ff3f}".to_string()),
         Expr::Ldots => json!(["ldots"]),
@@ -243,34 +251,34 @@ pub fn to_js(expr: &Expr) -> Value {
 
         Expr::Add(args) => op("+", args),
         Expr::Mul(args) => op("*", args),
-        Expr::Div(a, b) => json!(["/", to_js(a), to_js(b)]),
-        Expr::Pow(a, b) => json!(["^", to_js(a), to_js(b)]),
-        Expr::Neg(a) => json!(["-", to_js(a)]),
+        Expr::Div(a, b) => json!(["/", to_js_rec(a), to_js_rec(b)]),
+        Expr::Pow(a, b) => json!(["^", to_js_rec(a), to_js_rec(b)]),
+        Expr::Neg(a) => json!(["-", to_js_rec(a)]),
 
         Expr::And(args) => op("and", args),
         Expr::Or(args) => op("or", args),
-        Expr::Not(a) => json!(["not", to_js(a)]),
+        Expr::Not(a) => json!(["not", to_js_rec(a)]),
         Expr::Union(args) => op("union", args),
         Expr::Intersect(args) => op("intersect", args),
 
         Expr::Apply(head, args) => {
             // JS applies take exactly one argument; multiple args are a tuple.
             let arg = if args.len() == 1 {
-                to_js(&args[0])
+                to_js_rec(&args[0])
             } else {
                 op("tuple", args)
             };
-            json!(["apply", to_js(head), arg])
+            json!(["apply", to_js_rec(head), arg])
         }
 
-        Expr::Prime(a) => json!(["prime", to_js(a)]),
-        Expr::Index(a, b) => json!(["_", to_js(a), to_js(b)]),
+        Expr::Prime(a) => json!(["prime", to_js_rec(a)]),
+        Expr::Index(a, b) => json!(["_", to_js_rec(a), to_js_rec(b)]),
 
         Expr::Seq(kind, args) => op(kind.js_name(), args),
 
         Expr::Interval { endpoints, closed } => json!([
             "interval",
-            ["tuple", to_js(&endpoints.0), to_js(&endpoints.1)],
+            ["tuple", to_js_rec(&endpoints.0), to_js_rec(&endpoints.1)],
             ["tuple", closed.0, closed.1]
         ]),
 
@@ -287,7 +295,7 @@ pub fn to_js(expr: &Expr) -> Value {
             for r in 0..*rows as usize {
                 let mut row = vec![Value::String("tuple".to_string())];
                 for c in 0..ncols {
-                    row.push(to_js(&entries[r * ncols + c]));
+                    row.push(to_js_rec(&entries[r * ncols + c]));
                 }
                 body.push(Value::Array(row));
             }
@@ -296,7 +304,7 @@ pub fn to_js(expr: &Expr) -> Value {
 
         Expr::OtherOp(name, args) => {
             let mut v = vec![Value::String(name.name())];
-            v.extend(args.iter().map(to_js));
+            v.extend(args.iter().map(to_js_rec));
             Value::Array(v)
         }
     }
@@ -304,7 +312,7 @@ pub fn to_js(expr: &Expr) -> Value {
 
 fn op(name: &str, args: &[Expr]) -> Value {
     let mut v = vec![Value::String(name.to_string())];
-    v.extend(args.iter().map(to_js));
+    v.extend(args.iter().map(to_js_rec));
     Value::Array(v)
 }
 
@@ -337,12 +345,12 @@ fn f64_to_js(v: f64) -> Value {
 
 fn relation_to_js(operands: &[Expr], ops: &[RelOp]) -> Value {
     if ops.len() == 1 {
-        return json!([ops[0].js_name(), to_js(&operands[0]), to_js(&operands[1])]);
+        return json!([ops[0].js_name(), to_js_rec(&operands[0]), to_js_rec(&operands[1])]);
     }
     if ops.iter().all(|o| *o == RelOp::Eq) {
         // Chained equality: ["=", a, b, c, ...]
         let mut v = vec![Value::String("=".to_string())];
-        v.extend(operands.iter().map(to_js));
+        v.extend(operands.iter().map(to_js_rec));
         return Value::Array(v);
     }
     // Chained inequalities: ["lts"/"gts", ["tuple", ...operands],
@@ -355,7 +363,7 @@ fn relation_to_js(operands: &[Expr], ops: &[RelOp]) -> Value {
         unreachable!("parser nests mixed-direction relation chains");
     };
     let mut args = vec![Value::String("tuple".to_string())];
-    args.extend(operands.iter().map(to_js));
+    args.extend(operands.iter().map(to_js_rec));
     let mut strict = vec![Value::String("tuple".to_string())];
     strict.extend(ops.iter().map(|o| Value::Bool(*o == strict_op)));
     json!([head, args, strict])
@@ -385,7 +393,7 @@ mod tests {
             assert_eq!(operands.len(), 3);
             assert_eq!(ops.len(), 2);
             // to_js is the inverse for this shape.
-            assert_eq!(to_js(&expr), tree);
+            assert_eq!(to_js_rec(&expr), tree);
         }
     }
 }

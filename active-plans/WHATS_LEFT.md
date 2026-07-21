@@ -16,10 +16,10 @@ JS (`lib/converters/`) has a full matrix between AST ↔ {latex, text, guppy,
 mathjs, mml, glsl}. Rust does only **latex ↔ ast** and **text ↔ ast**.
 
 - [ ] 1. MathML parsing (`mmlToAst`) — no Rust equivalent
-- [ ] 2. MathML output (AST → MathML) — **not needed for Doenet** (no AST→MathML consumer)
-- [ ] 3. GLSL output (`toGLSL`) — **not needed for Doenet** (shader grapher; Doenet uses jsxgraph, which evaluates numerically via mathjs)
-- [ ] 4. Guppy output (`toGuppy`) — **not needed for Doenet** (legacy Guppy-editor XML; unused internally)
-- [ ] 5. MathJS input converter (`mathjsToAst`) — **not needed for Doenet** (unused internally; only commented-out in `meTest.js`)
+-  2. MathML output (AST → MathML) — **not needed for Doenet** (no AST→MathML consumer)
+-  3. GLSL output (`toGLSL`) — **not needed for Doenet** (shader grapher; Doenet uses jsxgraph, which evaluates numerically via mathjs)
+-  4. Guppy output (`toGuppy`) — **not needed for Doenet** (legacy Guppy-editor XML; unused internally)
+-  5. MathJS input converter (`mathjsToAst`) — **not needed for Doenet** (unused internally; only commented-out in `meTest.js`)
 - [x] 6. MathJS output converter (`astToMathjs`) — powers `f()`/`evaluate()`/`equals()` numeric eval; jsxgraph plots via this path. Done as **option 1** (JS-level shim over the Rust AST) in its own npm-workspace package `packages/math-expressions-rs-wasm/` (`src/tree-to-mathjs.ts`) — typed `Tree`→math.js node + factorial→gamma + `compileTree`/`compileRustExpr` bridge (normalization done Rust-side via `normalize_function_names`)
 
 ### A.2 Genuinely missing capabilities
@@ -58,11 +58,12 @@ mathjs, mml, glsl}. Rust does only **latex ↔ ast** and **text ↔ ast**.
 Complete plans (no action): ARBITRARY_PERCISION, DIVERGENCE,
 NORMALIZATION_REDESIGN, MATRIX, ODE.
 
-Partially done (§B.1–B.3): STACK_SAFETY, INTEGRATION, IMPROVEMENT.
+Partially done (§B.1–B.3, B.7): STACK_SAFETY, INTEGRATION, IMPROVEMENT,
+STRUCTURAL_COMPARISON (F0/F1/F3 landed; F2 partial, F4 deferred).
 
-Draft — designed but **not started** (§B.4–B.7): LIMITS, FULL_SIMPLIFY,
-SINGULARITY_TRANSFORM, FORM_GRADING. These are greenfield design docs with
-zero implementation; none is a partial port.
+Draft — designed but **not started** (§B.4–B.6): LIMITS, FULL_SIMPLIFY,
+SINGULARITY_TRANSFORM. These are greenfield design docs with zero
+implementation; none is a partial port.
 
 ### B.1 STACK_SAFETY_PLAN — not started (highest risk)
 
@@ -127,17 +128,17 @@ c ≠ 0) via the change of variables x = c ∓ t². Follow-up to DIVERGENCE.
 - [ ] 49. T2: interior singularity / multiple cells — split at each exact rational singular point, transform each endpoint half, sum error budgets
 - [ ] 50. T3: irrational singular locations — **out of scope**, documented (stays on the cliff-capped path)
 
-### B.7 FORM_GRADING_PLAN — draft, not started (greenfield, teaching)
+### B.7 STRUCTURAL_COMPARISON_PLAN — F0/F1/F3 landed; F2 partial; F4 deferred
 
 Grade the *form a student wrote* (factored / reduced / decimal-vs-exact /
-standard form / `+C`) as opt-in, composable predicates over the faithful
-(pre-`flatten`) `Expr` — distinct from `equals` (value only). Modeled on
-STACK/WeBWorK answer tests; standards diverge on what to enforce (CCSSM/TEKS
-mandate many forms, Ontario almost none), so checks are per-problem opt-in.
-Phased F0–F4:
+standard form / `+C`) as opt-in, composable predicates (`StructuralComparison`)
+over the faithful (pre-`flatten`) `Expr` — distinct from `equals` (value only).
+Modeled on STACK/WeBWorK answer tests; standards diverge on what to enforce
+(CCSSM/TEKS mandate many forms, Ontario almost none), so checks are per-problem
+opt-in. 463 tests green; clippy clean (host + `wasm32`).
 
-- [ ] 51. F0: `preserve_grouping` parse option (skip the terminal `flatten` in `convert`, `src/parse/{text,latex}.rs`); analysis-only faithful tree; existing suites stay green
-- [ ] 52. F1: structure-only `FormCheck`s in `src/form.rs` (`ReducedFraction`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`, `MatchesForm`, `CompletedSquare`, `HasIntegrationConstant`) — reuse `js_match`/`factor`/`ratform`/`upoly` as oracles, never replacing the student tree
-- [ ] 53. F2: `Prov` tag on `Num`/`Mul` (constant `Eq`/`Hash`/`Ord`; struct-form variants + `..`); wire `Decimal{places}`/`ExactValue`/`MulStyleIs` (the two facts the lexer/parser discard)
-- [ ] 54. F3: wasm surface — `Expression.check_form(json)` / `grade(student, key, checks)` returning JSON `FormReport`s (verdict + `why`) for DoenetML
+- [x] 51. F0 (inverted-parse design): `convert` is now always **faithful** — the whole-tree `flatten` is gone (no flag); `flatten` moved to the leading step of the four non-canonicalizing consumers (`normalize_syntactic`, `to_text`/`to_latex`, `js_tree::to_js`, `check_structural_comparison`). Value path already flattens via `canonicalize`. All corpora + 463 tests stay green
+- [x] 52. F1: `StructuralComparison` + `check_structural_comparison` (unary structural check) + `structural_equality` (structure + value) in `src/structural.rs` + `tests/structural.rs` (13 structural criteria: `ReducedFraction`, `MixedNumber`, `ImproperFraction`, `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`, `CompletedSquare`, `HasIntegrationConstant`) — reuse `canonicalize`/`factor`/`reduce_rational` as oracles, never replacing the student tree. **No `grade`** (JS `equalsVia*` model). **Vocabulary reconciled:** the `SameStructure` method folds `equals_syntactic`/`equalsViaSyntax` (whole-tree identity) into the one structural framework — `equals`=value, `structural_equality`=structural. **`MatchesTemplate` deferred** (template DSL)
+- [~] 53. F2: `ExactValue` + `Decimal{places:None}` shipped in F1 — **no tag needed** (a faithful decimal is `Num(Rat)`, distinct from `Int`/`Div`). **Deferred:** the `Prov` tag itself — decimal place-counting (`Decimal{places:Some}`) + `MulStyleIs`, the only checks needing it — because it requires struct-variant surgery on `Num`/`Mul` (331 sites) against a green suite; poor risk/reward for two niche checks
+- [x] 54. F3: wasm surface — `Expression.check_structural_comparison(json)` (JSON `StructuralComparisonResult` `{ok, why}`) + `Expression.structural_equality(key, json)` (form + value → bool) for DoenetML; compiles + clippy-clean on `wasm32-unknown-unknown`
 - [ ] 55. F4 (deferred): byte-span source maps — *only* if a UI wants caret-on-error highlighting; no sourced directive requires it

@@ -82,14 +82,16 @@ pub(crate) fn pow_suffix(n: i64) -> String {
     }
 }
 
-/// Render an expression as plain text (educational-math notation).
+/// Render an expression as plain text (educational-math notation). Flattens
+/// first, since parsing is now faithful (keeps raw grouping) but the formatters
+/// assume flat n-ary operators; idempotent on already-canonical trees.
 pub fn to_text(expr: &Expr, opts: &TextOpts) -> String {
-    text::convert(expr, opts)
+    text::convert(&crate::expr::flatten(expr.clone()), opts)
 }
 
-/// Render an expression as LaTeX.
+/// Render an expression as LaTeX. Flattens first (see [`to_text`]).
 pub fn to_latex(expr: &Expr, opts: &LatexOpts) -> String {
-    latex::convert(expr, opts)
+    latex::convert(&crate::expr::flatten(expr.clone()), opts)
 }
 
 /// Greek-letter (and a few symbol) name → unicode, shared by the formatters.

@@ -1,8 +1,42 @@
-# Form grading plan (syntactic answer-form checks for teaching)
+# Structural comparison plan (answer-structure checks for teaching)
 
-> **STATUS (2026-07-21):** DRAFT — designed, not started. Greenfield; no
-> implementation yet. All paths below are relative to
-> `packages/math-expressions-rs/` (crate moved to `packages/` this session).
+> **STATUS (2026-07-21):** IN PROGRESS — **F0, F1 landed; F3 landed**; F2
+> partially done; F4 deferred by design. All paths relative to
+> `packages/math-expressions-rs/`.
+>
+> - **F0 (inverted-parse design, §3):** parsing is now **always faithful** —
+>   `convert` drops the whole-tree `flatten` (no `preserve_grouping` flag), so
+>   the raw associative grouping survives. `flatten` moved to the *leading step*
+>   of the four consumers that need a canonical shape: `normalize_syntactic`,
+>   the output formatters (`to_text`/`to_latex`), `js_tree::to_js`, and
+>   `check_structural_comparison`. The value path (`equals`/`simplify`) already
+>   flattens via `canonicalize`. Net observable behavior unchanged; 463 tests +
+>   the JS differential corpora stay green.
+> - **F1** (`src/structural.rs`, `tests/structural.rs`): `StructuralComparison` +
+>   `check_structural_comparison` (unary form predicate) + `structural_equality`
+>   (form + value, see §5), 13 checks (`ReducedFraction`, `MixedNumber`,
+>   `ImproperFraction`, `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`,
+>   `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`,
+>   `RadicalSimplified`, `CompletedSquare`, `HasIntegrationConstant`) plus the
+>   binary `SameStructure` (whole-tree identity = JS `equalsViaSyntax`, kept under its
+>   `equals_syntactic` alias). **No `grade` function** — per the JS `equalsVia*`
+>   model, callers compose the entry points per problem. **Vocabulary
+>   reconciled** (§5): one structural framework — `equals` = value,
+>   `structural_equality`/`StructuralComparison` = structural (with `SameStructure`
+>   the base case), `check_structural_comparison` = unary form. 15 tests; clippy
+>   clean (host + wasm).
+> - **F2 (partial):** `ExactValue` and `Decimal{places:None}` shipped in F1 —
+>   they need **no** tag (a faithful decimal is `Num(Rat)`, structurally
+>   distinct from `Int`/`Div`). **Deferred:** the `Prov` tag itself, i.e.
+>   decimal **place-counting** (`Decimal{places:Some}`) and `MulStyleIs` — the
+>   only two checks that genuinely need it. Rationale: the tag requires
+>   struct-variant surgery on `Num`/`Mul` (**331 construct/match sites** —
+>   measured) against a green suite; poor risk/reward for two niche checks. Left
+>   as a self-contained follow-up (§4 unchanged).
+> - **F3** (`src/wasm.rs`): `Expression.check_structural_comparison(json)`
+>   (returns a JSON `StructuralComparisonResult`) and
+>   `Expression.structural_equality(key, json)` (form + value → bool).
+> - **F4:** deferred by design (no sourced directive needs source spans).
 >
 > **One-line goal:** grade the *form a student wrote* ("is it factored?", "is
 > the fraction reduced?", "is it a decimal or an exact value?") as a suite of
@@ -59,14 +93,28 @@ helpers (sign-error tolerance, linear solve, set membership) — no form checks.
    actually demands them. See `active-plans/` prior discussion / the
    provenance-vs-source-map analysis.
 
-## 3. Parser: a faithful (no-flatten) mode
+## 3. Parser: always faithful (inverted-flatten design)
 
-Add `preserve_grouping: bool` to `TextToAstOptions` (`src/parse/text.rs`,
-default `false`). When set, `convert()` skips the terminal `flatten(result)`
-and returns the raw grouping. **The raw tree is analysis-only** — it violates
-the "n-ary ops always flat" invariant (`src/expr.rs`) that `equals` /
-`canonicalize` / smart constructors rely on, so it must never be fed into the
-algebra layer. Latex parser mirrors the flag.
+Rather than a parse-time flag, **`flatten` moves out of the parser entirely**.
+`convert()` (both `src/parse/text.rs` and `src/parse/latex.rs`) no longer
+applies the whole-tree `flatten`, so the raw associative grouping survives
+(individual terms are still locally flattened for unit detection, and the
+integrand keeps its flatten for differential extraction — both are functional
+parse steps, not normalization). `flatten` becomes the **leading step of every
+consumer that needs the canonical n-ary shape**:
+
+- `norm::normalize_syntactic` (the `equalsViaSyntax`/`equals_syntactic` path),
+- the output formatters `to_text`/`to_latex` (`src/output/mod.rs`),
+- `js_tree::to_js` (keeps `tree_json` a flat JS AST for DoenetML),
+- `check_structural_comparison` (flattens *faithfully* — merges grouping but
+  keeps `Div`/`Neg`/order/spelling, never canonicalizes).
+
+The value path (`equals`/`simplify`/`expand`/…) already flattens implicitly via
+`canonicalize`, so it needs no change. Consequence audit: only these four
+non-canonicalizing consumers relied on parser-flatten, all corpus-guarded, so a
+missed site fails loudly. Net observable behavior is unchanged; the win is clean
+layering (parse = syntax; flatten = first normalization pass) and a faithful
+tree that is always available with no flag.
 
 ## 4. Node provenance: the `Prov` tag
 
@@ -117,10 +165,10 @@ where form analysis runs — the smart constructors correctly reset it.
 > Churn is bounded and mechanical (measured construct/match sites: `Num` 228,
 > `Mul` 103). Keep it to these two variants; do not tag the rest.
 
-## 5. The `FormCheck` API (`src/form.rs`, new)
+## 5. The `StructuralComparison` API (`src/structural.rs`, new)
 
 ```rust
-pub enum FormCheck {
+pub enum StructuralComparison {
     ReducedFraction,          // no common factor in a Div; no surd in denom
     MixedNumber,              // a + b/c shape (b<c)
     ImproperFraction,         // single Div, |num| >= |den|
@@ -134,24 +182,37 @@ pub enum FormCheck {
     NoNegativeExponents,      // no Pow(_, negative-literal)
     RadicalSimplified,        // no radical in a denominator; radicand squarefree
     CompletedSquare,          // a(x-h)^2 + k template
-    MatchesForm(Template),    // slope-intercept / vertex / standard / point-slope …
+    MatchesTemplate(Template),    // slope-intercept / vertex / standard / point-slope …
     MulStyleIs(MulStyle),     // implicit vs explicit (rare; style rubrics)
     HasIntegrationConstant,   // sum contains a free constant symbol
+    SameStructure,                 // BINARY: whole-tree identity = JS equalsViaSyntax
 }
 
-pub struct FormReport { pub ok: bool, pub why: Option<String> } // why: student feedback
+pub struct StructuralComparisonResult { pub ok: bool, pub why: Option<String> } // why: student feedback
 
-/// Analyze the FAITHFUL tree (parse with preserve_grouping=true). Never
-/// canonicalizes the input — that would erase the form under test.
-pub fn check_form(e: &Expr, check: &FormCheck) -> FormReport;
+/// Unary form predicate. Flattens the input faithfully (merges grouping, keeps
+/// Div/Neg/order/spelling) but NEVER canonicalizes — that would erase the form.
+pub fn check_structural_comparison(e: &Expr, check: &StructuralComparison) -> StructuralComparisonResult;
 
-/// Convenience: form AND value. `equals`-gate is the caller's choice.
-pub fn grade(student: &Expr, key: &Expr, checks: &[FormCheck], opts: &EqOptions)
-    -> Vec<FormReport>;
+/// The autograder primitive and a sibling to `equals` (JS `equalsVia*` model,
+/// NOT a batch "grade"): `student` is in the form `comparison` AND value-equal
+/// to `key`. Pure form → `check_structural_comparison`; pure value → `equals`.
+pub fn structural_equality(student: &Expr, key: &Expr,
+    comparison: &StructuralComparison, opts: &EqOptions) -> bool;
 ```
 
+**Vocabulary reconciliation (value vs structural).** There is one structural
+framework, not a competing "syntactic" one. `equals` = *value*.
+`structural_equality` = *structural*, with a `StructuralComparison` method:
+`SameStructure` is order-sensitive whole-tree identity — the JS `equalsViaSyntax`,
+kept under its JS-parity name `equals_syntactic` (`equals_syntactic(a,b,o)` ==
+`structural_equality(a,b,&SameStructure,o)`); every other method is a specific-form
+criterion (also requiring value equality). `check_structural_comparison` is the
+*unary* form predicate (no key; rejects `SameStructure`). So "syntactic equality" is
+just the `SameStructure` structural comparison — no separate concept.
+
 Analyzers are structural predicates over the faithful `Expr`. Reuse the
-existing pattern engine (`src/js_match.rs`) for the `MatchesForm` /
+existing pattern engine (`src/js_match.rs`) for the `MatchesTemplate` /
 `CompletedSquare` template checks rather than hand-rolling. `FactoredCompletely`
 leans on `src/factor.rs` (irreducibility over ℚ) but tests the *student's*
 shape — it does not replace the student tree with `factor()`'s output.
@@ -161,7 +222,7 @@ denominator/radicand.
 
 ## 6. Directive → check mapping (grading target)
 
-| Teacher directive (Appendix A) | `FormCheck` | Grade band |
+| Teacher directive (Appendix A) | `StructuralComparison` | Grade band |
 |---|---|---|
 | "simplest / lowest terms" | `ReducedFraction` | 3–5 |
 | "as a mixed number" / "improper fraction" | `MixedNumber` / `ImproperFraction` | 4–5 |
@@ -170,7 +231,7 @@ denominator/radicand.
 | "combine like terms" / "simplify" | `CombinedLikeTerms` | 6–7 |
 | "expand" | `Expanded` | 7+ |
 | "factor completely" | `FactoredCompletely` | 7–12 |
-| slope-intercept / standard / vertex / point-slope | `MatchesForm(_)` | 8–12 |
+| slope-intercept / standard / vertex / point-slope | `MatchesTemplate(_)` | 8–12 |
 | "simplest radical form" / "rationalize the denominator" | `RadicalSimplified` | 8–12 |
 | "write without negative exponents" | `NoNegativeExponents` | 8+ |
 | "as a single fraction" / "partial fractions" | `SingleFraction` / `PartialFractions` | 9–univ |
@@ -180,25 +241,27 @@ denominator/radicand.
 
 ## 7. Phasing
 
-- **F0** — `preserve_grouping` parse mode (§3). No `Prov` yet. Unblocks all
-  structure-only checks. Verify existing suites stay green (algebra path
-  unchanged; `tests/numeric.rs` etc.).
-- **F1** — structure-only `FormCheck`s (everything except `Decimal`,
-  `ExactValue`, `MulStyleIs`): `ReducedFraction`, `CombinedLikeTerms`,
-  `Expanded`, `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`,
-  `RadicalSimplified`, `MatchesForm`, `CompletedSquare`,
-  `HasIntegrationConstant`. New `src/form.rs` + `tests/form.rs`.
-- **F2** — `Prov` on `Num`/`Mul` (§4); wire `Decimal`/`ExactValue`/`MulStyleIs`.
-  The churny phase — bounded to two variants.
-- **F3** — wasm surface: `Expression.check_form(json)` /
-  `grade(student, key, checks_json)` returning `FormReport`s
-  (`src/wasm.rs`), JSON-serializable so DoenetML consumes verdicts + `why`.
+- **F0 (done)** — inverted-parse design (§3): `flatten` removed from `convert`,
+  moved to the four non-canonicalizing consumers. No `Prov` yet. Algebra path
+  unchanged; all suites (incl. `tests/numeric.rs`) + JS corpora green.
+- **F1 (done)** — `StructuralComparison` + `check_structural_comparison` +
+  `structural_equality`: `ReducedFraction`, `MixedNumber`, `ImproperFraction`,
+  `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`,
+  `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`,
+  `CompletedSquare`, `HasIntegrationConstant`. `src/structural.rs` +
+  `tests/structural.rs`. (`MatchesTemplate`/`PartialFractions` deferred.)
+- **F2 (partial)** — `Prov` on `Num`/`Mul` (§4) for `Decimal{places:Some}` /
+  `MulStyleIs` deferred; `ExactValue`/`Decimal{places:None}` already shipped
+  tag-free in F1.
+- **F3 (done)** — wasm surface: `Expression.check_structural_comparison(json)`
+  and `Expression.structural_equality(key, json)` (`src/wasm.rs`),
+  JSON-serializable so DoenetML consumes verdicts + `why`.
 - **F4 (deferred, optional)** — byte-span source maps, *iff* a UI feature needs
   caret-on-error highlighting. Not required by any sourced directive.
 
 ## 8. Open questions
 
-- Feedback granularity: does `FormReport.why` need the offending *subtree*
+- Feedback granularity: does `StructuralComparisonResult.why` need the offending *subtree*
   (structural pointer) rather than prose? Structural pointers are cheap on the
   faithful tree and don't need spans.
 - `CombinedLikeTerms` after implicit distribution (`2(x+3)` — is it

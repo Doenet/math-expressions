@@ -204,7 +204,7 @@ impl LatexToAst {
         if self.token.ttype != Tok::Eof {
             return Err(self.err(format!("Invalid location of '{}'", self.token.original)));
         }
-        Ok(flatten(result))
+        Ok(result)
     }
 
     fn statement_list(&mut self) -> R<Expr> {
