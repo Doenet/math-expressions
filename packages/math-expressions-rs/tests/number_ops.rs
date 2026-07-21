@@ -2,8 +2,8 @@
 //! `round_numbers_to_precision`. Expected values verified against the JS methods.
 
 use math_expressions::{
-    constants_to_floats, round_numbers_to_decimals, round_numbers_to_precision, to_text, Expr,
-    TextToAst, TextToAstOptions,
+    constants_to_floats, equals, round_numbers_to_decimals, round_numbers_to_precision, to_text,
+    EqOptions, Expr, TextToAst, TextToAstOptions,
 };
 
 fn parse(s: &str) -> Expr {
@@ -74,4 +74,32 @@ fn rounding_extreme_magnitudes_is_bounded() {
     assert_eq!(txt(&r), "1.5");
     let r = round_numbers_to_decimals(&parse("1.5"), i32::MIN);
     assert_eq!(txt(&r), "0");
+}
+
+// ---- "don't round" edge guards (spec/quick_rounding.spec.js) ----
+//
+// Rounding must touch only inexact decimal literals: exact rational fractions
+// (`3/7`) and the constants π / e are left intact while a neighboring decimal
+// coefficient is rounded. Compared via `equals` exactly as the JS spec does.
+
+fn eq(a: &Expr, b: &str) -> bool {
+    equals(a, &parse(b), &EqOptions::default())
+}
+
+#[test]
+fn precision_does_not_round_fractions() {
+    let e = parse("3/7x + 381439619649.253 y");
+    assert!(eq(&round_numbers_to_precision(&e, 100), "3/7x + 381439619649.253 y"));
+    assert!(eq(&round_numbers_to_precision(&e, 14), "3/7x + 381439619649.25 y"));
+    assert!(eq(&round_numbers_to_precision(&e, 10), "3/7x + 381439619600 y"));
+    assert!(eq(&round_numbers_to_precision(&e, 4), "3/7x + 381400000000 y"));
+}
+
+#[test]
+fn precision_does_not_round_pi_or_e() {
+    let e = parse("3/7e + 381439619649.253 pi");
+    assert!(eq(&round_numbers_to_precision(&e, 100), "3/7exp(1) + 381439619649.253 pi"));
+    assert!(eq(&round_numbers_to_precision(&e, 14), "3/7exp(1) + 381439619649.25 pi"));
+    assert!(eq(&round_numbers_to_precision(&e, 10), "3/7exp(1) + 381439619600 pi"));
+    assert!(eq(&round_numbers_to_precision(&e, 4), "3/7exp(1) + 381400000000 pi"));
 }

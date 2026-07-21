@@ -12,41 +12,6 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    build:
-        name: Build
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v6
-
-            - name: Build
-              uses: devcontainers/ci@v0.3
-              with:
-                  runCmd: npm ci && npm run build
-
-            - name: Upload build artifacts
-              uses: actions/upload-artifact@v7
-              with:
-                  name: build-artifacts
-                  path: build/
-
-    test:
-        name: Test
-        runs-on: ubuntu-latest
-        needs: build
-        steps:
-            - uses: actions/checkout@v6
-
-            - name: Download build artifacts
-              uses: actions/download-artifact@v8
-              with:
-                  name: build-artifacts
-                  path: build/
-
-            - name: Test
-              uses: devcontainers/ci@v0.3
-              with:
-                  runCmd: npm ci && npm run test:all
-
     rust-build:
         name: Rust build
         runs-on: ubuntu-latest
@@ -82,4 +47,7 @@ jobs:
             - name: Build the playground
               uses: devcontainers/ci@v0.3
               with:
-                  runCmd: cd playground && npm ci && npm run build
+                  runCmd: cd packages/playground && npm ci && npm run build
+
+    # NOTE: a `js-compat` job (the TypeScript drop-in replacement, exercised by
+    # the spec/ suite converted to TS) will be added here once that package lands.

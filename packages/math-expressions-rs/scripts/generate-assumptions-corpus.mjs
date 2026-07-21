@@ -7,8 +7,8 @@
 import { writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import me from "../../../lib/math-expressions.js";
-import * as els from "../../../lib/assumptions/element_of_sets.js";
+import me from "../../../tmp/js-legacy/lib/math-expressions.js";
+import * as els from "../../../tmp/js-legacy/lib/assumptions/element_of_sets.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outPath = join(here, "../tests/fixtures/assumptions-corpus.json");

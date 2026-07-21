@@ -8,7 +8,7 @@
 //
 // Deterministic (seeded mulberry32). Writes tests/fixtures/numeric-corpus.json.
 
-import me from "../../../lib/math-expressions.js";
+import me from "../../../tmp/js-legacy/lib/math-expressions.js";
 import fs from "node:fs";
 
 const SEED = Number(process.argv[2] ?? 20260719);

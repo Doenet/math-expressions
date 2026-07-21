@@ -1,106 +1,58 @@
 # math-expressions
 
-Math-expressions is client- or server-side JavaScript library for
-parse expressions like `sin^2 (x^3)` and do some basic computer
-algebra with them, like symbolic differentiation and numerically
-identifying equivalent expressions.
+Parse expressions like `sin^2 (x^3)` and do computer algebra on them —
+symbolic differentiation and integration, numeric and symbolic equality testing,
+simplification, assumptions, matrices, ODEs, and more.
 
-# Demo of client-side use
+This repository is a Rust workspace. The former JavaScript implementation has
+been ported to Rust; the old JS source and test suite are preserved out-of-tree
+under `tmp/js-legacy/` for reference (see [History](#history) below).
 
-There is a [demo available](https://rawgit.com/kisonecat/math-expressions/master/demo/index.html) which focuses on the equality testing.
+## Layout
 
-# Code Example
+Everything lives under `packages/`:
 
-Include the script in `build/math-expressions.js` on your page.
+- **`packages/math-expressions-rs/`** — the core Rust crate. Parsing
+  (`text ↔ ast`, `latex ↔ ast`), equality, normalization/simplify/expand,
+  differentiation, symbolic + verified integration, matrices/eigenvalues, ODE
+  solving, assumptions, factoring, and an arbitrary-precision engine. Tests and
+  JS-derived fixtures live in `tests/`.
+- **`packages/math-expressions-rs-wasm/`** — TypeScript wrapper around the
+  wasm-bindgen build, plus the `astToMathjs` shim (`src/tree-to-mathjs.ts`).
+- **`packages/playground/`** — a Vite/React app for exercising the wasm build.
 
-```HTML
-<script type="text/javascript" src="math-expressions.js"></script>`
+A `packages/js-compat/` package — a drop-in TypeScript replacement for the
+original `math-expressions` JS API, built on the Rust core — is planned. The
+`tmp/js-legacy/spec` suite will be converted to TypeScript and run against it.
+
+## Development
+
+Suggested development happens inside the dev container. Open the repository in
+VS Code and choose **Reopen in Container** for a pre-configured environment with
+the correct Node.js and Rust toolchains (including the `wasm32` target and a
+pinned `wasm-bindgen-cli`).
+
+## Tests
+
+```
+cargo test            # core Rust suite
+cargo test --release  # same, optimized (some corpus tests are slow in debug)
 ```
 
-This adds `MathExpression` to the global namespace, so you can then perform the following parsing and equality-testing.
+The Rust suite includes differential corpora that check output against the
+original JS/mathjs behavior (`packages/math-expressions-rs/tests/fixtures/`),
+regenerable via the scripts in `packages/math-expressions-rs/scripts/`.
 
-```JavaScript
-var f = MathExpression.fromText("sin^2 (x^3)");
+## History
 
-console.log(f.tex());
+The pre-port JavaScript library (`lib/`) and its Vitest suite (`spec/`) now live
+under `tmp/js-legacy/` (git-ignored, kept on disk). The JS→Rust mapping is
+documented in `active-plans/`:
+[JS_RUST_DIFF.md](active-plans/JS_RUST_DIFF.md),
+[JS_RUST_TEST_DIVERGENCES.md](active-plans/JS_RUST_TEST_DIVERGENCES.md),
+[WHATS_LEFT.md](active-plans/WHATS_LEFT.md), and
+[JS_TEST_COVERAGE_AUDIT.md](active-plans/JS_TEST_COVERAGE_AUDIT.md).
 
-var g = MathExpression.fromText("sin^2 x + cos^2 x");
-var h = MathExpression.fromText("1");
-
-console.log( g.equals(h) );
-
-var g = MathExpression.fromText("x + x^2");
-var h = MathExpression.fromText("x + x^3");
-
-console.log( g.equals(h) );
-```
-
-For server-side use, you can load the package as usual via `var MathExpression = require('math-expressions');`.
-
-# Installation
-
-The pre-built library is stored in `build/math-expressions.js`. This
-is packaged in a "unified" module format, so it can be treated as an
-AMD-style or a CommonJS-style module (and imported via a module loader
-like RequireJS). If you are not using a module loader, you can import
-it via
-
-```HTML
-<script type="text/javascript" src="math-expressions.js"></script>`
-```
-
-to add `MathExpression` to the global namespace.
-
-# API Reference
-
-## Expression constructors
-
-### MathExpression.fromText(string)
-
-Convert `string` to expression through the text parser. For example, `var f = MathExpression.fromText('x^2');` will result in `f` representing the expression `x^2`. Then `f.evaluate({x:3})` is 9.
-
-This is often used for student-facing text, considering that even `MathExpression.fromText('sin^2 x')` does the right thing and produces the square of the sine function. Exceptions are thrown when `string` does not parse.
-
-### MathExpression.fromLatex(string)
-
-Convert `string` to an expression through the LaTeX parser. For example, `var f = MathExpression.fromLatex('\\frac{x+1}{2}');` will result in `f` representing the expression `(x+1)/2`. Then `f.evaluate({x:3})` is 2.
-
-## Expression methods
-
-### expression.toString()
-
-Produce a textual representation of `expression`. For example, `MathExpression.fromText( f.toString() )` recreates `f`.
-
-### expression.toLatex()
-
-Produce a LaTeX representation of `expression`. For example, if `f` is `MathExpression.fromText('x^10')`, then `f.toLatex()` is `x^{10}` since LaTeX requires braces for exponents.
-
-### expression.variables()
-
-Return the list of variables used in `expression`. For example, if `f` is `MathExpression.fromText('x + cos(y)')`, then `f.variables()` is `['x','y']`.
-
-### expression.equals(another)
-
-Determine whether `expression` and `another` represent the "same" expression.
-
-The current algorithm randomly samples the two expressions in a neighborhood of the real line of the complex plane and demands approximate numeric equality most of the time for random assignments to the variables. This is, quite admittedly, not a perfect algorithm, and it is likely to be replaced in a future version of this library.
-
-### expression.derivative(variable)
-
-Symbolically differentiate `expression` with respect to the given `variable`. For example, if `f` is `MathExpression.fromText('x^10')`, then `f.derivative('x')` is `10 x^9`.
-
-# Development
-
-Suggested development happens inside the dev container. Open the repository in VS Code and choose **Reopen in Container** to get a pre-configured environment with the correct Node.js and Rust versions.
-
-# Tests
-
-Assuming you have `git clone`ed the repository and `npm install`ed to
-populate `node_modules` with jasmine, you can then run the tests with
-`npm test`.
-
-Most of the tests are used to determine if `expression.equals(another)` does the expected thing on student input.
-
-# License
+## License
 
 Math-expressions is dual-licensed under GPLv3 and under Apache Version 2.0.

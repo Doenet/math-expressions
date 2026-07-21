@@ -12,8 +12,8 @@
 import { writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import textToAst from "../../../lib/converters/text-to-ast.js";
-import latexToAst from "../../../lib/converters/latex-to-ast.js";
+import textToAst from "../../../tmp/js-legacy/lib/converters/text-to-ast.js";
+import latexToAst from "../../../tmp/js-legacy/lib/converters/latex-to-ast.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "../tests/fixtures");
