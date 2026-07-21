@@ -45,14 +45,16 @@ pub(crate) fn expand_core(e: &Expr) -> Expr {
         // (Two factors, one of them a constant: cannot hit the cap on its own.)
         Expr::Neg(a) => {
             let factors = vec![Expr::int(-1), expand_core(a)];
-            try_distribute(&factors).unwrap_or_else(|| mul(factors))
+            let fallback = mul(factors.clone());
+            distribute_guarded(try_distribute(&factors), fallback)
         }
 
         // Product: distribute the (already-expanded) factors; on cap overflow
         // fall back to the unexpanded (canonical) product.
         Expr::Mul(fs) => {
             let factors: Vec<Expr> = fs.iter().map(expand_core).collect();
-            try_distribute(&factors).unwrap_or_else(|| mul(factors))
+            let fallback = mul(factors.clone());
+            distribute_guarded(try_distribute(&factors), fallback)
         }
 
         // Division distributes its numerator over the denominator, which is left
@@ -61,7 +63,8 @@ pub(crate) fn expand_core(e: &Expr) -> Expr {
             let num = expand_core(a);
             let inv = pow((**b).clone(), Expr::int(-1));
             let factors = vec![num, inv];
-            try_distribute(&factors).unwrap_or_else(|| mul(factors))
+            let fallback = mul(factors.clone());
+            distribute_guarded(try_distribute(&factors), fallback)
         }
 
         Expr::Pow(base, exp) => {
@@ -72,9 +75,8 @@ pub(crate) fn expand_core(e: &Expr) -> Expr {
                 let is_sum = matches!(&base, Expr::Add(ts) if ts.len() > 1);
                 if (1..=crate::resource_limits::current().max_expand_power).contains(n) && is_sum {
                     let factors = vec![base.clone(); *n as usize];
-                    if let Some(r) = try_distribute(&factors) {
-                        return r;
-                    }
+                    let fallback = pow(base.clone(), exp.clone());
+                    return distribute_guarded(try_distribute(&factors), fallback);
                 }
             }
             pow(base, exp)
@@ -83,6 +85,18 @@ pub(crate) fn expand_core(e: &Expr) -> Expr {
         // Everything else (function applications, sequences, relations, leaves):
         // recurse into children but do not distribute across this node.
         _ => map_children(e, expand_core),
+    }
+}
+
+/// Accept a distributed expansion only when it does not increase the number of
+/// `±` operators. Distributing a factor that carries a `±` across a sum (or
+/// multinomial-expanding a sum that contains one) would clone a single sign
+/// choice into several independent ones — changing the value set. In that case,
+/// and on cap overflow (`None`), keep the unexpanded canonical `fallback`.
+fn distribute_guarded(distributed: Option<Expr>, fallback: Expr) -> Expr {
+    match distributed {
+        Some(d) if crate::pm::count_pm(&d) <= crate::pm::count_pm(&fallback) => d,
+        _ => fallback,
     }
 }
 

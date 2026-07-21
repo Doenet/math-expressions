@@ -84,18 +84,24 @@ impl Writer<'_> {
             // `^` is left-associative; its superscript slot in the grammar is a
             // single tight atom, so anything but a simple atom/subscript needs
             // parens to round-trip.
-            Expr::Pow(b, e) => (
-                format!("{}^{}", self.emit(b, POW), self.superscript(e)),
-                POW,
-            ),
+            Expr::Pow(b, e) => {
+                // `(x^y)^z` must parenthesize the inner power; only a power base
+                // needs it — other same-precedence bases (`f'` in `f'^a(x)`) stay
+                // unwrapped to round-trip.
+                let base_ctx = if matches!(&**b, Expr::Pow(..)) { POW + 1 } else { POW };
+                (
+                    format!("{}^{}", self.emit(b, base_ctx), self.superscript(e)),
+                    POW,
+                )
+            }
 
-            Expr::And(xs) => (self.join(xs, " and ", AND + 1), AND),
-            Expr::Or(xs) => (self.join(xs, " or ", OR + 1), OR),
+            Expr::And(xs) => (self.join_logical(xs, " and "), AND),
+            Expr::Or(xs) => (self.join_logical(xs, " or "), OR),
             Expr::Not(x) => (
                 format!(
                     "{}{}",
                     if self.opts.unicode { "¬" } else { "not " },
-                    self.emit(x, NOT + 1)
+                    self.paren_if_spaced(x)
                 ),
                 NOT,
             ),
@@ -150,6 +156,25 @@ impl Writer<'_> {
     fn join(&self, xs: &[Expr], sep: &str, ctx: u8) -> String {
         xs.iter()
             .map(|x| self.emit(x, ctx))
+            .collect::<Vec<_>>()
+            .join(sep)
+    }
+
+    /// Parenthesize a logical operand that renders as a compound expression (its
+    /// string has a space and is not already fully parenthesized) — port of the
+    /// JS ast-to-text `and`/`or`/`not` rule.
+    fn paren_if_spaced(&self, e: &Expr) -> String {
+        let s = self.emit(e, 0);
+        if s.contains(' ') && !(s.starts_with('(') && s.ends_with(')')) {
+            format!("({})", s)
+        } else {
+            s
+        }
+    }
+
+    fn join_logical(&self, xs: &[Expr], sep: &str) -> String {
+        xs.iter()
+            .map(|x| self.paren_if_spaced(x))
             .collect::<Vec<_>>()
             .join(sep)
     }
@@ -221,6 +246,13 @@ impl Writer<'_> {
         }
         let mut out = String::new();
         for (i, t) in terms.iter().enumerate() {
+            // A `±` term carries its own operator (`± …`), so it is joined with a
+            // plain space rather than ` + ` — `5 + ±3` would be wrong.
+            if i > 0 && crate::pm::is_pm(t) {
+                out.push(' ');
+                out.push_str(&self.emit(t, prec::ADD + 1));
+                continue;
+            }
             let (neg, body) = split_sign(t);
             if i == 0 {
                 if neg {
@@ -472,7 +504,7 @@ impl Writer<'_> {
         match name {
             "pm" => (
                 format!(
-                    "{}{}",
+                    "{} {}",
                     if self.opts.unicode { "±" } else { "+-" },
                     one(self, MUL)
                 ),
@@ -598,7 +630,7 @@ impl Writer<'_> {
                 ATOM,
             ),
             "angle" => (self.render_angle(args), ATOM),
-            "unit" => (self.render_unit(args), MUL),
+            "unit" => (self.render_unit(args), UNIT),
             "d" => (format!("d{}", one(self, ATOM)), POW),
             "derivative_leibniz" => (self.render_leibniz("d", args), MUL),
             "partial_derivative_leibniz" => (self.render_leibniz("∂", args), MUL),
@@ -625,7 +657,7 @@ impl Writer<'_> {
         // Prefix units ($) render before the value; postfix (%, deg) after.
         if let Expr::Sym(s) = &args[0] {
             if s.name() == "$" {
-                return format!("${}", self.emit(&args[1], prec::MUL));
+                return format!("$ {}", self.emit(&args[1], prec::MUL));
             }
         }
         format!(

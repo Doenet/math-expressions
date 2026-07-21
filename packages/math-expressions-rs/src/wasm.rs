@@ -85,6 +85,24 @@ impl Expression {
         Expression(rust_expand(&self.0))
     }
 
+    /// Does the expression contain any ± (plus-minus) operator?
+    pub fn contains_pm(&self) -> bool {
+        crate::pm::contains_pm(&self.0)
+    }
+
+    /// The number of ± (plus-minus) operators in the expression.
+    pub fn count_pm(&self) -> usize {
+        crate::pm::count_pm(&self.0)
+    }
+
+    /// Enumerate all `2^n` sign assignments of the ± operators (each `±x`
+    /// becomes `x` or `-x`). Errors if there are too many ± operators to expand.
+    pub fn expand_pm_signs(&self) -> Result<Vec<Expression>, JsError> {
+        crate::pm::expand_pm_signs(&self.0)
+            .map(|v| v.into_iter().map(Expression).collect())
+            .map_err(|e| JsError::new(&e.to_string()))
+    }
+
     /// Symbolic derivative with respect to `var`.
     pub fn derivative(&self, var: &str) -> Expression {
         Expression(rust_derivative(&self.0, var))

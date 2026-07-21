@@ -49,7 +49,16 @@ pub fn canonicalize(e: &Expr) -> Expr {
             canonicalize(a),
             pow(canonicalize(b), Expr::Num(Number::Int(-1))),
         ]),
-        Expr::Neg(x) => mul(vec![Expr::Num(Number::Int(-1)), canonicalize(x)]),
+        Expr::Neg(x) => {
+            let cx = canonicalize(x);
+            // −(±y) → ±y: the value set {y, −y} is closed under negation, so the
+            // outer sign is absorbed (port of JS simplify's pm negation rule).
+            if crate::pm::is_pm(&cx) {
+                cx
+            } else {
+                mul(vec![Expr::Num(Number::Int(-1)), cx])
+            }
+        }
         Expr::Pow(b, e) => pow(canonicalize(b), canonicalize(e)),
 
         Expr::And(xs) => assoc_sorted(Variant::And, xs),
@@ -274,6 +283,11 @@ pub(crate) fn add(terms: Vec<Expr>) -> Expr {
         let (coeff, rest) = split_coeff(t);
         match rest {
             None => constant = constant.add(&coeff),
+            // A term carrying an independent ± must never merge with another:
+            // `±x + ±x` has value set {2x, 0, −2x} whereas `2·±x` has {2x, −2x},
+            // so coalescing like terms would tie the two sign choices together.
+            // Keep every pm-bearing term as its own summand (JS `noPmBase`).
+            Some(r) if crate::pm::contains_pm(&r) => parts.push((r, coeff)),
             Some(r) => match parts.iter_mut().find(|(k, _)| *k == r) {
                 Some(slot) => slot.1 = slot.1.add(&coeff),
                 None => parts.push((r, coeff)),
@@ -377,6 +391,40 @@ pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
             1 => out.pop().unwrap(),
             _ => Expr::Mul(out),
         };
+    }
+
+    // pm scaling: c · ±x → ±(c·x) when exactly one factor is a ± and every
+    // other factor carries no ± of its own. A single value `c` scales across
+    // the sign choice (the value set {cx, −cx} is unchanged); more than one ±
+    // is left alone, since their signs are independent (JS simplify's `c · ±x`
+    // rule, guarded by `c` containing no pm).
+    if flat.len() > 1 {
+        let pm_idx: Vec<usize> = flat
+            .iter()
+            .enumerate()
+            .filter(|(_, f)| crate::pm::is_pm(f))
+            .map(|(i, _)| i)
+            .collect();
+        if pm_idx.len() == 1
+            && flat
+                .iter()
+                .enumerate()
+                .all(|(i, f)| i == pm_idx[0] || !crate::pm::contains_pm(f))
+        {
+            let Expr::OtherOp(_, args) = flat.remove(pm_idx[0]) else {
+                unreachable!()
+            };
+            let inner = args.into_iter().next().unwrap();
+            flat.push(inner);
+            let scaled = mul(flat);
+            // If the scaled product is itself a ± (the pulled-in factor was a
+            // nested ±), it already absorbs this one: ±(±y) = ±y.
+            return if crate::pm::is_pm(&scaled) {
+                scaled
+            } else {
+                crate::pm::make_pm(scaled)
+            };
+        }
     }
 
     let mut coeff = Number::one();

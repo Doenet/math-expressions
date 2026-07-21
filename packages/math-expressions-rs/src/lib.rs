@@ -34,6 +34,7 @@ pub mod output;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 pub mod parse;
+pub mod pm;
 mod poly;
 pub mod precise;
 pub(crate) mod rootof;
@@ -74,6 +75,7 @@ pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};
 pub use parse::text::{TextToAst, TextToAstOptions};
 pub use parse::ParseError;
+pub use pm::{contains_pm, count_pm, expand_pm_signs, PmOverflow, MAX_PM_COUNT};
 pub use precise::{
     evaluate_to_precision, integrate_analyzed, integrate_to_precision, IntegralVerdict, Precise,
     SingularPoint,

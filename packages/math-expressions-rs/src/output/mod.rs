@@ -29,6 +29,10 @@ pub(crate) mod prec {
     pub const REL: u8 = 50;
     pub const ADD: u8 = 60;
     pub const NEG: u8 = 65;
+    /// A unit-bearing quantity (`x %`, `$ x`, `x°`) binds looser than
+    /// multiplication, so it parenthesizes as a factor in a product
+    /// (`\left(x \%\right) y`) but not standalone or in a sum.
+    pub const UNIT: u8 = 66;
     pub const MUL: u8 = 70;
     pub const POW: u8 = 90;
     pub const INDEX: u8 = 95;
@@ -145,6 +149,7 @@ pub(crate) fn greek_unicode(name: &str) -> Option<&'static str> {
         "Box" => "□",
         "circ" => "∘",
         "star" => "⋆",
+        "perp" => "⟂",
         _ => return None,
     })
 }

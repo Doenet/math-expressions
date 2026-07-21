@@ -68,11 +68,23 @@ impl Writer {
             // \frac is self-delimiting: an atom whose arguments need no parens.
             Expr::Div(a, b) => (format!("\\frac{}{}", self.braced(a), self.braced(b)), ATOM),
             Expr::Neg(x) => (format!("-{}", self.emit(x, MUL)), NEG),
-            Expr::Pow(b, e) => (format!("{}^{}", self.emit(b, POW), self.braced(e)), POW),
+            // `(x^y)^z` must parenthesize the inner power — bare `x^{y}^{z}` is
+            // invalid LaTeX (double superscript) — and a radical raised to a
+            // power reads clearer parenthesized (`\left(\sqrt{2}\right)^{3}`).
+            // Other same-precedence bases (`f'` in `f'^a(x)`) stay unwrapped so
+            // they round-trip.
+            Expr::Pow(b, e) => {
+                let base = if matches!(&**b, Expr::Pow(..)) || is_radical(b) {
+                    format!("\\left({}\\right)", self.emit(b, 0))
+                } else {
+                    self.emit(b, POW)
+                };
+                (format!("{}^{}", base, self.braced(e)), POW)
+            }
 
-            Expr::And(xs) => (self.join(xs, " \\land ", AND + 1), AND),
-            Expr::Or(xs) => (self.join(xs, " \\lor ", OR + 1), OR),
-            Expr::Not(x) => (format!("\\lnot {}", self.emit(x, NOT + 1)), NOT),
+            Expr::And(xs) => (self.join_logical(xs, " \\land "), AND),
+            Expr::Or(xs) => (self.join_logical(xs, " \\lor "), OR),
+            Expr::Not(x) => (format!("\\lnot {}", self.paren_if_spaced(x)), NOT),
             Expr::Union(xs) => (self.join(xs, " \\cup ", ADD + 1), ADD),
             Expr::Intersect(xs) => (self.join(xs, " \\cap ", ADD + 1), ADD),
 
@@ -127,6 +139,27 @@ impl Writer {
             .join(sep)
     }
 
+    /// Wrap a logical operand in parentheses for clarity when it renders as a
+    /// compound expression — i.e. its string contains a space and is not already
+    /// fully parenthesized (port of the JS ast-to-latex `and`/`or`/`not` rule).
+    fn paren_if_spaced(&self, e: &Expr) -> String {
+        let s = self.emit(e, 0);
+        if s.contains(' ') && !(s.starts_with("\\left(") && s.ends_with("\\right)")) {
+            format!("\\left({}\\right)", s)
+        } else {
+            s
+        }
+    }
+
+    /// Join logical operands (`and`/`or`) with `sep`, parenthesizing compound
+    /// operands via [`paren_if_spaced`].
+    fn join_logical(&self, xs: &[Expr], sep: &str) -> String {
+        xs.iter()
+            .map(|x| self.paren_if_spaced(x))
+            .collect::<Vec<_>>()
+            .join(sep)
+    }
+
     fn render_symbol(&self, name: &str) -> String {
         string_convert(name)
     }
@@ -148,6 +181,13 @@ impl Writer {
         }
         let mut out = String::new();
         for (i, t) in terms.iter().enumerate() {
+            // A `\pm` term carries its own operator, so it is joined with a plain
+            // space rather than ` + ` — `5 + \pm 3` would be wrong.
+            if i > 0 && crate::pm::is_pm(t) {
+                out.push(' ');
+                out.push_str(&self.emit(t, prec::ADD + 1));
+                continue;
+            }
             let (neg, body) = split_sign(t);
             if i == 0 {
                 if neg {
@@ -328,7 +368,7 @@ impl Writer {
                 ATOM,
             ),
             "angle" => (self.render_angle(args), ATOM),
-            "unit" => (self.render_unit(args), MUL),
+            "unit" => (self.render_unit(args), UNIT),
             "d" => (format!("d{}", one(self, ATOM)), POW),
             "derivative_leibniz" => (self.render_leibniz("d", args), ATOM),
             "partial_derivative_leibniz" => (self.render_leibniz("\\partial ", args), ATOM),
@@ -362,7 +402,7 @@ impl Writer {
         }
         if let Expr::Sym(s) = &args[0] {
             if s.name() == "$" {
-                return format!("\\${}", self.emit(&args[1], prec::MUL));
+                return format!("\\$ {}", self.emit(&args[1], prec::MUL));
             }
         }
         format!(
@@ -374,8 +414,11 @@ impl Writer {
 
     fn render_leibniz(&self, sym: &str, args: &[Expr]) -> String {
         let (var1, n_deriv) = deriv_var(&args[0]);
+        // `sym` carries its own trailing space where needed (`\partial `), so no
+        // extra separator: `d` → `dx`, `\partial ` → `\partial x` (not the
+        // double-spaced `\partial  x`).
         let num = format!(
-            "{}{} {}",
+            "{}{}{}",
             sym,
             pow_suffix(n_deriv),
             self.render_symbol(&var1)
@@ -385,7 +428,7 @@ impl Writer {
                 .iter()
                 .map(|part| {
                     let (v, e) = deriv_var(part);
-                    format!("{} {}{}", sym, self.render_symbol(&v), pow_suffix(e))
+                    format!("{}{}{}", sym, self.render_symbol(&v), pow_suffix(e))
                 })
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -400,9 +443,26 @@ fn is_shorthand_angle(e: &Expr) -> bool {
     matches!(e, Expr::OtherOp(name, args) if name.name() == "angle" && args.len() == 1)
 }
 
+/// A radical (`\sqrt`, `\sqrt[3]`, `\sqrt[n]`): self-delimiting, but reads
+/// clearer parenthesized when raised to a power (`\left(\sqrt{2}\right)^{3}`).
+fn is_radical(e: &Expr) -> bool {
+    matches!(e, Expr::Apply(head, args) if matches!(&**head, Expr::Sym(s)
+        if (matches!(s.name().as_str(), "sqrt" | "cbrt") && args.len() == 1)
+            || (s.name() == "nthroot" && args.len() == 2)))
+}
+
 /// Symbol name → LaTeX. Multi-char names in the allowed set become control
 /// words (`\theta`); functions likewise; anything else is `\operatorname{}`.
 fn string_convert(name: &str) -> String {
+    // LaTeX-special characters must be escaped, or they change the meaning of
+    // the source: a bare `%` starts a comment (swallowing the rest of the line).
+    match name {
+        "%" => return "\\%".to_string(),
+        "$" => return "\\$".to_string(),
+        "&" => return "\\&".to_string(),
+        "#" => return "\\#".to_string(),
+        _ => {}
+    }
     // Function spellings carry their control word on the registry
     // (`asin` → `\arcsin`, `ln` → `\ln`); unlisted spellings fall through
     // to the `\operatorname{…}` path below.
