@@ -20,7 +20,9 @@ the legacy JS on disk.
 > longer depend on a git-ignored path, and regeneration works from a clean
 > checkout.
 
-## Non-oracle scripts
+## Wasm build
 
-`build-wasm.sh` and `wasm-smoke.cjs` are part of the wasm build/smoke flow and do
-not use the JS oracle.
+The wasm build/smoke flow moved out of this crate: the wasm-bindgen bindings now
+live in the separate `math-expressions-wasm` crate at
+`../../math-expressions-rs-wasm/crate/`, whose `build-wasm.sh` (+ `wasm-smoke.cjs`)
+compile and smoke-test it. This crate is a pure Rust library.

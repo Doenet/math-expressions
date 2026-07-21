@@ -18,6 +18,7 @@
     "src"
   ],
   "scripts": {
+    "build:wasm": "bash crate/build-wasm.sh",
     "build": "tsc -p tsconfig.json",
     "types:check": "tsc -p tsconfig.json --noEmit"
   },

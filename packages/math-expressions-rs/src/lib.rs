@@ -4,8 +4,10 @@
 //! normalization, simplify/expand, the full staged `equals` (syntactic,
 //! finite-field, complex sampling, discrete infinite sets), differentiation,
 //! evaluation, output formatting, expression utilities, the polynomial layer
-//! (`reduce_rational`), the assumptions core, resource limits (§7f), and the
-//! wasm-bindgen JS surface (`src/wasm.rs`, built by `scripts/build-wasm.sh`).
+//! (`reduce_rational`), the assumptions core, and resource limits (§7f). The
+//! wasm-bindgen JS surface lives in a separate crate
+//! (`packages/math-expressions-rs-wasm/crate`), a thin adapter over this
+//! crate's public API.
 //! Fidelity is guarded by differential corpora against the JS reference
 //! (equality 824/824; simplify/derivative/expand/evaluate/assumptions corpora
 //! with snapshotted, documented divergences).
@@ -32,8 +34,6 @@ pub mod numeric;
 pub mod ode;
 pub mod ops;
 pub mod output;
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;
 pub mod parse;
 pub mod pm;
 mod poly;

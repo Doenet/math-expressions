@@ -1,0 +1,5 @@
+# Built wasm bindings (regenerate with ./build-wasm.sh)
+vendor/
+# Vite library build output
+dist/
+node_modules/

@@ -18,7 +18,7 @@ export { Context };
 // The Rust wasm-bindgen glue is static-copied to /wasm/ by vite-plugin-static-copy
 // (see vite.config.ts) and loaded at runtime by URL, so Vite never bundles the
 // wasm. Loading from the served location lets the glue resolve its .wasm sibling.
-const RUST_GLUE_URL = `${import.meta.env.BASE_URL}wasm/math_expressions.js`;
+const RUST_GLUE_URL = `${import.meta.env.BASE_URL}wasm/math_expressions_wasm.js`;
 
 /** A minimal per-engine adapter used by the evaluator for sourcing + display. */
 export interface EngineAdapter<H> {

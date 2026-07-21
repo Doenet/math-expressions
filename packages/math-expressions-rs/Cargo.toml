@@ -5,10 +5,11 @@ edition = "2021"
 license = "GPL-3.0 OR Apache-2.0"
 description = "Rust port of the math-expressions library (educational math CAS)"
 
-# cdylib for the wasm-bindgen build; rlib so the crate stays usable as a normal
-# Rust library and by the integration tests.
+# Pure Rust library. The wasm-bindgen `cdylib` now lives in the separate
+# `math-expressions-wasm` crate (packages/math-expressions-rs-wasm/crate), which
+# depends on this one.
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 # The size-oriented release profile lives in the WORKSPACE ROOT Cargo.toml
 # (cargo ignores profile sections in member manifests).
@@ -25,12 +26,6 @@ num-integer = "0.1"
 rand = { version = "0.9", default-features = false, features = ["small_rng"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
-# The JS boundary (PORTING_PLAN.md §13). Only used by the wasm32 `wasm` module,
-# but the crate compiles fine on native (the macro just isn't invoked there).
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "=0.2.126"
-js-sys = "0.3"
 
 [dev-dependencies]
 proptest = "1"

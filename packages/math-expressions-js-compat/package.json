@@ -1,0 +1,31 @@
+{
+  "name": "math-expressions-js-compat",
+  "version": "0.0.0",
+  "description": "Drop-in replacement for the original math-expressions JavaScript API, backed by the Rust/wasm core (math-expressions-rs). Same `me.fromText(...).equals(...)` surface, no code of its own — just an adapter over the wasm bindings.",
+  "license": "(GPL-3.0 OR Apache-2.0)",
+  "type": "module",
+  "main": "./lib/math-expressions.js",
+  "module": "./lib/math-expressions.js",
+  "exports": {
+    ".": "./lib/math-expressions.js",
+    "./lib/*": "./lib/*"
+  },
+  "files": [
+    "lib",
+    "vendor"
+  ],
+  "scripts": {
+    "build:wasm": "./build-wasm.sh",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "mathjs": "^15.2.0"
+  },
+  "devDependencies": {
+    "underscore": "^1.13.6",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}

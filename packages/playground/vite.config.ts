@@ -12,16 +12,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // into the playground source. The glue is loaded at runtime by URL (see
 // src/engines.ts), so Vite never bundles the wasm — this copy is its sole
 // delivery. (Pattern from Doenet/DoenetML's doenetml-prototype vite.config.ts.)
-const wasmPkgDir = path.resolve(here, "../math-expressions-rs/pkg");
+const wasmPkgDir = path.resolve(here, "../math-expressions-rs-wasm/pkg");
 
 export default defineConfig({
   plugins: [
     react(),
     viteStaticCopy({
       targets: [
-        { src: path.join(wasmPkgDir, "math_expressions.js"), dest: "wasm" },
+        { src: path.join(wasmPkgDir, "math_expressions_wasm.js"), dest: "wasm" },
         {
-          src: path.join(wasmPkgDir, "math_expressions_bg.wasm"),
+          src: path.join(wasmPkgDir, "math_expressions_wasm_bg.wasm"),
           dest: "wasm",
         },
       ],

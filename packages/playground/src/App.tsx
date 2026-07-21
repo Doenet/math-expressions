@@ -36,6 +36,42 @@ const EXAMPLES: { label: string; chain: string }[] = [
   },
 ];
 
+// Curated equations (+ the chain that reveals the difference) where the Rust
+// engine does something the canonical JS library cannot — symbolic integration,
+// factoring, certified zero-testing, or deeper simplification.
+const SHOWCASE: { label: string; expr: string; chain: string }[] = [
+  {
+    label: "Pythagorean identity  →  2",
+    expr: "sin^2(x) + cos^2(x) + 1",
+    chain: `${BASE_VAR}.simplify()`,
+  },
+  {
+    label: "e^(ln x)  collapses to  x",
+    expr: "e^(log(x))",
+    chain: `${BASE_VAR}.simplify()`,
+  },
+  {
+    label: "∫ 1/(1+x²) dx  →  arctan  (Rust only)",
+    expr: "1/(1 + x^2)",
+    chain: `${BASE_VAR}.integrate("x")`,
+  },
+  {
+    label: "∫ 1/x dx  →  ln|x|  (Rust only)",
+    expr: "1/x",
+    chain: `${BASE_VAR}.integrate("x")`,
+  },
+  {
+    label: "Factor  x⁴ − 1  over ℚ  (Rust only)",
+    expr: "x^4 - 1",
+    chain: `${BASE_VAR}.factor()`,
+  },
+  {
+    label: "Certified  (x+1)² − x² − 2x − 1 = 0  (Rust only)",
+    expr: "(x + 1)^2 - x^2 - 2x - 1",
+    chain: `${BASE_VAR}.is_zero()`,
+  },
+];
+
 /* ----------------------------- result views ---------------------------- */
 
 /** Render one engine's displayable result for a step. */
@@ -147,28 +183,76 @@ function AgreeBadge({ agree }: { agree?: boolean }) {
   );
 }
 
+/** A compact rendering used in the collapsed (agreeing) view: just the math. */
+function AbbrevView({ d }: { d: Displayable }) {
+  switch (d.kind) {
+    case "expression":
+      return <Katex tex={d.latex} display />;
+    case "string":
+      return d.render === "latex" ? (
+        <Katex tex={d.value} display />
+      ) : (
+        <code>{d.value}</code>
+      );
+    default:
+      // terminals (list / bool / number / complex / tree / none) are already compact
+      return <DisplayView d={d} />;
+  }
+}
+
+function StepLabel({ step, index }: { step: StepResult; index: number }) {
+  return (
+    <h3>
+      <span className="step-num">{index === 0 ? "source" : `#${index}`}</span>
+      <code className="step-label">
+        {index === 0 ? step.label : `.${step.label}()`}
+      </code>
+    </h3>
+  );
+}
+
+function StepColumns({ step }: { step: StepResult }) {
+  return (
+    <div className="cols">
+      <div className="col">
+        <h4>JavaScript</h4>
+        <Cell res={step.jsResult} call={step.call.js} />
+      </div>
+      <div className="col">
+        <h4>Rust (WASM)</h4>
+        <Cell res={step.rustResult} call={step.call.rust} />
+      </div>
+    </div>
+  );
+}
+
 function StepCard({ step, index }: { step: StepResult; index: number }) {
+  // When both engines agree, collapse to an abbreviated math-only view that
+  // expands to the full side-by-side comparison on demand.
+  if (step.agree === true && step.jsResult.ok) {
+    return (
+      <section className="card step agree">
+        <details className="agree-collapse">
+          <summary>
+            <StepLabel step={step} index={index} />
+            <span className="abbrev">
+              <AbbrevView d={step.jsResult.value} />
+            </span>
+            <AgreeBadge agree />
+            <span className="expand-hint">compare</span>
+          </summary>
+          <StepColumns step={step} />
+        </details>
+      </section>
+    );
+  }
   return (
     <section className="card step">
       <div className="section-head">
-        <h3>
-          <span className="step-num">{index === 0 ? "source" : `#${index}`}</span>
-          <code className="step-label">
-            {index === 0 ? step.label : `.${step.label}()`}
-          </code>
-        </h3>
+        <StepLabel step={step} index={index} />
         <AgreeBadge agree={step.agree} />
       </div>
-      <div className="cols">
-        <div className="col">
-          <h4>JavaScript</h4>
-          <Cell res={step.jsResult} call={step.call.js} />
-        </div>
-        <div className="col">
-          <h4>Rust (WASM)</h4>
-          <Cell res={step.rustResult} call={step.call.rust} />
-        </div>
-      </div>
+      <StepColumns step={step} />
     </section>
   );
 }
@@ -178,7 +262,7 @@ function StepCard({ step, index }: { step: StepResult; index: number }) {
 export default function App() {
   const [engines, setEngines] = useState<Engines | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [baseText, setBaseText] = useState("sin^2(x) + cos^2(x)");
+  const [baseText, setBaseText] = useState("sin^2(x) + cos^2(x) + 1");
   const [baseSyntax, setBaseSyntax] = useState<Syntax>("text");
   const [chain, setChain] = useState(EXAMPLES[0].chain);
   const editorRef = useRef<ChainEditorHandle>(null);
@@ -259,23 +343,46 @@ export default function App() {
             Equation <span className="muted">— stored as</span>{" "}
             <code>{BASE_VAR}</code>
           </h2>
-          <div className="radios">
-            <label>
-              <input
-                type="radio"
-                checked={baseSyntax === "text"}
-                onChange={() => setBaseSyntax("text")}
-              />{" "}
-              text
-            </label>
-            <label>
-              <input
-                type="radio"
-                checked={baseSyntax === "latex"}
-                onChange={() => setBaseSyntax("latex")}
-              />{" "}
-              LaTeX
-            </label>
+          <div className="eq-controls">
+            <select
+              className="showcase"
+              value=""
+              onChange={(e) => {
+                const s = SHOWCASE[Number(e.target.value)];
+                if (!s) return;
+                setBaseText(s.expr);
+                setBaseSyntax("text");
+                setChain(s.chain);
+              }}
+              title="Load an equation + chain where Rust outshines JS"
+            >
+              <option value="" disabled>
+                Showcase Rust…
+              </option>
+              {SHOWCASE.map((s, i) => (
+                <option key={i} value={i}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <div className="radios">
+              <label>
+                <input
+                  type="radio"
+                  checked={baseSyntax === "text"}
+                  onChange={() => setBaseSyntax("text")}
+                />{" "}
+                text
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={baseSyntax === "latex"}
+                  onChange={() => setBaseSyntax("latex")}
+                />{" "}
+                LaTeX
+              </label>
+            </div>
           </div>
         </div>
         <div className="io-split">
@@ -307,7 +414,7 @@ export default function App() {
 
       {/* ---- box 2: the chain, paired with the operations palette ---- */}
       <div className="chain-split">
-      <section className="card">
+      <section className="card chain-card">
         <div className="section-head">
           <h2>Chain</h2>
           <span className="muted">

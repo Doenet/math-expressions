@@ -62,11 +62,11 @@ typed by the minimal interfaces there (only the members the adapter uses).
   regenerate it — it is also a tracked input of the app build). The dev server
   is configured with `server.fs.allow: ['..']` so it can serve that sibling
   file.
-- **Rust**: `build:wasm` compiles the crate to a browser-targeted wasm-bindgen
-  package in **`../math-expressions-rs/pkg/`** (not vendored into this project).
-  `vite.config.ts` resolves that location and uses
+- **Rust**: `build:wasm` compiles the wasm-binding crate to a browser-targeted
+  wasm-bindgen package in **`../math-expressions-rs-wasm/pkg/`** (not vendored
+  into this project). `vite.config.ts` resolves that location and uses
   [`vite-plugin-static-copy`](https://github.com/sapphi-red/vite-plugin-static-copy)
-  to serve `math_expressions.js` + `math_expressions_bg.wasm` under `/wasm/`.
+  to serve `math_expressions_wasm.js` + `math_expressions_wasm_bg.wasm` under `/wasm/`.
   `src/engines.ts` then loads the glue at runtime via a dynamic `import()` of
   that URL, so Vite never bundles the wasm — the static copy is its sole
   delivery, and the glue resolves the `.wasm` relative to its own served URL.

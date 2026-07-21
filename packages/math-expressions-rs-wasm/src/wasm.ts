@@ -1,9 +1,9 @@
 /*
  * Structural TypeScript surface for the math-expressions Rust/WASM module
- * (`packages/math-expressions-rs/pkg`, emitted by wasm-bindgen).
+ * (`./pkg`, emitted by wasm-bindgen from the sibling `crate/`).
  *
- * The authoritative, exhaustive types are the *generated* `math_expressions.d.ts`
- * inside that `pkg/` directory. Those are a build artifact (git-ignored, and the
+ * The authoritative, exhaustive types are the *generated*
+ * `math_expressions_wasm.d.ts` inside that `pkg/` directory. Those are a build artifact (git-ignored, and the
  * shape differs by wasm-bindgen `--target`), so this module declares the small
  * structural subset the bindings actually rely on. Consumers pass a live wasm
  * module/handle in; nothing here imports the generated glue, keeping this

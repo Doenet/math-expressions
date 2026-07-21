@@ -521,6 +521,16 @@ fn sqrt_mod(a: i64, p: i64) -> Vec<i64> {
     if p == 2 {
         return vec![a % 2];
     }
+    // Euler's criterion and Tonelli–Shanks below are only valid for a **prime**
+    // modulus — for a composite one the non-residue search
+    // `while pow_mod(z, (p-1)/2, p) != p-1 { z += 1 }` can never succeed and
+    // spins (overflowing `z` in release → effectively an infinite loop). A `sqrt`
+    // nested in an exponent is evaluated mod φ(p), which is composite, so this is
+    // reachable. The field simply can't represent such a root: report "no value"
+    // (→ NaN → skip this prime), which is the safe, conservative answer.
+    if !is_prime(p) {
+        return vec![];
+    }
     // Euler's criterion: a is a QR iff a^((p-1)/2) == 1.
     if pow_mod(a, (p - 1) / 2, p) != 1 {
         return vec![];
@@ -606,6 +616,22 @@ mod tests {
             for r in sqrt_mod(a, 1231) {
                 assert_eq!(mul_mod(r, r, 1231), a.rem_euclid(1231));
             }
+        }
+    }
+
+    #[test]
+    fn sqrt_mod_composite_modulus_terminates() {
+        // Tonelli–Shanks assumes a PRIME modulus; a composite one (e.g. φ(1181) =
+        // 1180) makes its non-residue search `while … { z += 1 }` never succeed
+        // and spin forever. A `sqrt` nested in an exponent is evaluated mod φ(p),
+        // so this path is reachable — it must return "no root" (empty) and, above
+        // all, terminate. Without the `is_prime` guard this test hangs.
+        assert_eq!(sqrt_mod(0, 1180), vec![0]);
+        for a in 1..1180 {
+            assert!(
+                sqrt_mod(a, 1180).is_empty(),
+                "composite modulus must yield no root (a={a})"
+            );
         }
     }
 }

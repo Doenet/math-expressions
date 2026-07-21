@@ -30,29 +30,39 @@ body {
 .app {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 14px 16px 36px;
 }
 
+/* Title and description on one line when there's room; wraps on narrow. */
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
 header h1 {
-  margin: 0 0 4px;
-  font-size: 24px;
+  margin: 0;
+  font-size: 19px;
+  white-space: nowrap;
 }
 .sub {
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--muted);
-  max-width: 76ch;
+  font-size: 13px;
+  flex: 1 1 300px;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin-top: 16px;
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-top: 10px;
 }
 
 h2 {
-  font-size: 17px;
+  font-size: 15px;
   margin: 0;
 }
 
@@ -60,8 +70,28 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.eq-controls {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.showcase {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  max-width: 260px;
+  color: var(--fg);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.showcase:hover {
+  border-color: var(--accent);
 }
 
 /* Responsive side-by-side splits: stacked on narrow, two columns when wide.
@@ -71,23 +101,41 @@ h2 {
 .chain-split {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 @media (min-width: 900px) {
   .io-split,
   .chain-split {
     grid-template-columns: 1fr 1fr;
   }
+  /* Side-by-side: both cards match the taller (palette) column, and the chain
+     card gives all of its extra vertical space to the CodeMirror editor. */
+  .chain-split {
+    align-items: stretch;
+  }
+  .chain-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .chain-card .editor-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .chain-card .cm-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
 }
-.io-split .expr-input {
-  align-self: start;
-}
+/* Let the input stretch to the preview's height when side-by-side (grid's
+   default `stretch`); when stacked, each is alone in its row so it stays
+   natural. */
 .io-split .base-preview {
   margin-top: 0;
 }
 .chain-split {
-  margin-top: 16px;
-  align-items: start;
+  margin-top: 10px;
 }
 .chain-split > .card {
   margin-top: 0;
@@ -175,8 +223,8 @@ code.block {
 .expr-input {
   width: 100%;
   font-family: var(--mono);
-  font-size: 18px;
-  padding: 12px 14px;
+  font-size: 16px;
+  padding: 9px 12px;
   background: var(--card2);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -199,13 +247,13 @@ code.block {
 .base-preview {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  margin-top: 12px;
-  padding: 10px 12px;
+  margin-top: 10px;
+  padding: 8px 10px;
   background: var(--code-bg);
   border-radius: 8px;
-  min-height: 44px;
+  min-height: 36px;
   overflow-x: auto;
 }
 
@@ -213,7 +261,7 @@ code.block {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 .chip-btn {
   background: var(--card2);
@@ -242,28 +290,28 @@ code.block {
   border-top: none;
 }
 .palette-cat {
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding-top: 5px;
+  padding-top: 4px;
 }
 .palette-ops {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 .op-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 11px;
   background: var(--code-bg);
   border: 1px solid var(--border);
   color: var(--fg);
-  border-radius: 6px;
-  padding: 3px 9px;
+  border-radius: 5px;
+  padding: 2px 7px;
   cursor: pointer;
 }
 .op-btn:hover {
@@ -293,7 +341,7 @@ code.block {
 }
 
 .card.step {
-  padding: 12px 16px;
+  padding: 9px 12px;
 }
 .step h3 {
   display: flex;
@@ -313,10 +361,52 @@ code.block {
   font-size: 13.5px;
 }
 
+/* Collapsed (agreeing) step: math-only summary, expandable to the full compare. */
+.agree-collapse > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.agree-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+.agree-collapse > summary > h3 {
+  flex: none;
+}
+.abbrev {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+.abbrev .katex-display {
+  margin: 0;
+  text-align: left;
+}
+.expand-hint {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.expand-hint::after {
+  content: " ▸";
+}
+.agree-collapse[open] > summary .expand-hint::after {
+  content: " ▾";
+}
+.agree-collapse[open] > summary {
+  margin-bottom: 12px;
+}
+.agree-collapse[open] .cols {
+  margin-top: 0;
+}
+
 .cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 @media (max-width: 760px) {
   .cols {
@@ -327,7 +417,7 @@ code.block {
   background: var(--card2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
+  padding: 10px;
 }
 .col h4 {
   margin: 0 0 8px;
@@ -356,11 +446,11 @@ code.block {
 }
 
 .rendered {
-  min-height: 40px;
-  padding: 10px 12px;
+  min-height: 36px;
+  padding: 8px 10px;
   background: var(--code-bg);
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   overflow-x: auto;
 }
 .disp .kv {
@@ -482,7 +572,7 @@ summary {
 }
 
 footer {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 footer code {
   background: transparent;

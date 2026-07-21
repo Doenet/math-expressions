@@ -39,7 +39,9 @@
       "files": [
         "rebuild-wasm.sh",
         "../math-expressions-rs/src/**",
-        "../math-expressions-rs/Cargo.toml"
+        "../math-expressions-rs/Cargo.toml",
+        "../math-expressions-rs-wasm/crate/src/**",
+        "../math-expressions-rs-wasm/crate/Cargo.toml"
       ],
       "output": []
     },
