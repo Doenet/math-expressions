@@ -124,7 +124,7 @@ fn from_js_array(arr: &[Value]) -> Result<Expr, String> {
                 .get(1)
                 .and_then(Value::as_array)
                 .ok_or("lts/gts strict")?;
-            if args.len() < 2 || strict.len() != args.len() - 1 + 1 {
+            if args.len() < 2 || strict.len() != args.len() - 1 {
                 return Err("lts/gts args/strict length mismatch".to_string());
             }
             let operands: Vec<Expr> = args[1..]
@@ -359,4 +359,33 @@ fn relation_to_js(operands: &[Expr], ops: &[RelOp]) -> Value {
     let mut strict = vec![Value::String("tuple".to_string())];
     strict.extend(ops.iter().map(|o| Value::Bool(*o == strict_op)));
     json!([head, args, strict])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A chained inequality `["gts"/"lts", ["tuple", ...operands],
+    // ["tuple", ...strict-flags]]` has one more operand than strict-flag, so
+    // the tuple-with-head arrays satisfy `strict.len() == args.len() - 1`.
+    // Regression: an off-by-one in that check used to reject every chained
+    // inequality, panicking `from_js` (the ast-to-{latex,text} formatter path).
+    #[test]
+    fn chained_inequality_from_js_round_trips() {
+        for head in ["gts", "lts"] {
+            let tree = json!([
+                head,
+                ["tuple", "x", "y", "z"],
+                ["tuple", true, false]
+            ]);
+            let expr = try_from_js(&tree).expect("chained inequality should parse");
+            let Expr::Relation { operands, ops } = &expr else {
+                panic!("expected Relation, got {expr:?}");
+            };
+            assert_eq!(operands.len(), 3);
+            assert_eq!(ops.len(), 2);
+            // to_js is the inverse for this shape.
+            assert_eq!(to_js(&expr), tree);
+        }
+    }
 }
