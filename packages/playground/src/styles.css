@@ -23,12 +23,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
 }
 
@@ -45,6 +40,7 @@ header h1 {
 .sub {
   margin: 0 0 8px;
   color: var(--muted);
+  max-width: 76ch;
 }
 
 .card {
@@ -59,13 +55,6 @@ h2 {
   font-size: 17px;
   margin: 0;
 }
-h3 {
-  font-size: 14px;
-  margin: 0 0 8px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
 
 .section-head {
   display: flex;
@@ -75,16 +64,114 @@ h3 {
   margin-bottom: 12px;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Responsive side-by-side splits: stacked on narrow, two columns when wide.
+   `.io-split` pairs the equation input with its parsed preview; `.chain-split`
+   pairs the chain editor card with the operations palette card. */
+.io-split,
+.chain-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
-.field > span {
-  font-size: 13px;
-  color: var(--muted);
+@media (min-width: 900px) {
+  .io-split,
+  .chain-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.io-split .expr-input {
+  align-self: start;
+}
+.io-split .base-preview {
+  margin-top: 0;
+}
+.chain-split {
+  margin-top: 16px;
+  align-items: start;
+}
+.chain-split > .card {
+  margin-top: 0;
 }
 
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+code.block {
+  display: block;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.muted {
+  color: var(--muted);
+}
+.err {
+  color: var(--err);
+}
+.num {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+/* ---------------- editor (CodeMirror) ---------------- */
+
+.editor-wrap {
+  position: relative;
+}
+.editor-wrap .cm-editor {
+  border-radius: 8px;
+}
+.editor-err {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+/* autocomplete popup + lint diagnostic, themed to match the app */
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(20, 25, 40, 0.16);
+  overflow: hidden;
+}
+.cm-tooltip-autocomplete > ul {
+  font-family: var(--mono);
+  font-size: 13px;
+  max-height: 260px;
+}
+.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 9px;
+}
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--card2);
+  color: var(--fg);
+}
+.cm-completionDetail {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cm-tooltip.cm-tooltip-lint {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+}
+.cm-diagnostic-error {
+  border-left-color: var(--err);
+}
+
+/* equation box (box 1) */
 .expr-input {
   width: 100%;
   font-family: var(--mono);
@@ -99,15 +186,6 @@ h3 {
   outline: 2px solid var(--accent);
   border-color: transparent;
 }
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-}
 .radios {
   display: flex;
   gap: 16px;
@@ -118,11 +196,24 @@ h3 {
   gap: 5px;
   font-size: 14px;
 }
+.base-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  min-height: 44px;
+  overflow-x: auto;
+}
 
 .examples {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  margin-top: 12px;
 }
 .chip-btn {
   background: var(--card2);
@@ -137,6 +228,91 @@ h3 {
   border-color: var(--accent);
 }
 
+/* ---------------- palette ---------------- */
+
+.palette-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.palette-row:first-of-type {
+  border-top: none;
+}
+.palette-cat {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 5px;
+}
+.palette-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+.op-btn:hover {
+  border-color: var(--accent);
+}
+.op-btn.js-only {
+  border-left: 3px solid var(--js);
+}
+.op-btn.rust-only {
+  border-left: 3px solid var(--rust);
+}
+.only-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* ---------------- results ---------------- */
+
+.results-list {
+  margin-top: 4px;
+}
+.stale {
+  opacity: 0.55;
+  transition: opacity 0.15s ease 0.1s;
+}
+
+.card.step {
+  padding: 12px 16px;
+}
+.step h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  text-transform: none;
+}
+.step-num {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.step-label {
+  font-size: 13.5px;
+}
+
 .cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -147,47 +323,65 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
-
 .col {
   background: var(--card2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 14px;
+  padding: 12px;
+}
+.col h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.col:nth-child(1) {
+  border-top: 3px solid var(--js);
+}
+.col:nth-child(2) {
+  border-top: 3px solid var(--rust);
+}
+
+.cell {
+  min-height: 24px;
+}
+.call {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
 }
 
 .rendered {
-  min-height: 44px;
+  min-height: 40px;
   padding: 10px 12px;
   background: var(--code-bg);
   border-radius: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   overflow-x: auto;
 }
-
-.kv {
-  margin: 0;
+.disp .kv {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 4px 12px;
+  gap: 4px 10px;
+  align-items: baseline;
 }
-.kv dt {
+.disp .kv .k {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
-.kv dd {
-  margin: 0;
+.disp .kv code {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-code {
-  font-family: var(--mono);
-  font-size: 13px;
-  background: var(--code-bg);
-  padding: 1px 5px;
-  border-radius: 4px;
+.chips {
+  display: flex;
+  flex-wrap: wrap;
 }
-
 .chip {
   display: inline-block;
   font-family: var(--mono);
@@ -198,20 +392,24 @@ code {
   padding: 0 6px;
   margin: 0 4px 4px 0;
 }
-
-.muted {
-  color: var(--muted);
-}
-.err {
-  color: var(--err);
-}
-.num {
+.bool {
   font-family: var(--mono);
-  color: var(--accent);
+  font-weight: 600;
+}
+.bool.true {
+  color: var(--ok);
+}
+.bool.false {
+  color: var(--diff);
+}
+.na {
+  font-style: italic;
+  border-bottom: 1px dotted var(--muted);
+  cursor: help;
 }
 
 details {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 summary {
   cursor: pointer;
@@ -272,6 +470,7 @@ summary {
   padding: 2px 9px;
   border-radius: 999px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .badge.ok {
   background: rgba(21, 128, 61, 0.12);
@@ -280,155 +479,6 @@ summary {
 .badge.diff {
   background: rgba(220, 38, 38, 0.12);
   color: var(--diff);
-}
-
-/* assumptions */
-.assume-hint {
-  font-size: 12px;
-}
-.assume-hint code {
-  font-size: 11px;
-}
-.assumptions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.assumption-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.expr-mini {
-  width: 130px;
-  font-family: var(--mono);
-  font-size: 13px;
-  padding: 5px 8px;
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--fg);
-}
-.expr-mini:focus {
-  outline: 2px solid var(--accent);
-  border-color: transparent;
-}
-.expr-mini.invalid {
-  border-color: var(--err);
-  color: var(--err);
-}
-.x-btn {
-  border: 1px solid var(--border);
-  background: var(--card2);
-  color: var(--muted);
-  border-radius: 6px;
-  width: 26px;
-  height: 28px;
-  cursor: pointer;
-  font-size: 15px;
-  line-height: 1;
-}
-.x-btn:hover {
-  border-color: var(--diff);
-  color: var(--diff);
-}
-
-.hint {
-  margin: 2px 0 0;
-  font-size: 12px;
-}
-.hint code {
-  font-size: 11px;
-}
-.bindings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.binding {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.binding span {
-  font-family: var(--mono);
-  color: var(--muted);
-}
-.binding input,
-.diffvar input {
-  width: 90px;
-  font-family: var(--mono);
-  padding: 6px 8px;
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--fg);
-}
-.diffvar input {
-  width: 60px;
-}
-.diffvar {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--mono);
-  color: var(--muted);
-}
-
-.deriv-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-}
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-}
-.toggle input {
-  cursor: pointer;
-}
-
-/* Deferred re-analysis pending: dim the (previous) results slightly. */
-.stale {
-  opacity: 0.55;
-  transition: opacity 0.15s ease 0.1s;
-}
-
-.results {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 6px;
-}
-.results th,
-.results td {
-  text-align: left;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-}
-.results th {
-  color: var(--muted);
-  font-weight: 500;
-  font-size: 12px;
-}
-.results th:nth-child(2),
-.results td:nth-child(2) {
-  border-left: 3px solid var(--js);
-}
-.results th:nth-child(3),
-.results td:nth-child(3) {
-  border-left: 3px solid var(--rust);
-}
-.rowlabel {
-  font-family: var(--mono);
-  color: var(--muted);
 }
 
 footer {

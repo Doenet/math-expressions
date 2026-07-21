@@ -51,7 +51,7 @@ pub fn simplify_with(e: &Expr, assumptions: &Assumptions) -> Expr {
 /// untouched, matching JS. (Deviation: we also negate `le`/`ge` relations,
 /// which the JS left as a no-op.)
 pub fn simplify_logical(e: &Expr, assumptions: &Assumptions) -> Expr {
-    if crate::eq::contains_blank(e) {
+    if crate::equality::contains_blank(e) {
         return e.clone();
     }
     super::present(&push_not(&simplify_core_with(e, assumptions)))

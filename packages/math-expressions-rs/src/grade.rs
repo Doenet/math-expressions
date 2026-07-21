@@ -3,7 +3,7 @@
 //! membership evaluation (§18 / DoenetML #1504).
 
 use crate::assumptions::{is_negative, is_nonzero, is_positive, Assumptions};
-use crate::eq::{equals, EqOptions};
+use crate::equality::{equals, EqOptions};
 use crate::expr::{Expr, RelOp, SeqKind};
 use crate::norm::{canonicalize, simplify_with, syntactic::map_children};
 

@@ -69,7 +69,7 @@ fn factor_univariate(e: &Expr) -> Option<Expr> {
     };
 
     // Safety gate: never hand back a factorization that isn't equal.
-    crate::eq::equals(&factored, e, &crate::eq::EqOptions::default()).then_some(factored)
+    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default()).then_some(factored)
 }
 
 /// `x - r`, as a raw two-term sum (`x` alone when `r = 0`).
@@ -436,7 +436,7 @@ fn factor_terms_opt(e: &Expr) -> Option<Expr> {
     } else {
         Expr::Mul(pulled)
     };
-    crate::eq::equals(&factored, e, &crate::eq::EqOptions::default()).then_some(factored)
+    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default()).then_some(factored)
 }
 
 /// Split a term into `(rational coefficient, {base → integer exponent})`.

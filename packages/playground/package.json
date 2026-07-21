@@ -28,8 +28,7 @@
         "src/**",
         "index.html",
         "vite.config.ts",
-        "tsconfig.json",
-        "../../build/math-expressions.js"
+        "tsconfig.json"
       ],
       "output": [
         "dist/**"
@@ -62,7 +61,15 @@
     }
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
+    "@lezer/highlight": "^1.2.3",
     "katex": "^0.16.11",
+    "math-expressions-canonical": "npm:math-expressions@2.0.0-alpha94",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -12,7 +12,7 @@
 
 pub mod assumptions;
 pub mod diff;
-pub mod eq;
+pub mod equality;
 pub mod eval;
 pub mod exact;
 pub mod factor;
@@ -20,7 +20,7 @@ pub mod ratform;
 pub mod grade;
 pub mod expr;
 pub mod functions;
-pub mod structural;
+pub mod equality_structural;
 pub mod integrate;
 pub mod js_match;
 pub mod js_tree;
@@ -47,8 +47,8 @@ pub use assumptions::{
     is_real, Assumptions,
 };
 pub use diff::derivative;
-pub use eq::discrete_infinite::{create_discrete_infinite_set, match_discrete_infinite};
-pub use eq::{
+pub use equality::discrete_infinite::{create_discrete_infinite_set, match_discrete_infinite};
+pub use equality::{
     contains_blank, equals, equals_syntactic, equals_via_real, finite_field_evaluate, EqOptions,
 };
 pub use factor::{factor, factor_terms};
@@ -57,7 +57,7 @@ pub use grade::{
     equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, solve_linear,
 };
 pub use expr::{Expr, MathConst, RelOp};
-pub use structural::{
+pub use equality_structural::{
     check_structural_comparison, structural_equality, StructuralComparison,
     StructuralComparisonResult,
 };

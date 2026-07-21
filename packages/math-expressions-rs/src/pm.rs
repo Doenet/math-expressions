@@ -4,11 +4,11 @@
 //! and each `["pm", x]` denotes the two-element set `{x, -x}` with an
 //! independent sign choice. These helpers detect, count, and sign-expand `pm`
 //! nodes; numerical set-equality of `pm`-bearing expressions lives in
-//! `eq::pm_equals` (the consumer, mirroring JS `equality/pm-numerical.js`).
+//! `equality::pm_equals` (the consumer, mirroring JS `equality/pm-numerical.js`).
 //!
 //! **Supported containers.** `±` may appear in scalars, relations (equations and
 //! inequalities), and sequences — tuples, vectors, altvectors, arrays, lists,
-//! and sets — which `eq::pm_equals` compares componentwise. **`±` is not
+//! and sets — which `equality::pm_equals` compares componentwise. **`±` is not
 //! supported inside a matrix entry or an interval endpoint**: those are compared
 //! only as opaque wholes, so a `pm`-bearing matrix or interval is equal only to
 //! a structurally identical one (`equals` cannot see through the `±` there).

@@ -49,5 +49,22 @@ jobs:
               with:
                   runCmd: cd packages/playground && npm ci && npm run build
 
-    # NOTE: a `js-compat` job (the TypeScript drop-in replacement, exercised by
-    # the spec/ suite converted to TS) will be added here once that package lands.
+    js-compat-test:
+        name: js-compat test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            # Builds the nodejs-target wasm (build-wasm.sh), then runs the legacy
+            # JS suite (converted to TS) against the drop-in. Not all tests pass
+            # yet — see active-plans/JS_TEST_COVERAGE_AUDIT.md — so this job is
+            # informational until the compat layer is finished; `|| true` keeps a
+            # partial suite from failing CI. Drop that once it is green.
+            - name: Build wasm and run the js-compat suite
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: |
+                      npm ci
+                      cd packages/math-expressions-js-compat
+                      ./build-wasm.sh
+                      npm test || true

@@ -47,7 +47,7 @@ pub fn integrate(f: &Expr, x: &str, _assumptions: &Assumptions) -> Option<Expr> 
     // reject, and on true zeros it burns its full arbitrary-precision budget
     // before returning Unknown (measured ~35× suite slowdown).
     let df = crate::diff::derivative(&result, x);
-    if !crate::eq::equals(&df, &fc, &crate::eq::EqOptions::default()) {
+    if !crate::equality::equals(&df, &fc, &crate::equality::EqOptions::default()) {
         let residual = Expr::Add(vec![df, Expr::Neg(Box::new(fc.clone()))]);
         if !crate::exact::certified_zero(&residual, _assumptions) {
             return None;

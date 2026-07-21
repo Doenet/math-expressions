@@ -29,8 +29,5 @@ export default defineConfig({
   ],
   server: {
     host: "0.0.0.0",
-    // The JS implementation is imported from the sibling ../build folder, so the
-    // dev server must be allowed to serve files from the repo root.
-    fs: { allow: ["../.."] },
   },
 });

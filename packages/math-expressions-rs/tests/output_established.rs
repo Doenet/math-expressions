@@ -1,4 +1,4 @@
-//! Golden test for the AST → LaTeX / AST → text formatters.
+//! Established-output test for the AST → LaTeX / AST → text formatters.
 //!
 //! `ast-to-latex.json` (265) and `ast-to-text.json` (247) hold the JS reference
 //! output for each AST. Rust's formatter is clean-slate, so a fixed set of cases
@@ -6,7 +6,7 @@
 //! `active-plans/JS_RUST_TEST_DIVERGENCES.md` §2–§3 and snapshotted here in
 //! `fixtures/ast-output-known-divergences.json`.
 //!
-//! This test asserts every fixture case either matches the JS golden output or
+//! This test asserts every fixture case either matches the JS established output or
 //! is a snapshotted intentional divergence with the exact same Rust output. Any
 //! **new** unlisted divergence, any change to a divergent output, and any stale
 //! snapshot entry (a case that now matches, or whose AST left the fixture) all
@@ -15,7 +15,7 @@
 //! After an intentional formatter change, re-bless the snapshot:
 //!
 //! ```text
-//! BLESS=1 cargo test --test output_golden
+//! BLESS=1 cargo test --test output_established
 //! ```
 
 use math_expressions::js_tree::from_js;
@@ -55,7 +55,7 @@ fn render_text(v: &Value) -> String {
     .unwrap_or_else(|_| "<PANIC>".to_string())
 }
 
-/// Every case whose Rust output differs from the JS golden, keyed by
+/// Every case whose Rust output differs from the JS established output, keyed by
 /// `"kind\0ast"` for a stable, collision-free lookup.
 fn current_divergences() -> BTreeMap<String, Divergence> {
     let mut out = BTreeMap::new();
@@ -85,7 +85,7 @@ fn load_snapshot() -> BTreeMap<String, Divergence> {
 }
 
 #[test]
-fn ast_output_matches_js_golden_modulo_snapshot() {
+fn ast_output_matches_established_modulo_snapshot() {
     let current = current_divergences();
 
     if std::env::var("BLESS").is_ok() {
@@ -124,7 +124,7 @@ fn ast_output_matches_js_golden_modulo_snapshot() {
 
     assert!(
         problems.is_empty(),
-        "{} formatter golden problem(s) (re-bless with BLESS=1 if intentional):\n\n{}",
+        "{} formatter established-output problem(s) (re-bless with BLESS=1 if intentional):\n\n{}",
         problems.len(),
         problems.join("\n")
     );
