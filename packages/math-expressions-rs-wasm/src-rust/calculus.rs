@@ -4,15 +4,40 @@
 use super::Expression;
 use wasm_bindgen::prelude::*;
 
+/// How `evaluate_to_precision` renders its digits (mirrors the core
+/// `math_expressions::precise::DecimalFormat` across the JS boundary).
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub enum DecimalFormat {
+    /// Plain decimal expansion (`"1.41421356…"`).
+    Plain,
+    /// Normalized scientific form (`"1.4142…e0"`).
+    Scientific,
+}
+
+impl From<DecimalFormat> for math_expressions::precise::DecimalFormat {
+    fn from(f: DecimalFormat) -> Self {
+        match f {
+            DecimalFormat::Plain => math_expressions::precise::DecimalFormat::Plain,
+            DecimalFormat::Scientific => math_expressions::precise::DecimalFormat::Scientific,
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl Expression {
     /// Evaluate a constant expression to `digits` significant decimal digits
-    /// (arbitrary precision). Returns the digits in normalized scientific
-    /// form (`"1.4142…e0"`), `"re + im i"` for complex values, or
-    /// `undefined` when not decidable within budget.
-    pub fn evaluate_to_precision(&self, digits: usize) -> Option<String> {
+    /// (arbitrary precision). Renders per `format` — [`DecimalFormat::Plain`]
+    /// (the default) or [`DecimalFormat::Scientific`]; `"re + im i"` for complex
+    /// values, or `undefined` when not decidable within budget.
+    pub fn evaluate_to_precision(
+        &self,
+        digits: usize,
+        format: Option<DecimalFormat>,
+    ) -> Option<String> {
+        let fmt = format.unwrap_or(DecimalFormat::Plain).into();
         let p = math_expressions::precise::evaluate_to_precision(&self.0, digits);
-        p.to_decimal_string(digits)
+        p.to_decimal_string_fmt(digits, fmt)
     }
 
     /// Indefinite integral in `var` (INTEGRATION_PLAN I1+I2), gate-verified

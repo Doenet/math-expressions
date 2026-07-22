@@ -15,7 +15,7 @@ on disk). These scripts therefore import it via
 (it is git-ignored), so regeneration only works in a working tree that still has
 the legacy JS on disk.
 
-> **Migration:** once `packages/js-compat` (the TypeScript drop-in replacement)
+> **Migration:** once `packages/math-expressions-js-compat` (the TypeScript drop-in replacement)
 > lands, switch the oracle import here to that package. The scripts then no
 > longer depend on a git-ignored path, and regeneration works from a clean
 > checkout.

@@ -74,10 +74,11 @@ jobs:
             - uses: actions/checkout@v6
 
             # Builds the nodejs-target wasm (build-wasm.sh), then runs the legacy
-            # JS suite (converted to TS) against the drop-in. Not all tests pass
-            # yet — see active-plans/JS_TEST_COVERAGE_AUDIT.md — so this job is
-            # informational until the compat layer is finished; `|| true` keeps a
-            # partial suite from failing CI. Drop that once it is green.
+            # JS suite (converted to TS) against the js-compat drop-in (published
+            # to npm as `math-expressions`). Not all tests pass yet — see
+            # active-plans/JS_TEST_COVERAGE_AUDIT.md — so this job is informational
+            # until the compat layer is finished; `|| true` keeps a partial suite
+            # from failing CI. Drop that once it is green.
             - name: Build wasm and run the js-compat suite
               uses: devcontainers/ci@v0.3
               with:

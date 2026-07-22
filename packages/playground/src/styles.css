@@ -203,15 +203,20 @@ code.block {
 .cm-tooltip-autocomplete > ul > li {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   padding: 5px 9px;
+  text-align: left;
+}
+.cm-completionLabel {
+  text-align: left;
 }
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
   background: var(--card2);
   color: var(--fg);
 }
 .cm-completionDetail {
+  margin-left: auto; /* push the category to the right; keep the name left */
+  padding-left: 12px;
   font-style: normal;
   font-size: 11px;
   color: var(--muted);
@@ -268,6 +273,10 @@ code.block {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  margin-top: 10px;
+}
+/* Examples dropdown, pinned below the chain editor. */
+.examples-row {
   margin-top: 10px;
 }
 .chip-btn {

@@ -480,6 +480,35 @@ export const REGISTRY: OpEntry[] = [
     },
   ),
   op(
+    "evaluate_to_precision",
+    "Query",
+    "string",
+    [{ name: "digits", kind: "number" }],
+    "evaluate_to_precision(20)",
+    {
+      // JS has NO arbitrary precision — it evaluates to a double (~15–16 real
+      // sig figs). Honor the requested digits only within that range; beyond
+      // it, show the honest double rather than fabricating float noise.
+      call: "evaluate_to_constant() — double precision (~15–16 digits)",
+      run: (h, a) => {
+        const d = Math.round(needNum(a[0], "digits"));
+        const v = h.evaluate_to_constant();
+        if (v == null) return str("undefined", "text");
+        return str(d >= 1 && d <= 15 ? v.toPrecision(d) : String(v), "text");
+      },
+    },
+    {
+      call: "evaluate_to_precision(n) — arbitrary precision",
+      run: (h, a) =>
+        str(
+          h.evaluate_to_precision(Math.round(needNum(a[0], "digits"))) ??
+            "undecided",
+          "text",
+        ),
+    },
+    { stringRender: "text" },
+  ),
+  op(
     "is_zero",
     "Query",
     "string",

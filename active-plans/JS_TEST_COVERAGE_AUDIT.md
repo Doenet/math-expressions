@@ -19,8 +19,8 @@ Rust tests live in `packages/math-expressions-rs/tests/` (+ inline `src/`).
   (see [WHATS_LEFT.md](WHATS_LEFT.md)); cannot have a Rust test without building
   the feature. Listed with a reason in the [Non-ports](#intentional-non-ports)
   section.
-- 🔜 **future js-compat** — real coverage comes from the forthcoming
-  `packages/js-compat` package (a TS drop-in over the Rust core) once the `spec/`
+- 🔜 **future drop-in** — real coverage comes from the forthcoming
+  `packages/math-expressions-js-compat` package (a TS drop-in over the Rust core) once the `spec/`
   suite is converted to TypeScript and run against it.
 
 ## Ledger
@@ -41,7 +41,7 @@ Rust tests live in `packages/math-expressions-rs/tests/` (+ inline `src/`).
 | `quick_solve` | 3 | `grade.rs` (`solve_linear`) | ✅ |
 | `quick_trees` | 39 | utils in `src/js_match.rs`; no dedicated test file | ⚠️ → **`tree_utils.rs`** |
 | `quick_transformation` | 8 | `expand` → `expand.rs` / `expand_corpus.rs`; `expand_relations` op ⛔ | ✅ (expand) / ⛔ (`expand_relations`) |
-| `quick_ast-to-mathjs` | 139 | `astToMathjs` shim in `packages/math-expressions-rs-wasm/src/tree-to-mathjs.ts` (TS, not the Rust crate) | ⛔ Rust / 🔜 js-compat |
+| `quick_ast-to-mathjs` | 139 | `astToMathjs` shim in `packages/math-expressions-rs-wasm/src/tree-to-mathjs.ts` (TS, not the Rust crate) | ⛔ Rust / 🔜 drop-in |
 | `quick_mathjs-to-ast` | ~28 | none | ⛔ |
 | `quick_ast-to-guppy` | 4 | none | ⛔ |
 | `quick_mml-to-latex` | 1 | none | ⛔ |
@@ -52,9 +52,9 @@ Rust tests live in `packages/math-expressions-rs/tests/` (+ inline `src/`).
 | `slow_polynomial` | 23 | no public Rust polynomial/Groebner API (`src/poly` internal only) | ⛔ |
 | `slow_rational` | 2 | `reduce_rational.rs` (5) | ✅ |
 | `slow_check-equality-numerical-errors` | 26 objs | `equality.rs` + **`tolerance.rs`** (fixture-driven, `equals`) | ✅ (16 sampling divergences snapshotted) |
-| `slow_check-symbolic-equality-numerical-errors` | 26 objs | Rust `equals_syntactic` is exact — ignores `allowed_error_in_numbers` | ⛔ behavioral divergence / 🔜 js-compat |
-| `build_esm` | 7 | tests the built JS bundle | 🔜 js-compat |
-| `build_umd` | 7 | tests the built JS bundle | 🔜 js-compat |
+| `slow_check-symbolic-equality-numerical-errors` | 26 objs | Rust `equals_syntactic` is exact — ignores `allowed_error_in_numbers` | ⛔ behavioral divergence / 🔜 drop-in |
+| `build_esm` | 7 | tests the built JS bundle | 🔜 drop-in |
+| `build_umd` | 7 | tests the built JS bundle | 🔜 drop-in |
 
 ## Portable gaps closed in this refactor (§2b)
 
@@ -88,7 +88,7 @@ not forgotten. Cross-referenced to [WHATS_LEFT.md](WHATS_LEFT.md) §A.
 
 | Item | JS spec(s) | Reason |
 |---|---|---|
-| ast→mathjs | `quick_ast-to-mathjs` (139) | Done as a TS shim (`tree-to-mathjs.ts`) powering `evaluate`/`equals`, not in the Rust crate (WHATS_LEFT A.1 #6). Coverage belongs to that TS layer / js-compat. |
+| ast→mathjs | `quick_ast-to-mathjs` (139) | Done as a TS shim (`tree-to-mathjs.ts`) powering `evaluate`/`equals`, not in the Rust crate (WHATS_LEFT A.1 #6). Coverage belongs to that TS layer / drop-in. |
 | mathjs→ast | `quick_mathjs-to-ast` (28) | Not needed for Doenet — unused internally (WHATS_LEFT A.1 #5). |
 | ast→guppy | `quick_ast-to-guppy` (4) | Not needed for Doenet — legacy Guppy-editor XML (WHATS_LEFT A.1 #4). |
 | MathML (mml→latex) | `quick_mml-to-latex` (1) | No MathML parser/emitter in Rust (WHATS_LEFT A.1 #1–2). |
@@ -97,5 +97,5 @@ not forgotten. Cross-referenced to [WHATS_LEFT.md](WHATS_LEFT.md) §A.
 | emitter options | `quick_ast-to-latex` standalone (8) | `LatexOpts`/`TextOpts` fixed-behavior: matrix env, pad-to-digits/decimals, avoid-scientific-notation, `showBlanks` (JS_RUST_DIFF §2.2). |
 | syntactic tolerance | `slow_check-symbolic-equality-numerical-errors` (26) | Rust `equals_syntactic` does exact structural comparison (`na == nb`) and does **not** apply `allowed_error_in_numbers`; JS `equalsViaSyntax` does. Number-tolerance lives only on the numeric `equals` path in Rust. |
 
-If any ⛔ item is later required, it becomes a `js-compat` feature (with its
+If any ⛔ item is later required, it becomes a `drop-in` feature (with its
 converted TS spec) or a new Rust capability — this table is where to look first.

@@ -1,7 +1,7 @@
 {
-  "name": "math-expressions",
-  "description": "Parse and perform symbolic computation on mathematical expressions. Rust core (packages/math-expressions-rs) compiled to wasm.",
-  "version": "2.0.0-alpha94",
+  "name": "math-expressions-workspace",
+  "description": "Monorepo root for math-expressions: the Rust core (packages/math-expressions-rs), its wasm bindings, the `math-expressions` drop-in (packages/math-expressions-js-compat), and the playground. Not published — see the individual packages.",
+  "version": "3.0.0-alpha1",
   "type": "module",
   "author": {
     "name": "Jim Fowler",
@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git+https://github.com/kisonecat/math-expressions.git"
   },
-  "private": false,
+  "private": true,
   "devDependencies": {
     "prettier": "^3.8.1"
   },

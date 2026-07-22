@@ -1,12 +1,14 @@
 # math-expressions-js-compat
 
-A drop-in replacement for the original **math-expressions** JavaScript API,
-implemented in TypeScript on top of the Rust core (`math-expressions-rs`)
-compiled to wasm. It has no math of its own — every method delegates to the wasm
-bindings — and preserves the legacy synchronous surface:
+This directory is `math-expressions-js-compat`, but it is **published to npm as
+`math-expressions`** (v3 — see `package.json` `name`). It's a drop-in replacement
+for the original math-expressions JavaScript API, implemented in TypeScript on
+top of the Rust core (`math-expressions-rs`) compiled to wasm. It has no math of
+its own — every method delegates to the wasm bindings — and preserves the legacy
+synchronous surface. (The older published JS library is `2.0.0-alpha94`.)
 
 ```ts
-import me from "math-expressions-js-compat";
+import me from "math-expressions"; // the published name
 
 const f = me.fromText("sin^2 x + cos^2 x");
 f.toLatex();               // "\\sin^{2}\\left(x\\right) + \\cos^{2}\\left(x\\right)"

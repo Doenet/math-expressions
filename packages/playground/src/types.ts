@@ -58,6 +58,10 @@ export interface RustExpr {
   // evaluation
   evaluate_to_complex(): Float64Array | undefined;
   evaluate_to_constant(): number | undefined;
+  /** Arbitrary-precision decimal to `digits` significant figures. `format` is
+   * the wasm `DecimalFormat` enum (0 = Plain default, 1 = Scientific);
+   * `"re + im i"` for complex; `undefined` if undecidable. */
+  evaluate_to_precision(digits: number, format?: number): string | undefined;
   // transforms (return new handles)
   simplify(): RustExpr;
   simplify_with_assumptions(assumptions: string[]): RustExpr;

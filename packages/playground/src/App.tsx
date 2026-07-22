@@ -76,7 +76,30 @@ const SHOWCASE: { label: string; expr: string; chain: string }[] = [
     expr: "(x + 1)^2 - x^2 - 2x - 1",
     chain: `${BASE_VAR}.is_zero()`,
   },
+  {
+    label: "√2 to 30 digits  (Rust exact; JS ~16)",
+    expr: "sqrt(2)",
+    chain: `${BASE_VAR}.evaluate_to_precision(30)`,
+  },
 ];
+
+// The single Examples menu shown below the editor: plain chains (applied to the
+// current equation) plus the Rust-showcase entries (which also set the
+// equation + its syntax).
+type MenuItem = { label: string; chain: string; expr?: string; syntax?: Syntax };
+const EXAMPLE_MENU: { group: string; items: MenuItem[] }[] = [
+  { group: "Chains (on the current equation)", items: EXAMPLES },
+  {
+    group: "Rust showcase (sets the equation too)",
+    items: SHOWCASE.map((s) => ({
+      label: s.label,
+      chain: s.chain,
+      expr: s.expr,
+      syntax: "text" as Syntax,
+    })),
+  },
+];
+const MENU_FLAT: MenuItem[] = EXAMPLE_MENU.flatMap((g) => g.items);
 
 /* ----------------------------- result views ---------------------------- */
 
@@ -364,27 +387,7 @@ export default function App() {
             <code>{BASE_VAR}</code>
           </h2>
           <div className="eq-controls">
-            <select
-              className="showcase"
-              value=""
-              onChange={(e) => {
-                const s = SHOWCASE[Number(e.target.value)];
-                if (!s) return;
-                setBaseText(s.expr);
-                setBaseSyntax("text");
-                setChain(s.chain);
-              }}
-              title="Load an equation + chain where Rust outshines JS"
-            >
-              <option value="" disabled>
-                Showcase Rust…
-              </option>
-              {SHOWCASE.map((s, i) => (
-                <option key={i} value={i}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+            Decimal Format:{" "}
             <select
               className="showcase"
               value={notation}
@@ -452,10 +455,9 @@ export default function App() {
       <div className="chain-split">
       <section className="card chain-card">
         <div className="section-head">
-          <h2>Chain</h2>
+          <h2>Evaluate</h2>
           <span className="muted">
-            start from <code>{BASE_VAR}</code> or call{" "}
-            <code>parse("…")</code> directly to ignore the box above
+            Start from <code>{BASE_VAR}</code> and evalute the following math.
           </span>
         </div>
         <ChainEditor ref={editorRef} value={chain} onChange={setChain} />
@@ -465,18 +467,40 @@ export default function App() {
             <span className="muted">(at position {editorError.start})</span>
           </p>
         )}
-        <div className="examples">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex.label}
-              className="chip-btn"
-              onClick={() => {
-                setChain(ex.chain);
-              }}
-            >
-              {ex.label}
-            </button>
-          ))}
+        <div className="examples-row">
+          <select
+            className="showcase"
+            value=""
+            onChange={(e) => {
+              const it = MENU_FLAT[Number(e.target.value)];
+              if (!it) return;
+              if (it.expr !== undefined) {
+                setBaseText(it.expr);
+                setBaseSyntax(it.syntax ?? "text");
+              }
+              setChain(it.chain);
+            }}
+            title="Load an example"
+          >
+            <option value="" disabled>
+              Examples…
+            </option>
+            {(() => {
+              let idx = -1;
+              return EXAMPLE_MENU.map((g) => (
+                <optgroup key={g.group} label={g.group}>
+                  {g.items.map((it) => {
+                    idx += 1;
+                    return (
+                      <option key={idx} value={idx}>
+                        {it.label}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              ));
+            })()}
+          </select>
         </div>
       </section>
 

@@ -6,6 +6,7 @@
 //! (left shift) is only meaningful for exactly-known values and is what
 //! `refine_exact` is for.
 
+use super::DecimalFormat;
 use crate::num::{BigNumber, Number};
 use num_bigint::BigInt;
 use num_integer::Integer;
@@ -161,10 +162,18 @@ impl MpFix {
     }
 
     /// First `sig_digits` significant decimal digits in normalized scientific
-    /// form, e.g. `"1.4142135623e0"`. The last digit may be off by one ulp of
+    /// form, e.g. `"1.4142135623e0"`. Back-compat wrapper over
+    /// [`Self::to_decimal_string_fmt`]. The last digit may be off by one ulp of
     /// the underlying binary value (standard for non-correctly-rounded
     /// output). Zero renders `"0"`.
     pub fn to_decimal_string(&self, sig_digits: usize) -> String {
+        self.to_decimal_string_fmt(sig_digits, DecimalFormat::Scientific)
+    }
+
+    /// First `sig_digits` significant decimal digits, rendered per `format`
+    /// (see [`DecimalFormat`]). The last digit may be off by one ulp. Zero
+    /// renders `"0"`.
+    pub fn to_decimal_string_fmt(&self, sig_digits: usize, format: DecimalFormat) -> String {
         if self.mant.is_zero() {
             return "0".to_string();
         }
@@ -201,19 +210,69 @@ impl MpFix {
                 }
             }
         }
-        let mut out = String::new();
-        if neg {
-            out.push('-');
+        match format {
+            DecimalFormat::Scientific => fmt_scientific(neg, &kept, dec_exp),
+            DecimalFormat::Plain => fmt_plain(neg, &kept, dec_exp),
         }
-        out.push((b'0' + kept[0]) as char);
-        if kept.len() > 1 {
+    }
+}
+
+/// Normalized scientific form: `<d0>.<rest>e<exp>`.
+fn fmt_scientific(neg: bool, kept: &[u8], dec_exp: i64) -> String {
+    let mut out = String::new();
+    if neg {
+        out.push('-');
+    }
+    out.push((b'0' + kept[0]) as char);
+    if kept.len() > 1 {
+        out.push('.');
+        for &d in &kept[1..] {
+            out.push((b'0' + d) as char);
+        }
+    }
+    out.push('e');
+    out.push_str(&dec_exp.to_string());
+    out
+}
+
+/// Plain decimal expansion. `kept` are the significant digits; the first has
+/// place value `10^dec_exp`. Whole numbers get no decimal point; values below 1
+/// get a leading `"0."` and the right number of leading zeros. No scientific
+/// notation regardless of magnitude.
+fn fmt_plain(neg: bool, kept: &[u8], dec_exp: i64) -> String {
+    let n = kept.len() as i64;
+    let mut out = String::new();
+    if neg {
+        out.push('-');
+    }
+    let ch = |d: u8| (b'0' + d) as char;
+    if dec_exp >= 0 {
+        let int_len = dec_exp + 1; // digits left of the point
+        if n <= int_len {
+            // all significant digits are integer places; pad with zeros
+            for &d in kept {
+                out.push(ch(d));
+            }
+            for _ in 0..(int_len - n) {
+                out.push('0');
+            }
+        } else {
+            for &d in &kept[..int_len as usize] {
+                out.push(ch(d));
+            }
             out.push('.');
-            for &d in &kept[1..] {
-                out.push((b'0' + d) as char);
+            for &d in &kept[int_len as usize..] {
+                out.push(ch(d));
             }
         }
-        out.push('e');
-        out.push_str(&dec_exp.to_string());
-        out
+    } else {
+        out.push_str("0.");
+        for _ in 0..(-dec_exp - 1) {
+            out.push('0');
+        }
+        for &d in kept {
+            out.push(ch(d));
+        }
     }
+    out
 }

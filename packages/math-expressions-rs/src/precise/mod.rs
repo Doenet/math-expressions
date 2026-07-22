@@ -28,6 +28,17 @@ pub use diverge::{integrate_analyzed, IntegralVerdict, SingularPoint};
 pub use quad::integrate_to_precision;
 pub use tape::{compile, CompileError};
 
+/// How a precision readout renders its significant digits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum DecimalFormat {
+    /// Plain decimal expansion (`"1.4142…"`; whole numbers get no point,
+    /// sub-1 values a leading `"0."`). No scientific notation at any magnitude.
+    #[default]
+    Plain,
+    /// Normalized scientific form (`"1.4142…e0"`).
+    Scientific,
+}
+
 /// The tri-state result of a precision request.
 #[derive(Clone, Debug)]
 pub enum Precise {
@@ -73,6 +84,16 @@ impl Precise {
     /// printers' round-trip contract; anything user-round-trippable must go
     /// through `output::to_text`/`to_latex` on an `Expr` instead.
     pub fn to_decimal_string(&self, digits: usize) -> Option<String> {
+        self.to_decimal_string_fmt(digits, DecimalFormat::Scientific)
+    }
+
+    /// Like [`Self::to_decimal_string`], but `format` selects plain decimal vs
+    /// normalized scientific form. Still display-only (see the note above).
+    pub fn to_decimal_string_fmt(
+        &self,
+        digits: usize,
+        format: DecimalFormat,
+    ) -> Option<String> {
         match self {
             Precise::Exact(n) => {
                 // Route through MpFix so formatting is uniform.
@@ -80,13 +101,13 @@ impl Precise {
                 let msb = n.magnitude_log10().unwrap_or(0) as f64 * std::f64::consts::LOG2_10;
                 let scale =
                     i32::try_from((msb as i64 - i64::from(bits) - 8).min(0)).unwrap_or(i32::MIN / 2);
-                Some(MpFix::from_number(n, scale)?.to_decimal_string(digits))
+                Some(MpFix::from_number(n, scale)?.to_decimal_string_fmt(digits, format))
             }
-            Precise::Bounded(m) => Some(m.to_decimal_string(digits)),
+            Precise::Bounded(m) => Some(m.to_decimal_string_fmt(digits, format)),
             Precise::Complex { re, im } => Some(format!(
                 "{} + {} i",
-                re.to_decimal_string(digits),
-                im.to_decimal_string(digits)
+                re.to_decimal_string_fmt(digits, format),
+                im.to_decimal_string_fmt(digits, format)
             )),
             Precise::Unknown(_) => None,
         }
