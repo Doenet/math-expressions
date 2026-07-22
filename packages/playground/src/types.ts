@@ -30,6 +30,14 @@ export type SafeResult<T> =
 /** The syntax a *source* expression is written in. */
 export type Syntax = "text" | "latex";
 
+/**
+ * Decimal / argument-separator convention for parsing and printing math
+ * strings. `period` is `1.5`, `f(x, y)`; `comma` is `1,5`, `f(x; y)`. Applies
+ * only inside math strings (the equation box and string literals in a chain),
+ * never to the chain mini-language itself.
+ */
+export type Notation = "period" | "comma";
+
 /* ---------- Rust wasm-bindgen surface (only what the registry uses) ---------- */
 
 /**
@@ -83,6 +91,9 @@ export interface RustModule {
   default(moduleOrPath?: unknown): Promise<unknown>;
   parse_text(s: string): RustExpr;
   parse_latex(s: string): RustExpr;
+  /** Parse text under an options JSON (incl. a `notation` sub-object). */
+  parse_text_with_options(s: string, options_json: string): RustExpr;
+  parse_latex_with_options(s: string, options_json: string): RustExpr;
   from_ast(tree_json: string): RustExpr;
 }
 
@@ -189,10 +200,14 @@ export type NativeResult<H> =
 
 /** Primitives an operation needs to materialize handle-typed args. */
 export interface EngineCtx<H> {
-  /** Parse an expression string (always text syntax) into a handle. */
+  /** Parse an expression string (text syntax, current notation) into a handle. */
   parseExpr(text: string): H;
   /** Register a temporary handle to be freed after the step; returns it. */
   track(h: H): H;
+  /** Render a handle to text in the current notation. */
+  toText(h: H): string;
+  /** Render a handle to LaTeX in the current notation. */
+  toLatex(h: H): string;
 }
 
 /** One engine's implementation of an operation. */

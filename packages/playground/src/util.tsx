@@ -1,6 +1,33 @@
 // Small shared helpers used by the parser, evaluator, and UI.
 
-import type { Complex, SafeResult } from "./types";
+import type { Complex, Notation, SafeResult } from "./types";
+
+/**
+ * Transliterate a math string written in `notation` into period notation
+ * (decimal `.`, argument separator `,`) — for feeding the JS library, which
+ * only understands period notation. Under `comma`: decimal `,` → `.` first,
+ * then argument `;` → `,` (order matters so the two never collide).
+ */
+export function toPeriodInput(s: string, notation: Notation): string {
+  if (notation === "period") return s;
+  return s.replace(/,/g, ".").replace(/;/g, ",");
+}
+
+/**
+ * Transliterate a period-notation string produced by the JS library back into
+ * `notation` for display. Under `comma`: argument `,` → `;` first, then decimal
+ * `.` → `,`. In LaTeX, a comma preceded by `\` (the thin-space `\,`) is left
+ * alone.
+ */
+export function fromPeriodOutput(
+  s: string,
+  notation: Notation,
+  latex = false,
+): string {
+  if (notation === "period") return s;
+  const argSep = latex ? s.replace(/(?<!\\),/g, ";") : s.replace(/,/g, ";");
+  return argSep.replace(/\./g, ",");
+}
 
 /** Run `fn`, capturing exceptions as a tagged result. */
 export function safe<T>(fn: () => T): SafeResult<T> {

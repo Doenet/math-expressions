@@ -1,10 +1,9 @@
-//! Expression → evaluation tape (ARBITRARY_PERCISION_PLAN §3).
+//! Expression → evaluation tape.
 //!
 //! The tape is a flat postorder (RPN) program over a value stack; every tier
 //! evaluates it with a single loop, so evaluation depth is O(1) in the
 //! expression's tree depth. Compilation itself is an **iterative** postorder
-//! walk (explicit work stack — requirement 1 of the plan: no recursion
-//! anywhere on the evaluation path).
+//! walk (explicit work stack — no recursion anywhere on the evaluation path).
 
 use crate::expr::{Expr, MathConst};
 use crate::num::Number;
@@ -31,8 +30,8 @@ pub enum Op {
     Pow,
     /// Pop the argument, push `REGISTRY[id](arg)`.
     Call(u32),
-    /// Push `roots[i]`: an abstract algebraic number (MATRIX_PLAN §2a leaf),
-    /// refined per tier via the certified Newton machinery in `rootof`.
+    /// Push `roots[i]`: an abstract algebraic number, refined per tier via
+    /// the certified Newton machinery in `rootof`.
     Root(u32),
 }
 

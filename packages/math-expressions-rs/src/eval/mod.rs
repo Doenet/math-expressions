@@ -1,4 +1,4 @@
-//! Numerical evaluation (PORTING_PLAN.md §9) — the minimal complex slice the
+//! Numerical evaluation — the minimal complex slice the
 //! equality tester needs. `eval_complex` evaluates an expression at a complex
 //! assignment of its free symbols; unsupported constructs return `None` so the
 //! caller can fall back rather than guess.

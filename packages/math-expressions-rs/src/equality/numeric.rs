@@ -164,7 +164,7 @@ fn find_region(
 /// (`x^sin(x)` vs `x^cos(x)`, or vs a literal `0`). Note this makes an
 /// unsimplified identically-zero expression (e.g. `sin²x+cos²x−1`) unprovable
 /// against `0` at this stage; JS decides that pair in its *simplify* stage
-/// (Pythagorean rewrite, §7e — not yet ported), not numerically.
+/// (Pythagorean rewrite — not yet ported), not numerically.
 fn usable(va: Complex64, vb: Complex64) -> bool {
     va.re.is_finite()
         && va.im.is_finite()

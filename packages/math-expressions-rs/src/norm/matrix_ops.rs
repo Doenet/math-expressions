@@ -1,6 +1,5 @@
-//! Literal-matrix helpers used by the `mul`/`pow` smart constructors
-//! (MATRIX_PLAN §1a): matrix-valued detection, the identity, and symbolic
-//! literal multiplication.
+//! Literal-matrix helpers used by the `mul`/`pow` smart constructors:
+//! matrix-valued detection, the identity, and symbolic literal multiplication.
 
 use super::{add, mul};
 use crate::expr::Expr;

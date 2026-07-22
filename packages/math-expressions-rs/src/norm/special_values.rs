@@ -1,10 +1,8 @@
-//! Trig / exp / log special-value folding and parity (FULL_SIMPLIFY_PLAN
-//! chunk **S3**).
+//! Trig / exp / log special-value folding and parity.
 //!
-//! [`fold_special_values`] is a *sound-unconditionally* rewrite pass, applied
-//! bottom-up to a fixpoint. It never touches the oracle-compatible
-//! `simplify`; it is one of the transformations the S7 driver (and, as a
-//! pre-pass, `exact::is_zero`) will call. Three families:
+//! [`fold_special_values`] is an *unconditionally sound* rewrite pass, applied
+//! bottom-up to a fixpoint. It is independent of the oracle-compatible
+//! `simplify`; `exact::is_zero` uses it as a pre-pass. Three families:
 //!
 //! * **Lattice values** — sin/cos/tan/cot/sec/csc at rational multiples of π on
 //!   the π/12 lattice, via the tested tables in [`crate::exact`]
@@ -13,8 +11,7 @@
 //!   `f(u + kπ)` reduction for integer `k` (`sin(x + 2π) → sin x`,
 //!   `tan(x + π) → tan x`).
 //! * **exp/log inverses** — `e^{ln u} → u` (sound for `u ≠ 0`); `ln(e^u) → u`
-//!   gated to a decidable real `u` (full realness is chunk S5); `ln 1 → 0`,
-//!   `ln e → 1`, `e^0 → 1`.
+//!   gated to a decidable real `u`; `ln 1 → 0`, `ln e → 1`, `e^0 → 1`.
 
 use num_bigint::BigInt;
 use num_rational::BigRational;

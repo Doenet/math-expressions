@@ -1,9 +1,8 @@
-//! Normalization (PORTING_PLAN.md §7, redesign note): a pure
-//! faithful-layer → canonical-layer transform. Canonical form eliminates the
-//! display-only variants (`Div`, `Neg`), flattens and sorts commutative
-//! operators, folds constants *exactly* (the §3a payoff), and combines like
-//! terms and like powers — so two equal canonical expressions are identical
-//! trees and structural equality is tree comparison.
+//! Normalization: a pure faithful-layer → canonical-layer transform. Canonical
+//! form eliminates the display-only variants (`Div`, `Neg`), flattens and sorts
+//! commutative operators, folds constants *exactly*, and combines like terms
+//! and like powers — so two equal canonical expressions are identical trees and
+//! structural equality is tree comparison.
 //!
 //! `canonicalize` is confluent, cheap, and assumption-free. Heuristic
 //! simplification (root pulling, trig/log identities) is a separate, deferred

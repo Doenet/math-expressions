@@ -1,4 +1,4 @@
-//! Matrix operations (MATRIX_PLAN.md). The arithmetic itself (entrywise sums,
+//! Matrix operations. The arithmetic itself (entrywise sums,
 //! segmented non-commutative products, powers) lives in the canonical layer's
 //! smart constructors (`norm::add`/`mul`/`pow`); the functions here are the
 //! eager eponymous operations, which evaluate on literal matrices and return
@@ -7,7 +7,7 @@
 //!
 //! Barrel module — the implementation lives in the submodules below:
 //!
-//! - [`ops`]        — Layer 1 eager ops: transpose, trace, matmul
+//! - [`ops`]        — eager ops: transpose, trace, matmul
 //! - [`vector`]     — vector arithmetic: add/sub/dot/cross
 //! - [`linalg`]     — det / inverse / rref / rank / nullspace
 //! - [`kernels`]    — shared numeric elimination + cofactor/Bareiss kernels

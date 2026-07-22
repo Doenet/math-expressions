@@ -1,4 +1,4 @@
-//! Finite-field rejection filter (PORTING_PLAN.md §10 stage 2, ported from
+//! Finite-field rejection filter (ported from
 //! `lib/expression/equality/finite-field.js` + `converters/ast-to-finite-field.js`).
 //!
 //! Both expressions are evaluated *exactly* in ℤ/pℤ for several primes `p`, with

@@ -1,6 +1,6 @@
-//! Options mirroring the JS `equals` parameters (PORTING_PLAN.md §10).
+//! Options mirroring the JS `equals` parameters.
 
-/// Options mirroring the JS `equals` parameters (PORTING_PLAN.md §10): the
+/// Options mirroring the JS `equals` parameters: the
 /// tolerances, coercion flags, `allowed_error_in_numbers` fuzzy matching, and
 /// the `real_only` sampling mode used by [`super::equals_via_real`].
 #[derive(Debug, Clone)]

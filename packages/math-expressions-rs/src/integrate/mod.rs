@@ -1,7 +1,7 @@
-//! Symbolic (indefinite) integration — INTEGRATION_PLAN.md phases I1+I2.
+//! Symbolic (indefinite) integration.
 //!
-//! Engine order (§2): linearity / constant-slide → the complete rational
-//! engine (§3, `rational.rs`) → the elementary table with linear inner
+//! Engine order: linearity / constant-slide → the complete rational
+//! engine (`rational.rs`) → the elementary table with linear inner
 //! arguments → derivative-divides u-substitution (which re-enters the whole
 //! pipeline on the substituted integrand). All recursion shares one fuel
 //! budget (`max_integration_steps`), and every top-level success must pass

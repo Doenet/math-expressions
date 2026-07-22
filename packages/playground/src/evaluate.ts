@@ -187,6 +187,8 @@ function runEngine<H>(
           temps.push(h);
           return h;
         },
+        toText: adapter.toText,
+        toLatex: adapter.toLatex,
       };
       let produced: H | null = null;
       try {

@@ -1,4 +1,4 @@
-//! Symbolic differentiation (PORTING_PLAN.md §15 Phase 8).
+//! Symbolic differentiation.
 //!
 //! Ports the behaviour of `me.derivative(var)`, which upstream delegates to
 //! mathjs's `derivative` (NOT the hand-written `derivative_with_story`, which is

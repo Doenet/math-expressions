@@ -1,6 +1,6 @@
-//! `Expr`-level helpers for the `RootOf` leaf (MATRIX_PLAN.md §2a/§2d):
-//! canonical construction, the display/serialization form, power reduction
-//! in ℚ[t]/(p), and cached numeric evaluation.
+//! `Expr`-level helpers for the `RootOf` leaf: canonical construction, the
+//! display/serialization form, power reduction in ℚ[t]/(p), and cached
+//! numeric evaluation.
 
 use crate::expr::Expr;
 use crate::num::Number;
@@ -152,7 +152,7 @@ fn expr_to_upoly(e: &Expr, var: &str) -> Option<UPoly> {
     Some(out)
 }
 
-/// §2d power reduction: `RootOf(p,k)^n` as a polynomial of degree < deg p in
+/// Power reduction: `RootOf(p,k)^n` as a polynomial of degree < deg p in
 /// the same root. `None` = no reduction applies (0 ≤ n < deg p) or the
 /// negative power doesn't exist. Built with the canonical smart constructors.
 pub(crate) fn power_reduced(root: &Expr, n: i64) -> Option<Expr> {

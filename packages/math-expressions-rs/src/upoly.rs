@@ -1,11 +1,11 @@
-//! Dense univariate ℚ[t] utilities for the `RootOf` pipeline
-//! (MATRIX_PLAN.md §2c) and the quotient-ring elimination of §3.
+//! Dense univariate ℚ[t] utilities for the `RootOf` pipeline and the
+//! quotient-ring eigenvector elimination.
 //!
 //! Polynomials are dense coefficient vectors, low → high, with no trailing
 //! zeros (the zero polynomial is the empty vector). Everything here is exact
 //! rational arithmetic except the final f64 root approximations, whose
 //! *ordering* is certified against exact Sturm counts — ambiguity is a `None`,
-//! never a guess (§7f philosophy).
+//! never a guess.
 
 use num_bigint::BigInt;
 use num_complex::Complex64;
@@ -254,8 +254,7 @@ pub(crate) fn eval_c64(p: &[f64], z: Complex64) -> Complex64 {
 /// Rational roots of a squarefree polynomial by the rational-root theorem,
 /// with the found roots deflated out. Divisor enumeration is capped: if the
 /// end coefficients don't factor under the cap, no candidates are tried —
-/// the roots then simply stay inside a `RootOf` (correct, less minimal —
-/// plan decision 6).
+/// the roots then simply stay inside a `RootOf` (correct, if less minimal).
 pub(crate) fn rational_roots(p: &UPoly) -> (Vec<BigRational>, UPoly) {
     let mut p = p.clone();
     trim(&mut p);
@@ -705,8 +704,8 @@ fn durand_kerner(monic_coeffs: &[f64]) -> Option<Vec<Complex64>> {
     Some(zs)
 }
 
-/// `t^n mod p` for the power-reduction rule (§2d): returns the dense
-/// remainder coefficients (degree < deg p).
+/// `t^n mod p` for the power-reduction rule: returns the dense remainder
+/// coefficients (degree < deg p).
 pub(crate) fn power_mod(n: u64, p: &[BigRational]) -> UPoly {
     let d = degree(p);
     if (n as usize) < d {

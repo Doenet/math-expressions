@@ -1,5 +1,4 @@
-//! Certified numeric integration (the quadrature consumer of
-//! ARBITRARY_PERCISION_PLAN P5, §7f discipline throughout).
+//! Certified numeric integration.
 //!
 //! `integrate_to_precision(f, x, a, b, digits)` returns the definite
 //! integral with a **rigorous** error bound at or below the requested

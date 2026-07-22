@@ -1,7 +1,7 @@
 //! The [`StructuralComparison`] criterion enum and its verdict type.
 
 /// A single structural criterion to test against a student answer. Each variant is
-/// independent and opt-in (§2). Value-equality is *not* implied — use
+/// independent and opt-in. Value-equality is *not* implied — use
 /// [`structural_equality`](super::structural_equality) when both structure and
 /// value are wanted.
 #[derive(Debug, Clone)]

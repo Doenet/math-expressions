@@ -7,4 +7,4 @@
 # Requires: rustup target add wasm32-unknown-unknown, and wasm-bindgen-cli
 # matching the wasm-bindgen crate version in Cargo.toml.
 set -euo pipefail
-exec bash "$(dirname "$0")/../math-expressions-rs-wasm/crate/build-wasm.sh" web
+exec bash "$(dirname "$0")/../math-expressions-rs-wasm/build-wasm.sh" web

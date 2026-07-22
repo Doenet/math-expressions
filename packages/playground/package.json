@@ -40,8 +40,8 @@
         "rebuild-wasm.sh",
         "../math-expressions-rs/src/**",
         "../math-expressions-rs/Cargo.toml",
-        "../math-expressions-rs-wasm/crate/src/**",
-        "../math-expressions-rs-wasm/crate/Cargo.toml"
+        "../math-expressions-rs-wasm/src-rust/**",
+        "../math-expressions-rs-wasm/Cargo.toml"
       ],
       "output": []
     },

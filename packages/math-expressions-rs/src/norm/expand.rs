@@ -1,4 +1,4 @@
-//! Expansion (`me.expand()`), PORTING_PLAN.md §7e-adjacent.
+//! Expansion (`me.expand()`).
 //!
 //! Distributes multiplication, division-numerator, and negation over sums, and
 //! multinomial-expands non-negative integer powers of sums — recursively, into

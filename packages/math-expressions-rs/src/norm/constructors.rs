@@ -8,8 +8,8 @@ use crate::num::Number;
 
 /// Build a canonical sum from canonical terms: flatten, fold the numeric part
 /// exactly, combine like terms (`3x + 2x → 5x`), drop zeros, sort. Literal
-/// matrices of equal dimensions fold entrywise (MATRIX_PLAN §1a); mismatched
-/// dimensions (and matrix + scalar) stay as separate unevaluated terms.
+/// matrices of equal dimensions fold entrywise; mismatched dimensions (and
+/// matrix + scalar) stay as separate unevaluated terms.
 pub(crate) fn add(terms: Vec<Expr>) -> Expr {
     let mut flat = Vec::with_capacity(terms.len());
     for t in terms {
@@ -85,8 +85,8 @@ pub(crate) fn add(terms: Vec<Expr>) -> Expr {
 /// coefficient exactly, annihilate on zero, combine like powers
 /// (`x² · x³ → x⁵`), drop ones, sort.
 ///
-/// Matrix factors (MATRIX_PLAN §1a) split the product into a commutative
-/// scalar segment (everything below) and an **order-preserving matrix
+/// Matrix factors split the product into a commutative scalar segment
+/// (everything below) and an **order-preserving matrix
 /// segment**: adjacent dimension-compatible literal matrices fold via matrix
 /// multiplication, a fully-folded product absorbs the scalar part into its
 /// entries, and anything unfoldable (dimension mismatch, unevaluated matrix
@@ -255,7 +255,7 @@ pub(crate) fn mul(factors: Vec<Expr>) -> Expr {
 
 /// Build a canonical power, applying the identities and constant folding that
 /// hold without assumptions. `0` to a negative power is left unfolded (an
-/// exact division by zero — §3.6 of the redesign note).
+/// exact division by zero).
 pub(crate) fn pow(base: Expr, exp: Expr) -> Expr {
     // Matrix base (MATRIX_PLAN §1a): integer k ≥ 2 on a square matrix folds by
     // binary powering, k = 0 gives the identity, k = 1 the base. Everything

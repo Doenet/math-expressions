@@ -98,12 +98,17 @@ const jsAddAssumption = Context.add_assumption.bind(Context) as (
 
 /* ------------------------------ evaluation ------------------------------ */
 
-function jsEvaluate(recv: JsExpr, bindings: [string, string][]): Complex | null {
+function jsEvaluate(
+  recv: JsExpr,
+  bindings: [string, string][],
+  ctx: EngineCtx<JsExpr>,
+): Complex | null {
   try {
     let closed = recv;
     if (bindings.length > 0) {
       const map: Record<string, Tree> = {};
-      for (const [k, v] of bindings) map[k] = Context.fromText(v).tree as Tree;
+      // Parse binding values through ctx so the current notation applies.
+      for (const [k, v] of bindings) map[k] = ctx.parseExpr(v).tree as Tree;
       closed = recv.substitute(map as Parameters<typeof recv.substitute>[0]);
     }
     return normalizeComplex(closed.evaluate({}));
@@ -161,12 +166,13 @@ export const REGISTRY: OpEntry[] = [
     "simplify()",
     {
       call: "simplify() with Context assumptions",
-      run: (h, a) => {
+      run: (h, a, c) => {
         const rels = optStringArray(a[0]);
         Context.clear_assumptions();
         for (const r of rels) {
           try {
-            jsAddAssumption(Context.fromText(r).tree as Tree);
+            // Parse the relation through ctx so the current notation applies.
+            jsAddAssumption(c.parseExpr(r).tree as Tree);
           } catch {
             /* ignore unparseable assumption */
           }
@@ -259,10 +265,10 @@ export const REGISTRY: OpEntry[] = [
     'substitute({x: "2"})',
     {
       call: "substitute(map)",
-      run: (h, a) => {
+      run: (h, a, c) => {
         const map: Record<string, Tree> = {};
         for (const [k, v] of readMap(a[0], "subs", false))
-          map[k] = Context.fromText(v).tree as Tree;
+          map[k] = c.parseExpr(v).tree as Tree;
         return expr(h.substitute(map as Parameters<typeof h.substitute>[0]));
       },
     },
@@ -451,7 +457,7 @@ export const REGISTRY: OpEntry[] = [
     'evaluate({x: "2"})',
     {
       call: "substitute → evaluate({})",
-      run: (h, a) => cplx(jsEvaluate(h, readMap(a[0], "bindings", true))),
+      run: (h, a, c) => cplx(jsEvaluate(h, readMap(a[0], "bindings", true), c)),
     },
     {
       call: "substitute_var → evaluate_to_complex",
@@ -514,8 +520,8 @@ export const REGISTRY: OpEntry[] = [
     "string",
     [],
     "toString()",
-    { call: "toString()", run: (h) => str(h.toString(), "text") },
-    { call: "to_text()", run: (h) => str(h.to_text(), "text") },
+    { call: "toString()", run: (h, _a, c) => str(c.toText(h), "text") },
+    { call: "to_text()", run: (h, _a, c) => str(c.toText(h), "text") },
     { stringRender: "text" },
   ),
   op(
@@ -524,8 +530,8 @@ export const REGISTRY: OpEntry[] = [
     "string",
     [],
     "toLatex()",
-    { call: "toLatex()", run: (h) => str(h.toLatex(), "latex") },
-    { call: "to_latex()", run: (h) => str(h.to_latex(), "latex") },
+    { call: "toLatex()", run: (h, _a, c) => str(c.toLatex(h), "latex") },
+    { call: "to_latex()", run: (h, _a, c) => str(c.toLatex(h), "latex") },
     { stringRender: "latex" },
   ),
   op(

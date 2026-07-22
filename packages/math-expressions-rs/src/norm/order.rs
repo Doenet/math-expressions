@@ -1,7 +1,6 @@
-//! A total canonical order on `Expr` (PORTING_PLAN.md §7c, redesign note
-//! §3.4 option B). Commutative operators sort their operands by this order, so
-//! two equal canonical expressions have identical trees and structural
-//! equality reduces to tree comparison.
+//! A total canonical order on `Expr`. Commutative operators sort their operands
+//! by this order, so two equal canonical expressions have identical trees and
+//! structural equality reduces to tree comparison.
 //!
 //! Unlike the JS `default_order` (which allocates a fresh nested sort-key array
 //! per node per comparison), this is a direct typed comparator: no allocation,

@@ -38,7 +38,7 @@ pub(crate) fn present(e: &Expr) -> Expr {
 /// fraction — `x^(3/2)`, not the renderer's terminating-decimal `x^1.5`.
 /// Only exponents get this: elsewhere a rational either joins a fraction bar
 /// (`present_mul`) or stays a plain number so exact decimal folds still
-/// render as decimals (`0.1 + 0.2 → 0.3`, the §3a round-trip).
+/// render as decimals (`0.1 + 0.2 → 0.3`).
 fn present_exponent(x: &Expr) -> Expr {
     if let Expr::Num(n) = x {
         let (neg, num, den) = split_number(n);

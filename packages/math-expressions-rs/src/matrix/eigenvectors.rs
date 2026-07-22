@@ -1,5 +1,5 @@
-//! M4: eigenvectors via nullspace over the quotient ring ℚ[t]/(f), where `t`
-//! is the abstract eigenvalue (MATRIX_PLAN §3).
+//! Eigenvectors via nullspace over the quotient ring ℚ[t]/(f), where `t`
+//! is the abstract eigenvalue.
 
 use crate::expr::Expr;
 use crate::norm::canonicalize;
@@ -10,9 +10,9 @@ use num_rational::BigRational;
 use super::eigen::{charpoly_rational, eigen_items};
 use super::kernels::{as_rationals, square_literal};
 
-/// One eigenvalue with its eigenspace (MATRIX_PLAN §3). Geometric
-/// multiplicity is `basis.len()`; a defective eigenvalue shows
-/// `basis.len() < alg_mult` (never "repaired" — §0 decision 5).
+/// One eigenvalue with its eigenspace. Geometric multiplicity is
+/// `basis.len()`; a defective eigenvalue shows `basis.len() < alg_mult`,
+/// reported as-is and never "repaired".
 #[derive(Debug, Clone)]
 pub struct EigenPair {
     pub value: Expr,
@@ -39,9 +39,9 @@ fn qinv(x: &[BigRational], f: &UPoly) -> Result<UPoly, UPoly> {
 }
 
 /// Nullspace of `A − tI` over ℚ[t]/(f): reduced echelon elimination with
-/// ext-Euclid inverses. `Err(g)` reports a discovered factor of `f`
-/// (MATRIX_PLAN §3: split and restart, bounded). Basis vectors have their
-/// first nonzero component normalized to 1.
+/// ext-Euclid inverses. `Err(g)` reports a discovered factor of `f`, on which
+/// the caller splits and restarts (bounded). Basis vectors have their first
+/// nonzero component normalized to 1.
 fn quotient_nullspace(
     a: &[BigRational],
     n: usize,
@@ -112,10 +112,9 @@ fn quotient_nullspace(
     Ok(basis)
 }
 
-/// Eigenvectors (MATRIX_PLAN §3): for each eigenvalue, the nullspace of
-/// `A − λI` computed over ℚ[t]/(minimal factor), components emerging as
-/// polynomials in the abstract eigenvalue. Rational literal matrices only;
-/// `None` = honest refusal.
+/// Eigenvectors: for each eigenvalue, the nullspace of `A − λI` computed over
+/// ℚ[t]/(minimal factor), components emerging as polynomials in the abstract
+/// eigenvalue. Rational literal matrices only; `None` = honest refusal.
 pub fn eigenvectors(e: &Expr, _assumptions: &crate::assumptions::Assumptions) -> Option<Vec<EigenPair>> {
     let c = canonicalize(e);
     let (n, entries) = square_literal(&c)?;

@@ -1,7 +1,6 @@
 //! Exact-constant evaluation and the certified zero-equivalence service.
 //!
-//! FULL_SIMPLIFY_PLAN chunk **S1** — the keystone the rest of the plan hangs
-//! on. Two public items:
+//! Two public items:
 //!
 //! * [`Exact`] / [`exact_eval`] — a rigorous evaluator for real constants over
 //!   the field ℚ adjoined with surds (√ of nonnegative rationals), π and e as
@@ -145,7 +144,7 @@ impl Exact {
     }
 
     /// `1/self` when `self` is a nonzero pure rational or a single surd term
-    /// `c·√r`; otherwise `None` (general field inversion is out of S1 scope).
+    /// `c·√r`; otherwise `None` (general field inversion is not implemented).
     fn inverse(&self) -> Option<Exact> {
         if let Some(q) = self.as_rational() {
             return (!q.is_zero()).then(|| Exact::rat(BigRational::one() / q));
@@ -162,8 +161,8 @@ impl Exact {
     }
 
     /// This value as a canonical expression — the inverse direction of
-    /// [`exact_eval`], used by the S3 folder to emit `sin(pi/6) → 1/2`,
-    /// `sec(pi/4) → sqrt(2)`, etc.
+    /// [`exact_eval`], used to emit exact special values such as
+    /// `sin(pi/6) → 1/2`, `sec(pi/4) → sqrt(2)`, etc.
     pub(crate) fn to_expr(&self) -> Expr {
         if self.terms.is_empty() {
             return Expr::int(0);
@@ -422,7 +421,7 @@ fn eval_trig(name: &str, arg: &Expr, budget: &mut i64) -> Option<Exact> {
 /// The exact value of `name(arg)` when `arg` is a rational multiple of π on the
 /// π/12 lattice (`sin(pi/6) → 1/2`), as a canonical expression, or `None` off
 /// the lattice, at a pole, or when the reciprocal value falls outside the
-/// single-term inversion S1 supports. Used by the S3 folder.
+/// single-term inversion supported here.
 pub(crate) fn trig_special_value(name: &str, arg: &Expr) -> Option<Expr> {
     let mut budget = crate::resource_limits::current().max_exact_eval_ops;
     let v = match name {
@@ -484,10 +483,10 @@ fn tan_lattice(k: usize) -> Option<Exact> {
 // ===================== the zero-equivalence service =====================
 
 /// Certified test for `e ≡ 0`: `Some(true)` = provably zero, `Some(false)` =
-/// provably nonzero, `None` = undecided (FULL_SIMPLIFY_PLAN S1).
+/// provably nonzero, `None` = undecided.
 ///
 /// The `_a` assumptions are accepted for forward compatibility (sign/realness
-/// reasoning is chunk S5) but not yet consulted.
+/// reasoning is not yet implemented) but not yet consulted.
 pub fn is_zero(e: &Expr, _a: &Assumptions) -> Tri {
     let c = crate::norm::canonicalize(&crate::norm::expand(e));
     let vars = free_vars(&c);
@@ -616,7 +615,7 @@ fn rootof_is_zero(e: &Expr) -> Tri {
 }
 
 /// The one distinct `RootOf` leaf in `e`, or `None` if there are none or more
-/// than one (a compositum of distinct algebraics is out of S1 scope).
+/// than one (a compositum of distinct algebraics is not supported).
 fn unique_rootof(e: &Expr) -> Option<Expr> {
     fn walk(e: &Expr, found: &mut Option<Expr>, multiple: &mut bool) {
         if let Expr::RootOf { .. } = e {

@@ -1,4 +1,4 @@
-//! Assumptions (PORTING_PLAN.md §11): variable facts and three-valued
+//! Assumptions: variable facts and three-valued
 //! sign/set inference.
 //!
 //! Storage mirrors the JS `initialize_assumptions` shape: per-variable facts

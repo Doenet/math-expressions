@@ -1,4 +1,4 @@
-//! M3/M4: characteristic polynomial and eigenvalues. The eigenvector stage
+//! Characteristic polynomial and eigenvalues. The eigenvector stage
 //! (nullspace over ℚ[t]/(f)) lives in [`super::eigenvectors`].
 
 use crate::expr::Expr;
@@ -124,7 +124,7 @@ fn sort_key(z: Complex64) -> (u8, f64, f64, f64) {
 }
 
 /// Split the factors of the squarefree decomposition further by an
-/// accumulated list of discovered factors (M4 split-restart).
+/// accumulated list of discovered factors (the split-restart refinement).
 fn refine_by_splits(f: UPoly, splits: &[UPoly]) -> Vec<UPoly> {
     let mut pieces = vec![f];
     for s in splits {
@@ -145,15 +145,15 @@ fn refine_by_splits(f: UPoly, splits: &[UPoly]) -> Vec<UPoly> {
     pieces
 }
 
+// Design note: this root-finding ladder is deliberately not collapsed into a
+// single `factor()` call. Today's `crate::factor` does strictly *less*
+// (content + Yun + rational-root deflation — no quadratic closed forms, no
+// ordered `RootOf` tail), so the rewire would lose capability. Revisit once
+// full factorization over ℚ lands (FULL_SIMPLIFY §8, chunk S4); until then
+// this ladder is the more powerful implementation.
 /// The full root list of a monic rational char poly: closed forms where
 /// honest (rational roots, quadratic formula), `RootOf` elsewhere, in the
 /// canonical order. `None` on any cap or certification refusal.
-/// FULL_SIMPLIFY §8 note (assessed 2026-07-22): the plan suggests replacing
-/// this ladder with a `factor()` call, but today's `crate::factor` does
-/// strictly *less* (content + Yun + rational-root deflation — no quadratic
-/// closed forms, no ordered `RootOf` tail), so the rewire would lose
-/// capability. Revisit when chunk S4 (full factorization over ℚ) lands;
-/// until then this ladder is the more powerful implementation.
 pub(super) fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>> {
     let mut items: Vec<EigenItem> = Vec::new();
     for (f, m) in upoly::squarefree_decomposition(p) {
@@ -241,11 +241,12 @@ pub(super) fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>>
     Some(items)
 }
 
-/// Eigenvalues with algebraic multiplicities (MATRIX_PLAN §2c): closed forms
-/// where honest, `RootOf` elsewhere, real ascending then conjugate pairs
-/// (negative imaginary part first). Symbolic entries: quadratic closed forms
-/// for 2×2 only (§8 Q1 — `RootOf` is ℚ-coefficients only). `None` = honest
-/// refusal (shape, caps, or uncertifiable ordering).
+/// Eigenvalues with algebraic multiplicities: closed forms where honest,
+/// `RootOf` elsewhere, real ascending then conjugate pairs (negative
+/// imaginary part first). Symbolic entries get quadratic closed forms for
+/// 2×2 only (`RootOf` carries ℚ coefficients, so it cannot represent roots
+/// of a symbolic polynomial). `None` = honest refusal (shape, caps, or
+/// uncertifiable ordering).
 pub fn eigenvalues(e: &Expr, _assumptions: &crate::assumptions::Assumptions) -> Option<Vec<(Expr, u32)>> {
     let c = canonicalize(e);
     let (n, entries) = square_literal(&c)?;

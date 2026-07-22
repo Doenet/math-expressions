@@ -1,4 +1,4 @@
-//! Expression tree (PORTING_PLAN.md §5).
+//! Expression tree.
 //!
 //! One enum serves two layers: the *faithful* layer (parser output — flat
 //! n-ary ops, but unsorted and unfolded) and the *canonical* layer (produced
@@ -19,7 +19,7 @@ pub enum Expr {
     Sym(Sym),
     Const(MathConst),
     /// The `index`-th root of the univariate polynomial with the given dense
-    /// coefficients (low → high) — MATRIX_PLAN.md §2a. A *leaf*: the
+    /// coefficients (low → high). A *leaf*: the
     /// coefficients are `Number`s, not subexpressions, so traversal and
     /// substitution treat it as an atom. Canonical invariant: primitive
     /// integer coefficients, positive leading coefficient, squarefree;
@@ -87,7 +87,7 @@ pub enum Expr {
     /// derivative_leibniz, forall, exists, implies, iff, arrows, perp,
     /// parallel, binom, vec, linesegment, ":", "|". Algorithms that care
     /// about an operator promote it to a dedicated variant; the tail stays
-    /// generic by design (see the §5 design discussion).
+    /// generic by design.
     OtherOp(Sym, Vec<Expr>),
 }
 

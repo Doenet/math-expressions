@@ -1,11 +1,10 @@
-//! Heuristic simplification (PORTING_PLAN.md §7e).
+//! Heuristic simplification.
 //!
-//! **Oracle (decided 2026-07-17): own-reducedness, not tree-match to JS.** The
-//! simplifier is judged on two intrinsic properties — it is *meaning-preserving*
-//! (`equals(simplify(e), e)`) and *reduced* (a fixpoint: `simplify(simplify(e))
-//! == simplify(e)`). JS `.simplify()` is only an advisory correctness
-//! cross-check via `equals`, never a target tree shape (that would copy JS's
-//! form conventions and violate the clean-slate mandate).
+//! The simplifier is judged on two intrinsic properties — it is
+//! *meaning-preserving* (`equals(simplify(e), e)`) and *reduced* (a fixpoint:
+//! `simplify(simplify(e)) == simplify(e)`). It does not aim to reproduce the
+//! output tree shape of JS `.simplify()`, which serves only as an advisory
+//! correctness cross-check via `equals`.
 //!
 //! **Structure.** `simplify` builds *on top of* the confluent canonical form
 //! (`canonicalize`): each round rewrites bottom-up with a fixed, ordered rule
@@ -14,10 +13,9 @@
 //! runs out. Because every round ends in `canonicalize`, the result is always a
 //! valid canonical tree, and reducedness is just "another round is a no-op".
 //!
-//! Rules live in three clusters (the measured gaps between `canonicalize` and
-//! JS `.simplify()`): ∞/NaN folding, tuple/vector componentwise arithmetic, and
-//! radical simplification. Each is assumption-free (the equality path needs only
-//! that subset; full assumption-aware rewriting is deferred with §11).
+//! Rules live in three clusters: ∞/NaN folding, tuple/vector componentwise
+//! arithmetic, and radical simplification. Each is assumption-free; the equality
+//! path needs only that subset, and full assumption-aware rewriting is deferred.
 
 use crate::assumptions::{is_nonnegative, is_real, Assumptions};
 use crate::expr::{Expr, MathConst, SeqKind};
@@ -482,10 +480,9 @@ fn as_trig_square(term: &Expr) -> Option<TrigSquare> {
 }
 
 /// If `e` is `sin(arg)²` or `cos(arg)²`, return the function and argument.
-/// Only one spelling exists in the canonical layer: `canon_apply` moves a
-/// function-head exponent outside the application (`sin^2(x)` → `sin(x)^2`,
-/// via MOVE_EXPONENT_OUTSIDE), so `Pow(Apply(fn,[arg]), 2)` is the single
-/// canonical shape.
+/// Only one spelling exists in the canonical layer: canonicalization moves a
+/// function-head exponent outside the application (`sin^2(x)` → `sin(x)^2`), so
+/// `Pow(Apply(fn,[arg]), 2)` is the single canonical shape.
 fn trig_square_base(e: &Expr) -> Option<(TrigFn, Expr)> {
     let Expr::Pow(base, exp) = e else { return None };
     if !is_two(exp) {

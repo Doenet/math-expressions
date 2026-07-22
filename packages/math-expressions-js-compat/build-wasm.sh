@@ -10,4 +10,4 @@
 # the wasm-bindgen crate version in Cargo.toml.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-exec bash "$HERE/../math-expressions-rs-wasm/crate/build-wasm.sh" nodejs "$HERE/vendor/wasm"
+exec bash "$HERE/../math-expressions-rs-wasm/build-wasm.sh" nodejs "$HERE/vendor/wasm"

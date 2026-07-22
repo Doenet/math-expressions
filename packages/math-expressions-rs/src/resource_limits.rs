@@ -1,4 +1,4 @@
-//! Resource limits (PORTING_PLAN.md §7f).
+//! Resource limits.
 //!
 //! Note: these are *computational safety* bounds, unrelated to calculus
 //! limits (`lim`). All expression input is untrusted (student answers), so
@@ -49,13 +49,13 @@ pub struct ResourceLimits {
     /// materialize).
     pub max_pow_bits: u64,
     /// Largest matrix dimension for elimination-based operations
-    /// (det/inverse/rref — MATRIX_PLAN §1b).
+    /// (det/inverse/rref).
     pub max_matrix_dim: usize,
     /// Largest dimension for cofactor expansion over general symbolic
     /// entries (n! terms).
     pub max_symbolic_det_dim: usize,
-    /// Working-precision cap (bits) for arbitrary-precision evaluation
-    /// (ARBITRARY_PERCISION_PLAN §7). ~17000 bits ≈ 5000 decimal digits.
+    /// Working-precision cap (bits) for arbitrary-precision evaluation.
+    /// ~17000 bits ≈ 5000 decimal digits.
     pub max_eval_precision_bits: u32,
     /// Escalation rounds in the Ziv loop before answering `Unknown`.
     pub max_ziv_rounds: u32,
@@ -75,7 +75,7 @@ pub struct ResourceLimits {
     /// Live-segment cap for certified adaptive quadrature.
     pub max_quadrature_segments: usize,
     /// Total rule firings (fuel) in symbolic integration, including u-sub
-    /// and by-parts recursion (INTEGRATION_PLAN §6).
+    /// and by-parts recursion.
     pub max_integration_steps: i64,
     /// u-substitution / split candidates tried per node.
     pub max_integration_candidates: usize,
@@ -85,16 +85,16 @@ pub struct ResourceLimits {
     /// is returned unfactored. Bounds the dense-coefficient allocation an
     /// adversarial exponent (`x^10^9`) would otherwise force.
     pub max_factor_degree: usize,
-    /// Node/operation budget for the exact-constant evaluator (`exact.rs`,
-    /// FULL_SIMPLIFY §9). Bounds the S1 `is_zero` tower evaluation.
+    /// Node/operation budget for the exact-constant evaluator (`exact.rs`).
+    /// Bounds the certified `is_zero` tower evaluation.
     pub max_exact_eval_ops: i64,
     /// Trial-division bound for `exact::squarefree_part` (radical
     /// normalization). A radicand whose square factor isn't found below this
     /// divisor makes the evaluator decline (`None`), never stall.
     pub max_squarefree_trial_divisor: u64,
-    /// Cap on the number of summands `ratform` (FULL_SIMPLIFY §9, S2) will put
-    /// over a common denominator before bailing to the unchanged form —
-    /// bounds `together`/`cancel` coefficient swell.
+    /// Cap on the number of summands `ratform` will put over a common
+    /// denominator before bailing to the unchanged form — bounds
+    /// `together`/`cancel` coefficient swell.
     pub max_ratform_terms: usize,
     /// Accepted+rejected step cap for the adaptive ODE solver.
     pub max_ode_steps: usize,

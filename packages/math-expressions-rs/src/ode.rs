@@ -1,6 +1,6 @@
-//! ODE numerics (ODE_PLAN.md): the `numeric.dopri` replacement for Doenet's
-//! `ODESystem`. Dormand–Prince RK5(4) with the PI step-size controller, the
-//! free 4th-order dense-output interpolant, and §7f guards (step caps,
+//! ODE numerics: the `numeric.dopri` replacement for Doenet's `ODESystem`.
+//! Dormand–Prince RK5(4) with the PI step-size controller, the free 4th-order
+//! dense-output interpolant, and resource-limit guards (step caps,
 //! vanishing-step and non-finite detection → clean early termination at the
 //! last accepted point — never a hang, never NaN samples).
 //!
@@ -108,7 +108,7 @@ impl OdeSolution {
 
     /// Dense output: the interpolated state at `t` (clamped to the computed
     /// span, matching `numeric.dopri`'s behavior of only answering inside
-    /// the trajectory). Always a length-n vector, even for n = 1 (§5a).
+    /// the trajectory). Always a length-n vector, even for n = 1.
     pub fn at(&self, t: f64) -> Vec<f64> {
         // NaN can't be ordered: the binary search below would panic (an abort
         // under wasm's panic=abort). Propagate NaN like any float function.
@@ -312,10 +312,10 @@ where
     sol
 }
 
-/// Expression-RHS front end (plan §5c): binds `ind_var → t` and
-/// `state_vars[i] → y[i]` per stage. Uses the compiled evaluation tape when
-/// every RHS compiles (O3 — no per-step allocation beyond the bindings
-/// vector); otherwise falls back to `eval_complex` per call (O2).
+/// Expression-RHS front end: binds `ind_var → t` and `state_vars[i] → y[i]`
+/// per stage. Uses the compiled evaluation tape when every RHS compiles (no
+/// per-step allocation beyond the bindings vector); otherwise falls back to
+/// `eval_complex` per call.
 #[allow(clippy::too_many_arguments)] // mirrors the plan's §5c signature
 pub fn solve_ode_exprs(
     rhs: &[Expr],

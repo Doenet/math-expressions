@@ -1,4 +1,4 @@
-//! Structural comparison (STRUCTURAL_COMPARISON_PLAN.md): predicates over
+//! Structural comparison: predicates over
 //! the **faithful** (pre-`canonicalize`) `Expr` that decide whether a student
 //! wrote an answer with a required *structure* — factored, expanded, reduced,
 //! radical-simplified, a decimal vs an exact value, etc. — as opposed to

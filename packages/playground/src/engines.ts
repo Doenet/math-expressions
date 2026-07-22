@@ -9,7 +9,15 @@
 // its `free` is a no-op.
 
 import Context from "math-expressions-canonical";
-import type { Complex, JsExpr, RustExpr, RustModule, Tree } from "./types";
+import { fromPeriodOutput, toPeriodInput } from "./util";
+import type {
+  Complex,
+  JsExpr,
+  Notation,
+  RustExpr,
+  RustModule,
+  Tree,
+} from "./types";
 
 // Re-export the JS context so the registry's JS ops (assumptions, expression-typed
 // args) can reach the factory methods directly.
@@ -66,27 +74,58 @@ export function normalizeComplex(r: unknown): Complex | null {
   return null;
 }
 
-/** The JS engine adapter — plain GC'd handles, so `free` is a no-op. */
-export const jsAdapter: EngineAdapter<JsExpr> = {
-  tag: "js",
-  fromText: (s) => Context.fromText(s),
-  fromLatex: (s) => Context.fromLatex(s),
-  fromAst: (tree) => Context.fromAst(tree as Parameters<typeof Context.fromAst>[0]),
-  parseExpr: (s) => Context.fromText(s),
-  toText: (h) => h.toString(),
-  toLatex: (h) => h.toLatex(),
-  treeOf: (h) => h.tree as Tree,
-  free: () => {},
-};
+/** The Rust `parse_*_with_options` JSON for a notation, or null for the default. */
+function rustNotationJson(notation: Notation): string | null {
+  return notation === "comma"
+    ? JSON.stringify({
+        notation: { decimalSeparator: ",", argumentSeparator: ";" },
+      })
+    : null; // period is the wasm default — use the plain parse_* for byte-identity
+}
 
-/** Build the Rust engine adapter over a loaded wasm module. */
-export function makeRustAdapter(rust: RustModule): EngineAdapter<RustExpr> {
+/**
+ * The JS engine adapter for a notation. The JS library only understands period
+ * notation, so under `comma` the adapter transliterates input on the way in and
+ * output on the way out. Handles are plain GC'd objects, so `free` is a no-op.
+ */
+export function makeJsAdapter(notation: Notation): EngineAdapter<JsExpr> {
+  const parse = (s: string) => Context.fromText(toPeriodInput(s, notation));
+  return {
+    tag: "js",
+    fromText: parse,
+    fromLatex: (s) => Context.fromLatex(toPeriodInput(s, notation)),
+    fromAst: (tree) =>
+      Context.fromAst(tree as Parameters<typeof Context.fromAst>[0]),
+    parseExpr: parse,
+    toText: (h) => fromPeriodOutput(h.toString(), notation),
+    toLatex: (h) => fromPeriodOutput(h.toLatex(), notation, true),
+    treeOf: (h) => h.tree as Tree,
+    free: () => {},
+  };
+}
+
+/** Back-compat default (period) JS adapter. */
+export const jsAdapter = makeJsAdapter("period");
+
+/**
+ * Build the Rust engine adapter for a notation. Rust parses natively via
+ * `parse_*_with_options`; the notation is carried on the handle, so output
+ * (`to_text`/`to_latex`) and derived handles honor it automatically.
+ */
+export function makeRustAdapter(
+  rust: RustModule,
+  notation: Notation,
+): EngineAdapter<RustExpr> {
+  const opts = rustNotationJson(notation);
+  const parse = (s: string) =>
+    opts ? rust.parse_text_with_options(s, opts) : rust.parse_text(s);
   return {
     tag: "rust",
-    fromText: (s) => rust.parse_text(s),
-    fromLatex: (s) => rust.parse_latex(s),
+    fromText: parse,
+    fromLatex: (s) =>
+      opts ? rust.parse_latex_with_options(s, opts) : rust.parse_latex(s),
     fromAst: (tree) => rust.from_ast(JSON.stringify(tree)),
-    parseExpr: (s) => rust.parse_text(s),
+    parseExpr: parse,
     toText: (h) => h.to_text(),
     toLatex: (h) => h.to_latex(),
     // JSON.parse returns `any`; assert the documented Tree shape at this boundary.
@@ -95,15 +134,14 @@ export function makeRustAdapter(rust: RustModule): EngineAdapter<RustExpr> {
   };
 }
 
-export interface Engines {
-  js: EngineAdapter<JsExpr>;
-  rust: EngineAdapter<RustExpr>;
+/** The loaded wasm module; adapters are built per-notation by the caller. */
+export interface LoadedEngines {
   rustModule: RustModule;
 }
 
-/** Load both engines. Resolves once the wasm module is initialised. */
-export async function loadEngines(): Promise<Engines> {
+/** Load the wasm module. Resolves once it is initialised. */
+export async function loadEngines(): Promise<LoadedEngines> {
   const rust = (await import(/* @vite-ignore */ RUST_GLUE_URL)) as RustModule;
   await rust.default(); // wasm-bindgen init()
-  return { js: jsAdapter, rust: makeRustAdapter(rust), rustModule: rust };
+  return { rustModule: rust };
 }

@@ -24,5 +24,6 @@ the legacy JS on disk.
 
 The wasm build/smoke flow moved out of this crate: the wasm-bindgen bindings now
 live in the separate `math-expressions-wasm` crate at
-`../../math-expressions-rs-wasm/crate/`, whose `build-wasm.sh` (+ `wasm-smoke.cjs`)
-compile and smoke-test it. This crate is a pure Rust library.
+`../../math-expressions-rs-wasm/` (`src-rust/`), whose `build-wasm.sh` compiles it
+and whose `tests/` end-to-end suite (`npm test`) verifies it. This crate is a
+pure Rust library.

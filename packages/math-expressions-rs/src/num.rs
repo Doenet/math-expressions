@@ -1,4 +1,4 @@
-//! Tiered number type (PORTING_PLAN.md §3, §3a).
+//! Tiered number type.
 //!
 //! User-typed decimals parse to *exact* rationals (`Int`/`Rat`/`Big`), never
 //! `Float` — see [`Number::from_decimal_str`]. `Float` is reserved for
@@ -34,7 +34,7 @@ pub enum Number {
     /// Arbitrary precision fallback. Boxed to keep Number small.
     Big(Box<BigNumber>),
     /// Floating-point value — produced by numerical evaluation only. User
-    /// input never parses to `Float` (§3a: decimals are exact rationals).
+    /// input never parses to `Float` (decimals are exact rationals).
     Float(F64),
 }
 
@@ -329,8 +329,8 @@ impl Number {
     }
 
     /// Division, or `None` when dividing by (exact) zero — the caller leaves
-    /// the expression unfolded rather than fabricating an infinity (§3.6 of
-    /// the normalization note). Float ÷ 0.0 follows IEEE (±∞/NaN), matching JS.
+    /// the expression unfolded rather than fabricating an infinity. Float ÷ 0.0
+    /// follows IEEE (±∞/NaN), matching JS.
     pub fn checked_div(&self, other: &Number) -> Option<Number> {
         if other.is_zero() && !self.is_float() && !other.is_float() {
             return None;
@@ -374,7 +374,7 @@ impl Number {
         Some(Number::from_bigrational(result))
     }
 
-    /// Parse a decimal NUMBER token to an *exact* rational (§3a). The value is
+    /// Parse a decimal NUMBER token to an *exact* rational. The value is
     /// `digits × 10^(exp − frac_len)`: a non-negative power of ten yields an
     /// integer (`Int`/`Big`), a negative one an exact fraction whose
     /// denominator is `2^a·5^b` (`Rat`/`Big`). Returns `Float` only for

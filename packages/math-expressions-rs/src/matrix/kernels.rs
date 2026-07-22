@@ -202,16 +202,13 @@ pub(super) fn det_bareiss(entries: &[Expr], n: usize) -> Option<Expr> {
     })
 }
 
-/// Gauss–Jordan over `Expr` with tri-state pivot gating. Returns the reduced
-/// entries and the pivot columns, or `None` when a pivot decision needs an
-/// unavailable assumption.
 /// Is this entry certified nonzero? The assumptions engine first (it knows
 /// about symbols under hypotheses), then — for variable-free entries only —
 /// the exact-constant service, which decides surd/π arithmetic like
 /// `sqrt(8) - sqrt(2)` that the assumptions engine can't. Never guesses:
-/// variable entries with no assumption answer stay `None` (§0 decision 4 —
-/// sampling would wrongly certify a parameter expression that vanishes at
-/// some parameter values).
+/// variable entries with no assumption answer stay `None`, since sampling
+/// would wrongly certify a parameter expression that vanishes at some
+/// parameter values.
 fn entry_nonzero(e: &Expr, assumptions: &Assumptions) -> Option<bool> {
     if let Some(v) = is_nonzero(e, assumptions) {
         return Some(v);
@@ -226,6 +223,9 @@ fn entry_nonzero(e: &Expr, assumptions: &Assumptions) -> Option<bool> {
     None
 }
 
+/// Gauss–Jordan over `Expr` with tri-state pivot gating. Returns the reduced
+/// entries and the pivot columns, or `None` when a pivot decision needs an
+/// unavailable assumption.
 pub(super) fn rref_core(
     entries: &[Expr],
     rows: usize,

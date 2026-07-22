@@ -1,4 +1,4 @@
-//! Symbol interning (PORTING_PLAN.md §4).
+//! Symbol interning.
 //!
 //! Symbols are u32 indices into a thread-local interner; comparison and
 //! hashing are O(1). WASM is single-threaded, so thread_local is free.

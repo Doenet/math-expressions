@@ -1,8 +1,7 @@
-//! Tier 0 (ARBITRARY_PERCISION_PLAN §4): the tape over f64 values with
-//! certified forward error bounds. This is the fast path — when `err ≤ tol`
-//! no bignum work happens — and its recorded per-op values feed the Tier-2
-//! planning pass (the magnitude information whose absence sank the §1c
-//! prototype's static planning).
+//! Tier 0: the tape over f64 values with certified forward error bounds. This
+//! is the fast path — when `err ≤ tol` no bignum work happens — and its
+//! recorded per-op values feed the Tier-2 planning pass with the magnitude
+//! information that magnitude-blind static planning lacks.
 
 use super::kernels::registry;
 use super::tape::{CompiledExpr, Op};

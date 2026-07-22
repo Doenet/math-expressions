@@ -1,4 +1,4 @@
-//! Univariate polynomial factorization over ℚ (WHATS_LEFT item 8).
+//! Univariate polynomial factorization over ℚ.
 //!
 //! `factor` expands the input to a polynomial, then factors it exactly:
 //! rational content / leading coefficient out front, Yun squarefree
@@ -8,7 +8,7 @@
 //! polynomial factor. The result is a raw product tree — deliberately *not*
 //! re-canonicalized, since that would expand it straight back out.
 //!
-//! Non-polynomial, multivariate, degree-capped (§7f `max_factor_degree`), or
+//! Non-polynomial, multivariate, degree-capped (`max_factor_degree`), or
 //! otherwise unfactorable inputs are returned canonicalized and unchanged. Every factorization is checked against the
 //! original with `equals` before being returned, so a bookkeeping slip can
 //! never yield a wrong answer — only a missed factoring.
@@ -124,8 +124,8 @@ fn with_exponent(base: Expr, n: u32) -> Expr {
 /// Dense rational coefficients of a *canonical, expanded* single-variable
 /// polynomial tree (`Add` of monomials; each monomial `Num`, `x^k`, or a `Mul`
 /// of those). `None` if any term is not a monomial in `var`, or if the degree
-/// exceeds `max_factor_degree` (§7f: the dense vector below allocates one
-/// entry per degree, so an adversarial `x^10^9` must be refused, not sized).
+/// exceeds `max_factor_degree` (the dense vector below allocates one entry per
+/// degree, so an adversarial `x^10^9` must be refused, not sized).
 fn extract_upoly(e: &Expr, var: &str) -> Option<upoly::UPoly> {
     let cap = crate::resource_limits::current().max_factor_degree;
     fn monomial(e: &Expr, var: &str, cap: usize) -> Option<(usize, BigRational)> {
@@ -351,8 +351,8 @@ fn interpolate(xs: &[BigRational], ys: &[BigRational]) -> Option<upoly::UPoly> {
 // ============================ S4: factor_terms ============================
 
 /// Pull the common numeric content and common (possibly kernel) factors out of
-/// a sum — `factor_terms` (`6x²+9x → 3x(2x+3)`). Cheap and multivariate; the
-/// S7 driver always tries it. Returns the input canonicalized when there is
+/// a sum — `factor_terms` (`6x²+9x → 3x(2x+3)`). Cheap and multivariate, so it
+/// is always attempted. Returns the input canonicalized when there is
 /// nothing common to pull. The result is gate-checked against the input.
 pub fn factor_terms(e: &Expr) -> Expr {
     factor_terms_opt(e).unwrap_or_else(|| norm::canonicalize(e))

@@ -1,10 +1,9 @@
-//! Function kernels (ARBITRARY_PERCISION_PLAN §6): one registry row per
-//! function, with the Tier-0 obligations (f64 value, derivative for error
-//! propagation and precision planning, domain guard) and — for the P2 set —
+//! Function kernels: one registry row per function, with the Tier-0
+//! obligations (f64 value, derivative for error propagation and precision
+//! planning, domain guard) and — for functions with a fixed-point kernel —
 //! an `MpFix` kernel meeting the ±1 ulp contract.
 //!
-//! The series kernels are ports of the `stack_computable` prototype's
-//! `approximate.rs` (which carries realistic's ulp-error accounting):
+//! The series kernels carry explicit ulp-error accounting:
 //! `calc_precision = p − ⌈log2(2·terms)⌉ − 4`, truncation threshold
 //! `2^(p − 4 − calc_precision)`. Argument reductions: `exp` by `ln 2`
 //! (`e^x = 2^k · e^r`, an exact scale shift), `ln` by mantissa normalization
@@ -29,9 +28,9 @@ pub struct FnKernel {
     /// Tier-0 domain guard: `false` ⇒ escalate to Tier 2 (which may also
     /// decline).
     pub domain: fn(f64) -> bool,
-    /// The Tier-2 kernel, when ported (P2: sqrt/exp/ln/abs).
+    /// The Tier-2 kernel for functions that have one (sqrt/exp/ln/abs).
     pub fix: Option<FixId>,
-    /// Complex principal-branch value (P4 Tier 0).
+    /// Complex principal-branch value (Tier 0).
     pub cf: fn(Complex64) -> Complex64,
     /// |f′(z)| for complex error propagation and planning.
     pub cdfm: fn(Complex64) -> f64,
@@ -109,7 +108,7 @@ fn bound_log2(n: i64) -> i32 {
 // ---- Tier-2 kernels ----
 
 /// √v at scale `s` (±1 ulp): take the argument at scale 2s and use the exact
-/// integer square root (the prototype's Newton-free kernel).
+/// integer square root (Newton-free).
 pub fn sqrt_fix(x: &MpFix, s: i32, _budget: &mut Budget) -> Option<MpFix> {
     if x.mant.is_negative() {
         return None;
@@ -173,7 +172,7 @@ pub fn exp_fix(x: &MpFix, s: i32, budget: &mut Budget) -> Option<MpFix> {
     })
 }
 
-/// The prototype's `PrescaledExp` series: argument `op_appr·2^op_prec` with
+/// Prescaled exponential series: argument `op_appr·2^op_prec` with
 /// |value| < 0.5; result at scale `p` (±1 ulp).
 fn exp_series(op_appr: &BigInt, op_prec: i32, p: i32, budget: &mut Budget) -> Option<BigInt> {
     if p >= 1 {
@@ -241,7 +240,7 @@ pub fn ln_fix(x: &MpFix, s: i32, budget: &mut Budget) -> Option<MpFix> {
     Some(result.rescale(s))
 }
 
-/// The prototype's `PrescaledLn` series: `ln(1+u)` for |u| < 0.5.
+/// Prescaled ln series: `ln(1+u)` for |u| < 0.5.
 fn ln1p_series(u: &BigInt, op_prec: i32, p: i32, budget: &mut Budget) -> Option<BigInt> {
     if p >= 0 {
         return Some(BigInt::zero());
@@ -346,8 +345,8 @@ pub fn const_e(s: i32) -> MpFix {
     })
 }
 
-/// `atan(1/n)` at scale `p` (realistic's `IntegralAtan`): integer-only
-/// alternating series `Σ (−1)^j / ((2j+1)·n^(2j+1))`.
+/// `atan(1/n)` at scale `p`: integer-only alternating series
+/// `Σ (−1)^j / ((2j+1)·n^(2j+1))`.
 fn atan_recip(n: i64, p: i32, budget: &mut Budget) -> Option<BigInt> {
     let scaled_1 = BigInt::from(1) << (-p) as u32;
     let big_n_sq = BigInt::from(n) * n;
@@ -458,7 +457,7 @@ fn trig_reduce(x: &MpFix, s: i32, _budget: &mut Budget) -> Option<(MpFix, i64)> 
     Some((r, q))
 }
 
-/// The prototype's `PrescaledCos` series: cos of |r| < 1, result at `p`.
+/// Prescaled cos series: cos of |r| < 1, result at `p`.
 fn cos_series(op_appr: &BigInt, op_prec: i32, p: i32, budget: &mut Budget) -> Option<BigInt> {
     if p >= 1 {
         return Some(BigInt::from(1) << (1 - p).max(0) as u32 >> 1);

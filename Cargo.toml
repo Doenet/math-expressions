@@ -1,11 +1,11 @@
 [workspace]
 members = [
     "packages/math-expressions-rs",
-    "packages/math-expressions-rs-wasm/crate",
+    "packages/math-expressions-rs-wasm",
 ]
 # The wasm-binding crate is a member (shared lockfile + release profile) but not
 # a default member, so `cargo build` / `cargo test` (host) skip it. It is built
-# explicitly for wasm32 by packages/math-expressions-rs-wasm/crate/build-wasm.sh.
+# explicitly for wasm32 by packages/math-expressions-rs-wasm/build-wasm.sh.
 default-members = ["packages/math-expressions-rs"]
 resolver = "2"
 

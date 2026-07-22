@@ -1,16 +1,21 @@
-//! Rust port of math-expressions (see tmp/PORTING_PLAN.md in the JS repo).
+//! A Rust port of the `math-expressions` computer-algebra library.
 //!
-//! All planned subsystems are implemented: parsers (text/LaTeX), canonical
-//! normalization, simplify/expand, the full staged `equals` (syntactic,
-//! finite-field, complex sampling, discrete infinite sets), differentiation,
-//! evaluation, output formatting, expression utilities, the polynomial layer
-//! (`reduce_rational`), the assumptions core, and resource limits (§7f). The
-//! wasm-bindgen JS surface lives in a separate crate
-//! (`packages/math-expressions-rs-wasm/crate`), a thin adapter over this
-//! crate's public API.
-//! Fidelity is guarded by differential corpora against the JS reference
-//! (equality 824/824; simplify/derivative/expand/evaluate/assumptions corpora
-//! with snapshotted, documented divergences).
+//! The crate parses mathematical expressions from text and LaTeX into an
+//! [`Expr`] tree, then offers canonical normalization, simplification and
+//! expansion, a staged test of mathematical equality (syntactic comparison,
+//! finite-field probing, complex-number sampling, and discrete infinite sets),
+//! symbolic differentiation and integration, arbitrary-precision evaluation,
+//! symbolic matrix algebra, an ODE solver, and formatting back to text and
+//! LaTeX. An assumptions system supplies variable facts, and every operation is
+//! bounded by configurable [resource limits](resource_limits).
+//!
+//! Fidelity to the original library is guarded by differential test corpora:
+//! mathematical equality passes all 824 reference cases, and the simplify,
+//! derivative, expand, evaluate, and assumptions corpora pass with a small,
+//! documented set of snapshotted divergences.
+//!
+//! The wasm-bindgen JavaScript bindings live in a separate crate, a thin
+//! adapter over this crate's public API.
 //!
 //! # Public surface (facade tiers)
 //!

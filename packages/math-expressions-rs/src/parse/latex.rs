@@ -27,7 +27,7 @@ pub struct LatexToAstOptions {
     pub function_symbols: Vec<String>,
     pub parse_leibniz_notation: bool,
     pub parse_scientific_notation: bool,
-    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
 }
 
@@ -129,7 +129,7 @@ pub struct LatexToAst {
     applied_functions: HashSet<String>,
     functions: HashSet<String>,
     allowed_symbols: HashSet<String>,
-    /// Recursion depth through the self-recursive parse functions (§6e).
+    /// Recursion depth through the self-recursive parse functions.
     depth: usize,
 }
 

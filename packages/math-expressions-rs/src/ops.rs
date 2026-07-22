@@ -1,4 +1,4 @@
-//! Expression utilities: `substitute` and `variables` (PORTING_PLAN.md §15).
+//! Expression utilities: `substitute` and `variables`.
 //! Small, self-contained ports of the corresponding `me.*` methods.
 
 use crate::eval::{eval_complex, Env};
@@ -9,8 +9,8 @@ use num_complex::Complex64;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// Fold numeric subexpressions (`4 + x − 2` → `x + 2`) — the port of
-/// `me.evaluate_numbers`. Ours is the exact canonical fold (§3a): rationals
-/// stay exact where the JS produces floats; the combined/ordered shape is the
+/// `me.evaluate_numbers`. Ours is the exact canonical fold: rationals stay
+/// exact where the JS produces floats; the combined/ordered shape is the
 /// canonical one.
 pub fn evaluate_numbers(e: &Expr) -> Expr {
     present(&canonicalize(e))
@@ -20,7 +20,7 @@ pub fn evaluate_numbers(e: &Expr) -> Expr {
 /// `me.reduce_rational` (`(x²−1)/(x−1)` → `x+1`, `(x²−5x+6)/(x²−4)` →
 /// `(x−3)/(x+2)`, multivariate included). Applied bottom-up at every node;
 /// non-polynomial fractions (`sin x / x`) are left unchanged. Backed by the
-/// §8 polynomial layer (recursive dense GCD over ℚ, bounded per §7f).
+/// polynomial layer (recursive dense GCD over ℚ, bounded by resource limits).
 pub fn reduce_rational(e: &Expr) -> Expr {
     let canon = canonicalize(e);
     // Bottom-up reduction, then re-canonicalize so in-place reductions merge

@@ -1,4 +1,4 @@
-//! Stage 4 of `equals`: discrete infinite sets (PORTING_PLAN.md §10/§17).
+//! Stage 4 of `equals`: discrete infinite sets.
 //!
 //! A *discrete infinite set* is a union of arithmetic progressions
 //! `{offset + k·period : k ∈ ℤ}`, encoded as

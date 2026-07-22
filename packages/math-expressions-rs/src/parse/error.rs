@@ -1,4 +1,4 @@
-//! Parse errors carry a byte offset into the input (PORTING_PLAN.md §6).
+//! Parse errors carry a byte offset into the input.
 //! Error message text matches the JS ParseError messages exactly — the
 //! error fixtures assert on it.
 

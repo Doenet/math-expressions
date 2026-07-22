@@ -1,4 +1,4 @@
-//! Rational-function normal form (FULL_SIMPLIFY_PLAN chunk **S2**).
+//! Rational-function normal form.
 //!
 //! [`together`] / [`cancel`] put an expression over a single common
 //! denominator and reduce numerator and denominator to lowest terms with the

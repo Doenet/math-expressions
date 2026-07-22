@@ -1,4 +1,4 @@
-//! **Value** equality (PORTING_PLAN.md §10, redesign note §3.5): do two
+//! **Value** equality: do two
 //! expressions denote the same mathematical object? This is the value axis —
 //! contrast [`equality_structural`](crate::equality_structural), which asks
 //! whether an answer is in a required *form* (factored, reduced, …), and
@@ -20,7 +20,7 @@
 //!    (unless `allow_blanks`).
 //! 1. **Exact canonical compare** — [`canonicalize`](crate::norm::canonicalize)
 //!    both sides and compare trees. Most equal pairs agree here with no
-//!    numerics (the §3a exactness payoff: `10^20+1 ≠ 10^20+2` is decided, not
+//!    numerics (the exactness payoff: `10^20+1 ≠ 10^20+2` is decided, not
 //!    sampled).
 //! 2. **Exact simplified compare** — `simplify_canonical` adds the heuristic
 //!    rewrite clusters (radical, trig, ∞/NaN) to a fixpoint, then compare trees

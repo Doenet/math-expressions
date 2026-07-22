@@ -19,7 +19,7 @@ use crate::num::Number;
 pub struct TextOpts {
     /// Emit unicode operators/greek letters (`≤`, `θ`) vs ASCII words.
     pub unicode: bool,
-    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
 }
 

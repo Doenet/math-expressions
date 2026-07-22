@@ -4,8 +4,8 @@
 //! module existed, ~20 methods (the statement/relation/expression/term/factor
 //! ladder and the enter/leave/state scaffolding) were maintained as
 //! copy-pasted twins in `text.rs` and `latex.rs` — a fix applied to one
-//! silently missed the other (ARCHITECTURE_REVIEW §2). They are now stamped
-//! into both `impl` blocks by [`shared_grammar_methods!`]; genuinely
+//! silently missed the other. They are now stamped into both `impl` blocks
+//! by [`shared_grammar_methods!`]; genuinely
 //! flavor-specific productions (`statement_main`'s `Tok::Mid`, the pipe
 //! fallback, sub/superscript digits, unit tables, `advance`, and the
 //! LaTeX-only constructs) stay in their own files.
@@ -18,14 +18,16 @@
 /// are the (formerly duplicated) text-parser versions, unchanged.
 macro_rules! shared_grammar_methods {
     () => {
-    /// Parse to the **faithful** tree (STRUCTURAL_COMPARISON §3, inverted design): the
-    /// result keeps the raw associative *grouping* (`convert` no longer applies
-    /// the whole-tree `flatten`), so form analysis can see the tree closer to
-    /// as-typed. Individual terms are still locally flattened for unit
-    /// detection. `flatten` is now the leading step of the *consumers* that
-    /// need a canonical shape — `normalize_syntactic`, the output formatters,
-    /// `js_tree::to_js`, and `check_structural_comparison` — while the value
-    /// path (`equals`/`simplify`/…) flattens implicitly via `canonicalize`.
+    // The result keeps the raw associative *grouping* (`convert` does not apply
+    // the whole-tree `flatten`, per STRUCTURAL_COMPARISON §3's inverted design),
+    // so form analysis can see the tree closer to as-typed. `flatten` is instead
+    // the leading step of the *consumers* that need a canonical shape —
+    // `normalize_syntactic`, the output formatters, `js_tree::to_js`, and
+    // `check_structural_comparison` — while the value path (`equals`/`simplify`/…)
+    // flattens implicitly via `canonicalize`.
+    /// Parse `input` to an expression tree, erroring if any tokens remain. The
+    /// tree preserves the associative grouping as typed rather than flattening
+    /// it; individual terms are still locally flattened for unit detection.
     pub fn convert(&mut self, input: &str) -> R<Expr> {
         self.lexer.set_input(input);
         self.depth = 0;
@@ -488,7 +490,7 @@ macro_rules! shared_grammar_methods {
 
         Ok(result)
     }
-    /// Enter a recursive parse function; errors if the depth budget (§6e) is
+    /// Enter a recursive parse function; errors if the depth budget is
     /// exhausted. Increments only on success, so each `enter` that returns
     /// `Ok` is balanced by exactly one `leave` (even on the error-unwind path).
     fn enter(&mut self) -> R<()> {

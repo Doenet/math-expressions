@@ -93,6 +93,13 @@ h2 {
 .showcase:hover {
   border-color: var(--accent);
 }
+.eq-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.eq-note code {
+  font-size: 11px;
+}
 
 /* Responsive side-by-side splits: stacked on narrow, two columns when wide.
    `.io-split` pairs the equation input with its parsed preview; `.chain-split`

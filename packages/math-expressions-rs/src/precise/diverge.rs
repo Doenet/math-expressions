@@ -1,4 +1,4 @@
-//! Divergence classification for definite integrals (DIVERGENCE_PLAN.md).
+//! Divergence classification for definite integrals.
 //!
 //! Three honest answers instead of one: a certified `Value` (proper, or
 //! tail-bounded improper), a certified `Divergent` (backed by an exact
@@ -220,10 +220,11 @@ fn subst_point(e: &Expr, var: &str, pt: &Expr) -> Expr {
     crate::ops::substitute(e, &subs)
 }
 
+// Uses the shared exact::exact_eval rather than a private ℚ+ℚπ evaluator
+// (which once duplicated its trig/sqrt/log folding).
 /// Is `e(pt)` *exactly* zero? Decided by the shared exact-constant evaluator
-/// (`exact::exact_eval`, the ℚ[π, e, √] tower — FULL_SIMPLIFY §8: this
-/// replaced a private ℚ+ℚπ evaluator that duplicated its trig/sqrt/log
-/// folding). The numeric tiers can never certify a true zero.
+/// (`exact::exact_eval`, the ℚ[π, e, √] tower). The numeric tiers can never
+/// certify a true zero.
 fn exactly_zero_at(e: &Expr, var: &str, pt: &Expr) -> bool {
     let sub = crate::norm::canonicalize(&subst_point(e, var, pt));
     crate::exact::exact_eval(&sub)
@@ -393,7 +394,7 @@ fn mvt_certificate(div: &Divisor, var: &str, cell: &ZeroCell) -> bool {
     n_iv.lo > 0.0 || n_iv.hi < 0.0
 }
 
-/// Exact-point probing (plan §3c): at a closed-form point, decide the zero
+/// Exact-point probing: at a closed-form point, decide the zero
 /// order of D exactly; `m·s ≥ 1` with N nonzero ⇒ divergent (Taylor bound,
 /// valid because the lower derivatives vanish *exactly* at the point).
 fn exact_point_certificate(
@@ -612,7 +613,8 @@ fn rational_root_in(p: &[BigRational], a: &BigRational, b: &BigRational) -> Opti
 
 struct Classified {
     divergent: Vec<SingularPoint>,
-    /// Certified singular-but-not-divergent cells (candidates for §5).
+    /// Certified singular-but-not-divergent cells (candidates for improper
+    /// evaluation).
     singular_cells: Vec<SingularCell>,
     /// Candidate cells with no certificate either way.
     unresolved: bool,
@@ -810,7 +812,7 @@ pub(crate) fn is_certified_divergent(fc: &Expr, var: &str, lo: f64, hi: f64) -> 
     }
 }
 
-/// Full three-way analysis (DIVERGENCE_PLAN §1).
+/// Full three-way analysis: certified value, certified divergent, or unknown.
 pub fn integrate_analyzed(
     f: &Expr,
     var: &str,

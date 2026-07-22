@@ -10,7 +10,7 @@ use crate::num::Number;
 
 #[derive(Debug, Clone, Default)]
 pub struct LatexOpts {
-    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
 }
 
@@ -149,7 +149,7 @@ impl Writer<'_> {
     }
 
     /// Retarget the `.` decimal point of a rendered number to the active
-    /// decimal separator. A5: a decimal comma is emitted as `{,}` so MathJax /
+    /// decimal separator. A decimal comma is emitted as `{,}` so MathJax /
     /// MathQuill don't add trailing-punctuation spacing. No-op under default.
     fn decimal(&self, s: String) -> String {
         let d = self.opts.notation.decimal_separator;
@@ -540,8 +540,7 @@ fn rel_symbol(op: RelOp) -> &'static str {
 
 /// Non-function symbols with LaTeX control words: greek letters and
 /// notation. Function names live on `FnDef::latex_commands` in
-/// `crate::functions` (Phase 2 of the improvement plan moves this list to a
-/// shared notation table too).
+/// `crate::functions`.
 const ALLOWED_LATEX_SYMBOLS: &[&str] = &[
     "alpha",
     "beta",

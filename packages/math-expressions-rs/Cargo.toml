@@ -6,7 +6,7 @@ license = "GPL-3.0 OR Apache-2.0"
 description = "Rust port of the math-expressions library (educational math CAS)"
 
 # Pure Rust library. The wasm-bindgen `cdylib` now lives in the separate
-# `math-expressions-wasm` crate (packages/math-expressions-rs-wasm/crate), which
+# `math-expressions-wasm` crate (packages/math-expressions-rs-wasm), which
 # depends on this one.
 [lib]
 crate-type = ["rlib"]

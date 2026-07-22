@@ -1,4 +1,4 @@
-//! The complete rational-function engine (INTEGRATION_PLAN §3).
+//! The complete rational-function engine.
 //!
 //! `∫ p/q dx` for p, q ∈ ℚ[x] decides *every* input under the degree caps:
 //!
@@ -32,16 +32,17 @@ fn int(i: i64) -> Expr {
     Expr::Num(Number::Int(i))
 }
 
-/// A canonical tree as a rational function in `x` over ℚ.
-/// `None` = not in ℚ(x) (symbolic coefficients, other functions, …).
-/// Layering note (FULL_SIMPLIFY §8, assessed 2026-07-22): this is the
-/// **univariate** rational-function converter — dense `(num, den)` `UPoly`
-/// pairs in one named variable, exactly what the LRT integrator consumes. It
-/// is deliberately NOT merged with `crate::ratform` (`together`/`cancel`),
-/// which is the **multivariate** Expr-level normal form over `poly::Rep` with
-/// opaque-kernelization; the two share no representation. If a `Rep`↔`UPoly`
-/// converter ever exists, revisit — until then use ratform for Expr rewriting
-/// and this for univariate coefficient extraction.
+// Layering note (FULL_SIMPLIFY §8, assessed 2026-07-22): this is the
+// univariate rational-function converter — dense `(num, den)` `UPoly` pairs in
+// one named variable, exactly what the LRT integrator consumes. It is
+// deliberately NOT merged with `crate::ratform` (`together`/`cancel`), which is
+// the multivariate Expr-level normal form over `poly::Rep` with
+// opaque-kernelization; the two share no representation. If a `Rep`↔`UPoly`
+// converter ever exists, revisit — until then use ratform for Expr rewriting
+// and this for univariate coefficient extraction.
+/// A canonical tree as a rational function in `x` over ℚ, returned as a
+/// `(numerator, denominator)` `UPoly` pair with the denominator normalized
+/// monic. `None` = not in ℚ(x) (symbolic coefficients, other functions, …).
 pub(crate) fn expr_to_ratfun(e: &Expr, x: &str) -> Option<(UPoly, UPoly)> {
     let cap = crate::resource_limits::current().max_lrt_degree;
     fn conv(e: &Expr, x: &str, cap: usize) -> Option<(UPoly, UPoly)> {

@@ -1,4 +1,4 @@
-//! Per-function registry (tmp/IMPROVEMENT_PLAN.md Phase 1).
+//! Per-function registry.
 //!
 //! ONE place describes everything the crate knows about a named math
 //! function: its spellings, parser-default membership, normalization,
@@ -26,8 +26,7 @@
 //!   `const_pi` feeds sin/cos, `const_ln2` feeds exp *and* ln, tan
 //!   composes sin/cos — so it stays together; `FnDef::kernel` is the
 //!   per-function pointer into it.
-//! - Non-function notation (greek letters, relations, units) — improvement
-//!   plan Phase 2.
+//! - Non-function notation (greek letters, relations, units).
 
 use crate::expr::Expr;
 use num_complex::Complex64;

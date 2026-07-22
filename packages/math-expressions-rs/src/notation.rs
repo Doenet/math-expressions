@@ -1,4 +1,4 @@
-//! Internationalized number notation (I18N_MATH_NOTATION_PLAN).
+//! Internationalized number notation.
 //!
 //! The decimal and argument/tuple/list separators are an **explicit, declared**
 //! input to every parse and print — never inferred from the string, because
@@ -7,20 +7,21 @@
 //!
 //! At [`NumberNotation::default`] the decimal is `.`, the argument separator is
 //! `,`, and digits are Latin — byte-identical to the pre-i18n behavior, so
-//! every existing fixture stays unchanged (the "A2 invariant").
+//! every existing fixture stays unchanged.
 //!
-//! Phase 1 (implemented) covers `.`/`,` decimals paired with `,`/`;` separators
-//! in Latin digits, and — because the lexer/printer are char-generic — the
-//! Arabic `٫`/`؛` separators come along for free. The [`Grouping`] / [`Digits`]
-//! fields are **present but not yet acted on** (Phase 2): digit-set translation
-//! and thousands grouping are stubs so the option/JSON shape is already stable.
+//! The implemented notation covers `.`/`,` decimals paired with `,`/`;`
+//! separators in Latin digits, and — because the lexer/printer are
+//! char-generic — the Arabic `٫`/`؛` separators come along for free. The
+//! [`Grouping`] / [`Digits`] fields are **present but not yet acted on**:
+//! digit-set translation and thousands grouping are stubs so the option/JSON
+//! shape is already stable.
 
 use std::borrow::Cow;
 
-/// Thousands-grouping style (Phase 2 — not yet applied to output).
+/// Thousands-grouping style (not yet applied to output).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Grouping {
-    /// No digit grouping (Phase 1 default; today's behavior).
+    /// No digit grouping (the default; today's behavior).
     #[default]
     None,
     /// Western groups of three (`1,000,000`).
@@ -29,11 +30,11 @@ pub enum Grouping {
     Indian,
 }
 
-/// Digit set for scanning and emission (Phase 2 — only [`Digits::Latin`] is
-/// acted on today; the others are accepted and reserved).
+/// Digit set for scanning and emission (only [`Digits::Latin`] is acted on
+/// today; the others are accepted and reserved).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Digits {
-    /// Latin `0-9` (Phase 1 default).
+    /// Latin `0-9` (the default).
     #[default]
     Latin,
     /// Arabic-Indic `٠-٩`.
@@ -55,11 +56,11 @@ pub struct NumberNotation {
     /// `None` = strict: only [`Self::decimal_separator`] is a decimal.
     pub also_accept_decimal: Option<Vec<char>>,
     // ---- design-for (Phase 2; Latin/none defaults keep the A2 no-op) ----
-    /// Thousands group separator accepted on input / emitted (Phase 2).
+    /// Thousands group separator accepted on input / emitted (not yet acted on).
     pub group_separator: Option<char>,
-    /// Grouping style for emission (Phase 2).
+    /// Grouping style for emission (not yet acted on).
     pub grouping: Grouping,
-    /// Digit set for scanning/emission (Phase 2).
+    /// Digit set for scanning/emission (not yet acted on).
     pub digits: Digits,
 }
 
@@ -162,9 +163,8 @@ impl NumberNotation {
     /// independently (and defaults fill in the unspecified ones), a partial
     /// specification can leave, e.g., the decimal and argument separators both
     /// `,` — which parses ambiguously. Callers at a trust boundary (the wasm
-    /// JSON entry points) should `validate()` before use; the plan's
-    /// "notation is explicit, never inferred" stance means we error rather than
-    /// silently repair.
+    /// JSON entry points) should `validate()` before use; because notation is
+    /// explicit and never inferred, we error rather than silently repair.
     pub fn validate(&self) -> Result<(), String> {
         /// Glyphs the lexers already assign meaning to. A separator set to one
         /// of these silently shadows that token: the argument-separator

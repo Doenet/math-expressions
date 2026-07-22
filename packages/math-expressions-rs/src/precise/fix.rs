@@ -1,11 +1,10 @@
-//! `MpFix`: arbitrary-precision fixed point — the value contract of the
-//! reference implementations (ARBITRARY_PERCISION_PLAN §1/§5), reified as a
-//! value: `value ≈ mant · 2^scale`, with the producer guaranteeing
-//! `|true − value| ≤ 2^scale` (one ulp at the stored scale).
+//! `MpFix`: arbitrary-precision fixed point — `value ≈ mant · 2^scale`, with
+//! the producer guaranteeing `|true − value| ≤ 2^scale` (one ulp at the
+//! stored scale).
 //!
-//! API contract from the `stack_computable` prototype (§1c): `rescale`
-//! coarsens with rounding; refining a *representation* (left shift) is only
-//! meaningful for exactly-known values and is what `refine_exact` is for.
+//! Contract: `rescale` coarsens with rounding; refining a *representation*
+//! (left shift) is only meaningful for exactly-known values and is what
+//! `refine_exact` is for.
 
 use crate::num::{BigNumber, Number};
 use num_bigint::BigInt;

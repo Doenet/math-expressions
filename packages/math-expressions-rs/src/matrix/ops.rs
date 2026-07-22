@@ -1,5 +1,4 @@
-//! Layer 1 eager operations (MATRIX_PLAN.md Layer 1): `transpose`, `trace`,
-//! `matmul`.
+//! Eager matrix operations: `transpose`, `trace`, `matmul`.
 
 use crate::expr::Expr;
 use crate::norm::{add, canonicalize};

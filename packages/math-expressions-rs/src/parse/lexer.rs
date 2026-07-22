@@ -261,9 +261,8 @@ pub struct Lexer {
     sci_notation: bool,
     flavor: Flavor,
     rules: &'static [Rule],
-    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN). The
-    /// argument separator lexes to `Tok::Comma`; the decimal separator is
-    /// folded into number scanning.
+    /// Decimal / argument-separator notation. The argument separator lexes to
+    /// `Tok::Comma`; the decimal separator is folded into number scanning.
     notation: NumberNotation,
 }
 
@@ -680,11 +679,11 @@ fn rules() -> &'static [Rule] {
     })
 }
 
+// Built by interleaving single-rule `push` and delimiter-family `extend`, so a
+// single vec! literal isn't applicable.
 /// The base_latex_rules table from latex-to-ast.js, in source order.
 /// Rust string literals hold the actual characters (`"\\("` is backslash-`(`),
 /// where the JS table used doubly-escaped regex source.
-// Built by interleaving single-rule `push` and delimiter-family `extend`, so a
-// single vec! literal isn't applicable.
 #[allow(clippy::vec_init_then_push)]
 fn latex_rules() -> &'static [Rule] {
     static RULES: OnceLock<Vec<Rule>> = OnceLock::new();
@@ -876,7 +875,7 @@ fn sci_delim_ok(rest: &str, flavor: Flavor, arg_sep: char) -> bool {
 
 /// A decimal separator at the start of `rest`: a bare accepted decimal char,
 /// or (LaTeX) a brace-wrapped one `{,}` — the form `render_number` emits for a
-/// decimal comma (A5). Returns the byte length consumed. Bare `.` is never
+/// decimal comma. Returns the byte length consumed. Bare `.` is never
 /// brace-matched, so default notation is byte-identical.
 fn decimal_at(rest: &str, decimals: &[char], flavor: Flavor) -> Option<usize> {
     for &d in decimals {

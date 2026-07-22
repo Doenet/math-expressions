@@ -1,7 +1,7 @@
-//! Converter to the JS `Tree` JSON shape (PORTING_PLAN.md §5, "JS tree
-//! interop"). ALL the ad-hoc JS encodings live here: parallel bool-tuples
-//! for chained inequalities, boolean interval-closure leaves, the "＿" blank
-//! symbol, single-arg apply with tuple wrapping.
+//! Converter to and from the JS `Tree` JSON shape. ALL the ad-hoc JS
+//! encodings live here: parallel bool-tuples for chained inequalities, boolean
+//! interval-closure leaves, the "＿" blank symbol, single-arg apply with tuple
+//! wrapping.
 //!
 //! Infinity/NaN cannot be represented in JSON; they are encoded as
 //! {"$": "Inf"} / {"$": "-Inf"} / {"$": "NaN"}, matching the fixture
@@ -12,20 +12,16 @@ use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 use serde_json::{json, Value};
 
+// Recursion is deliberately not depth-capped here: the realistic input path is
+// a JSON string deserialized by `serde_json`, whose own recursion limit (128)
+// rejects deeply-nested input before a `Value` is built, so this never sees a
+// tree deep enough to overflow. A hand-constructed `Value` could, but that is
+// not a user-input vector.
 /// Parse a JS `Tree` JSON value into an `Expr`. Inverse of [`to_js`] for the
 /// tree shapes the parsers produce (Rat is not reconstructed — a `["/", a, b]`
-/// node becomes `Div`, matching the parser). Panics on malformed input; the
-/// caller (WASM boundary, tests) supplies well-formed trees.
-///
-/// Deserialize a JS `Tree` JSON value. Malformed shapes are `Err`
-/// descriptions, never panics (wasm builds abort on panic, so a bad tree from
-/// JS must not unwind; trusted callers — test fixtures — just `.expect()`).
-///
-/// Recursion is not depth-capped here (§6e): the realistic input path is a
-/// JSON string deserialized by `serde_json`, whose own recursion limit (128)
-/// rejects deeply-nested input before a `Value` is built, so this never sees
-/// a tree deep enough to overflow. A hand-constructed `Value` could, but that
-/// is not a user-input vector.
+/// node becomes `Div`, matching the parser). Malformed shapes return an `Err`
+/// description and never panic (wasm builds abort on panic, so a bad tree from
+/// JS must not unwind; trusted callers such as test fixtures just `.expect()`).
 pub fn try_from_js(value: &Value) -> Result<Expr, String> {
     match value {
         Value::Number(n) => {

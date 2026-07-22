@@ -15,18 +15,21 @@
   },
   "files": [
     "dist",
-    "src"
+    "src-js"
   ],
   "scripts": {
-    "build:wasm": "bash crate/build-wasm.sh",
+    "build:wasm": "bash build-wasm.sh web pkg",
     "build": "tsc -p tsconfig.json",
-    "types:check": "tsc -p tsconfig.json --noEmit"
+    "types:check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "mathjs": "^15.2.0"
   },
   "devDependencies": {
     "mathjs": "^15.2.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.8"
   }
 }

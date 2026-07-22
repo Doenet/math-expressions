@@ -1,5 +1,5 @@
-//! §1b: determinant, inverse, rref, rank, and nullspace — the public
-//! entry points that dispatch to the [`super::kernels`] elimination kernels.
+//! Determinant, inverse, rref, rank, and nullspace — the public entry points
+//! that dispatch to the [`super::kernels`] elimination kernels.
 
 use crate::assumptions::{is_nonzero, Assumptions};
 use crate::expr::Expr;
@@ -11,8 +11,8 @@ use super::kernels::{
     as_numbers, det_bareiss, det_cofactor, det_rational, is_polynomial, is_zero, rref_core,
 };
 
-/// Determinant (MATRIX_PLAN §1b), tiered by entry type: exact elimination
-/// over `Number` for all-rational entries, fraction-free Bareiss (divisions
+/// Determinant, tiered by entry type: exact elimination over `Number` for
+/// all-rational entries, fraction-free Bareiss (divisions
 /// cancelled through `reduce_rational`) for polynomial entries up to
 /// `max_matrix_dim`, cofactor expansion for general symbolic entries up to
 /// `max_symbolic_det_dim`. Anything else — non-matrix, non-square, over the
@@ -48,8 +48,8 @@ pub fn det(e: &Expr) -> Expr {
 
 /// Matrix inverse: exact Gauss–Jordan for all-rational entries (opaque when
 /// singular); adjugate/det for symbolic entries up to `max_symbolic_det_dim`,
-/// gated on the assumptions system proving the determinant nonzero
-/// (MATRIX_PLAN §0 decision 4 — no silent case-guessing).
+/// gated on the assumptions system proving the determinant nonzero (no silent
+/// case-guessing).
 pub fn matrix_inverse(e: &Expr, assumptions: &Assumptions) -> Expr {
     let c = canonicalize(e);
     if let Expr::Matrix {

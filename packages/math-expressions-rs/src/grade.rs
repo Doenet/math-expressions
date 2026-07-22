@@ -1,6 +1,6 @@
 //! Grading helpers beyond plain equality: sign-error-tolerant comparison
 //! (`equalWithSignErrors`), linear solving (`solve_linear`), and finite-set
-//! membership evaluation (§18 / DoenetML #1504).
+//! membership evaluation.
 
 use crate::assumptions::{is_negative, is_nonzero, is_positive, Assumptions};
 use crate::equality::{equals, EqOptions};
@@ -55,7 +55,7 @@ fn single_negations(e: &Expr) -> Vec<Expr> {
 /// under the assumptions, move everything to one side, extract `a·var + b`
 /// with `a`, `b` free of `var`, and return `var <op> −b/a`. `None` when the
 /// relation is not linear in `var`, `a` is not provably nonzero, or an
-/// inequality\'s coefficient sign is unknown (inequalities flip direction for a
+/// inequality's coefficient sign is unknown (inequalities flip direction for a
 /// provably negative `a`).
 pub fn solve_linear(e: &Expr, var: &str, assumptions: &Assumptions) -> Option<Expr> {
     let canon = simplify_with(e, assumptions);
@@ -124,7 +124,7 @@ pub fn solve_linear(e: &Expr, var: &str, assumptions: &Assumptions) -> Option<Ex
         return None;
     }
 
-    // var <op\'> −b/a, flipping strict/loose inequalities for negative a.
+    // var <op'> −b/a, flipping strict/loose inequalities for negative a.
     let solution = simplify_with(
         &Expr::Div(
             Box::new(Expr::Neg(Box::new(b))),
@@ -156,8 +156,8 @@ pub fn solve_linear(e: &Expr, var: &str, assumptions: &Assumptions) -> Option<Ex
     })
 }
 
-/// Evaluate a finite-set membership relation to a truth value (§18 /
-/// DoenetML #1504): `x ∈ {a, b, …}` is `Some(true)` when `x` equals a member,
+/// Evaluate a finite-set membership relation to a truth value: `x ∈ {a, b, …}`
+/// is `Some(true)` when `x` equals a member,
 /// `Some(false)` when every membership comparison is decidably false and the
 /// candidate is a closed (constant) expression, and `None` otherwise.
 /// `∋`/`∌` orientations are handled by canonicalization; `∉` negates.

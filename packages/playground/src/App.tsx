@@ -1,5 +1,10 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { loadEngines, type Engines } from "./engines";
+import {
+  loadEngines,
+  makeJsAdapter,
+  makeRustAdapter,
+  type LoadedEngines,
+} from "./engines";
 import { BASE_VAR, parseChain } from "./chain";
 import { evaluateChain } from "./evaluate";
 import { CATEGORIES, REGISTRY } from "./registry";
@@ -8,6 +13,7 @@ import Katex from "./components/Katex";
 import Tree from "./components/Tree";
 import ChainEditor, { type ChainEditorHandle } from "./components/ChainEditor";
 import type {
+  Notation,
   Displayable,
   OpCategory,
   SafeResult,
@@ -260,18 +266,32 @@ function StepCard({ step, index }: { step: StepResult; index: number }) {
 /* -------------------------------- app --------------------------------- */
 
 export default function App() {
-  const [engines, setEngines] = useState<Engines | null>(null);
+  const [loaded, setLoaded] = useState<LoadedEngines | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [baseText, setBaseText] = useState("sin^2(x) + cos^2(x) + 1");
   const [baseSyntax, setBaseSyntax] = useState<Syntax>("text");
+  const [notation, setNotation] = useState<Notation>("period");
   const [chain, setChain] = useState(EXAMPLES[0].chain);
   const editorRef = useRef<ChainEditorHandle>(null);
 
   useEffect(() => {
-    loadEngines().then(setEngines, (e: unknown) =>
+    loadEngines().then(setLoaded, (e: unknown) =>
       setLoadError(e instanceof Error ? e.message : String(e)),
     );
   }, []);
+
+  // Notation-specific engine adapters, rebuilt when the separator convention
+  // changes (Rust parses natively; the JS adapter transliterates).
+  const engines = useMemo(
+    () =>
+      loaded
+        ? {
+            js: makeJsAdapter(notation),
+            rust: makeRustAdapter(loaded.rustModule, notation),
+          }
+        : null,
+    [loaded, notation],
+  );
 
   // Live preview of the equation box: parse with the JS engine and render it.
   const basePreview = useMemo(() => {
@@ -365,6 +385,15 @@ export default function App() {
                 </option>
               ))}
             </select>
+            <select
+              className="showcase"
+              value={notation}
+              onChange={(e) => setNotation(e.target.value as Notation)}
+              title="Decimal / argument separators for math strings"
+            >
+              <option value="period">1.5, x&nbsp;&nbsp;(. ,)</option>
+              <option value="comma">1,5; x&nbsp;&nbsp;(, ;)</option>
+            </select>
             <div className="radios">
               <label>
                 <input
@@ -410,6 +439,13 @@ export default function App() {
             )}
           </div>
         </div>
+        {notation === "comma" && (
+          <p className="muted eq-note">
+            Comma notation (<code>1,5</code>, <code>f(x; y)</code>) applies inside
+            math strings. Rust parses it natively; the JS engine has no
+            comma-decimal parser, so it is transliterated.
+          </p>
+        )}
       </section>
 
       {/* ---- box 2: the chain, paired with the operations palette ---- */}

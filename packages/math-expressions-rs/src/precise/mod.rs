@@ -1,11 +1,12 @@
-//! Arbitrary-precision evaluation (ARBITRARY_PERCISION_PLAN P1+P2).
+//! Arbitrary-precision evaluation.
 //!
 //! Pipeline: canonical tree → flat tape (`tape.rs`, iterative) → Tier R
 //! (exact rational — the canonicalizer already folded it) → Tier 0 (f64 with
 //! certified error bounds, `tier0.rs`) → Tier 2 (`MpFix` fixed point at a
 //! working precision chosen by a magnitude-informed backward planning pass,
 //! escalated by a Ziv loop). Failures are values (`Precise::Unknown`), never
-//! hangs or panics; every loop is operation-counted under §7f `limits`.
+//! hangs or panics; every loop is operation-counted under the configured
+//! resource limits.
 
 pub mod complex;
 pub mod diverge;
@@ -27,7 +28,7 @@ pub use diverge::{integrate_analyzed, IntegralVerdict, SingularPoint};
 pub use quad::integrate_to_precision;
 pub use tape::{compile, CompileError};
 
-/// The tri-state result of a precision request (plan §7).
+/// The tri-state result of a precision request.
 #[derive(Clone, Debug)]
 pub enum Precise {
     /// The value is exactly this rational number.
@@ -128,7 +129,7 @@ pub fn evaluate_to_precision(e: &Expr, digits: usize) -> Precise {
 
 /// Evaluate a compiled tape at bindings to `digits` significant digits.
 /// Real tiers first; expressions with complex intermediates (√ of a
-/// negative, `i`, principal powers) fall through to the complex tiers (P4).
+/// negative, `i`, principal powers) fall through to the complex tiers.
 pub fn eval_tape(tape: &CompiledExpr, bindings: &[f64], digits: usize) -> Precise {
     // ---- Tier 0 (real) ----
     let mut record: Vec<f64> = Vec::new();
@@ -549,7 +550,7 @@ fn mul_round(a: &MpFix, b: &MpFix, target: i32) -> Option<MpFix> {
     Some(if m.scale >= target { m } else { m.rescale(target) })
 }
 
-/// 1/v at scale `s` (the prototype's Inverse kernel: one rounded division).
+/// 1/v at scale `s` (one rounded division).
 fn inv_fix(x: &MpFix, s: i32) -> Option<MpFix> {
     if x.mant.is_zero() {
         return None;

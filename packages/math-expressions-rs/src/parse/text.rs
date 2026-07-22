@@ -1,6 +1,5 @@
 //! Recursive descent text parser — a faithful port of
-//! lib/converters/text-to-ast.js (grammar documented there and in
-//! PORTING_PLAN.md §6b).
+//! lib/converters/text-to-ast.js (grammar documented there).
 //!
 //! Porting conventions:
 //! - JS `false` return values ("no factor here") become `Option<Expr>::None`.
@@ -36,7 +35,7 @@ pub struct TextToAstOptions {
     pub operator_symbols: Vec<String>,
     pub parse_leibniz_notation: bool,
     pub parse_scientific_notation: bool,
-    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
 }
 
@@ -83,7 +82,7 @@ pub struct TextToAst {
     functions: HashSet<String>,
     operators: HashSet<String>,
     unsplit: HashSet<String>,
-    /// Recursion depth through the self-recursive parse functions (§6e).
+    /// Recursion depth through the self-recursive parse functions.
     depth: usize,
 }
 

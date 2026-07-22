@@ -1,11 +1,10 @@
 //! f64 numeric utilities replacing the parts of `me.math` (the re-exported
-//! mathjs instance) that Doenet consumes — see the Doenet-usage survey in
-//! tmp/PORTING_PLAN.md §17 notes. Everything here is plain double-precision
-//! numerics, deliberately: the exact/symbolic counterparts (matrix algebra,
-//! `RootOf` eigenvalues, certified precision) live in their own plans; this
-//! module is the drop-in for what Doenet uses *numerically* today
-//! (`mod`/`gcd`/`lcm`, statistics, `lusolve`, `eigs`). ODE solving (`dopri`)
-//! is intentionally absent — see tmp/ODE_PLAN.md.
+//! mathjs instance) that Doenet consumes. Everything here is plain
+//! double-precision numerics, deliberately: the exact/symbolic counterparts
+//! (matrix algebra, `RootOf` eigenvalues, certified precision) live in their
+//! own modules; this module is the drop-in for what Doenet uses *numerically*
+//! today (`mod`/`gcd`/`lcm`, statistics, `lusolve`, `eigs`). ODE solving
+//! (`dopri`) is intentionally absent — see the [`ode`](crate::ode) module.
 //!
 //! All loops are bounded (fixed iteration caps, no wall-clock); failures are
 //! `None`/NaN, never panics — this module is wasm-boundary-facing.

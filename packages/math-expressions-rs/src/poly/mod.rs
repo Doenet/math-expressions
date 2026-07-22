@@ -1,6 +1,6 @@
-//! Polynomial layer (PORTING_PLAN.md §8), scoped to what the public API needs:
-//! multivariate GCD for `reduce_rational` (cancel common polynomial factors in
-//! a fraction). Follows the plan's §8c recursive dense model (SymPy's dmp):
+//! Polynomial layer, scoped to what the public API needs: multivariate GCD
+//! for `reduce_rational` (cancel common polynomial factors in a fraction).
+//! Uses a recursive dense model (SymPy's dmp):
 //! a polynomial in `vars[0..n]` is a coefficient list in `vars[0]` whose
 //! entries are polynomials in the remaining variables; the innermost level is
 //! an exact `BigRational`.
@@ -18,7 +18,7 @@ use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{One, Signed, Zero};
 
-/// Degree cap per variable and PRS iteration cap (deterministic, §7f).
+/// Degree cap per variable and PRS iteration cap (deterministic).
 const MAX_DEGREE: usize = 64;
 const MAX_PRS_STEPS: usize = 128;
 

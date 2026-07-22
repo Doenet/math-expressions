@@ -1,4 +1,4 @@
-//! Output formatters (PORTING_PLAN.md §12): `Expr` → text / LaTeX.
+//! Output formatters: `Expr` → text / LaTeX.
 //!
 //! These are clean precedence-based pretty-printers that walk `Expr`
 //! directly, rather than transcriptions of the JS formatters (which decide

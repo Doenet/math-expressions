@@ -49,6 +49,24 @@ jobs:
               with:
                   runCmd: cd packages/playground && npm ci && npm run build
 
+    wasm-e2e:
+        name: wasm end-to-end
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            # Builds the browser (web-target) wasm-bindgen package and runs the
+            # end-to-end suite against it (ESM import + initSync, no require). The
+            # wasm32 target + pinned wasm-bindgen-cli come from the devcontainer.
+            - name: Build wasm and run the end-to-end suite
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: |
+                      npm ci
+                      cd packages/math-expressions-rs-wasm
+                      npm run build:wasm
+                      npm test
+
     js-compat-test:
         name: js-compat test
         runs-on: ubuntu-latest
