@@ -64,6 +64,13 @@ impl Precise {
     }
 
     /// First `digits` significant decimal digits (`"1.4142…e0"` form).
+    ///
+    /// **Display-only string** — NOT re-parseable by this crate's parsers
+    /// (lowercase `e` in the exponent reads as Euler's number; the complex
+    /// form is hand-assembled) and NOT notation-aware (always `.`-decimal).
+    /// It is a diagnostic/precision readout, deliberately outside the
+    /// printers' round-trip contract; anything user-round-trippable must go
+    /// through `output::to_text`/`to_latex` on an `Expr` instead.
     pub fn to_decimal_string(&self, digits: usize) -> Option<String> {
         match self {
             Precise::Exact(n) => {

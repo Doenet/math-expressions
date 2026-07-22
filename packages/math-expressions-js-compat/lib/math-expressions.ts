@@ -8,7 +8,7 @@ import wasm from "./_wasm";
 import math from "./mathjs";
 import { match, flatten, unflattenLeft, unflattenRight } from "./trees/flatten";
 import * as converters from "./converters/index";
-import type { WasmExpression } from "./wasm-types";
+import type { WasmExpression } from "math-expressions-rs-wasm";
 
 /** The JS AST tree encoding (`["+", 1, "x", 3]`). */
 export type Tree = number | string | boolean | Tree[];

@@ -69,7 +69,7 @@ impl WasmAssumptions {
 
     /// Simplify `expr` under these assumptions.
     pub fn simplify(&self, expr: &Expression) -> Expression {
-        Expression(rust_simplify_with(&expr.0, &self.0))
+        expr.derive(rust_simplify_with(&expr.0, &self.0))
     }
 
     // The eight three-valued predicates (`true` / `false` / `undefined`).
@@ -110,5 +110,5 @@ impl Default for WasmAssumptions {
 /// mismatched list lengths.
 #[wasm_bindgen]
 pub fn discrete_infinite_set(offsets: &Expression, periods: &Expression) -> Option<Expression> {
-    create_discrete_infinite_set(&offsets.0, &periods.0, None, None).map(Expression)
+    create_discrete_infinite_set(&offsets.0, &periods.0, None, None).map(|e| offsets.derive(e))
 }

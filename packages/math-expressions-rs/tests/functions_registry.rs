@@ -28,6 +28,11 @@ const OLD_LATEX_APPLIED: &[&str] = &[
     "sin", "sinh", "asin", "asinh", "arcsin", "arcsinh", "tan", "tanh", "atan", "atan2", "atanh",
     "arctan", "arctanh", "arg", "conj", "Re", "Im", "det", "trace", "nPr", "nCr", "floor", "ceil",
     "round",
+    // Beyond the historical JS list (deliberate): `rootof` is Rust-only
+    // notation for the RootOf leaf; registering it closes the LaTeX
+    // `\operatorname{rootof}(p, k)` round-trip. JS has no RootOf, so there is
+    // no parity to preserve.
+    "rootof",
 ];
 
 /// standard_form.js `function_normalizations`, verbatim.

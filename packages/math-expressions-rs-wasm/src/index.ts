@@ -19,4 +19,11 @@ export type { Tree, TreeArray, Scope, RustExprLike } from "./tree-to-mathjs";
 
 export { default } from "./tree-to-mathjs";
 
-export type { RustExpression, MathExpressionsWasmModule } from "./wasm";
+export type {
+  WasmExpression,
+  WasmAssumptions,
+  WasmAssumptionsConstructor,
+  WasmModule,
+  RustExpression,
+  MathExpressionsWasmModule,
+} from "./wasm";

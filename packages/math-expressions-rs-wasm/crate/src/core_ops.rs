@@ -7,20 +7,60 @@ use math_expressions::{
     evaluate_numbers, evaluate_to_constant as rust_evc, expand as rust_expand, ops, reduce_rational,
     round_numbers_to_decimals, round_numbers_to_precision, simplify as rust_simplify,
     simplify_with as rust_simplify_with, to_latex, to_text, Assumptions, EqOptions, Expr,
-    TextToAst, TextToAstOptions,
+    LatexOpts, TextOpts, TextToAst, TextToAstOptions,
 };
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 impl Expression {
-    /// Render back to text syntax.
+    /// Render back to text syntax — in the notation this expression was
+    /// parsed with (see the `Expression` doc).
     pub fn to_text(&self) -> String {
-        to_text(&self.0, &Default::default())
+        to_text(
+            &self.0,
+            &TextOpts {
+                notation: self.1.clone(),
+                ..Default::default()
+            },
+        )
     }
 
-    /// Render to LaTeX.
+    /// Render to LaTeX — in the notation this expression was parsed with.
     pub fn to_latex(&self) -> String {
-        to_latex(&self.0, &Default::default())
+        to_latex(
+            &self.0,
+            &LatexOpts {
+                notation: self.1.clone(),
+            },
+        )
+    }
+
+    /// Render to text under an explicit options object (keys: `unicode` bool,
+    /// and a `notation` sub-object — see `parse_text_with_options`). Options
+    /// start from the expression's carried notation; given keys override.
+    pub fn to_text_with_options(&self, options_json: &str) -> Result<String, JsError> {
+        let v: serde_json::Value =
+            serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
+        let mut o = TextOpts {
+            notation: self.1.clone(),
+            ..Default::default()
+        };
+        super::parse::read_opt_bool(&v, "unicode", &mut o.unicode);
+        super::parse::read_notation(&v, &mut o.notation).map_err(|e| JsError::new(&e))?;
+        Ok(to_text(&self.0, &o))
+    }
+
+    /// Render to LaTeX under an explicit options object (key: `notation`
+    /// sub-object — see `parse_text_with_options`). Options start from the
+    /// expression's carried notation; given keys override.
+    pub fn to_latex_with_options(&self, options_json: &str) -> Result<String, JsError> {
+        let v: serde_json::Value =
+            serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
+        let mut o = LatexOpts {
+            notation: self.1.clone(),
+        };
+        super::parse::read_notation(&v, &mut o.notation).map_err(|e| JsError::new(&e))?;
+        Ok(to_latex(&self.0, &o))
     }
 
     /// The parse tree serialised to the JS `Tree` JSON shape
@@ -37,7 +77,7 @@ impl Expression {
 
     /// Canonical simplification.
     pub fn simplify(&self) -> Expression {
-        Expression(rust_simplify(&self.0))
+        self.derive(rust_simplify(&self.0))
     }
 
     /// Simplify under the given `assumptions` — each a relation in text syntax
@@ -45,40 +85,46 @@ impl Expression {
     /// ignored. With an empty list this equals [`Self::simplify`].
     pub fn simplify_with_assumptions(&self, assumptions: Vec<String>) -> Expression {
         let mut a = Assumptions::new();
+        // Assumption strings are parsed in THIS expression's notation — under
+        // comma notation `"x > 1,5"` must read as x > 3/2, not misparse.
+        let opts = TextToAstOptions {
+            notation: self.1.clone(),
+            ..Default::default()
+        };
         for s in &assumptions {
-            if let Ok(e) = TextToAst::new(TextToAstOptions::default()).convert(s) {
+            if let Ok(e) = TextToAst::new(opts.clone()).convert(s) {
                 a.add(&e);
             }
         }
-        Expression(rust_simplify_with(&self.0, &a))
+        self.derive(rust_simplify_with(&self.0, &a))
     }
 
     /// Distribute products and powers of sums.
     pub fn expand(&self) -> Expression {
-        Expression(rust_expand(&self.0))
+        self.derive(rust_expand(&self.0))
     }
 
     /// Does the expression contain any ± (plus-minus) operator?
     pub fn contains_pm(&self) -> bool {
-        math_expressions::pm::contains_pm(&self.0)
+        math_expressions::contains_pm(&self.0)
     }
 
     /// The number of ± (plus-minus) operators in the expression.
     pub fn count_pm(&self) -> usize {
-        math_expressions::pm::count_pm(&self.0)
+        math_expressions::count_pm(&self.0)
     }
 
     /// Enumerate all `2^n` sign assignments of the ± operators (each `±x`
     /// becomes `x` or `-x`). Errors if there are too many ± operators to expand.
     pub fn expand_pm_signs(&self) -> Result<Vec<Expression>, JsError> {
-        math_expressions::pm::expand_pm_signs(&self.0)
-            .map(|v| v.into_iter().map(Expression).collect())
+        math_expressions::expand_pm_signs(&self.0)
+            .map(|v| v.into_iter().map(|e| self.derive(e)).collect())
             .map_err(|e| JsError::new(&e.to_string()))
     }
 
     /// Symbolic derivative with respect to `var`.
     pub fn derivative(&self, var: &str) -> Expression {
-        Expression(rust_derivative(&self.0, var))
+        self.derive(rust_derivative(&self.0, var))
     }
 
     /// The free variable names, in first-appearance order.
@@ -110,17 +156,17 @@ impl Expression {
 
     /// Replace `pi` and `e` with their floating-point values.
     pub fn constants_to_floats(&self) -> Expression {
-        Expression(constants_to_floats(&self.0))
+        self.derive(constants_to_floats(&self.0))
     }
 
     /// Round every number to `decimals` decimal places.
     pub fn round_numbers_to_decimals(&self, decimals: i32) -> Expression {
-        Expression(round_numbers_to_decimals(&self.0, decimals))
+        self.derive(round_numbers_to_decimals(&self.0, decimals))
     }
 
     /// Round every number to `sig_figs` significant figures.
     pub fn round_numbers_to_precision(&self, sig_figs: i32) -> Expression {
-        Expression(round_numbers_to_precision(&self.0, sig_figs))
+        self.derive(round_numbers_to_precision(&self.0, sig_figs))
     }
 
     /// `me.round_numbers_to_precision_plus_decimals` — round to `digits`
@@ -131,20 +177,20 @@ impl Expression {
         digits: f64,
         decimals: f64,
     ) -> Expression {
-        Expression(ops::round_numbers_to_precision_plus_decimals(
+        self.derive(ops::round_numbers_to_precision_plus_decimals(
             &self.0, digits, decimals,
         ))
     }
 
     /// Fold numeric subexpressions exactly (`4+x-2` → `x+2`).
     pub fn evaluate_numbers(&self) -> Expression {
-        Expression(evaluate_numbers(&self.0))
+        self.derive(evaluate_numbers(&self.0))
     }
 
     /// Cancel common polynomial factors in fractions
     /// (`(x^2-1)/(x-1)` → `x+1`).
     pub fn reduce_rational(&self) -> Expression {
-        Expression(reduce_rational(&self.0))
+        self.derive(reduce_rational(&self.0))
     }
 
     /// Put the expression over a single common denominator and reduce it to
@@ -152,13 +198,13 @@ impl Expression {
     /// …) are held fixed as opaque kernels, so `1/sin(x) + 1/sin(x)` becomes
     /// `2/sin(x)` and `1/(x+1) + 1/(x-1)` becomes `2x/(x^2-1)`.
     pub fn together(&self) -> Expression {
-        Expression(math_expressions::ratform::together(&self.0))
+        self.derive(math_expressions::together(&self.0))
     }
 
     /// Replace `var` with `value` everywhere (no simplification).
     pub fn substitute_var(&self, var: &str, value: &Expression) -> Expression {
         let map = std::collections::HashMap::from([(var.to_string(), value.0.clone())]);
-        Expression(ops::substitute(&self.0, &map))
+        self.derive(ops::substitute(&self.0, &map))
     }
 
     /// Evaluate at real bindings given as parallel arrays; `undefined` on an
@@ -181,25 +227,25 @@ impl Expression {
     // ---- arithmetic builders (JS `add`/`subtract`/`multiply`/`divide`/`pow`) ----
 
     pub fn add(&self, other: &Expression) -> Expression {
-        Expression(Expr::Add(vec![self.0.clone(), other.0.clone()]))
+        self.derive(Expr::Add(vec![self.0.clone(), other.0.clone()]))
     }
     pub fn subtract(&self, other: &Expression) -> Expression {
-        Expression(Expr::Add(vec![
+        self.derive(Expr::Add(vec![
             self.0.clone(),
             Expr::Neg(Box::new(other.0.clone())),
         ]))
     }
     pub fn multiply(&self, other: &Expression) -> Expression {
-        Expression(Expr::Mul(vec![self.0.clone(), other.0.clone()]))
+        self.derive(Expr::Mul(vec![self.0.clone(), other.0.clone()]))
     }
     pub fn divide(&self, other: &Expression) -> Expression {
-        Expression(Expr::Div(
+        self.derive(Expr::Div(
             Box::new(self.0.clone()),
             Box::new(other.0.clone()),
         ))
     }
     pub fn pow(&self, other: &Expression) -> Expression {
-        Expression(Expr::Pow(
+        self.derive(Expr::Pow(
             Box::new(self.0.clone()),
             Box::new(other.0.clone()),
         ))
@@ -208,7 +254,7 @@ impl Expression {
     /// Remainder `self mod other` (JS `mod`).
     #[wasm_bindgen(js_name = "mod")]
     pub fn modulo(&self, other: &Expression) -> Expression {
-        Expression(Expr::OtherOp(
+        self.derive(Expr::OtherOp(
             math_expressions::sym::Sym::new("mod"),
             vec![self.0.clone(), other.0.clone()],
         ))
@@ -216,6 +262,6 @@ impl Expression {
 
     /// A structural copy (JS `copy`).
     pub fn copy(&self) -> Expression {
-        Expression(self.0.clone())
+        self.derive(self.0.clone())
     }
 }

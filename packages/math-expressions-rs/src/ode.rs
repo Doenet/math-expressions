@@ -110,6 +110,12 @@ impl OdeSolution {
     /// span, matching `numeric.dopri`'s behavior of only answering inside
     /// the trajectory). Always a length-n vector, even for n = 1 (§5a).
     pub fn at(&self, t: f64) -> Vec<f64> {
+        // NaN can't be ordered: the binary search below would panic (an abort
+        // under wasm's panic=abort). Propagate NaN like any float function.
+        if t.is_nan() {
+            let n = self.ys.first().map_or(0, Vec::len);
+            return vec![f64::NAN; n];
+        }
         if self.segs.is_empty() {
             return self.ys.first().cloned().unwrap_or_default();
         }

@@ -46,8 +46,20 @@ pub(super) fn square_literal(c: &Expr) -> Option<(usize, &[Expr])> {
     Some((n, entries))
 }
 
+/// Is this entry provably zero? Pivot/rank/discriminant decisions ride on
+/// this: a symbolic-but-zero entry (e.g. `sqrt(8) - 2 sqrt(2)`) chosen as a
+/// pivot silently corrupts the elimination, so anything that isn't a literal
+/// gets the certified exact-zero service (accept-only — no sampling, budget-
+/// governed). Undecidable entries stay "nonzero", the conservative direction
+/// this code always used.
 pub(super) fn is_zero(e: &Expr) -> bool {
-    matches!(e, Expr::Num(n) if n.is_zero())
+    match e {
+        Expr::Num(n) => n.is_zero(),
+        // Atoms other than numbers are never zero (symbols are indeterminates
+        // here; π/e are nonzero constants).
+        Expr::Sym(_) | Expr::Const(_) => false,
+        _ => crate::exact::certified_zero(e, &crate::assumptions::Assumptions::new()),
+    }
 }
 
 /// Exact elimination over `Number`: det = sign · ∏ pivots.
@@ -193,6 +205,27 @@ pub(super) fn det_bareiss(entries: &[Expr], n: usize) -> Option<Expr> {
 /// Gauss–Jordan over `Expr` with tri-state pivot gating. Returns the reduced
 /// entries and the pivot columns, or `None` when a pivot decision needs an
 /// unavailable assumption.
+/// Is this entry certified nonzero? The assumptions engine first (it knows
+/// about symbols under hypotheses), then — for variable-free entries only —
+/// the exact-constant service, which decides surd/π arithmetic like
+/// `sqrt(8) - sqrt(2)` that the assumptions engine can't. Never guesses:
+/// variable entries with no assumption answer stay `None` (§0 decision 4 —
+/// sampling would wrongly certify a parameter expression that vanishes at
+/// some parameter values).
+fn entry_nonzero(e: &Expr, assumptions: &Assumptions) -> Option<bool> {
+    if let Some(v) = is_nonzero(e, assumptions) {
+        return Some(v);
+    }
+    let variable_free = crate::ops::variables(e)
+        .iter()
+        .all(|v| crate::sym::is_constant_symbol(v));
+    if variable_free {
+        // exact::is_zero never samples on variable-free input.
+        return crate::exact::is_zero(e, assumptions).map(|z| !z);
+    }
+    None
+}
+
 pub(super) fn rref_core(
     entries: &[Expr],
     rows: usize,
@@ -218,7 +251,7 @@ pub(super) fn rref_core(
             if is_zero(e) {
                 continue;
             }
-            match is_nonzero(e, assumptions) {
+            match entry_nonzero(e, assumptions) {
                 Some(true) => {
                     pivot_row = Some(r);
                     break;

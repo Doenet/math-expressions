@@ -2,8 +2,12 @@
 //!
 //! One enum serves two layers: the *faithful* layer (parser output — flat
 //! n-ary ops, but unsorted and unfolded) and the *canonical* layer (produced
-//! by normalize(), phase 4). `Div`, `Neg`, and `OtherOp` exist only in the
-//! faithful layer; canonicalisation rewrites them.
+//! by normalize(), phase 4). `Div` and `Neg` exist only in the faithful
+//! layer; canonicalisation rewrites them. `OtherOp` lives in BOTH layers:
+//! canonicalize preserves it, and canonical-layer code mints new ones (`pm`,
+//! `derivative` nodes from diff, matrix ops like `det`/`rref`,
+//! `discrete_infinite_set`) — do not assume an `OtherOp` arm is dead on
+//! canonical trees.
 
 use crate::num::Number;
 use crate::sym::Sym;
@@ -329,7 +333,14 @@ pub fn flatten(expr: Expr) -> Expr {
         },
         Expr::OtherOp(op, args) => Expr::OtherOp(op, flatten_args(args)),
 
-        // Leaves
-        leaf => leaf,
+        // Leaves — spelled out (no catch-all) so that adding a new compound
+        // variant is a compile error here rather than it silently being
+        // treated as a leaf and never flattened.
+        leaf @ (Expr::Num(_)
+        | Expr::Sym(_)
+        | Expr::Const(_)
+        | Expr::RootOf { .. }
+        | Expr::Blank
+        | Expr::Ldots) => leaf,
     }
 }

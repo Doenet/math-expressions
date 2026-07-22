@@ -274,10 +274,19 @@ pub fn applied_text_names() -> Vec<String> {
 
 /// The LaTeX parser's default `applied_function_symbols`.
 pub fn applied_latex_names() -> Vec<String> {
-    ALL.iter()
+    let mut names: Vec<String> = ALL
+        .iter()
         .flat_map(|d| d.parse_latex)
         .map(|s| s.to_string())
-        .collect()
+        .collect();
+    // `rootof` is notation for the RootOf leaf, not a math function (no
+    // FnDef): registering it here lets `\operatorname{rootof}\left(p,
+    // k\right)` — the LaTeX printer's RootOf form — re-parse as the
+    // application that canonicalize folds back into the leaf, closing the
+    // LaTeX round-trip. The text parser needs no entry (a VAR followed by a
+    // parenthesized tuple already applies).
+    names.push("rootof".to_string());
+    names
 }
 
 // Builder shorthand shared by the antiderivative closures in family files.

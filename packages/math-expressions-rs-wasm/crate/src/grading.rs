@@ -24,11 +24,17 @@ impl Expression {
     /// `allowedErrorInNumbers`; bools — `includeErrorInNumberExponents`,
     /// `allowedErrorIsAbsolute`, `allowBlanks`. So `3.14 == pi` becomes true
     /// with `{"allowedErrorInNumbers": 0.01}`.
-    pub fn equals_with_options(&self, other: &Expression, options_json: &str) -> bool {
-        let v: serde_json::Value = match serde_json::from_str(options_json) {
-            Ok(v) => v,
-            Err(_) => return self.equals(other),
-        };
+    ///
+    /// Malformed JSON is an **error**, not a silent fall-back to default
+    /// options — a typo'd grading config must never grade with the wrong
+    /// tolerances.
+    pub fn equals_with_options(
+        &self,
+        other: &Expression,
+        options_json: &str,
+    ) -> Result<bool, JsError> {
+        let v: serde_json::Value =
+            serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
         let mut o = EqOptions::default();
         read_opt_f64(&v, "relativeTolerance", &mut o.relative_tolerance);
         read_opt_f64(&v, "absoluteTolerance", &mut o.absolute_tolerance);
@@ -41,7 +47,7 @@ impl Expression {
         );
         read_opt_bool(&v, "allowedErrorIsAbsolute", &mut o.allowed_error_is_absolute);
         read_opt_bool(&v, "allowBlanks", &mut o.allow_blanks);
-        math_expressions::equals(&self.0, &other.0, &o)
+        Ok(math_expressions::equals(&self.0, &other.0, &o))
     }
 
     // ---- structural comparison (STRUCTURAL_COMPARISON F3) ----

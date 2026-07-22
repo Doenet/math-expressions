@@ -17,18 +17,15 @@ use serde_json::{json, Value};
 /// node becomes `Div`, matching the parser). Panics on malformed input; the
 /// caller (WASM boundary, tests) supplies well-formed trees.
 ///
+/// Deserialize a JS `Tree` JSON value. Malformed shapes are `Err`
+/// descriptions, never panics (wasm builds abort on panic, so a bad tree from
+/// JS must not unwind; trusted callers — test fixtures — just `.expect()`).
+///
 /// Recursion is not depth-capped here (§6e): the realistic input path is a
 /// JSON string deserialized by `serde_json`, whose own recursion limit (128)
-/// rejects deeply-nested input before a `Value` is built, so `from_js` never
-/// sees a tree deep enough to overflow. A hand-constructed `Value` could, but
-/// that is not a user-input vector.
-pub fn from_js(value: &Value) -> Expr {
-    try_from_js(value).unwrap_or_else(|e| panic!("from_js: {e}"))
-}
-
-/// Non-panicking [`from_js`] for untrusted input (the wasm `from_ast`
-/// boundary): malformed shapes become `Err` descriptions instead of panics
-/// (wasm builds abort on panic, so a bad tree from JS must not unwind).
+/// rejects deeply-nested input before a `Value` is built, so this never sees
+/// a tree deep enough to overflow. A hand-constructed `Value` could, but that
+/// is not a user-input vector.
 pub fn try_from_js(value: &Value) -> Result<Expr, String> {
     match value {
         Value::Number(n) => {

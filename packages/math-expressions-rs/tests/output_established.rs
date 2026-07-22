@@ -18,7 +18,7 @@
 //! BLESS=1 cargo test --test output_established
 //! ```
 
-use math_expressions::js_tree::from_js;
+use math_expressions::js_tree::try_from_js;
 use math_expressions::{to_latex, to_text, LatexOpts, TextOpts};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -43,14 +43,14 @@ const SNAPSHOT: &str =
 
 fn render_latex(v: &Value) -> String {
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        to_latex(&from_js(v), &LatexOpts::default())
+        to_latex(&try_from_js(v).expect("fixture tree"), &LatexOpts::default())
     }))
     .unwrap_or_else(|_| "<PANIC>".to_string())
 }
 
 fn render_text(v: &Value) -> String {
     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        to_text(&from_js(v), &TextOpts::default())
+        to_text(&try_from_js(v).expect("fixture tree"), &TextOpts::default())
     }))
     .unwrap_or_else(|_| "<PANIC>".to_string())
 }

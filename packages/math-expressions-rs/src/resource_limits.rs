@@ -88,6 +88,10 @@ pub struct ResourceLimits {
     /// Node/operation budget for the exact-constant evaluator (`exact.rs`,
     /// FULL_SIMPLIFY §9). Bounds the S1 `is_zero` tower evaluation.
     pub max_exact_eval_ops: i64,
+    /// Trial-division bound for `exact::squarefree_part` (radical
+    /// normalization). A radicand whose square factor isn't found below this
+    /// divisor makes the evaluator decline (`None`), never stall.
+    pub max_squarefree_trial_divisor: u64,
     /// Cap on the number of summands `ratform` (FULL_SIMPLIFY §9, S2) will put
     /// over a common denominator before bailing to the unchanged form —
     /// bounds `together`/`cancel` coefficient swell.
@@ -128,6 +132,7 @@ impl Default for ResourceLimits {
             max_lrt_degree: 64,
             max_factor_degree: 64,
             max_exact_eval_ops: 10_000,
+            max_squarefree_trial_divisor: 1 << 22,
             max_ratform_terms: 512,
             max_ode_steps: 10_000,
             max_singularity_candidates: 32,
@@ -144,6 +149,14 @@ thread_local! {
 /// The limits in effect on this thread.
 pub fn current() -> ResourceLimits {
     CURRENT.with(Cell::get)
+}
+
+/// Set the limits for this thread **permanently** (until the next call).
+/// For scoped overrides prefer [`with`], which restores on exit; this setter
+/// exists for boundary hosts (the wasm embedder) that configure limits once
+/// per worker rather than per call.
+pub fn set_current(limits: ResourceLimits) {
+    CURRENT.with(|c| c.set(limits));
 }
 
 /// Run `f` with `limits` in effect, restoring the previous limits afterwards

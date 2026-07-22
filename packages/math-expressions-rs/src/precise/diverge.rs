@@ -214,192 +214,33 @@ fn cert_sign(tape: &CompiledExpr, x: f64) -> Option<i8> {
     (v.abs() > e).then_some(if v > 0.0 { 1 } else { -1 })
 }
 
-/// An exact value `q + p·π` (both rational) — the ground field for the
-/// exact-point probes. Trig/exp/ln fold only at their exactly-known points,
-/// so every answer is rigorous (DIVERGENCE_PLAN decision 3).
-#[derive(Clone, Debug)]
-struct PiLin {
-    q: BigRational,
-    p: BigRational,
-}
-
-impl PiLin {
-    fn rat(q: BigRational) -> PiLin {
-        PiLin {
-            q,
-            p: BigRational::zero(),
-        }
-    }
-    fn is_zero(&self) -> bool {
-        self.q.is_zero() && self.p.is_zero()
-    }
-    fn pure_rat(&self) -> Option<&BigRational> {
-        self.p.is_zero().then_some(&self.q)
-    }
-}
-
-fn exact_eval(e: &Expr) -> Option<PiLin> {
-    Some(match e {
-        Expr::Num(n) => PiLin::rat(n.to_bigrational()?),
-        Expr::Const(crate::expr::MathConst::Pi) => PiLin {
-            q: BigRational::zero(),
-            p: BigRational::from_integer(1.into()),
-        },
-        Expr::Sym(sym) if sym.name() == "pi" => PiLin {
-            q: BigRational::zero(),
-            p: BigRational::from_integer(1.into()),
-        },
-        Expr::Add(ts) => {
-            let mut acc = PiLin::rat(BigRational::zero());
-            for t in ts {
-                let v = exact_eval(t)?;
-                acc.q += v.q;
-                acc.p += v.p;
-            }
-            acc
-        }
-        Expr::Mul(fs) => {
-            let mut acc = PiLin::rat(BigRational::from_integer(1.into()));
-            for f in fs {
-                let v = exact_eval(f)?;
-                // (q1 + p1π)(q2 + p2π): a π² term is out of the field.
-                if !acc.p.is_zero() && !v.p.is_zero() {
-                    return None;
-                }
-                acc = PiLin {
-                    q: &acc.q * &v.q,
-                    p: &acc.p * &v.q + &acc.q * &v.p,
-                };
-            }
-            acc
-        }
-        Expr::Pow(b, k) => {
-            let Expr::Num(Number::Int(k)) = &**k else {
-                return None;
-            };
-            let v = exact_eval(b)?;
-            let q = v.pure_rat()?.clone();
-            if *k < 0 && q.is_zero() {
-                return None;
-            }
-            let mut acc = BigRational::from_integer(1.into());
-            for _ in 0..k.unsigned_abs().min(64) {
-                acc *= &q;
-            }
-            if k.unsigned_abs() > 64 {
-                return None;
-            }
-            PiLin::rat(if *k < 0 {
-                BigRational::from_integer(1.into()) / acc
-            } else {
-                acc
-            })
-        }
-        Expr::Apply(..) => {
-            let (name, u) = apply_name(e)?;
-            let v = exact_eval(u)?;
-            // Quarter-turn index for trig at q = 0, p = k/2.
-            let quarter = || -> Option<i64> {
-                if !v.q.is_zero() {
-                    return None;
-                }
-                let two_p = &v.p * BigRational::from_integer(2.into());
-                two_p.is_integer().then(|| {
-                    (two_p.to_integer() % 4i64 + 4i64) % 4i64
-                })?.to_i64()
-            };
-            let zero = BigRational::zero;
-            let one = || BigRational::from_integer(1.into());
-            match name.as_str() {
-                "sin" => match quarter() {
-                    Some(0) | Some(2) => PiLin::rat(zero()),
-                    Some(1) => PiLin::rat(one()),
-                    Some(3) => PiLin::rat(-one()),
-                    None => return None,
-                    _ => return None,
-                },
-                "cos" => match quarter() {
-                    Some(0) => PiLin::rat(one()),
-                    Some(2) => PiLin::rat(-one()),
-                    Some(1) | Some(3) => PiLin::rat(zero()),
-                    None => return None,
-                    _ => return None,
-                },
-                "tan" => match quarter() {
-                    Some(0) | Some(2) => PiLin::rat(zero()),
-                    _ => return None, // pole or unknown
-                },
-                "sqrt" => {
-                    let q = v.pure_rat()?;
-                    if q.is_negative() {
-                        return None;
-                    }
-                    PiLin::rat(rational_sqrt_exact(q)?)
-                }
-                "exp" => {
-                    if v.is_zero() {
-                        PiLin::rat(one())
-                    } else {
-                        return None;
-                    }
-                }
-                "ln" | "log" => {
-                    if v.pure_rat()? == &one() {
-                        PiLin::rat(zero())
-                    } else {
-                        return None;
-                    }
-                }
-                "sinh" | "tanh" | "asin" | "atan" => {
-                    if v.is_zero() {
-                        PiLin::rat(zero())
-                    } else {
-                        return None;
-                    }
-                }
-                "cosh" => {
-                    if v.is_zero() {
-                        PiLin::rat(one())
-                    } else {
-                        return None;
-                    }
-                }
-                "abs" => PiLin::rat(v.pure_rat()?.abs()),
-                _ => return None,
-            }
-        }
-        _ => return None,
-    })
-}
-
-fn rational_sqrt_exact(r: &BigRational) -> Option<BigRational> {
-    let (n, d) = (r.numer(), r.denom());
-    let (sn, sd) = (n.sqrt(), d.sqrt());
-    (&sn * &sn == *n && &sd * &sd == *d).then(|| BigRational::new(sn, sd))
-}
 
 fn subst_point(e: &Expr, var: &str, pt: &Expr) -> Expr {
     let subs = HashMap::from([(var.to_string(), pt.clone())]);
     crate::ops::substitute(e, &subs)
 }
 
-/// Is `e(pt)` *exactly* zero? Decided by the exact ℚ+ℚπ evaluator (the
-/// numeric tiers can never certify a true zero).
+/// Is `e(pt)` *exactly* zero? Decided by the shared exact-constant evaluator
+/// (`exact::exact_eval`, the ℚ[π, e, √] tower — FULL_SIMPLIFY §8: this
+/// replaced a private ℚ+ℚπ evaluator that duplicated its trig/sqrt/log
+/// folding). The numeric tiers can never certify a true zero.
 fn exactly_zero_at(e: &Expr, var: &str, pt: &Expr) -> bool {
     let sub = crate::norm::canonicalize(&subst_point(e, var, pt));
-    exact_eval(&sub).map(|v| v.is_zero()).unwrap_or(false)
+    crate::exact::exact_eval(&sub)
+        .map(|v| v.is_zero())
+        .unwrap_or(false)
 }
 
 /// Is `e(pt)` certified nonzero? Exact evaluation first; else the ±1-ulp
 /// contract of the arbitrary-precision path (|mant| ≥ 2 excludes 0).
 fn certified_nonzero_at(e: &Expr, var: &str, pt: &Expr) -> bool {
     let sub = crate::norm::canonicalize(&subst_point(e, var, pt));
-    if let Some(v) = exact_eval(&sub) {
+    if let Some(v) = crate::exact::exact_eval(&sub) {
         return !v.is_zero();
     }
     match super::evaluate_to_precision(&sub, 12) {
         Precise::Exact(n) => !n.is_zero(),
-        Precise::Bounded(m) => m.mant.abs() > num_bigint::BigInt::from(1),
+        Precise::Bounded(m) => m.excludes_zero(),
         Precise::Complex { .. } | Precise::Unknown(_) => false,
     }
 }

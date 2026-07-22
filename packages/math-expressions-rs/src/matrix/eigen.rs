@@ -148,6 +148,12 @@ fn refine_by_splits(f: UPoly, splits: &[UPoly]) -> Vec<UPoly> {
 /// The full root list of a monic rational char poly: closed forms where
 /// honest (rational roots, quadratic formula), `RootOf` elsewhere, in the
 /// canonical order. `None` on any cap or certification refusal.
+/// FULL_SIMPLIFY §8 note (assessed 2026-07-22): the plan suggests replacing
+/// this ladder with a `factor()` call, but today's `crate::factor` does
+/// strictly *less* (content + Yun + rational-root deflation — no quadratic
+/// closed forms, no ordered `RootOf` tail), so the rewire would lose
+/// capability. Revisit when chunk S4 (full factorization over ℚ) lands;
+/// until then this ladder is the more powerful implementation.
 pub(super) fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>> {
     let mut items: Vec<EigenItem> = Vec::new();
     for (f, m) in upoly::squarefree_decomposition(p) {

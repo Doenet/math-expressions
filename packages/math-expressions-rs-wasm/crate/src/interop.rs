@@ -25,7 +25,7 @@ pub fn from_ast(tree_json: &str) -> Result<Expression, JsError> {
     let value: serde_json::Value =
         serde_json::from_str(tree_json).map_err(|e| JsError::new(&e.to_string()))?;
     math_expressions::js_tree::try_from_js(&value)
-        .map(Expression)
+        .map(Expression::with_default_notation)
         .map_err(|e| JsError::new(&e))
 }
 
@@ -41,7 +41,7 @@ pub fn from_serialized(json: &str) -> Result<Expression, JsError> {
     }
     let tree = value.get("tree").ok_or_else(|| JsError::new("missing tree"))?;
     math_expressions::js_tree::try_from_js(tree)
-        .map(Expression)
+        .map(Expression::with_default_notation)
         .map_err(|e| JsError::new(&e))
 }
 

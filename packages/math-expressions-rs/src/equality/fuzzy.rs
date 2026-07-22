@@ -146,6 +146,10 @@ fn replace_numbers(
         }
         Expr::Sym(s) if s.name() == "pi" => fresh(std::f64::consts::PI, params),
         Expr::Sym(s) if s.name() == "e" => fresh(std::f64::consts::E, params),
+        // Defense: canonicalize unifies Const(Pi/E) → Sym, but this pass can
+        // see pre-canonical trees; both spellings must be parameterized alike.
+        Expr::Const(crate::expr::MathConst::Pi) => fresh(std::f64::consts::PI, params),
+        Expr::Const(crate::expr::MathConst::E) => fresh(std::f64::consts::E, params),
         Expr::Pow(b, x) if !include_exponents => Expr::Pow(
             Box::new(replace_numbers(b, vars, include_exponents, params)),
             x.clone(),

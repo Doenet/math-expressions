@@ -2,7 +2,6 @@
 //! evaluation of constant expressions.
 
 use super::Expression;
-use math_expressions::to_text;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -19,7 +18,8 @@ impl Expression {
     /// Indefinite integral in `var` (INTEGRATION_PLAN I1+I2), gate-verified
     /// by differentiation; `undefined` = no elementary form found.
     pub fn integrate(&self, var: &str) -> Option<Expression> {
-        math_expressions::integrate::integrate(&self.0, var, &math_expressions::Assumptions::new()).map(Expression)
+        math_expressions::integrate(&self.0, var, &math_expressions::Assumptions::new())
+            .map(|e| self.derive(e))
     }
 
     /// Certified definite integral over [a, b] to `digits` significant
@@ -61,7 +61,7 @@ impl Expression {
                     .map(|s| {
                         serde_json::json!({
                             "location": s.location,
-                            "exact": s.exact.as_ref().map(|e| to_text(e, &Default::default())),
+                            "exact": s.exact.as_ref().map(|e| self.text_of(e)),
                         })
                     })
                     .collect();

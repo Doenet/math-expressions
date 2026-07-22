@@ -432,15 +432,9 @@ fn ground_lift(g: Rep, depth: usize) -> Rep {
 }
 
 fn number_to_rational(n: &Number) -> Option<BigRational> {
-    match n {
-        Number::Int(i) => Some(BigRational::from_integer(BigInt::from(*i))),
-        Number::Rat(p, q) => Some(BigRational::new(BigInt::from(*p), BigInt::from(*q))),
-        Number::Big(b) => match &**b {
-            crate::num::BigNumber::Int(i) => Some(BigRational::from_integer(i.clone())),
-            crate::num::BigNumber::Rat(r) => Some(r.clone()),
-        },
-        Number::Float(_) => None,
-    }
+    // Single source of truth in num.rs — this wrapper only keeps the local
+    // call-site name; do not re-implement the conversion here.
+    n.to_bigrational()
 }
 
 /// Convert back to a canonical expression.

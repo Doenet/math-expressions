@@ -215,6 +215,20 @@ pub(crate) fn upoly_in_root(coeffs: &[BigRational], root: &Expr) -> Expr {
     crate::norm::add(terms)
 }
 
+/// Entry cap for each thread-local memo below. The caches are keyed by the
+/// full coefficient vector and never expire, so without a cap an adversarial
+/// stream of distinct polynomials (a long-lived grading worker) grows memory
+/// monotonically. On overflow the whole cache is dropped — entries are pure
+/// memos, recomputable at the cost of one isolation.
+const CACHE_CAP: usize = 1024;
+
+fn insert_capped<K: std::hash::Hash + Eq, V>(map: &mut HashMap<K, V>, key: K, value: V) {
+    if map.len() >= CACHE_CAP {
+        map.clear();
+    }
+    map.insert(key, value);
+}
+
 thread_local! {
     /// Ordered numeric roots per canonical polynomial, computed once
     /// (isolation is the expensive part). `None` is cached too: a poly whose
@@ -231,7 +245,7 @@ pub(crate) fn numeric_root(poly: &[Number], index: u32) -> Option<Complex64> {
         Some(r) => r,
         None => {
             let computed = coeffs_to_upoly(poly).and_then(|p| upoly::all_roots_ordered(&p));
-            ROOT_CACHE.with(|c| c.borrow_mut().insert(key, computed.clone()));
+            ROOT_CACHE.with(|c| insert_capped(&mut c.borrow_mut(), key, computed.clone()));
             computed
         }
     }?;
@@ -259,7 +273,7 @@ fn isolating_intervals(poly: &[Number]) -> IsoIntervals {
         Some(v) => v,
         None => {
             let computed = coeffs_to_upoly(poly).and_then(|p| upoly::isolate_real_roots(&p));
-            ISO_CACHE.with(|c| c.borrow_mut().insert(key, computed.clone()));
+            ISO_CACHE.with(|c| insert_capped(&mut c.borrow_mut(), key, computed.clone()));
             computed
         }
     }

@@ -60,6 +60,15 @@ impl MpFix {
         self.mant.is_zero()
     }
 
+    /// Does the ±1-ulp interval around this value exclude zero? The
+    /// arbitrary-precision contract is "true value within one ulp of `mant`",
+    /// so `|mant| > 1` proves the value is nonzero. This is THE certified-
+    /// nonzero test — use it instead of re-encoding the magic comparison.
+    pub fn excludes_zero(&self) -> bool {
+        // |mant| > 1 ⟺ |mant| ≥ 2 ⟺ magnitude has more than one bit.
+        self.mant.magnitude().bits() > 1
+    }
+
     /// Bit position of the most significant bit: value ∈ [2^(msb−1), 2^msb).
     /// `None` for zero.
     pub fn msb(&self) -> Option<i64> {

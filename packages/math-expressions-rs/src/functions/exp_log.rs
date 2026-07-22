@@ -37,7 +37,7 @@ pub const LOG: FnDef = FnDef {
     derivative: Some("1/x"),
     antiderivative: Some(|u| {
         add(vec![
-            mul(vec![u.clone(), apply("ln", u.clone())]),
+            mul(vec![u.clone(), apply("log", u.clone())]),
             mul(vec![int(-1), u]),
         ])
     }),
@@ -65,10 +65,10 @@ pub const LOG10: FnDef = FnDef {
     antiderivative: Some(|u| {
         mul(vec![
             add(vec![
-                mul(vec![u.clone(), apply("ln", u.clone())]),
+                mul(vec![u.clone(), apply("log", u.clone())]),
                 mul(vec![int(-1), u]),
             ]),
-            pow(apply("ln", int(10)), int(-1)),
+            pow(apply("log", int(10)), int(-1)),
         ])
     }),
     eval1: Some(|z| Some(z.log10())),

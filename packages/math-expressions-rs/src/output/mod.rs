@@ -55,13 +55,16 @@ pub(crate) fn number_is_negative(n: &Number) -> bool {
     n.is_negative()
 }
 
-/// A Leibniz-notation variable entry is either `x` or `(x, n)`.
+/// A Leibniz-notation variable entry is either `x` or `(x, n)`. A malformed
+/// entry renders through the text printer — never `Debug`, whose Rust syntax
+/// (`Num(Int(2))`) must not leak into user-facing output.
 pub(crate) fn deriv_var(e: &Expr) -> (String, i64) {
+    let render = |e: &Expr| text::convert(e, &Default::default());
     match e {
         Expr::Seq(SeqKind::Tuple, parts) if parts.len() == 2 => {
             let v = match &parts[0] {
                 Expr::Sym(s) => s.name(),
-                other => format!("{:?}", other),
+                other => render(other),
             };
             let n = match &parts[1] {
                 Expr::Num(Number::Int(i)) => *i,
@@ -70,7 +73,7 @@ pub(crate) fn deriv_var(e: &Expr) -> (String, i64) {
             (v, n)
         }
         Expr::Sym(s) => (s.name(), 1),
-        other => (format!("{:?}", other), 1),
+        other => (render(other), 1),
     }
 }
 

@@ -56,7 +56,7 @@ pub const TANH: FnDef = FnDef {
     inverse: Some("atanh"),
     move_exponent_spellings: &["tanh"],
     derivative: Some("sech(x)^2"),
-    antiderivative: Some(|u| apply("ln", apply("cosh", u))),
+    antiderivative: Some(|u| apply("log", apply("cosh", u))),
     eval1: Some(|z| Some(z.tanh())),
     latex_commands: &[("tanh", "tanh")],
     kernel: Some(&TANH_KERNEL),

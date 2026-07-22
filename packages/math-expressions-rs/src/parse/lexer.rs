@@ -14,6 +14,8 @@
 use std::rc::Rc;
 use std::sync::OnceLock;
 
+use crate::notation::NumberNotation;
+
 /// Token types for both lexer flavours. The JS lexer used strings ("NUMBER",
 /// "^", ...); an enum makes every comparison compile-checked. `Display`
 /// yields the original JS token_type string, which error messages embed.
@@ -259,6 +261,10 @@ pub struct Lexer {
     sci_notation: bool,
     flavor: Flavor,
     rules: &'static [Rule],
+    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN). The
+    /// argument separator lexes to `Tok::Comma`; the decimal separator is
+    /// folded into number scanning.
+    notation: NumberNotation,
 }
 
 enum Pat {
@@ -512,7 +518,9 @@ fn rules() -> &'static [Rule] {
             l("\u{27E9}", Tok::RAngle),
             l("\u{3008}", Tok::LAngle),
             l("\u{3009}", Tok::RAngle),
-            l(",", Tok::Comma),
+            // NOTE: the argument separator (`,` by default) is emitted as
+            // `Tok::Comma` by a notation-aware intercept in `advance`, not a
+            // static rule, so comma-decimal notation can retask `,`.
             l(":", Tok::Colon),
             // Greek letters and named glyphs → VARMULTICHAR with replacement
             lr("\u{3B1}", Tok::VarMultiChar, "alpha"),
@@ -736,7 +744,8 @@ fn latex_rules() -> &'static [Rule] {
         r.push(kwl("\\cdot", Tok::Times));
         r.push(kwl("\\div", Tok::Slash));
         r.push(kwl("\\times", Tok::Times));
-        r.push(l(",", Tok::Comma));
+        // The argument separator lexes to `Tok::Comma` via the notation-aware
+        // intercept in `advance` (see the text-rules note above).
         r.push(l(":", Tok::Colon));
         r.push(kwl("\\mid", Tok::Mid));
 
@@ -845,11 +854,14 @@ fn rule(pat: Pat, ttype: Tok) -> Rule {
 /// Does `rest` begin with a delimiter that may follow a scientific-notation
 /// exponent? Text: end, `,` `|` `)` `}` `]`. LaTeX additionally allows `&`,
 /// `\|`, `\}`, `\\` (linebreak), and `\end`.
-fn sci_delim_ok(rest: &str, flavor: Flavor) -> bool {
+fn sci_delim_ok(rest: &str, flavor: Flavor, arg_sep: char) -> bool {
     if rest.is_empty() {
         return true;
     }
-    if matches!(rest.as_bytes()[0], b',' | b'|' | b')' | b'}' | b']') {
+    if rest.starts_with(arg_sep) {
+        return true;
+    }
+    if matches!(rest.as_bytes()[0], b'|' | b')' | b'}' | b']') {
         return true;
     }
     if flavor == Flavor::Latex {
@@ -862,31 +874,57 @@ fn sci_delim_ok(rest: &str, flavor: Flavor) -> bool {
     false
 }
 
+/// A decimal separator at the start of `rest`: a bare accepted decimal char,
+/// or (LaTeX) a brace-wrapped one `{,}` — the form `render_number` emits for a
+/// decimal comma (A5). Returns the byte length consumed. Bare `.` is never
+/// brace-matched, so default notation is byte-identical.
+fn decimal_at(rest: &str, decimals: &[char], flavor: Flavor) -> Option<usize> {
+    for &d in decimals {
+        if rest.starts_with(d) {
+            return Some(d.len_utf8());
+        }
+    }
+    if flavor == Flavor::Latex && rest.starts_with('{') {
+        let inner = &rest[1..];
+        for &d in decimals {
+            if d != '.' && inner.starts_with(d) && inner[d.len_utf8()..].starts_with('}') {
+                return Some(1 + d.len_utf8() + 1);
+            }
+        }
+    }
+    None
+}
+
 /// Scan a NUMBER at the start of `s`; returns the matched length.
-/// Mantissa: [0-9]+(\.[0-9]*)? or \.[0-9]+.
+/// Mantissa: [0-9]+(D[0-9]*)? or D[0-9]+, where `D` is the configured decimal
+/// separator (`.` by default; also its LaTeX `{,}` form).
 /// With sci notation, an optional exponent E[+-]?[0-9]+ matches only when
 /// followed (after whitespace, which is included in the match) by
 /// end-of-input or a flavor-specific delimiter — the JS lookahead constraint.
-fn scan_number(s: &str, sci: bool, flavor: Flavor) -> Option<usize> {
+fn scan_number(s: &str, sci: bool, flavor: Flavor, notation: &NumberNotation) -> Option<usize> {
+    let decimals = notation.accepted_decimals();
     let b = s.as_bytes();
     let mut i = 0;
     if i < b.len() && b[i].is_ascii_digit() {
         while i < b.len() && b[i].is_ascii_digit() {
             i += 1;
         }
-        if i < b.len() && b[i] == b'.' {
-            i += 1;
+        if let Some(dl) = decimal_at(&s[i..], &decimals, flavor) {
+            i += dl;
             while i < b.len() && b[i].is_ascii_digit() {
                 i += 1;
             }
         }
-    } else if b.len() >= 2 && b[0] == b'.' && b[1].is_ascii_digit() {
-        i = 1;
+    } else {
+        // Leading decimal like `.5`: a decimal separator then ≥1 digit.
+        let dl = decimal_at(s, &decimals, flavor)?;
+        if !b.get(dl).is_some_and(u8::is_ascii_digit) {
+            return None;
+        }
+        i = dl;
         while i < b.len() && b[i].is_ascii_digit() {
             i += 1;
         }
-    } else {
-        return None;
     }
     if !sci {
         return Some(i);
@@ -904,7 +942,7 @@ fn scan_number(s: &str, sci: bool, flavor: Flavor) -> Option<usize> {
         if j > digits_start {
             let ws: usize = ws_run(&s[j..]);
             let k = j + ws;
-            if sci_delim_ok(&s[k..], flavor) {
+            if sci_delim_ok(&s[k..], flavor, notation.argument_separator) {
                 return Some(k); // trailing whitespace is part of the match
             }
         }
@@ -994,7 +1032,7 @@ fn word_command(s: &str, cmd: &str) -> bool {
 
 impl Lexer {
     /// Text-flavor lexer.
-    pub fn new(sci_notation: bool) -> Lexer {
+    pub fn new(sci_notation: bool, notation: NumberNotation) -> Lexer {
         Lexer {
             input: Rc::new(String::new()),
             offset: 0,
@@ -1002,11 +1040,12 @@ impl Lexer {
             sci_notation,
             flavor: Flavor::Text,
             rules: rules(),
+            notation,
         }
     }
 
     /// LaTeX-flavor lexer.
-    pub fn new_latex(sci_notation: bool) -> Lexer {
+    pub fn new_latex(sci_notation: bool, notation: NumberNotation) -> Lexer {
         Lexer {
             input: Rc::new(String::new()),
             offset: 0,
@@ -1014,6 +1053,7 @@ impl Lexer {
             sci_notation,
             flavor: Flavor::Latex,
             rules: latex_rules(),
+            notation,
         }
     }
 
@@ -1072,9 +1112,18 @@ impl Lexer {
         }
 
         // Number rules come first (they are prepended to the table in JS).
-        if let Some(len) = scan_number(self.rest(), self.sci_notation, self.flavor) {
+        if let Some(len) = scan_number(self.rest(), self.sci_notation, self.flavor, &self.notation) {
             let text = self.consume(len);
             return Token::simple(Tok::Number, &text);
+        }
+
+        // The configured argument separator lexes to `Comma` (the token the
+        // grammar reads), whatever its glyph. The decimal separator is never a
+        // separator on its own — it only appears inside numbers (handled
+        // above), so a bare one falls through to INVALID.
+        if self.rest().starts_with(self.notation.argument_separator) {
+            let text = self.consume(self.notation.argument_separator.len_utf8());
+            return Token::simple(Tok::Comma, &text);
         }
 
         let rules = self.rules;

@@ -10,6 +10,13 @@ use std::cmp::Ordering;
 /// constructor for the node.
 pub fn canonicalize(e: &Expr) -> Expr {
     match e {
+        // π/e/i have two spellings (`Const` variant vs the `Sym` the parsers
+        // produce). Canonical form uses `Sym` — unifying here means `==` on
+        // canonical trees is semantic equality for constants too, and every
+        // downstream pass only needs to match one spelling.
+        Expr::Const(crate::expr::MathConst::Pi) => Expr::sym("pi"),
+        Expr::Const(crate::expr::MathConst::E) => Expr::sym("e"),
+        Expr::Const(crate::expr::MathConst::I) => Expr::sym("i"),
         Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
         // Re-establish the canonical invariant (primitive integer squarefree
         // coefficients) for RootOf leaves built outside the smart

@@ -1,9 +1,12 @@
 # Stack-safety plan: iterative traversals for a small-stack WASM target
 
-> **PROGRESS (audited 2026-07-20):** NOT STARTED (highest risk). Items 21–26 in
-> `WHATS_LEFT.md` §B.1 all open: iterative `Drop`, parser depth caps,
-> `children()`/iterative fold driver, pass port, `opaque_key` replacement,
-> small-stack CI. Shares a `children()` primitive with IMPROVEMENT Phase 3/4.
+> **PROGRESS (re-audited 2026-07-22):** item 22 (parser depth caps) is DONE —
+> `MAX_PARSE_DEPTH = 64` in `parse/common.rs`, enforced by `enter`/`leave` in
+> both parsers, exercised by `tests/stack_safety.rs`; `from_js` documents its
+> reliance on serde_json's 128-depth limit. Items 21, 23–26 remain open:
+> iterative `Drop`, `children()`/iterative fold driver, pass port,
+> `opaque_key` replacement, small-stack CI. Shares a `children()` primitive
+> with IMPROVEMENT Phase 3/4.
 
 Status: **draft for decision — nothing implemented.** Companion to
 PORTING_PLAN.md §7f (resource limits). Scope: everything already implemented

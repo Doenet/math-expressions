@@ -37,7 +37,7 @@ fn collect_failures() -> BTreeSet<String> {
         let ok = catch(|| {
             let input = parse(&c.input)?;
             let got = derivative(&input, "x");
-            let want = js_tree::from_js(&c.deriv);
+            let want = js_tree::try_from_js(&c.deriv).expect("fixture tree");
             Some(equals(&got, &want, &opts))
         })
         .flatten()

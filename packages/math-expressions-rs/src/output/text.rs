@@ -19,11 +19,16 @@ use crate::num::Number;
 pub struct TextOpts {
     /// Emit unicode operators/greek letters (`≤`, `θ`) vs ASCII words.
     pub unicode: bool,
+    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    pub notation: crate::notation::NumberNotation,
 }
 
 impl Default for TextOpts {
     fn default() -> Self {
-        TextOpts { unicode: true }
+        TextOpts {
+            unicode: true,
+            notation: crate::notation::NumberNotation::default(),
+        }
     }
 }
 
@@ -160,6 +165,24 @@ impl Writer<'_> {
             .join(sep)
     }
 
+    /// The argument/tuple/list separator for the active notation, with a
+    /// trailing space (`", "` by default; `"; "` under comma notation).
+    fn arg_sep(&self) -> String {
+        format!("{} ", self.opts.notation.argument_separator)
+    }
+
+    /// Retarget the `.` decimal point of an already-rendered number to the
+    /// active decimal separator. A number string's only `.` is its decimal
+    /// point, so this is unambiguous; a no-op under default notation.
+    fn decimal(&self, s: String) -> String {
+        let d = self.opts.notation.decimal_separator;
+        if d == '.' {
+            s
+        } else {
+            s.replace('.', &d.to_string())
+        }
+    }
+
     /// Parenthesize a logical operand that renders as a compound expression (its
     /// string has a space and is not already fully parenthesized) — port of the
     /// JS ast-to-text `and`/`or`/`not` rule.
@@ -188,7 +211,7 @@ impl Writer<'_> {
             } else {
                 prec::ATOM
             };
-            return (dec, p);
+            return (self.decimal(dec), p);
         }
         // A non-terminating fraction (only from later normalization) renders
         // as `a/b`, binding like the division it re-parses to.
@@ -207,7 +230,7 @@ impl Writer<'_> {
         } else {
             prec::ATOM
         };
-        (s, p)
+        (self.decimal(s), p)
     }
 
     fn render_symbol(&self, name: &str) -> String {
@@ -307,7 +330,7 @@ impl Writer<'_> {
             .iter()
             .map(|a| self.emit(a, prec::LIST + 1))
             .collect::<Vec<_>>()
-            .join(", ");
+            .join(&self.arg_sep());
         // The head is a "modified function" (symbol with primes/subscripts/
         // superscripts) — render at POW so `f'(x)`, `sin^2(x)` don't get the
         // head parenthesised (which would re-parse as multiplication).
@@ -332,7 +355,7 @@ impl Writer<'_> {
             .iter()
             .map(|x| self.emit(x, prec::LIST + 1))
             .collect::<Vec<_>>()
-            .join(", ");
+            .join(&self.arg_sep());
         let (s, p) = match kind {
             SeqKind::List => (inner, prec::LIST),
             SeqKind::Tuple | SeqKind::Vector => (format!("({})", inner), prec::ATOM),
@@ -355,7 +378,7 @@ impl Writer<'_> {
         let hi = self.emit(&endpoints.1, prec::LIST + 1);
         let left = if closed.0 { '[' } else { '(' };
         let right = if closed.1 { ']' } else { ')' };
-        format!("{}{}, {}{}", left, lo, hi, right)
+        format!("{}{}{}{}{}", left, lo, self.arg_sep(), hi, right)
     }
 
     fn render_relation(&self, operands: &[Expr], ops: &[RelOp]) -> String {
@@ -488,9 +511,9 @@ impl Writer<'_> {
             let row: Vec<String> = (0..cols as usize)
                 .map(|c| self.emit(&entries[r * cols as usize + c], prec::LIST + 1))
                 .collect();
-            out.push_str(&format!("[{}]", row.join(", ")));
+            out.push_str(&format!("[{}]", row.join(&self.arg_sep())));
             if r < rows as usize - 1 {
-                out.push_str(", ");
+                out.push_str(&self.arg_sep());
             }
         }
         out.push(']');
@@ -626,7 +649,7 @@ impl Writer<'_> {
             ),
             "vec" => (format!("vec({})", one(self, LIST + 1)), ATOM),
             "linesegment" => (
-                format!("linesegment({})", self.join(args, ", ", LIST + 1)),
+                format!("linesegment({})", self.join(args, &self.arg_sep(), LIST + 1)),
                 ATOM,
             ),
             "angle" => (self.render_angle(args), ATOM),
@@ -635,7 +658,7 @@ impl Writer<'_> {
             "derivative_leibniz" => (self.render_leibniz("d", args), MUL),
             "partial_derivative_leibniz" => (self.render_leibniz("∂", args), MUL),
             _ => (
-                format!("{}({})", name, self.join(args, ", ", LIST + 1)),
+                format!("{}({})", name, self.join(args, &self.arg_sep(), LIST + 1)),
                 ATOM,
             ),
         }
@@ -649,7 +672,7 @@ impl Writer<'_> {
         if args.len() == 1 {
             format!("{}{}", a, self.emit(&args[0], prec::POW))
         } else {
-            format!("{}({})", a, self.join(args, ", ", prec::LIST + 1))
+            format!("{}({})", a, self.join(args, &self.arg_sep(), prec::LIST + 1))
         }
     }
 

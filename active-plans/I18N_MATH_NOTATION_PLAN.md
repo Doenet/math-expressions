@@ -1,6 +1,14 @@
 # Internationalized Math Notation Plan (decimal / argument separators)
 
-Status: **DRAFT — not started.** Created 2026-07-21.
+Status: **Phase 1 COMPLETE** (Rust port) — 2026-07-21. Decisions taken: **A1**
+(strict by default, leniency opt-in via `also_accept_decimal`), **B1** (one
+`src/notation.rs::NumberNotation`, re-exported, embedded in all four
+option structs), **C1** (Phase-2 `group_separator`/`grouping`/`digits` fields
+present now). Conformance fixture + suite (`tests/notation.rs`,
+`tests/fixtures/notation/phase1.json`) green; full suite 482 pass, clippy clean.
+Phase 2 (digit sets, grouping) remains — but the char-generic lexer/printer
+already make the Arabic `٫`/`؛` **separators** work today (only non-Latin
+digit-set translation and thousands grouping are unimplemented).
 Upstream: [Doenet/DoenetML#1528](https://github.com/Doenet/DoenetML/issues/1528)
 ("Math notation localization: configurable decimal separator — requirements
 for math-expressions"). Scope of *this* plan: the Rust port
@@ -53,6 +61,15 @@ so this is a **lexer + formatter change, not a parser rewrite**:
 
 ## 2. Decisions for you (defaults are my recommendation, first)
 
+**Resolved during implementation — partial specification & ambiguity.** At the
+wasm/JSON boundary, notation keys may be given individually (unspecified ones
+keep their defaults). For convenience the two conventional pairs auto-complete
+from the decimal alone: `decimalSeparator:"."` ⇒ argument `,`,
+`decimalSeparator:","` ⇒ argument `;` (`NumberNotation::from_decimal` /
+`paired_argument_separator`). An **explicit** incoherent pair (e.g. decimal and
+argument both `,`, or a digit/letter separator) is a returned **error**
+(`NumberNotation::validate` → `JsError`), never a panic or a silent misparse.
+
 **A. `also_accept_decimal` leniency (issue open-Q2).** Under comma notation,
 also accept `.` as a decimal?
 - **A1 (recommended): strict by default** — only the declared separator; `.`
@@ -100,39 +117,48 @@ notation and diffing to zero.
 Each step keeps `cargo test` + clippy green.
 
 ### 4.1 Config + threading
-- [ ] `src/notation.rs`: `NumberNotation` (+ `Grouping`, `Digits` enums, Phase-2
-      variants stubbed). `pub use` at crate root.
-- [ ] Embed in `TextToAstOptions`, `LatexToAstOptions` (parse) and `TextOpts`,
+- [x] `src/notation.rs`: `NumberNotation` (+ `Grouping`, `Digits` enums, Phase-2
+      variants stubbed) with `accepted_decimals`/`normalize_number` helpers.
+      `pub use` at crate root.
+- [x] Embed in `TextToAstOptions`, `LatexToAstOptions` (parse) and `TextOpts`,
       `LatexOpts` (print). Defaults unchanged ⇒ A2.
 
 ### 4.2 Lexer (`src/parse/lexer.rs`)
-- [ ] `scan_number` (L870): replace hardcoded `b'.'` (L877, L883) with
-      `decimal_separator`; replace `is_ascii_digit()` with a `digit_class`
-      predicate (Latin now).
-- [ ] Token table (`l(",", Tok::Comma)`, L515): build from notation — emit
-      `Tok::Comma` for the configured **argument** separator; never tokenize the
-      decimal char as a separator.
-- [ ] `sci_delim_ok` (L848): the post-exponent delimiter set hardcodes `,` —
-      use the argument separator instead.
-- [ ] Thread notation into `Lexer` construction (it already carries `flavor` /
-      `sci_notation` state).
+- [x] `scan_number`: hardcoded `b'.'` replaced by a `decimal_at` helper over the
+      accepted decimal chars (char-generic, so multibyte Arabic works); Latin
+      digits.
+- [x] Token table: the static `l(",", Tok::Comma)` rules (text + LaTeX) were
+      **removed**; `advance` emits `Tok::Comma` for the configured **argument**
+      separator via a notation-aware intercept, and the decimal char is never a
+      separator on its own.
+- [x] `sci_delim_ok`: post-exponent delimiter now takes the argument separator
+      instead of a hardcoded `,`.
+- [x] Notation threaded into `Lexer::new`/`new_latex` (stored on `Lexer`).
 
 ### 4.3 Token → number
-- [ ] `Number::from_decimal_str` (`src/num.rs:388`) and `parse_js_float`
-      (`src/parse/common.rs:96`, used for Leibniz/derivative-order tokens):
-      normalize the configured decimal char to `.` before interpreting.
+- [x] Normalization done at the parser call sites via
+      `notation.normalize_number` (accepted decimals → `.`, group separators and
+      the LaTeX `{,}` braces stripped) before `Number::from_decimal_str` /
+      `parse_js_float` — keeps those helpers notation-agnostic.
 
 ### 4.4 Printing
-- [ ] `render_number` in `src/output/text.rs:182` **and**
-      `src/output/latex.rs:112`: swap `.` → `decimal_separator`; same for the
-      positional-float path (`f64_positional_string`).
-- [ ] **A5**: LaTeX must emit a decimal comma as `{,}` (else MathJax/MathQuill
-      apply trailing punctuation thin-space). Applies to decimals and floats.
+- [x] `render_number` in `src/output/text.rs` **and** `src/output/latex.rs`:
+      `.` → `decimal_separator` (also the positional-float path).
+- [x] **A5**: LaTeX emits a decimal comma as `{,}`; the LaTeX number scanner was
+      taught to read `{,}` back, so the round-trip law holds.
+- [x] **Beyond §4.4 (required for the §6 round-trip law):** the **output**
+      argument separator is also switched — function args, tuples/lists/sets/
+      vectors, intervals, `linesegment`, and `\operatorname`/`\angle` args now
+      join on the configured separator, else a printed `(1,2)` would re-parse as
+      the decimal `1.2` under comma notation. (Text matrices stay `,` — they are
+      display-only, not parseable.)
 
-### 4.5 wasm boundary (`src/wasm.rs`)
-- [ ] Thread notation into `parse_text` / `parse_latex` / `to_text` / `to_latex`
-      (extend the existing `parse_text_with_options` JSON entry point; add the
-      notation record to the printed-output options).
+### 4.5 wasm boundary (`crate/src/parse.rs`, `core_ops.rs`)
+- [x] `read_notation` reads a `notation` JSON sub-object into the parse options
+      (`parse_text_with_options` / `parse_latex_with_options`); new
+      `to_text_with_options` / `to_latex_with_options` thread it into printing.
+      (The wasm surface moved to the sibling `math-expressions-wasm` crate; the
+      plan's `src/wasm.rs` path is stale.)
 
 ## 5. Phase 2 — design-for (not required now)
 - [ ] Digit sets: `digit_class` + `digit_value(char)` for Arabic-Indic /
@@ -147,17 +173,16 @@ Each step keeps `cargo test` + clippy green.
 The issue's critical deliverable: a **language-neutral, versioned JSON fixture**
 that both JS and Rust pass.
 
-- [ ] Schema (versioned): rows of
-      `{ notation, input_text, input_latex, expected_ast, expected_text_out,
-      expected_latex_out }`, plus a `failing` list of `(notation, input)` that
-      must error, per notation.
-- [ ] Location: `tests/fixtures/notation/*.json` (mirrors the existing
-      differential-fixture layout; `scripts/extract-fixtures.mjs` pattern).
-- [ ] New `tests/notation.rs`: for each row, parse under `notation` → compare
-      AST (via `js_tree`) → print text/latex under `notation` → compare;
-      assert `failing` rows error.
-- [ ] Round-trip law (A6): `parse(print(ast, N), N) == ast`; notation
-      independence: `parse(t, comma_N) == parse(equiv_t, period_N)`.
+- [x] Schema (versioned, `version: 1`): rows of
+      `{ name, notation, input_text?, input_latex?, expected_ast,
+      expected_text_out?, expected_latex_out? }`, plus a `failing` list of
+      `(notation, input)` that must error.
+- [x] Location: `tests/fixtures/notation/phase1.json`.
+- [x] `tests/notation.rs`: each row parses under `notation`, compares AST (via
+      `js_tree`), prints text/latex under `notation` and compares; `failing`
+      rows asserted to error.
+- [x] Round-trip law (A6): `parse(print(ast, N), N) == ast` (text + latex);
+      notation independence: `parse(t, comma_N) == parse(equiv_t, period_N)`.
 
 ## 7. Risks
 - **A2 regressions** — the whole point is byte-identical defaults; guard with

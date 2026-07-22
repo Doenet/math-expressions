@@ -74,10 +74,13 @@ impl Exact {
         Exact { terms: t }
     }
 
-    /// `coeff · √rad` for an arbitrary positive `rad` (normalized to squarefree).
-    fn surd(coeff: BigRational, rad: u128) -> Exact {
-        let (s, f) = squarefree_part(rad).expect("table radicands are small");
-        Exact::mono(coeff * BigRational::from_integer(BigInt::from(s)), 0, 0, BigInt::from(f))
+    /// `coeff · √rad` for a rad that is **already squarefree** (the lattice
+    /// tables pass literals 2/3/6; `eval_sqrt` passes the squarefree part it
+    /// just computed). No factoring, no panic path — callers that hold a
+    /// possibly-square-divisible radicand must go through [`squarefree_part`]
+    /// first.
+    fn surd(coeff: BigRational, squarefree_rad: u128) -> Exact {
+        Exact::mono(coeff, 0, 0, BigInt::from(squarefree_rad))
     }
 
     pub fn is_zero(&self) -> bool {
@@ -168,15 +171,19 @@ impl Exact {
         let mut terms = Vec::with_capacity(self.terms.len());
         for ((pi, e, rad), c) in &self.terms {
             let mut factors: Vec<Expr> = vec![Expr::Num(Number::from_bigrational(c.clone()))];
+            // π/e are emitted as `Sym` — the canonical spelling. (`Const(Pi)`
+            // exists as a variant, but the parsers only produce `Sym`, and
+            // canonicalize unifies `Const(Pi/E/I)` → `Sym`; minting `Sym`
+            // directly keeps this output canonical without a re-pass.)
             if *pi > 0 {
                 factors.push(crate::norm::pow(
-                    Expr::Const(MathConst::Pi),
+                    Expr::sym("pi"),
                     Expr::int(i64::from(*pi)),
                 ));
             }
             if *e > 0 {
                 factors.push(crate::norm::pow(
-                    Expr::Const(MathConst::E),
+                    Expr::sym("e"),
                     Expr::int(i64::from(*e)),
                 ));
             }
@@ -237,8 +244,9 @@ fn squarefree_part(mut m: u128) -> Option<(u128, u128)> {
             s = s.checked_mul(d)?;
         }
         d += 1;
-        // Cap trial division so a large near-prime radicand can't stall us.
-        if d > (1u128 << 22) {
+        // Cap trial division so a large near-prime radicand can't stall us —
+        // §7f-governed like every other unpredictable-cost bound.
+        if d > u128::from(crate::resource_limits::current().max_squarefree_trial_divisor) {
             return None;
         }
     }
@@ -576,10 +584,10 @@ fn refute_by_sampling(e: &Expr, vars: &[String]) -> Tri {
     None
 }
 
-/// The ±1-ulp arbitrary-precision contract: `|mant| > 1` excludes zero from
-/// the interval, so the value is certified nonzero.
+/// The ±1-ulp arbitrary-precision contract, via the single shared test on
+/// `MpFix` (see `MpFix::excludes_zero`).
 fn certified_nonzero(m: &crate::precise::fix::MpFix) -> bool {
-    m.mant.abs() > BigInt::one()
+    m.excludes_zero()
 }
 
 // ===================== RootOf algebraic identities =====================

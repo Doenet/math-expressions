@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 /// contract: `at(t)` always returns a length-n Float64Array (§5a), and
 /// `last_t`/`last_y` support ODESystem's chunk chaining (§5b).
 #[wasm_bindgen]
-pub struct OdeSolution(math_expressions::ode::OdeSolution);
+pub struct OdeSolution(math_expressions::OdeSolution);
 
 #[wasm_bindgen]
 impl OdeSolution {
@@ -61,7 +61,7 @@ pub fn solve_ode(
     max_steps: usize,
 ) -> OdeSolution {
     let this = JsValue::NULL;
-    let sol = math_expressions::ode::solve_ode_with(
+    let sol = math_expressions::solve_ode_with(
         |t, y, out| {
             let arr = js_sys::Float64Array::from(y);
             match f.call2(&this, &JsValue::from_f64(t), &arr.into()) {
@@ -109,6 +109,6 @@ pub fn solve_ode_expressions(
         Expr::Seq(_, xs) => xs.clone(),
         other => vec![other.clone()],
     };
-    math_expressions::ode::solve_ode_exprs(&comps, ind_var, &state_vars, t0, t1, &y0, tol, max_steps)
+    math_expressions::solve_ode_exprs(&comps, ind_var, &state_vars, t0, t1, &y0, tol, max_steps)
         .map(OdeSolution)
 }

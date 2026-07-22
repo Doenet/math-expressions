@@ -43,7 +43,7 @@ fn collect_failures() -> BTreeSet<String> {
     for c in &cases {
         let ok = catch(|| {
             let got = expand(&parse(&c.input)?);
-            Some(equals(&got, &js_tree::from_js(&c.expanded), &opts))
+            Some(equals(&got, &js_tree::try_from_js(&c.expanded).expect("fixture tree"), &opts))
         })
         .flatten()
         .unwrap_or(false);

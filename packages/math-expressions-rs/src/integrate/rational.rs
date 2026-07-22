@@ -34,6 +34,14 @@ fn int(i: i64) -> Expr {
 
 /// A canonical tree as a rational function in `x` over ℚ.
 /// `None` = not in ℚ(x) (symbolic coefficients, other functions, …).
+/// Layering note (FULL_SIMPLIFY §8, assessed 2026-07-22): this is the
+/// **univariate** rational-function converter — dense `(num, den)` `UPoly`
+/// pairs in one named variable, exactly what the LRT integrator consumes. It
+/// is deliberately NOT merged with `crate::ratform` (`together`/`cancel`),
+/// which is the **multivariate** Expr-level normal form over `poly::Rep` with
+/// opaque-kernelization; the two share no representation. If a `Rep`↔`UPoly`
+/// converter ever exists, revisit — until then use ratform for Expr rewriting
+/// and this for univariate coefficient extraction.
 pub(crate) fn expr_to_ratfun(e: &Expr, x: &str) -> Option<(UPoly, UPoly)> {
     let cap = crate::resource_limits::current().max_lrt_degree;
     fn conv(e: &Expr, x: &str, cap: usize) -> Option<(UPoly, UPoly)> {
@@ -709,7 +717,9 @@ fn residues_dispatch(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) -> 
 }
 
 fn log_expr(arg: Expr) -> Expr {
-    Expr::Apply(Box::new(Expr::sym("ln")), vec![arg])
+    // Canonical spelling (`log`, natural) — matching every other builder so
+    // downstream string-matching on the head sees one name.
+    Expr::Apply(Box::new(Expr::sym("log")), vec![arg])
 }
 
 /// Exact square root of a rational when both parts are perfect squares.

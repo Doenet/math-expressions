@@ -11,6 +11,19 @@
 //! Fidelity is guarded by differential corpora against the JS reference
 //! (equality 824/824; simplify/derivative/expand/evaluate/assumptions corpora
 //! with snapshotted, documented divergences).
+//!
+//! # Public surface (facade tiers)
+//!
+//! - **Root re-exports** (below) are the primary API: prefer
+//!   `math_expressions::simplify` over `math_expressions::norm::simplify`.
+//! - **API namespaces** — modules used qualified, by design: [`exact`]
+//!   (certified zero-equivalence), [`precise`] (arbitrary-precision eval /
+//!   quadrature), [`numeric`] (mathjs-compatible f64 kernels), [`js_tree`] /
+//!   [`js_match`] (JS `Tree` interop), [`pm`], [`ode`], [`notation`],
+//!   [`resource_limits`], [`output`], [`parse`].
+//! - **Everything else** (`norm`, `eval`, `equality*`, `functions`, `ops`,
+//!   `matrix`, …) is `pub` for the integration-test suite, not a stability
+//!   surface; new external callers should go through the tiers above.
 
 pub mod assumptions;
 pub mod diff;
@@ -29,6 +42,7 @@ pub mod js_tree;
 pub mod resource_limits;
 pub mod matrix;
 pub mod norm;
+pub mod notation;
 pub mod num;
 pub mod numeric;
 pub mod ode;
@@ -76,11 +90,13 @@ pub use ops::{
     strings_to_subscripts, subscripts_to_strings, substitute, substitute_component,
     to_intervals, tuples_to_vectors, variables, AnalyticOpts,
 };
+pub use notation::{Digits, Grouping, NumberNotation};
 pub use output::{to_latex, to_text, LatexOpts, TextOpts};
 pub use parse::latex::{LatexToAst, LatexToAstOptions};
 pub use parse::text::{TextToAst, TextToAstOptions};
 pub use parse::ParseError;
 pub use pm::{contains_pm, count_pm, expand_pm_signs, PmOverflow, MAX_PM_COUNT};
+pub use ratform::{cancel, together};
 pub use precise::{
     evaluate_to_precision, integrate_analyzed, integrate_to_precision, IntegralVerdict, Precise,
     SingularPoint,

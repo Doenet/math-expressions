@@ -65,7 +65,7 @@ fn substitute_matches_js() {
         };
         let Some(repl) = parse(&sub.repl) else { continue };
         let map = HashMap::from([(sub.var.clone(), repl)]);
-        let want = js_tree::from_js(&sub.tree);
+        let want = js_tree::try_from_js(&sub.tree).expect("fixture tree");
         let ok = catch(|| equals(&substitute(&e, &map), &want, &opts)).unwrap_or(false);
         if !ok {
             diffs.push(format!("  {:?} [{}->{}]", c.input, sub.var, sub.repl));

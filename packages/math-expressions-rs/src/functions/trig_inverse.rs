@@ -85,7 +85,7 @@ pub const ATAN: FnDef = FnDef {
             mul(vec![u.clone(), apply("atan", u.clone())]),
             mul(vec![
                 crate::expr::Expr::Num(Number::rat(-1, 2)),
-                apply("ln", add(vec![int(1), pow(u, int(2))])),
+                apply("log", add(vec![int(1), pow(u, int(2))])),
             ]),
         ])
     }),

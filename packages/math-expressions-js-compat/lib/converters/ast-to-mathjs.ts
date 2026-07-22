@@ -1,9 +1,15 @@
-// Compat stub: 'astToMathjs' has no Rust equivalent in the port (see
-// active-plans/JS_TEST_COVERAGE_AUDIT.md). Constructing the converter and
-// importing the module both succeed so specs still collect and run; only
-// `convert()` throws, failing just those tests.
+// AST → math.js converter, backed by the shared bridge in
+// `math-expressions-rs-wasm` (the same `TreeToMathjs` the graphing SDK uses).
+// The legacy `me.converters.astToMathjsObj` shape is a class with a no-arg
+// constructor and a `convert(ast)` method; we adapt to it here, feeding this
+// package's configured math.js instance to the shared converter.
+import { TreeToMathjs, type Tree } from "math-expressions-rs-wasm";
+import math from "../mathjs";
+
 export default class {
-  convert(): never {
-    throw new Error("math-expressions-js-compat: astToMathjs is not implemented");
+  private inner = new TreeToMathjs(math as never);
+
+  convert(ast: Tree) {
+    return this.inner.convert(ast);
   }
 }

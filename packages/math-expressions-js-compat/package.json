@@ -21,6 +21,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "math-expressions-rs-wasm": "*",
     "mathjs": "^15.2.0"
   },
   "devDependencies": {

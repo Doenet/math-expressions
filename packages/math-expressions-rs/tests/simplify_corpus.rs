@@ -84,7 +84,7 @@ fn collect_js_gaps(assert_invariants: bool) -> BTreeSet<String> {
                 continue;
             }
         };
-        let want = js_tree::from_js(&c.tree);
+        let want = js_tree::try_from_js(&c.tree).expect("fixture tree");
         let agrees = catch(|| equals(&simplified, &want, &opts)).unwrap_or(false);
 
         if assert_invariants {

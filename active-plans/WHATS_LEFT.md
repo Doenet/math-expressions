@@ -65,13 +65,13 @@ Draft — designed but **not started** (§B.4–B.6): LIMITS, FULL_SIMPLIFY,
 SINGULARITY_TRANSFORM. These are greenfield design docs with zero
 implementation; none is a partial port.
 
-### B.1 STACK_SAFETY_PLAN — not started (highest risk)
+### B.1 STACK_SAFETY_PLAN — item 22 done; 21, 23–26 open (highest risk)
 
 Recursive traversals can overflow the ~1 MB wasm32 shadow stack on deep
 expressions (including on `Drop` — freeing a deep tree crashes). Sequenced:
 
 - [ ] 21. Iterative `Drop` for `Expr` (kills the "freeing the tree crashes" class)
-- [ ] 22. Parser depth cap at the ~4 self-nesting entry points + `from_js` depth check (default 256)
+- [x] 22. Parser depth cap at the ~4 self-nesting entry points (`MAX_PARSE_DEPTH = 64`, `enter`/`leave` in both parsers, `tests/stack_safety.rs`); `from_js` documents its reliance on serde_json's 128-depth limit rather than a bespoke check
 - [ ] 23. `children(&Expr)` helper + iterative post-order `fold` driver in `expr.rs`
 - [ ] 24. Port the ~8 passes to the driver, in dependency order: `flatten` → `canonicalize` → `cmp` → `eval_complex`/`free_symbols`/`contains_blank`/`coerce_seqs` → `to_js`/`from_js` → formatters → `convert_units_in_term`
 - [ ] 25. Replace `opaque_key`; decide whether to replace derived `PartialEq` with an iterative version (per frame-size measurement)
@@ -111,7 +111,7 @@ corpus. New `Expr::Limit` binder variant + `src/limit/` engine. Phased P0–P5:
 Mathematica/SymPy-class `full_simplify` as a **new** entry point (leaves the
 oracle-compatible `simplify` untouched). Chunks S1–S7, TDD-first:
 
-- [~] 41. S1: `src/exact.rs` — exact constant evaluation + certified `is_zero(e) -> Tri` service (the keystone). **Core landed** (`exact::is_zero`, `exact::exact_eval`, `Exact` value type over ℚ+surds+π+e, trig on the π/12 lattice, exp/ln inversion, single-`RootOf` reduction mod its defining poly; `max_exact_eval_ops` §7f cap; `tests/exact_is_zero.rs`, 10 tests). **Remaining:** the behavior-preserving refactors onto it — diverge.rs `PiLin`/`exactly_zero_at`/`certified_nonzero_at`, matrix.rs eigen residual check, integrate I2 gate.
+- [~] 41. S1: `src/exact.rs` — exact constant evaluation + certified `is_zero(e) -> Tri` service (the keystone). **Core landed** (`exact::is_zero`, `exact::exact_eval`, `Exact` value type over ℚ+surds+π+e, trig on the π/12 lattice, exp/ln inversion, single-`RootOf` reduction mod its defining poly; `max_exact_eval_ops` §7f cap; `tests/exact_is_zero.rs`, 10 tests). **Refactors onto it DONE 2026-07-22** (see ARCHITECTURE_REVIEW §9.3): diverge.rs `PiLin` family deleted in favor of `exact::exact_eval`; matrix pivot/rank/discriminant zero-tests use `exact::certified_zero` (+ certified-nonzero for variable-free entries); integrate I2 gate was already on `exact::certified_zero`. Eigen-ladder→`factor` deferred to S4 (documented at `matrix/eigen.rs::eigen_items` — today's factor is weaker than the ladder).
 - [ ] 42. S2: `src/ratform.rs` — rational normalization (`together`/`cancel`/`ratsimp`) with opaque-kernel trick
 - [ ] 43. S3: trig/exp/log special values + parity (answers the `sin(2π) ↛ 0` gap)
 - [ ] 44. S4: factorization over ℚ (squarefree + rational-root + bounded Zassenhaus; multivariate)

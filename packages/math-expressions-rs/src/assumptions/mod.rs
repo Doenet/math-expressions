@@ -607,7 +607,9 @@ fn apply_facts(head: &Expr, args: &[Expr], a: &Assumptions) -> Facts {
                 out.complex = Some(true);
             }
         }
-        "log" => {
+        // Both spellings: `log` is canonical but the registry's builders and
+        // un-normalized user trees say `ln` (see functions/exp_log.rs).
+        "log" | "ln" => {
             if af.positive == Some(true) {
                 out.real = Some(true);
                 out.complex = Some(true);

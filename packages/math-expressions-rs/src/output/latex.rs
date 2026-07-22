@@ -9,15 +9,20 @@ use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 
 #[derive(Debug, Clone, Default)]
-pub struct LatexOpts {}
-
-pub fn convert(expr: &Expr, _opts: &LatexOpts) -> String {
-    Writer.emit(expr, 0)
+pub struct LatexOpts {
+    /// Decimal / argument-separator notation (I18N_MATH_NOTATION_PLAN).
+    pub notation: crate::notation::NumberNotation,
 }
 
-struct Writer;
+pub fn convert(expr: &Expr, opts: &LatexOpts) -> String {
+    Writer { opts }.emit(expr, 0)
+}
 
-impl Writer {
+struct Writer<'a> {
+    opts: &'a LatexOpts,
+}
+
+impl Writer<'_> {
     fn emit(&self, e: &Expr, ctx: u8) -> String {
         let (s, p) = self.render(e);
         if p < ctx {
@@ -37,12 +42,17 @@ impl Writer {
         use prec::{ADD, AND, ATOM, INDEX, MUL, NEG, NOT, OR, POW, REL, SIGN};
         match e {
             Expr::Num(n) => self.render_number(n),
-            // MATRIX_PLAN §2a display form.
+            // Same `rootof(p, k)` application form as the text printer —
+            // `\operatorname{rootof}` is a registered applied name, so this
+            // re-parses and canonicalizes back to the identical leaf (the
+            // printers' round-trip contract; the old `\operatorname{Root}_k`
+            // display form did not re-parse).
             Expr::RootOf { poly, index } => (
                 format!(
-                    "\\operatorname{{Root}}_{{{}}}\\!\\left({}\\right)",
-                    index,
-                    self.emit(&crate::rootof::poly_display(poly, "t"), 0)
+                    "\\operatorname{{rootof}}\\left({}{}{}\\right)",
+                    self.emit(&crate::rootof::poly_display(poly, "t"), 0),
+                    self.arg_sep(),
+                    index
                 ),
                 ATOM,
             ),
@@ -116,7 +126,7 @@ impl Writer {
         // — rendering `\frac{1}{2}` would re-parse to a `Div`.
         if let Some(dec) = n.terminating_decimal() {
             let p = if dec.starts_with('-') { NEG } else { ATOM };
-            return (dec, p);
+            return (self.decimal(dec), p);
         }
         // A non-terminating fraction renders as `\frac` (self-delimiting, so
         // an atom); only reachable from later normalization, not the parser.
@@ -129,7 +139,29 @@ impl Writer {
         // Float: numerical-evaluation result, positional (never exponential).
         let s = f64_positional_string(n.to_f64());
         let p = if s.starts_with('-') { NEG } else { ATOM };
-        (s, p)
+        (self.decimal(s), p)
+    }
+
+    /// The argument/tuple/list separator for the active notation, with a
+    /// trailing space (`", "` by default; `"; "` under comma notation).
+    fn arg_sep(&self) -> String {
+        format!("{} ", self.opts.notation.argument_separator)
+    }
+
+    /// Retarget the `.` decimal point of a rendered number to the active
+    /// decimal separator. A5: a decimal comma is emitted as `{,}` so MathJax /
+    /// MathQuill don't add trailing-punctuation spacing. No-op under default.
+    fn decimal(&self, s: String) -> String {
+        let d = self.opts.notation.decimal_separator;
+        if d == '.' {
+            return s;
+        }
+        let rep = if d == ',' {
+            "{,}".to_string()
+        } else {
+            d.to_string()
+        };
+        s.replace('.', &rep)
     }
 
     fn join(&self, xs: &[Expr], sep: &str, ctx: u8) -> String {
@@ -270,7 +302,7 @@ impl Writer {
             .iter()
             .map(|a| self.emit(a, prec::LIST + 1))
             .collect::<Vec<_>>()
-            .join(", ");
+            .join(&self.arg_sep());
         // Function heads with dedicated LaTeX spellings (`FnDef::latex_head`).
         let head_str = match head {
             Expr::Sym(s) => match crate::functions::latex_apply_head(&s.name()) {
@@ -290,7 +322,7 @@ impl Writer {
             .iter()
             .map(|x| self.emit(x, prec::LIST + 1))
             .collect::<Vec<_>>()
-            .join(", ");
+            .join(&self.arg_sep());
         match kind {
             SeqKind::List => (inner, prec::LIST),
             SeqKind::Tuple | SeqKind::Vector => (format!("\\left( {} \\right)", inner), prec::ATOM),
@@ -308,7 +340,7 @@ impl Writer {
         let hi = self.emit(&endpoints.1, prec::LIST + 1);
         let left = if closed.0 { "\\left[" } else { "\\left(" };
         let right = if closed.1 { "\\right]" } else { "\\right)" };
-        format!("{} {}, {} {}", left, lo, hi, right)
+        format!("{} {}{}{} {}", left, lo, self.arg_sep(), hi, right)
     }
 
     fn render_relation(&self, operands: &[Expr], ops: &[RelOp]) -> String {
@@ -376,7 +408,7 @@ impl Writer {
                 format!(
                     "\\operatorname{{{}}}\\left({}\\right)",
                     name,
-                    self.join(args, ", ", LIST + 1)
+                    self.join(args, &self.arg_sep(), LIST + 1)
                 ),
                 ATOM,
             ),
@@ -389,7 +421,7 @@ impl Writer {
         } else {
             format!(
                 "\\angle\\left( {} \\right)",
-                self.join(args, ", ", prec::LIST + 1)
+                self.join(args, &self.arg_sep(), prec::LIST + 1)
             )
         }
     }

@@ -170,58 +170,18 @@ pub fn contains_blank(e: &Expr) -> bool {
 /// every variant — a tuple nested inside a relation, interval, or matrix must
 /// coerce too.
 fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
-    fn recur(e: Expr, opts: &EqOptions) -> Expr {
-        let map_kind = |k: SeqKind| match k {
-            SeqKind::Array if opts.coerce_tuples_arrays => SeqKind::Tuple,
-            SeqKind::Vector | SeqKind::AltVector if opts.coerce_vectors => SeqKind::Tuple,
-            other => other,
-        };
-        let each = |xs: Vec<Expr>, opts: &EqOptions| -> Vec<Expr> {
-            xs.into_iter().map(|x| recur(x, opts)).collect()
-        };
-        match e {
-            Expr::Seq(k, xs) => Expr::Seq(map_kind(k), each(xs, opts)),
-            Expr::Add(xs) => Expr::Add(each(xs, opts)),
-            Expr::Mul(xs) => Expr::Mul(each(xs, opts)),
-            Expr::And(xs) => Expr::And(each(xs, opts)),
-            Expr::Or(xs) => Expr::Or(each(xs, opts)),
-            Expr::Union(xs) => Expr::Union(each(xs, opts)),
-            Expr::Intersect(xs) => Expr::Intersect(each(xs, opts)),
-            Expr::Pow(a, b) => Expr::Pow(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
-            Expr::Div(a, b) => Expr::Div(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
-            Expr::Index(a, b) => Expr::Index(Box::new(recur(*a, opts)), Box::new(recur(*b, opts))),
-            Expr::Neg(x) => Expr::Neg(Box::new(recur(*x, opts))),
-            Expr::Not(x) => Expr::Not(Box::new(recur(*x, opts))),
-            Expr::Prime(x) => Expr::Prime(Box::new(recur(*x, opts))),
-            Expr::Apply(h, xs) => Expr::Apply(Box::new(recur(*h, opts)), each(xs, opts)),
-            Expr::Interval { endpoints, closed } => {
-                let (a, b) = *endpoints;
-                Expr::Interval {
-                    endpoints: Box::new((recur(a, opts), recur(b, opts))),
-                    closed,
-                }
-            }
-            Expr::Relation { operands, ops } => Expr::Relation {
-                operands: each(operands, opts),
-                ops,
-            },
-            Expr::Matrix {
-                rows,
-                cols,
-                entries,
-            } => Expr::Matrix {
-                rows,
-                cols,
-                entries: each(entries, opts),
-            },
-            Expr::OtherOp(name, xs) => Expr::OtherOp(name, each(xs, opts)),
-            leaf @ (Expr::Num(_)
-            | Expr::Sym(_)
-            | Expr::Const(_)
-            | Expr::RootOf { .. }
-            | Expr::Blank
-            | Expr::Ldots) => leaf,
+    fn recur(e: &Expr, opts: &EqOptions) -> Expr {
+        // One variant-specific rewrite (the Seq kind); child recursion is the
+        // blessed traversal, so new `Expr` variants need no edit here.
+        if let Expr::Seq(k, xs) = e {
+            let mapped = match k {
+                SeqKind::Array if opts.coerce_tuples_arrays => SeqKind::Tuple,
+                SeqKind::Vector | SeqKind::AltVector if opts.coerce_vectors => SeqKind::Tuple,
+                other => *other,
+            };
+            return Expr::Seq(mapped, xs.iter().map(|x| recur(x, opts)).collect());
         }
+        crate::norm::syntactic::map_children(e, |c| recur(c, opts))
     }
-    recur(e, opts)
+    recur(&e, opts)
 }

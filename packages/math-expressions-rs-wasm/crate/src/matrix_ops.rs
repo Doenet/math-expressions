@@ -2,28 +2,28 @@
 //! (MATRIX_PLAN §1b–§3).
 
 use super::Expression;
-use math_expressions::{to_text, Assumptions, Expr};
+use math_expressions::{Assumptions, Expr};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 impl Expression {
     pub fn transpose(&self) -> Expression {
-        Expression(math_expressions::transpose(&self.0))
+        self.derive(math_expressions::transpose(&self.0))
     }
     pub fn trace(&self) -> Expression {
-        Expression(math_expressions::trace(&self.0))
+        self.derive(math_expressions::trace(&self.0))
     }
     pub fn matmul(&self, other: &Expression) -> Expression {
-        Expression(math_expressions::matmul(&self.0, &other.0))
+        self.derive(math_expressions::matmul(&self.0, &other.0))
     }
     /// Matrix inverse (opaque when singular or symbolic without a nonzero-det
     /// proof under the default assumptions).
     pub fn matrix_inverse(&self) -> Expression {
-        Expression(math_expressions::matrix_inverse(&self.0, &Assumptions::new()))
+        self.derive(math_expressions::matrix_inverse(&self.0, &Assumptions::new()))
     }
     /// Reduced row-echelon form.
     pub fn rref(&self) -> Expression {
-        Expression(math_expressions::rref(&self.0, &Assumptions::new()))
+        self.derive(math_expressions::rref(&self.0, &Assumptions::new()))
     }
     /// Matrix rank, or `undefined` when not a literal matrix under the caps.
     pub fn rank(&self) -> Option<u32> {
@@ -43,7 +43,7 @@ impl Expression {
                 serde_json::Value::Array(
                     entries
                         .iter()
-                        .map(|e| serde_json::json!(to_text(e, &Default::default())))
+                        .map(|e| serde_json::json!(self.text_of(e)))
                         .collect(),
                 )
             })
@@ -52,40 +52,40 @@ impl Expression {
     }
 
     pub fn vector_add(&self, other: &Expression) -> Expression {
-        Expression(math_expressions::vector_add(&self.0, &other.0))
+        self.derive(math_expressions::vector_add(&self.0, &other.0))
     }
     pub fn vector_sub(&self, other: &Expression) -> Expression {
-        Expression(math_expressions::vector_sub(&self.0, &other.0))
+        self.derive(math_expressions::vector_sub(&self.0, &other.0))
     }
     pub fn dot_prod(&self, other: &Expression) -> Expression {
-        Expression(math_expressions::dot_prod(&self.0, &other.0))
+        self.derive(math_expressions::dot_prod(&self.0, &other.0))
     }
     pub fn cross_prod(&self, other: &Expression) -> Expression {
-        Expression(math_expressions::cross_prod(&self.0, &other.0))
+        self.derive(math_expressions::cross_prod(&self.0, &other.0))
     }
 
     /// Determinant (tiered — MATRIX_PLAN §1b). Always an expression: an
     /// opaque `det(…)` node when not decidable.
     pub fn determinant(&self) -> Expression {
-        Expression(math_expressions::matrix::det(&self.0))
+        self.derive(math_expressions::det(&self.0))
     }
 
     /// Characteristic polynomial in `var`, or `undefined` when the receiver
     /// is not a square literal matrix under the caps.
     pub fn char_poly(&self, var: &str) -> Option<Expression> {
-        math_expressions::matrix::char_poly(&self.0, var).map(Expression)
+        math_expressions::char_poly(&self.0, var).map(|e| self.derive(e))
     }
 
     /// Eigenvalues with algebraic multiplicities as JSON
     /// `[{"value": <text>, "multiplicity": n}, …]` in canonical order
     /// (MATRIX_PLAN §2c), or `undefined` on an honest refusal.
     pub fn eigenvalues(&self) -> Option<String> {
-        let vals = math_expressions::matrix::eigenvalues(&self.0, &Assumptions::new())?;
+        let vals = math_expressions::eigenvalues(&self.0, &Assumptions::new())?;
         let rows: Vec<serde_json::Value> = vals
             .iter()
             .map(|(v, m)| {
                 serde_json::json!({
-                    "value": to_text(v, &Default::default()),
+                    "value": self.text_of(v),
                     "multiplicity": m,
                 })
             })
@@ -97,17 +97,17 @@ impl Expression {
     /// (basis entries in text syntax; geometric multiplicity is the basis
     /// length), or `undefined` on an honest refusal (MATRIX_PLAN §3).
     pub fn eigenvectors(&self) -> Option<String> {
-        let pairs = math_expressions::matrix::eigenvectors(&self.0, &Assumptions::new())?;
+        let pairs = math_expressions::eigenvectors(&self.0, &Assumptions::new())?;
         let rows: Vec<serde_json::Value> = pairs
             .iter()
             .map(|p| {
                 let basis: Vec<Vec<String>> = p
                     .basis
                     .iter()
-                    .map(|v| v.iter().map(|e| to_text(e, &Default::default())).collect())
+                    .map(|v| v.iter().map(|e| self.text_of(e)).collect())
                     .collect();
                 serde_json::json!({
-                    "value": to_text(&p.value, &Default::default()),
+                    "value": self.text_of(&p.value),
                     "multiplicity": p.alg_mult,
                     "basis": basis,
                 })

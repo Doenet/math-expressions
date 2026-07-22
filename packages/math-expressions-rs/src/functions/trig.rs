@@ -57,7 +57,7 @@ pub const TAN: FnDef = FnDef {
     inverse: Some("atan"),
     move_exponent_spellings: &["tan"],
     derivative: Some("sec(x)^2"),
-    antiderivative: Some(|u| mul(vec![int(-1), apply("ln", apply("cos", u))])),
+    antiderivative: Some(|u| mul(vec![int(-1), apply("log", apply("cos", u))])),
     eval1: Some(|z| Some(z.tan())),
     latex_commands: &[("tan", "tan")],
     kernel: Some(&TAN_KERNEL),
@@ -111,7 +111,7 @@ pub const COT: FnDef = FnDef {
     inverse: Some("acot"),
     move_exponent_spellings: &["cot"],
     derivative: Some("-csc(x)^2"),
-    antiderivative: Some(|u| apply("ln", apply("sin", u))),
+    antiderivative: Some(|u| apply("log", apply("sin", u))),
     eval1: Some(|z| Some(z.tan().inv())),
     latex_commands: &[("cot", "cot")],
     ..DEFAULTS

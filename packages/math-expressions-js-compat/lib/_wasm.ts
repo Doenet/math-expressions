@@ -9,7 +9,7 @@
 // Browser builds would instead use a --target web wasm + async init; that path
 // is future work (see README).
 import { createRequire } from "node:module";
-import type { WasmModule } from "./wasm-types";
+import type { WasmModule } from "math-expressions-rs-wasm";
 
 const require = createRequire(import.meta.url);
 const wasm = require("../vendor/wasm/math_expressions_wasm.js") as WasmModule;
