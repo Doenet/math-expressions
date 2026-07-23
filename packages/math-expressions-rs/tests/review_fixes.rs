@@ -3,8 +3,10 @@
 //! silently regress. Under the workspace `panic = "abort"` profile, the
 //! panic/abort cases here would be full wasm-worker crashes if they regressed.
 
+use math_expressions::js_match::match_template;
 use math_expressions::precise::{evaluate_to_precision, integrate_to_precision, Precise};
 use math_expressions::{canonicalize, det, Expr, LatexToAst, LatexToAstOptions, Number, NumberNotation};
+use serde_json::json;
 
 fn parse_latex(nt: NumberNotation, s: &str) -> Result<Expr, math_expressions::ParseError> {
     LatexToAst::new(LatexToAstOptions {
@@ -125,6 +127,18 @@ fn certified_quadrature_sound_under_cancellation() {
         .take(digits - 1)
         .collect();
     assert_eq!(got_digits, want_digits, "certified quadrature under cancellation");
+}
+
+/// `match_template` is `pub` and runs on raw caller-supplied JS trees. A
+/// degenerate `["-", ["*"]]` (unary minus of a nullary product) against any
+/// `["*", …]` pattern used to index an empty operand vec → abort under
+/// `panic = "abort"`. It must now cleanly return `None`.
+#[test]
+fn match_template_nullary_product_minus_does_not_abort() {
+    assert_eq!(
+        match_template(&json!(["-", ["*"]]), &json!(["*", "a"])),
+        None
+    );
 }
 
 fn parse(s: &str) -> Expr {

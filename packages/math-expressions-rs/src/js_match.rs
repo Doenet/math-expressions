@@ -127,10 +127,17 @@ fn match_inner(
             if arr.len() == 2 && arr[0].as_str() == Some("-") && head(&arr[1]) == Some("*") {
                 tree_operands.clear();
                 all_children(&arr[1], &mut tree_operands);
-                neg_first = Some(Value::Array(vec![
-                    Value::String("-".to_string()),
-                    tree_operands[0].clone(),
-                ]));
+                // A degenerate nullary product `["*"]` leaves no factors to
+                // carry the minus; leave `neg_first` unset so the `None` path
+                // below is taken instead of indexing an empty vec (an abort
+                // under `panic = "abort"` — `match_template` is `pub` and runs
+                // on raw caller-supplied JS trees).
+                if !tree_operands.is_empty() {
+                    neg_first = Some(Value::Array(vec![
+                        Value::String("-".to_string()),
+                        tree_operands[0].clone(),
+                    ]));
+                }
             }
         }
     }
