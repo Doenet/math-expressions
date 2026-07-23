@@ -27,6 +27,10 @@ export interface WasmExpression {
   /** Structural comparison against `key` under a criterion JSON (e.g.
    * `"sameStructure"`, which routes to Rust `equals_syntactic`). */
   structural_equality(key: WasmExpression, comparisonJson: string): boolean;
+  /** Structure-only check (no key): is this expression in the form named by the
+   * criterion JSON? Returns a JSON string `{"ok":boolean,"why":string|null}`; an
+   * unknown criterion yields `{"ok":false,"why":"unknown structural comparison"}`. */
+  check_structural_comparison(comparisonJson: string): string;
   is_zero(): boolean | undefined;
   is_analytic(allowAbs: boolean, allowArg: boolean, allowRelation: boolean): boolean;
 
