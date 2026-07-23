@@ -3,7 +3,7 @@
 //! silently regress. Under the workspace `panic = "abort"` profile, the
 //! panic/abort cases here would be full wasm-worker crashes if they regressed.
 
-use math_expressions::precise::{evaluate_to_precision, Precise};
+use math_expressions::precise::{evaluate_to_precision, integrate_to_precision, Precise};
 use math_expressions::{canonicalize, det, Expr, LatexToAst, LatexToAstOptions, Number, NumberNotation};
 
 fn parse_latex(nt: NumberNotation, s: &str) -> Result<Expr, math_expressions::ParseError> {
@@ -94,6 +94,37 @@ fn singular_bareiss_tier_determinant_is_zero() {
         Expr::Num(Number::Int(0)),
         "det of a singular Bareiss-tier polynomial matrix must be 0, not opaque"
     );
+}
+
+/// Coverage for the certified interval evaluator's n-ary `Op::Add` under heavy
+/// cancellation. `(x-10)^6` in *expanded* form is a 7-term alternating sum
+/// (coefficients up to 10^6) that nearly cancels near x=10, so Σ|tᵢ| ≫ |result|
+/// there — the regime where a flat n-ary sum widened only once understates the
+/// summation rounding. The certified value must match the exact integral
+/// ∫₀²⁰ (x-10)^6 dx = 2·10^7/7 to the achievable precision. (This exercises the
+/// fixed pairwise-widening path; the adaptive subdivision keeps the pre-fix
+/// result correct for this small n, so it is coverage, not a strict pin.)
+#[test]
+fn certified_quadrature_sound_under_cancellation() {
+    let expanded = "x^6 - 60*x^5 + 1500*x^4 - 20000*x^3 + 150000*x^2 - 600000*x + 1000000";
+    let digits = 12; // f64 quadrature certifies ~12 digits here; 13+ is Unknown.
+    let q = integrate_to_precision(&parse(expanded), "x", &parse("0"), &parse("20"), digits);
+    let want = evaluate_to_precision(&parse("20000000/7"), digits + 5);
+    let got_digits: String = q
+        .to_decimal_string(digits)
+        .unwrap_or_else(|| panic!("expected digits, got {q:?}"))
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .take(digits - 1)
+        .collect();
+    let want_digits: String = want
+        .to_decimal_string(digits)
+        .unwrap()
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .take(digits - 1)
+        .collect();
+    assert_eq!(got_digits, want_digits, "certified quadrature under cancellation");
 }
 
 fn parse(s: &str) -> Expr {

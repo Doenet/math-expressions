@@ -90,14 +90,25 @@ pub(crate) fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
                 Iv::point(z.re)
             }
             Op::Add(n) => {
+                // Fold pairwise, widening after each step (like `Op::Mul`).
+                // A flat n-ary f64 sum widened *once* against the result
+                // magnitude is not a sound enclosure: the summation rounding is
+                // bounded by ≈ (n−1)·(ε/2)·Σ|tᵢ|, which exceeds `16 ε · mag(result)`
+                // under cancellation (Σ|tᵢ| ≫ |result|) or large fan-in (n ≳ 33),
+                // so the interval could shift off the true range. Inclusion-
+                // monotone pairwise widening encloses the true sum unconditionally.
                 let start = stack.len() - *n as usize;
-                let (mut lo, mut hi) = (0.0f64, 0.0f64);
-                for t in &stack[start..] {
-                    lo += t.lo;
-                    hi += t.hi;
+                let (head, rest) = stack.split_at(start + 1);
+                let mut acc = head[start];
+                for &t in rest {
+                    acc = Iv {
+                        lo: acc.lo + t.lo,
+                        hi: acc.hi + t.hi,
+                    }
+                    .widen();
                 }
                 stack.truncate(start);
-                Iv { lo, hi }.widen()
+                acc
             }
             Op::Mul(n) => {
                 let start = stack.len() - *n as usize;
