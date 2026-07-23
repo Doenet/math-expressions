@@ -8,9 +8,9 @@
 Design for symbolic (indefinite) integration in `math-expressions-rs`, based
 on an investigation of the Rubi rule-based integrator as foundation, with
 generalized hypergeometric functions as the terminal representation for
-non-elementary antiderivatives. Companion documents: `tmp/MATRIX_PLAN.md`
+non-elementary antiderivatives. Companion documents: `active-plans/DONE_MATRIX_PLAN.md`
 (the `RootOf` construct is a direct dependency, §3), and
-`tmp/ARBITRARY_PERCISION_PLAN.md` (the pFq node is one more series kernel
+`active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` (the pFq node is one more series kernel
 there, §5; numeric self-verification uses its quadrature hooks).
 
 **This is new capability, not porting.** The JS library has no symbolic

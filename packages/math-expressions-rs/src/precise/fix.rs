@@ -1,6 +1,10 @@
 //! `MpFix`: arbitrary-precision fixed point — `value ≈ mant · 2^scale`, with
 //! the producer guaranteeing `|true − value| ≤ 2^scale` (one ulp at the
-//! stored scale).
+//! stored scale). This ±1-ulp bound is the *delivered* contract of a finished
+//! kernel result: multi-level composites (e.g. the complex kernels) accumulate
+//! a few ulps internally, then discharge them against the extra guard bits each
+//! path carries (`bits ≥ need + 8`), so what a caller observes is still ±1 ulp
+//! at the returned scale — it is not a per-elementary-operation guarantee.
 //!
 //! Contract: `rescale` coarsens with rounding; refining a *representation*
 //! (left shift) is only meaningful for exactly-known values and is what

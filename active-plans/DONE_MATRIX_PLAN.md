@@ -5,9 +5,9 @@ including **abstract eigenvalues/eigenvectors** — exact answers for matrices
 whose eigenvalues are not expressible in standard functions (degree ≥ 5 char
 polys have no radical closed form at all; degree 3–4 have closed forms that
 are pedagogically useless). Companion document to
-`tmp/ARBITRARY_PERCISION_PLAN.md` (root isolation is a planned consumer of
-that evaluator) and `tmp/PORTING_PLAN.md` (§8 poly layer is the workhorse).
-`tmp/INTEGRATION_PLAN.md` §3 is the second consumer of the `RootOf`
+`active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` (root isolation is a planned consumer of
+that evaluator) and `active-plans/PORTING_PLAN.md` (§8 poly layer is the workhorse).
+`active-plans/INTEGRATION_PLAN.md` §3 is the second consumer of the `RootOf`
 construct (Lazard–Rioboo–Trager log sums) and shares the squarefree
 decomposition added in §2c — whichever plan executes first owns those pieces.
 

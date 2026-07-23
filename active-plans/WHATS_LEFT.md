@@ -1,7 +1,7 @@
 # What's Left
 
 Tracking doc for remaining work on the Rust port (`math-expressions-rs`). Two
-parts: (A) the JS→Rust feature gap, (B) unfinished items in the `tmp/*_PLAN.md`
+parts: (A) the JS→Rust feature gap, (B) unfinished items in the `active-plans/*_PLAN.md`
 documents. Check items off as they land.
 
 Last audited: 2026-07-21.
@@ -20,7 +20,7 @@ mathjs, mml, glsl}. Rust does only **latex ↔ ast** and **text ↔ ast**.
 -  3. GLSL output (`toGLSL`) — **not needed for Doenet** (shader grapher; Doenet uses jsxgraph, which evaluates numerically via mathjs)
 -  4. Guppy output (`toGuppy`) — **not needed for Doenet** (legacy Guppy-editor XML; unused internally)
 -  5. MathJS input converter (`mathjsToAst`) — **not needed for Doenet** (unused internally; only commented-out in `meTest.js`)
-- [x] 6. MathJS output converter (`astToMathjs`) — powers `f()`/`evaluate()`/`equals()` numeric eval; jsxgraph plots via this path. Done as **option 1** (JS-level shim over the Rust AST) in its own npm-workspace package `packages/math-expressions-rs-wasm/` (`src/tree-to-mathjs.ts`) — typed `Tree`→math.js node + factorial→gamma + `compileTree`/`compileRustExpr` bridge (normalization done Rust-side via `normalize_function_names`)
+- [x] 6. MathJS output converter (`astToMathjs`) — powers `f()`/`evaluate()`/`equals()` numeric eval; jsxgraph plots via this path. Done as **option 1** (JS-level shim over the Rust AST) in its own npm-workspace package `packages/math-expressions-rs-wasm/` (`src-js/tree-to-mathjs.ts`) — typed `Tree`→math.js node + factorial→gamma + `compileTree`/`compileRustExpr` bridge (normalization done Rust-side via `normalize_function_names`)
 
 ### A.2 Genuinely missing capabilities
 
@@ -32,7 +32,7 @@ mathjs, mml, glsl}. Rust does only **latex ↔ ast** and **text ↔ ast**.
 
 ### A.3 Implemented in Rust but not exposed at the wasm boundary (wiring, not algorithms)
 
-- [x] 12. Matrix/vector ops wired to wasm: `transpose`, `trace`, `matmul`, `matrix_inverse`, `rref`, `rank`, `nullspace` + newly implemented `dot_prod`, `cross_prod`, `vector_add`, `vector_sub` (in `matrix.rs`)
+- [x] 12. Matrix/vector ops wired to wasm: `transpose`, `trace`, `matmul`, `matrix_inverse`, `rref`, `rank`, `nullspace` + newly implemented `dot_prod`, `cross_prod`, `vector_add`, `vector_sub` (in `matrix/vector.rs`)
 - [x] 13. Granular normalization passes implemented + wasm-exposed: `normalize_function_names`, `tuples_to_vectors`, `altvectors_to_vectors`, `subscripts_to_strings`, `strings_to_subscripts`, `to_intervals`. (The rest — `normalize_negative_numbers`, `default_order`, `normalize_angle_linesegment_arg_order`, `substitute_abs` — remain subsumed by `canonicalize()`; expose individually only if a caller needs them)
 - [x] 14. Units: `remove_units`, `add_unit`, `remove_scaling_units` (`ops.rs` + wasm)
 - [x] 15. Assumptions management surface: wasm `Assumptions` handle (`add`/`remove`/`clear`/`is_empty`/`simplify` + the 8 predicates)
@@ -46,7 +46,7 @@ mathjs, mml, glsl}. Rust does only **latex ↔ ast** and **text ↔ ast**.
 > quadrature, `rootof`, symbolic eigenvalues/eigenvectors, ODE solver.
 >
 > NOTE: calculus limits (`lim_{x→a}`) are **not** implemented — only designed
-> (tmp/LIMITS_PLAN.md, draft). The `src/resource_limits.rs` module (formerly
+> (active-plans/LIMITS_PLAN.md, draft). The `src/resource_limits.rs` module (formerly
 > `limits.rs`, added by commit "Implement limit") is the operation-count
 > resource governor, unrelated to calculus limits. Do not list `limits` as a
 > shipped feature.
@@ -111,7 +111,7 @@ corpus. New `Expr::Limit` binder variant + `src/limit/` engine. Phased P0–P5:
 Mathematica/SymPy-class `full_simplify` as a **new** entry point (leaves the
 oracle-compatible `simplify` untouched). Chunks S1–S7, TDD-first:
 
-- [~] 41. S1: `src/exact.rs` — exact constant evaluation + certified `is_zero(e) -> Tri` service (the keystone). **Core landed** (`exact::is_zero`, `exact::exact_eval`, `Exact` value type over ℚ+surds+π+e, trig on the π/12 lattice, exp/ln inversion, single-`RootOf` reduction mod its defining poly; `max_exact_eval_ops` §7f cap; `tests/exact_is_zero.rs`, 10 tests). **Refactors onto it DONE 2026-07-22** (see ARCHITECTURE_REVIEW §9.3): diverge.rs `PiLin` family deleted in favor of `exact::exact_eval`; matrix pivot/rank/discriminant zero-tests use `exact::certified_zero` (+ certified-nonzero for variable-free entries); integrate I2 gate was already on `exact::certified_zero`. Eigen-ladder→`factor` deferred to S4 (documented at `matrix/eigen.rs::eigen_items` — today's factor is weaker than the ladder).
+- [~] 41. S1: `src/exact.rs` — exact constant evaluation + certified `is_zero(e) -> Tri` service (the keystone). **Core landed** (`exact::is_zero`, `exact::exact_eval`, `Exact` value type over ℚ+surds+π+e, trig on the π/12 lattice, exp/ln inversion, single-`RootOf` reduction mod its defining poly; `max_exact_eval_ops` §7f cap; `tests/exact_is_zero.rs`, 10 tests). **Refactors onto it DONE 2026-07-22** (see ARCHITECTURE_REVIEW §5): diverge.rs `PiLin` family deleted in favor of `exact::exact_eval`; matrix pivot/rank/discriminant zero-tests use `exact::certified_zero` (+ certified-nonzero for variable-free entries); integrate I2 gate was already on `exact::certified_zero`. Eigen-ladder→`factor` deferred to S4 (documented at `matrix/eigen.rs::eigen_items` — today's factor is weaker than the ladder).
 - [ ] 42. S2: `src/ratform.rs` — rational normalization (`together`/`cancel`/`ratsimp`) with opaque-kernel trick
 - [ ] 43. S3: trig/exp/log special values + parity (answers the `sin(2π) ↛ 0` gap)
 - [ ] 44. S4: factorization over ℚ (squarefree + rational-root + bounded Zassenhaus; multivariate)
@@ -138,7 +138,7 @@ Modeled on STACK/WeBWorK answer tests; standards diverge on what to enforce
 opt-in. 463 tests green; clippy clean (host + `wasm32`).
 
 - [x] 51. F0 (inverted-parse design): `convert` is now always **faithful** — the whole-tree `flatten` is gone (no flag); `flatten` moved to the leading step of the four non-canonicalizing consumers (`normalize_syntactic`, `to_text`/`to_latex`, `js_tree::to_js`, `check_structural_comparison`). Value path already flattens via `canonicalize`. All corpora + 463 tests stay green
-- [x] 52. F1: `StructuralComparison` + `check_structural_comparison` (unary structural check) + `structural_equality` (structure + value) in `src/structural.rs` + `tests/structural.rs` (13 structural criteria: `ReducedFraction`, `MixedNumber`, `ImproperFraction`, `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`, `CompletedSquare`, `HasIntegrationConstant`) — reuse `canonicalize`/`factor`/`reduce_rational` as oracles, never replacing the student tree. **No `grade`** (JS `equalsVia*` model). **Vocabulary reconciled:** the `SameStructure` method folds `equals_syntactic`/`equalsViaSyntax` (whole-tree identity) into the one structural framework — `equals`=value, `structural_equality`=structural. **`MatchesTemplate` deferred** (template DSL)
+- [x] 52. F1: `StructuralComparison` + `check_structural_comparison` (unary structural check) + `structural_equality` (structure + value) in `src/equality_structural/` + `tests/structural.rs` (13 structural criteria: `ReducedFraction`, `MixedNumber`, `ImproperFraction`, `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`, `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`, `CompletedSquare`, `HasIntegrationConstant`) — reuse `canonicalize`/`factor`/`reduce_rational` as oracles, never replacing the student tree. **No `grade`** (JS `equalsVia*` model). **Vocabulary reconciled:** the `SameStructure` method folds `equals_syntactic`/`equalsViaSyntax` (whole-tree identity) into the one structural framework — `equals`=value, `structural_equality`=structural. **`MatchesTemplate` deferred** (template DSL)
 - [~] 53. F2: `ExactValue` + `Decimal{places:None}` shipped in F1 — **no tag needed** (a faithful decimal is `Num(Rat)`, distinct from `Int`/`Div`). **Deferred:** the `Prov` tag itself — decimal place-counting (`Decimal{places:Some}`) + `MulStyleIs`, the only checks needing it — because it requires struct-variant surgery on `Num`/`Mul` (331 sites) against a green suite; poor risk/reward for two niche checks
 - [x] 54. F3: wasm surface — `Expression.check_structural_comparison(json)` (JSON `StructuralComparisonResult` `{ok, why}`) + `Expression.structural_equality(key, json)` (form + value → bool) for DoenetML; compiles + clippy-clean on `wasm32-unknown-unknown`
 - [ ] 55. F4 (deferred): byte-span source maps — *only* if a UI wants caret-on-error highlighting; no sourced directive requires it

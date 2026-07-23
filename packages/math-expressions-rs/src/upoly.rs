@@ -467,9 +467,6 @@ pub(crate) fn isolate_real_roots(p: &[BigRational]) -> Option<Vec<(BigRational, 
     Some(done)
 }
 
-/// Shrink an isolating interval until its width is below `2^-bits` of its
-/// scale, by Sturm-count bisection (endpoint-root-proof), then return the
-/// midpoint as f64.
 /// Shrink an isolating interval (a, b] (exactly one simple root inside) to
 /// f64 resolution by sign bisection — one exact polynomial evaluation per
 /// step, so wide Cauchy-bound intervals (2048 halvings ≈ 616 decimal orders

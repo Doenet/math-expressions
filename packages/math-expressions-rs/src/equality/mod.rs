@@ -14,7 +14,9 @@
 //! 7). If you want a guaranteed-accurate-or-`Unknown` number, that is
 //! [`precise`](crate::precise), not this module.
 //!
-//! The stages, in order ([`api::equals`]):
+//! The stages, in order ([`api::equals`]). Before stage 0, `equals` desugars
+//! scaling units on both sides (`50% → 50/100`, `deg`, `$`) so the stages below
+//! see unit-free trees:
 //!
 //! 0. **Blank guard** — a missing operand makes equality undefined ⇒ `false`
 //!    (unless `allow_blanks`).

@@ -38,7 +38,7 @@ Co-locates two language trees (the Doenet layout):
   crate: a thin adapter over the core's public API.
 - `src-js/` — TypeScript bindings, principally the **AST → math.js bridge** for
   fast numeric graphing (Doenet + jsxgraph), plus the shared wasm handle types.
-- `build-wasm.sh` — the **single source of truth** for the wasm build; other
+- `build-wasm.sh` — the canonical wasm build script that the `math-expressions-js-compat` package's own `build-wasm.sh` delegates to; other
   packages call it with a target (`nodejs` for synchronous Node use, `web` for
   the browser). `tests/` is a Vitest end-to-end suite that loads the browser
   build (ESM + `initSync`) and exercises every subsystem.

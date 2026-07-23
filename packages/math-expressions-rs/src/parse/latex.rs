@@ -295,7 +295,18 @@ impl LatexToAst {
     /// A single leading digit of a NUMBER token, pushing the rest back on the
     /// lexer. Used by `\frac12`, `x^23`, and operator-symbol arguments.
     fn get_single_digit_as_number(&mut self) -> R<Option<Expr>> {
-        if self.token.ttype == Tok::Number && !self.token.text.starts_with('.') {
+        // Require an ASCII digit as the first byte. Testing the byte (rather
+        // than `!starts_with('.')`) is what makes this notation-safe: under a
+        // non-`.` decimal separator a leading-decimal number lexes as e.g.
+        // `",5"` or the 2-byte `"٫5"`, and the old guard let those through —
+        // `text.as_bytes()[0] - b'0'` then underflows and `text[1..]` can slice
+        // mid-codepoint (both aborts under `panic = "abort"`). A digit first
+        // byte guarantees the subtraction and the `[1..]` split are in range.
+        // Behavior is unchanged under default `.` notation (a `.`-leading
+        // number was, and still is, excluded here).
+        if self.token.ttype == Tok::Number
+            && self.token.text.as_bytes().first().is_some_and(u8::is_ascii_digit)
+        {
             let first = self.token.text.as_bytes()[0] as char;
             let num = (first as u8 - b'0') as i64;
             if self.token.text.len() > 1 {

@@ -57,6 +57,12 @@ pub const ACOTH: FnDef = FnDef {
     aliases: &["arccoth"],
     parse_text: &["acoth", "arccoth"],
     parse_latex: &["acoth", "arccoth"],
+    // The true derivative of acoth is +1/(1−x²) (same closed form as atanh).
+    // This intentionally reproduces the sign of mathjs's own derivative table
+    // (`derivative.js`: `negative=true` with `funcDerivative=(1−x²)`) so the
+    // ported engine matches the JS oracle — do not "correct" the sign without
+    // also changing the oracle. No `acoth` case is in `derivative-corpus.json`,
+    // so nothing else pins this decision.
     derivative: Some("-1/(1 - x^2)"),
     eval1: Some(|z| Some(z.inv().atanh())),
     ..DEFAULTS

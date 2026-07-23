@@ -41,7 +41,7 @@ Rust tests live in `packages/math-expressions-rs/tests/` (+ inline `src/`).
 | `quick_solve` | 3 | `grade.rs` (`solve_linear`) | ✅ |
 | `quick_trees` | 39 | utils in `src/js_match.rs`; no dedicated test file | ⚠️ → **`tree_utils.rs`** |
 | `quick_transformation` | 8 | `expand` → `expand.rs` / `expand_corpus.rs`; `expand_relations` op ⛔ | ✅ (expand) / ⛔ (`expand_relations`) |
-| `quick_ast-to-mathjs` | 139 | `astToMathjs` shim in `packages/math-expressions-rs-wasm/src/tree-to-mathjs.ts` (TS, not the Rust crate) | ⛔ Rust / 🔜 drop-in |
+| `quick_ast-to-mathjs` | 139 | `astToMathjs` shim in `packages/math-expressions-rs-wasm/src-js/tree-to-mathjs.ts` (TS, not the Rust crate) | ⛔ Rust / 🔜 drop-in |
 | `quick_mathjs-to-ast` | ~28 | none | ⛔ |
 | `quick_ast-to-guppy` | 4 | none | ⛔ |
 | `quick_mml-to-latex` | 1 | none | ⛔ |

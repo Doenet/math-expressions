@@ -206,7 +206,7 @@ tests.
 
 **Consequences.**
 - **Subsumes T1b (`pull_nonneg_var`) in
-  tmp/SINGULARITY_TRANSFORM_PLAN.md**: the transform pipeline calls
+  active-plans/SINGULARITY_TRANSFORM_PLAN.md**: the transform pipeline calls
   `full_simplify` with `t ≥ 0` in scope instead of a bespoke rewriter.
   (If S5 lands first, T1b shrinks to a one-line assumption insertion.)
 - Existing `rule_assumptions` cluster in simplify.rs is re-expressed on
@@ -248,7 +248,7 @@ integers, +penalty for Float). `full_simplify` = beam search over
 {expand, together, cancel, factor, factor_terms, trig_expand,
 trig_contract, radsimp, special-value folds} with §7f budget
 (`max_full_simplify_candidates`, default 64) — mirrors the existing
-operation-count limits idiom in src/limits.rs.
+operation-count limits idiom in src/resource_limits.rs.
 
 **Tests.** `sin²x·cos x + cos³x − cos x → 0`-class identities;
 `(1+tan²x) cos²x → 1`; driver-budget exhaustion returns best-so-far
@@ -279,7 +279,7 @@ full_simplify(e)` fuzzed over the existing corpus inputs.
 | `eq/mod.rs` stage ladder | syntactic → finite-field → sampling | + cheap normalize-and-compare pre-stage (S2), optional certified mode (S7) |
 | `simplify.rs` `rule_assumptions` | leaf-lookup gating | S5 propagation engine underneath (same corpus behavior) |
 
-## 9. Limits (§7f additions, src/limits.rs)
+## 9. Limits (§7f additions, src/resource_limits.rs)
 
 | Field | Default | Guards |
 |---|---|---|

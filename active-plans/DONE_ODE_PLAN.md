@@ -9,9 +9,9 @@ component destructures `const { dopri } = me.math` and uses it to integrate
 user-authored dynamical systems
 (`packages/doenetml-worker-javascript/src/components/dynamicalSystems/ODESystem.js`).
 
-Companion documents: `tmp/ARBITRARY_PERCISION_PLAN.md` (the compiled
+Companion documents: `active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` (the compiled
 evaluation tape is the natural integrand/vector-field evaluator),
-`tmp/INTEGRATION_PLAN.md` (quadrature = the one-dimensional special case).
+`active-plans/INTEGRATION_PLAN.md` (quadrature = the one-dimensional special case).
 Kept separate per the maintainer's instruction: ODE solving is a numerics
 capability with its own error-control design, not a CAS feature.
 

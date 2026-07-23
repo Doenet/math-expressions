@@ -12,7 +12,7 @@
 >   `check_structural_comparison`. The value path (`equals`/`simplify`) already
 >   flattens via `canonicalize`. Net observable behavior unchanged; 463 tests +
 >   the JS differential corpora stay green.
-> - **F1** (`src/structural.rs`, `tests/structural.rs`): `StructuralComparison` +
+> - **F1** (`src/equality_structural/`, `tests/structural.rs`): `StructuralComparison` +
 >   `check_structural_comparison` (unary form predicate) + `structural_equality`
 >   (form + value, see §5), 13 checks (`ReducedFraction`, `MixedNumber`,
 >   `ImproperFraction`, `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`,
@@ -165,7 +165,7 @@ where form analysis runs — the smart constructors correctly reset it.
 > Churn is bounded and mechanical (measured construct/match sites: `Num` 228,
 > `Mul` 103). Keep it to these two variants; do not tag the rest.
 
-## 5. The `StructuralComparison` API (`src/structural.rs`, new)
+## 5. The `StructuralComparison` API (`src/equality_structural/`, new)
 
 ```rust
 pub enum StructuralComparison {
@@ -248,7 +248,7 @@ denominator/radicand.
   `structural_equality`: `ReducedFraction`, `MixedNumber`, `ImproperFraction`,
   `Decimal`, `ExactValue`, `CombinedLikeTerms`, `Expanded`, `FactoredCompletely`,
   `SingleFraction`, `NoNegativeExponents`, `RadicalSimplified`,
-  `CompletedSquare`, `HasIntegrationConstant`. `src/structural.rs` +
+  `CompletedSquare`, `HasIntegrationConstant`. `src/equality_structural/` +
   `tests/structural.rs`. (`MatchesTemplate`/`PartialFractions` deferred.)
 - **F2 (partial)** — `Prov` on `Num`/`Mul` (§4) for `Decimal{places:Some}` /
   `MulStyleIs` deferred; `ExactValue`/`Decimal{places:None}` already shipped

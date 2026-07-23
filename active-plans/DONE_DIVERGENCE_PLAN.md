@@ -3,9 +3,9 @@
 Design for distinguishing **divergent** integrals from convergent-improper
 and merely-expensive ones in the certified quadrature
 (`precise/quad.rs::integrate_to_precision`). Companion to
-`tmp/ARBITRARY_PERCISION_PLAN.md` (the interval tape evaluator and the
+`active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` (the interval tape evaluator and the
 certified f64 node evaluator are the workhorses) and
-`tmp/INTEGRATION_PLAN.md` (the rational machinery of I1 — `expr_to_ratfun`,
+`active-plans/INTEGRATION_PLAN.md` (the rational machinery of I1 — `expr_to_ratfun`,
 Sturm isolation — makes one whole tier *exactly decidable*).
 
 **Motivating gap (probed 2026-07-19, `tests/quadrature_poles.rs`)**: today
@@ -57,7 +57,7 @@ Unknown**.
 >   same singularity at x = 0 reaches full depth thanks to subnormal
 >   spacing). Deeper requests refuse with a dedicated reason. A variable
 >   transform (x = c − t²) would lift this; planned in
->   tmp/SINGULARITY_TRANSFORM_PLAN.md.
+>   active-plans/SINGULARITY_TRANSFORM_PLAN.md.
 > - At most one vanishing ln factor per singular cell (the multi-log
 >   product bound was not worth its complexity yet).
 > - Empirical (non-structural) candidate discovery is folded into the
@@ -233,7 +233,7 @@ Unknown. For an endpoint singularity at `a` (interior ones split first):
 
 (A variable transform `x = a + t²` is a cheaper special case for β = ½;
 the tail-bound route is kept as the general mechanism. The transform is
-now planned separately in tmp/SINGULARITY_TRANSFORM_PLAN.md — it is also
+now planned separately in active-plans/SINGULARITY_TRANSFORM_PLAN.md — it is also
 what lifts the f64 cliff at non-zero singular points.)
 
 ## 6. Limits (§7f — operation counts)

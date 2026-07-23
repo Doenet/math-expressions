@@ -312,8 +312,10 @@ fn tier2_run(
     // forward value stack), assigning each op its output scale.
     let mut plan = vec![0i32; n];
     let mut req_stack: Vec<i64> = vec![i64::from(target_scale)];
-    // To pop children in the right order we need each op's children op-index
-    // range; recover it with a forward arity scan.
+    // To pop children in the right order we need, for each op, the op index at
+    // which its left-most descendant subtree begins; recover it with a forward
+    // arity scan. (Despite the name, each slot holds that deepest-child *root*
+    // index, not a half-open range start — `child_indices` walks from it.)
     let mut child_starts: Vec<usize> = Vec::with_capacity(n);
     {
         let mut pos_stack: Vec<usize> = Vec::new();
@@ -533,6 +535,18 @@ fn powint_fix(x: &MpFix, k: i64, s: i32, budget: &mut Budget) -> Option<MpFix> {
         }
         let pos = powint_fix(x, -k, s - 8 - 2 * bits_of(k) as i32, budget)?;
         return inv_fix(&pos, s);
+    }
+    // Guard the *result magnitude* before the loop. |x^k| ≈ 2^(k·msb(x)) bits,
+    // so a huge positive power of a |base| > 1 would materialize a mantissa of
+    // ~k·msb bits at the fixed working scale — gigabytes for inputs like
+    // `2^100000000000`, i.e. an allocation failure that is a hard abort under
+    // `panic = "abort"`. Refuse with `None` (→ `Unknown`), mirroring
+    // `exp_fix`'s cap; the value is legitimately astronomical, not a hang.
+    if let Some(m) = x.msb() {
+        let cap = 8 * i64::from(crate::resource_limits::current().max_eval_precision_bits);
+        if (i128::from(k) * i128::from(m)).abs() > i128::from(cap) {
+            return None;
+        }
     }
     let steps = bits_of(k) as i32;
     let work = s - 2 * steps - 4;

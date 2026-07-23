@@ -38,7 +38,7 @@ identical to what both mathhook and SymPy use.
 **Update 2026-07-19**: the verdict above concerns the *number backend* only. For
 arbitrary-precision **evaluation** (a separate, planned feature), the techniques from
 hyperreal and its ancestor `realistic` were analyzed in depth and selectively adopted —
-see `tmp/ARBITRARY_PERCISION_PLAN.md` (scaled-integer `approx(p)` contract, guard-bit
+see `active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` (scaled-integer `approx(p)` contract, guard-bit
 discipline, series kernels, bounded tri-state sign; rejected: lazy DAG + per-node caches
 in favor of a compiled evaluation tape).
 
@@ -974,7 +974,7 @@ gaps; `∞·i` kept working via the constant-symbol set).
 
 ### 7f. Resource limits — ✓ Limits context done 2026-07-18
 
-**`src/limits.rs`**: one `Limits` struct owns all deterministic caps (previously
+**`src/resource_limits.rs`**: one `Limits` struct owns all deterministic caps (previously
 seven scattered constants): `max_expand_power`, `max_expand_terms`,
 `max_simplify_rounds`, `max_trial_divisor`, `max_factorial`, `max_residues`,
 `max_round_decimals`, `max_pow_bits`. Defaults = the former constants. Sites
@@ -1730,7 +1730,7 @@ Each phase: write tests first, then implementation until all tests pass.
 - GLSL output
 - Guppy output
 - Matrix operations beyond basic arithmetic — **now planned as a beyond-JS
-  capability**: see `tmp/MATRIX_PLAN.md` (2026-07-19; symbolic matrix algebra,
+  capability**: see `active-plans/DONE_MATRIX_PLAN.md` (2026-07-19; symbolic matrix algebra,
   det/rref, and abstract eigenvalues/eigenvectors via a `RootOf` construct).
   **Layer 1 (M1 + M2/§1b) implemented 2026-07-19**: canonical matrix
   arithmetic (entrywise sums, segmented non-commutative products with literal
@@ -1741,9 +1741,9 @@ Each phase: write tests first, then implementation until all tests pass.
   assumption-gated `rref`/`rank`/`nullspace` (`src/matrix.rs`), presentation
   guard for matrix bases; `tests/matrix.rs` (31 tests, TDD).
 - Numerical integration (`integrateNumerically`) — future consumer of
-  `tmp/ARBITRARY_PERCISION_PLAN.md` §8 (quadrature hooks); **symbolic**
+  `active-plans/DONE_ARBITRARY_PERCISION_PLAN.md` §8 (quadrature hooks); **symbolic**
   integration is now planned as a beyond-JS capability, see
-  `tmp/INTEGRATION_PLAN.md` (2026-07-19; complete rational-function engine +
+  `active-plans/INTEGRATION_PLAN.md` (2026-07-19; complete rational-function engine +
   curated Rubi-subset rules + hypergeometric terminal forms)
 
 ### 17a. Doenet-interop surface ✓ done 2026-07-19
@@ -1778,8 +1778,8 @@ other plans is now implemented:
   `tests/numeric_corpus.rs` (differential vs `me.math`, `me.utils.match`,
   and the JS rounding; 200 cases, all green) + `tests/numeric.rs` unit cases.
 
-Deliberately NOT here: `dopri`/ODE solving → `tmp/ODE_PLAN.md`; exact
-matrix/eigen algebra → `tmp/MATRIX_PLAN.md`; `me.ZmodN` (unused by Doenet);
+Deliberately NOT here: `dopri`/ODE solving → `active-plans/DONE_ODE_PLAN.md`; exact
+matrix/eigen algebra → `active-plans/DONE_MATRIX_PLAN.md`; `me.ZmodN` (unused by Doenet);
 mathjs `fraction`/`complex` object constructors (Doenet's uses are served by
 `evaluate_to_complex` and the exact number tower).
 - `solve_linear`

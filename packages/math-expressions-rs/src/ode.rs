@@ -113,8 +113,7 @@ impl OdeSolution {
         // NaN can't be ordered: the binary search below would panic (an abort
         // under wasm's panic=abort). Propagate NaN like any float function.
         if t.is_nan() {
-            let n = self.ys.first().map_or(0, Vec::len);
-            return vec![f64::NAN; n];
+            return vec![f64::NAN; self.dim];
         }
         if self.segs.is_empty() {
             return self.ys.first().cloned().unwrap_or_default();

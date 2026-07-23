@@ -165,6 +165,16 @@ pub fn cpowint(z: &CFix, k: i64, s: i32, budget: &mut Budget) -> Option<CFix> {
         let pos = cpowint(z, -k, s - 16, budget)?;
         return cinv(&pos, s, budget);
     }
+    // Guard the result magnitude before squaring: |z^k| ≈ 2^(k·msb(z)) bits, so
+    // an astronomically large power would materialize a multi-gigabyte mantissa
+    // → allocation failure (a hard abort under `panic = "abort"`). Refuse with
+    // `None` (→ `Unknown`), matching `powint_fix` and `exp_fix`.
+    if let Some(m) = z.re.msb().into_iter().chain(z.im.msb()).max() {
+        let cap = 8 * i64::from(crate::resource_limits::current().max_eval_precision_bits);
+        if (i128::from(k) * i128::from(m)).abs() > i128::from(cap) {
+            return None;
+        }
+    }
     let steps = 64 - k.leading_zeros() as i32;
     let work = s - 2 * steps - 4;
     let mut acc: Option<CFix> = None;
@@ -313,9 +323,12 @@ pub fn atan2_fix(y: &MpFix, x: &MpFix, s: i32, budget: &mut Budget) -> Option<Mp
     if !x.mant.is_negative() {
         return Some(base.rescale(s.max(base.scale)));
     }
-    // x < 0: add ±π.
+    // x < 0: add ±π. The negative real axis (y == 0, x < 0) takes the
+    // principal +π branch — matching `atan2(+0, −x) = +π` and the
+    // `eval_complex` (num-complex `.ln()`) reference — so `ln(-a) = ln a + iπ`,
+    // not `−iπ`. Only a strictly negative y takes the −π branch.
     let pi = kernels::const_pi(g);
-    let adjusted = if y.mant.is_negative() || y.mant.is_zero() {
+    let adjusted = if y.mant.is_negative() {
         MpFix {
             mant: &base.at_scale(g).mant - &pi.mant,
             scale: g,

@@ -52,6 +52,11 @@ pub(super) fn square_literal(c: &Expr) -> Option<(usize, &[Expr])> {
 /// gets the certified exact-zero service (accept-only — no sampling, budget-
 /// governed). Undecidable entries stay "nonzero", the conservative direction
 /// this code always used.
+// NOTE: intentionally assumption-*free* — it treats every symbol as a nonzero
+// indeterminate. Callers that gate symbolic pivots (`rref_core`) must therefore
+// pair it with the assumption-aware `entry_nonzero`, which catches a symbol
+// assumed zero. `det_bareiss` is safe using `is_zero` alone only because its
+// entries are polynomials with no assumption context.
 pub(super) fn is_zero(e: &Expr) -> bool {
     match e {
         Expr::Num(n) => n.is_zero(),
@@ -167,9 +172,14 @@ pub(super) fn det_bareiss(entries: &[Expr], n: usize) -> Option<Expr> {
     let mut sign_neg = false;
     for k in 0..n - 1 {
         if is_zero(&m[k * n + k]) {
-            let swap = (k + 1..n).find(|&r| !is_zero(&m[r * n + k]))?;
-            // All-zero column would have returned via the entries being zero:
-            // a canonical polynomial is zero iff it is the zero polynomial.
+            // Pivot is zero: look for a nonzero entry below it to swap in. If
+            // the whole pivot column (rows k..n) is zero, the working submatrix
+            // is rank-deficient, so the determinant is provably 0 — return it
+            // directly instead of propagating `None` (which would leave `det`
+            // unevaluated as an opaque `det(…)` for a singular matrix).
+            let Some(swap) = (k + 1..n).find(|&r| !is_zero(&m[r * n + k])) else {
+                return Some(Expr::int(0));
+            };
             sign_neg = !sign_neg;
             for c in 0..n {
                 m.swap(k * n + c, swap * n + c);

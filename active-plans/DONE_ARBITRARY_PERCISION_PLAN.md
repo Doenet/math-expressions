@@ -451,7 +451,7 @@ The design choices above are what make this section short:
 >   the f64-node ceiling). `tests/quadrature.rs`, 10 tests incl. a
 >   per-digit-count guarantee sweep against π. Divergent vs
 >   convergent-improper vs expensive currently all refuse identically —
->   the classification design is `tmp/DIVERGENCE_PLAN.md` (2026-07-20).
+>   the classification design is `active-plans/DONE_DIVERGENCE_PLAN.md` (2026-07-20).
 >
 > **Adversarial hardening ✓ 2026-07-19** (`tests/rootof_adversarial.rs`,
 > `tests/quadrature_poles.rs`) — five real findings from stress inputs, all
@@ -501,10 +501,10 @@ Estimated effort: P1–P2 are the bulk (~2–3 focused days); P3–P5 ~1 day eac
 3. Whether `equals`' numeric sampling stages should eventually consume Tier 0
    error bounds (would turn several heuristic tolerances into certificates) —
    out of scope here, noted as follow-up.
-4. (Cross-plan) `tmp/MATRIX_PLAN.md` §2c plans certified polynomial root
+4. (Cross-plan) `active-plans/DONE_MATRIX_PLAN.md` §2c plans certified polynomial root
    isolation (interval Newton at escalating precision, Mahler-bounded) as a
    consumer of this evaluator's Tier-0 → Tier-2 ladder — a second client
-   shaping the same `Precise<T>`/limits API. `tmp/INTEGRATION_PLAN.md` §5
+   shaping the same `Precise<T>`/limits API. `active-plans/INTEGRATION_PLAN.md` §5
    adds a third: the generalized hypergeometric (pFq) numeric kernel is one
    more ratio-recurrence `FnKernel` row (§6), and its quadrature hooks (§8)
    power that plan's numeric self-verification of antiderivatives.

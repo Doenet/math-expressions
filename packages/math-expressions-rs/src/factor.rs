@@ -382,7 +382,10 @@ fn factor_terms_opt(e: &Expr) -> Option<Expr> {
             None => false,
         });
     }
-    if (g.is_one() || g == -BigRational::one()) && common.is_empty() {
+    // `g` comes from `rational_gcd`, whose numerator is `int_gcd(..).abs()` over
+    // positive denominators, so it is always positive — only `g == 1` is
+    // reachable here (a `g == -1` disjunct could never fire).
+    if g.is_one() && common.is_empty() {
         return None; // nothing to pull
     }
 

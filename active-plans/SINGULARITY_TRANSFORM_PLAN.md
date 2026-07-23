@@ -4,7 +4,7 @@
 > (`WHATS_LEFT.md` §B.6, items 48–50, T1–T3). Follow-up to DIVERGENCE (done);
 > T3 (irrational singular locations) is explicitly out of scope.
 
-Status: DRAFT (not started). Follow-up to tmp/DIVERGENCE_PLAN.md, which ships
+Status: DRAFT (not started). Follow-up to active-plans/DONE_DIVERGENCE_PLAN.md, which ships
 with the documented limitation that improper values near a singular point
 c ≠ 0 cap out at ~6–7 digits (the "f64 cliff"). This plan removes that cap
 for the common cases by a change of variables that relocates the singularity
