@@ -578,7 +578,7 @@ export default function App() {
                       (e.js ? "" : "JS: " + (e.unsupportedReason?.js ?? "unsupported")) +
                       (e.rust ? "" : "Rust: " + (e.unsupportedReason?.rust ?? "unsupported"))
                     }
-                    onClick={() => editorRef.current?.insertAtCursor(`.${e.insertText}`)}
+                    onClick={() => editorRef.current?.insertAtEnd(`.${e.insertText}`)}
                   >
                     {e.display}
                     {only && <span className="only-tag">{only.trim().replace("-only", "")}</span>}

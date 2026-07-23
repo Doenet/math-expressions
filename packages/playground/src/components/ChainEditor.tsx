@@ -3,7 +3,7 @@
 //   - a linter that underlines the current parse error (via parseChain),
 //   - auto-closing of quotes/brackets and standard editing keymaps.
 // It keeps the original `ChainEditor` interface: a controlled `value`/`onChange`
-// plus an imperative `insertAtCursor` used by the operation palette.
+// plus an imperative `insertAtEnd` used by the operation palette.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { EditorState } from "@codemirror/state";
@@ -24,8 +24,12 @@ import { chainLanguage } from "../chainLanguage";
 import type { OpEntry } from "../types";
 
 export interface ChainEditorHandle {
-  /** Insert text at the caret (or over the selection) and refocus. */
-  insertAtCursor(text: string): void;
+  /**
+   * Move the caret to the end of the document, insert `text` there, and refocus.
+   * Used by the operations palette so a clicked op always appends to the chain
+   * (rather than landing wherever the caret was last left).
+   */
+  insertAtEnd(text: string): void;
 }
 
 interface Props {
@@ -228,13 +232,15 @@ const ChainEditor = forwardRef<ChainEditorHandle, Props>(function ChainEditor(
   }, [value]);
 
   useImperativeHandle(ref, () => ({
-    insertAtCursor(text: string) {
+    insertAtEnd(text: string) {
       const view = viewRef.current;
       if (!view) return;
-      const { from, to } = view.state.selection.main;
+      // Move the caret to the end of the box, then insert there.
+      const end = view.state.doc.length;
       view.dispatch({
-        changes: { from, to, insert: text },
-        selection: { anchor: from + text.length },
+        changes: { from: end, insert: text },
+        selection: { anchor: end + text.length },
+        scrollIntoView: true,
       });
       view.focus();
     },
