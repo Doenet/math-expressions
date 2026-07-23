@@ -353,7 +353,21 @@ fn eval_exp(arg: &Expr, budget: &mut i64) -> Option<Exact> {
         return eval(u, budget);
     }
     let v = eval(arg, budget)?;
-    (v.as_rational()? == BigRational::zero()).then(|| Exact::rat(BigRational::one()))
+    let q = v.as_rational()?;
+    // e^0 = 1.
+    if q.is_zero() {
+        return Some(Exact::rat(BigRational::one()));
+    }
+    // e^k for a nonnegative integer k is the basis monomial e^k. A negative
+    // power 1/e^k is not representable in the ring (`to_u32` rejects it) and a
+    // non-integer exponent likewise falls through to None — both stay undecided,
+    // never wrong.
+    if q.is_integer() {
+        if let Some(k) = q.to_integer().to_u32() {
+            return Some(Exact::mono(BigRational::one(), 0, k, BigInt::one()));
+        }
+    }
+    None
 }
 
 fn eval_log(arg: &Expr, budget: &mut i64) -> Option<Exact> {
@@ -426,7 +440,14 @@ pub(crate) fn trig_special_value(name: &str, arg: &Expr) -> Option<Expr> {
     let mut budget = crate::resource_limits::current().max_exact_eval_ops;
     let v = match name {
         "sin" | "cos" | "tan" => eval_trig(name, arg, &mut budget)?,
-        "cot" => eval_trig("tan", arg, &mut budget)?.inverse()?,
+        // cot θ = cos θ / sin θ, computed directly. The `1/tan θ` route returned
+        // None at tan's poles (θ = π/2 + kπ) — precisely cot's *zeros*, where
+        // cot is 0, not undefined.
+        "cot" => {
+            let cos = eval_trig("cos", arg, &mut budget)?;
+            let sin = eval_trig("sin", arg, &mut budget)?;
+            cos.mul(&sin.inverse()?, &mut budget)?
+        }
         "sec" => eval_trig("cos", arg, &mut budget)?.inverse()?,
         "csc" => eval_trig("sin", arg, &mut budget)?.inverse()?,
         _ => return None,

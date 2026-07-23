@@ -47,6 +47,18 @@ fn evaluate_none_cases() {
 }
 
 #[test]
+fn evaluate_mod_floored_matches_mathjs() {
+    // mathjs `mod` is floored division: the result takes the sign of the
+    // divisor, unlike Rust `rem_euclid` (always non-negative).
+    approx(evaluate(&parse("mod(5, -3)"), &binds(&[])), -1.0, 0.0);
+    approx(evaluate(&parse("mod(-5, 3)"), &binds(&[])), 1.0, 0.0);
+    approx(evaluate(&parse("mod(5, 3)"), &binds(&[])), 2.0, 0.0);
+    approx(evaluate(&parse("mod(-5, -3)"), &binds(&[])), -2.0, 0.0);
+    // mathjs defines `mod(x, 0) = x` (not NaN).
+    approx(evaluate(&parse("mod(5, 0)"), &binds(&[])), 5.0, 0.0);
+}
+
+#[test]
 fn evaluate_to_constant_cases() {
     approx(evaluate_to_constant(&parse("2 + 3")), 5.0, 0.0);
     approx(evaluate_to_constant(&parse("sin(pi/2)")), 1.0, 0.0);

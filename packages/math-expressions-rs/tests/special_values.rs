@@ -111,3 +111,15 @@ fn idempotent() {
         assert_eq!(once, twice, "not idempotent on {s:?}");
     }
 }
+
+#[test]
+fn cot_at_its_zeros_folds_to_zero() {
+    // cot = cos/sin, so cot folds to 0 at the odd multiples of π/2 (tan's poles,
+    // where the old 1/tan route gave None). Non-zero lattice values unchanged.
+    assert!(eq(&fold("cot(pi/2)"), "0"));
+    assert!(eq(&fold("cot(3*pi/2)"), "0"));
+    assert!(eq(&fold("cot(-pi/2)"), "0"));
+    assert!(eq(&fold("cot(pi/4)"), "1"));
+    assert!(eq(&fold("cot(pi/6)"), "sqrt(3)"));
+    assert!(eq(&fold("cot(pi/3)"), "sqrt(3)/3"));
+}

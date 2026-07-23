@@ -346,3 +346,15 @@ fn allowed_error_in_numbers() {
     // Default (0) keeps exact semantics.
     assert!(!feq("3.14", "pi", &EqOptions::default()));
 }
+
+#[test]
+fn sqrt_and_half_power_are_equal() {
+    // `sqrt(x)` (Apply) and `x^(1/2)` (Pow) stay distinct canonical trees —
+    // matching JS, which keeps them distinct at the tree level and relies on the
+    // equality pipeline to reconcile them. The full `equals` must still resolve
+    // them as equal (lock-in against a canonicalize-level merge — a gratuitous
+    // divergence from JS — or a regression that stops treating them as equal).
+    assert!(eq("sqrt(x)", "x^(1/2)"));
+    assert!(eq("x^(1/2)", "sqrt(x)"));
+    assert!(eq("sqrt(x*y)", "(x*y)^(1/2)"));
+}

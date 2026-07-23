@@ -135,3 +135,33 @@ fn trig_identity_with_free_var_is_unknown() {
     // refute (never confirm), so the honest answer is Unknown.
     assert_eq!(z("sin(x)^2 + cos(x)^2 - 1"), None);
 }
+
+#[test]
+fn integer_powers_of_e() {
+    // e^k (k ≥ 0 integer) is an exact basis monomial, so certified-zero can now
+    // decide these instead of returning Unknown. `e*e` already worked (Mul folds
+    // to the e^2 monomial); the Pow form did not until eval_exp handled e^k.
+    assert_eq!(z("e^2 - e*e"), Some(true));
+    assert_eq!(z("e^3 - e*e*e"), Some(true));
+    assert_eq!(z("e^2 - exp(2)"), Some(true)); // Pow form ≡ exp form (was None)
+    assert_eq!(z("exp(3) - e^3"), Some(true)); // (was None)
+    assert_eq!(z("e^2 - 7"), Some(false)); // certified nonzero (was None)
+    assert_eq!(z("e^2"), Some(false)); // certified nonzero (was None)
+    // A negative power of e is outside the representable ring, so with no
+    // structural partner to cancel against it stays undecided (never wrong).
+    // (`e^(-2) - 1/(e*e)` would instead be *structurally* zero — both sides
+    // canonicalize to the same reciprocal tree — so it is not a ring test.)
+    assert_eq!(z("e^(-2) - 7"), None);
+}
+
+#[test]
+fn oversized_surd_radicand_is_undecided_not_abort() {
+    // ARCHITECTURE_REVIEW §8 surd guard: a radicand that overflows u128 must make
+    // the exact `sqrt` evaluator decline (→ Unknown), never panic. `10^40`
+    // exceeds `u128::MAX`, so `to_u128()` returns None and is_zero is undecided
+    // rather than aborting.
+    assert_eq!(z("sqrt(10^40) - 1"), None);
+    assert_eq!(z("sqrt(10^40)"), None);
+    // A tractable surd still certifies (guard is not over-broad).
+    assert_eq!(z("sqrt(4) - 2"), Some(true));
+}

@@ -8,7 +8,15 @@ use num_complex::Complex64;
 pub const MOD: FnDef = FnDef {
     name: "mod",
     parse_text: &["mod"],
-    eval2: Some(|a, b| Some(Complex64::new(a.re.rem_euclid(b.re), 0.0))),
+    eval2: Some(|a, b| {
+        // mathjs `mod`: floored division — the result takes the sign of the
+        // *divisor* (`mod(5,-3) = -1`, unlike `rem_euclid`, which is always
+        // non-negative), and `mod(x, 0) = x` (mathjs short-circuits, not NaN).
+        // Real-only, matching mathjs (which rejects complex operands).
+        let (x, y) = (a.re, b.re);
+        let r = if y == 0.0 { x } else { x - y * (x / y).floor() };
+        Some(Complex64::new(r, 0.0))
+    }),
     ..DEFAULTS
 };
 

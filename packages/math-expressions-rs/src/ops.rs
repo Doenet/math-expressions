@@ -311,12 +311,45 @@ pub struct AnalyticOpts {
 /// Logical/set operators and relations are non-analytic (relations pass only
 /// under `allow_relation`, and only the order relations `= le ge < >`).
 pub fn is_analytic(e: &Expr, opts: &AnalyticOpts) -> bool {
-    // Non-analytic operators the tree must not contain.
-    for op in operators(&subscripts_to_strings(e)) {
-        match op.as_str() {
-            "+" | "-" | "*" | "/" | "^" => {}
-            _ => return false, // and / or / not / union / intersect
-        }
+    // Every structural operator must be analytic (JS `analytic_operators`:
+    // `+ - * / ^` plus the tuple/vector/altvector/list/array/interval/matrix/vec
+    // constructors). We inspect each node's head directly rather than via
+    // `operators()`, which only reports `+ - * / ^ and or not union intersect`
+    // and silently drops the non-analytic tail operators (binom, pm, set, prime,
+    // `_`, …) that JS's `operators_list` emits and its whitelist rejects.
+    fn analytic_operators_only(e: &Expr) -> bool {
+        use crate::expr::SeqKind;
+        let head_ok = match e {
+            // Leaves + function application carry no structural operator to
+            // whitelist (JS filters `apply`; function names are checked below).
+            Expr::Num(_)
+            | Expr::Sym(_)
+            | Expr::Const(_)
+            | Expr::RootOf { .. }
+            | Expr::Blank
+            | Expr::Ldots
+            | Expr::Apply(..) => true,
+            // Analytic structural operators.
+            Expr::Add(_)
+            | Expr::Neg(_)
+            | Expr::Mul(_)
+            | Expr::Div(..)
+            | Expr::Pow(..)
+            | Expr::Interval { .. }
+            | Expr::Matrix { .. } => true,
+            // tuple/vector/altvector/list/array are analytic; `set` is not.
+            Expr::Seq(kind, _) => !matches!(kind, SeqKind::Set),
+            // Of the tail operators only `vec` is in the whitelist.
+            Expr::OtherOp(name, _) => name.name() == "vec",
+            // Relation operators are validated separately by `walk_rel` below.
+            Expr::Relation { .. } => true,
+            // Non-analytic: and / or / not / union / intersect / prime / `_`.
+            _ => false,
+        };
+        head_ok && e.children().into_iter().all(analytic_operators_only)
+    }
+    if !analytic_operators_only(&subscripts_to_strings(e)) {
+        return false;
     }
     // Non-analytic functions: abs, sign, arg (each gate-able).
     let normalized = normalize_function_names(e);

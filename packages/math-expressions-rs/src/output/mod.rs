@@ -98,6 +98,10 @@ pub fn to_latex(expr: &Expr, opts: &LatexOpts) -> String {
 }
 
 /// Greek-letter (and a few symbol) name → unicode, shared by the formatters.
+/// Mirrors JS `ast-to-text.js` `symbolConversions` exactly, including its
+/// omissions: `chi` is deliberately absent (JS has no `chi` entry either), so
+/// the `chi` symbol renders as ASCII `"chi"` in both engines. Do not add it —
+/// that would emit `χ` where JS emits `chi`, a text-output parity break.
 pub(crate) fn greek_unicode(name: &str) -> Option<&'static str> {
     Some(match name {
         "alpha" => "α",

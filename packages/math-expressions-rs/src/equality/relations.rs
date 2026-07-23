@@ -83,7 +83,14 @@ pub(super) fn proportional(a: &Expr, b: &Expr, require_positive: bool, opts: &Eq
             .collect();
 
         let (Some(va), Some(vb)) = (eval_complex(a, &env), eval_complex(b, &env)) else {
-            return false;
+            // Unevaluable here (domain error / opaque miss): resample rather than
+            // declare non-equal, matching JS `component_equals`, whose
+            // `try { find_equality_region } catch { continue }` (numerical.js)
+            // swallows a mathjs evaluation throw as a skipped point, and the
+            // sibling pole branch just below. `attempts` is already bumped and
+            // bounded, so exhausting only-unevaluable points still terminates in
+            // `agreements > 0 == false` (the correct "cannot prove" outcome).
+            continue;
         };
         if !va.re.is_finite() || !va.im.is_finite() || !vb.re.is_finite() || !vb.im.is_finite() {
             continue; // pole; resample
@@ -130,4 +137,43 @@ fn close(a: Complex64, b: Complex64, opts: &EqOptions) -> bool {
         return diff <= opts.tolerance_for_zero;
     }
     diff <= opts.absolute_tolerance + opts.relative_tolerance * scale
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn e(s: &str) -> Expr {
+        canonicalize(&crate::TextToAst::new(Default::default()).convert(s).unwrap())
+    }
+
+    /// `proportional` fixes the constant factor at the first live point and
+    /// verifies it elsewhere. `2(x+y)` is `+2·(x+y)`; a negative factor is
+    /// accepted for `=`-style comparison but rejected once positivity is required
+    /// (an inequality would flip).
+    #[test]
+    fn proportional_detects_scalar_multiple() {
+        let opts = EqOptions::default();
+        assert!(proportional(&e("2x + 2y"), &e("x + y"), false, &opts));
+        assert!(proportional(&e("2x + 2y"), &e("x + y"), true, &opts));
+        assert!(proportional(&e("-2x - 2y"), &e("x + y"), false, &opts));
+        assert!(!proportional(&e("-2x - 2y"), &e("x + y"), true, &opts));
+    }
+
+    #[test]
+    fn proportional_rejects_unrelated() {
+        let opts = EqOptions::default();
+        assert!(!proportional(&e("x + y"), &e("x - y"), false, &opts));
+    }
+
+    /// An unevaluable point must *resample*, not short-circuit to non-equal
+    /// (JS `component_equals` swallows a mathjs throw as a skip). `floor` is
+    /// real-domain-only, so `eval_complex` returns `None` at every complex
+    /// sample here — the fixed `continue` path must exhaust its attempts and
+    /// terminate cleanly (return `false`) rather than abort or hang.
+    #[test]
+    fn proportional_unevaluable_samples_terminate_cleanly() {
+        let opts = EqOptions::default();
+        assert!(!proportional(&e("floor(x)"), &e("floor(x)"), false, &opts));
+    }
 }

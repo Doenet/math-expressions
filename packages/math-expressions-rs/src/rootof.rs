@@ -229,6 +229,29 @@ fn insert_capped<K: std::hash::Hash + Eq, V>(map: &mut HashMap<K, V>, key: K, va
     map.insert(key, value);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{insert_capped, CACHE_CAP};
+    use std::collections::HashMap;
+
+    /// The memo cap (ARCHITECTURE_REVIEW §8): an unbounded stream of distinct
+    /// polynomials must not grow the cache without limit. At capacity the whole
+    /// map is dropped, then the new entry is inserted — so memory is bounded and
+    /// the fresh key is always retrievable.
+    #[test]
+    fn cache_cap_drops_whole_map_on_overflow() {
+        let mut m: HashMap<i32, i32> = HashMap::new();
+        for i in 0..CACHE_CAP as i32 {
+            insert_capped(&mut m, i, i);
+        }
+        assert_eq!(m.len(), CACHE_CAP, "fills exactly to the cap");
+        // One more entry overflows: the map is cleared, then the new key added.
+        insert_capped(&mut m, -1, 42);
+        assert_eq!(m.len(), 1, "cleared on overflow");
+        assert_eq!(m.get(&-1), Some(&42), "the overflowing key survives");
+    }
+}
+
 thread_local! {
     /// Ordered numeric roots per canonical polynomial, computed once
     /// (isolation is the expensive part). `None` is cached too: a poly whose

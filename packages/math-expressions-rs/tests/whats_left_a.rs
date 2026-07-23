@@ -145,6 +145,19 @@ fn logical_and_relations_are_not_analytic() {
     assert!(!is_analytic(&parse("x elementof Z"), &opts));
 }
 
+#[test]
+fn non_analytic_structural_operators_are_rejected() {
+    // JS `isAnalytic` rejects structural operators absent from its
+    // `analytic_operators` whitelist. `operators()` never reports these heads
+    // (binom → OtherOp, {…} → Seq(Set)), so the pre-fix operator check let them
+    // through as analytic; the direct head walk now rejects them, matching JS.
+    assert!(!is_analytic(&parse("binom(n,k)"), &AnalyticOpts::default()));
+    assert!(!is_analytic(&parse("{1,2}"), &AnalyticOpts::default()));
+    // Whitelisted sequence constructors stay analytic (unchanged).
+    assert!(is_analytic(&parse("(1,2)"), &AnalyticOpts::default()));
+    assert!(is_analytic(&parse("(1,2,3)"), &AnalyticOpts::default()));
+}
+
 // ---- item 10: equals_via_real ----
 
 #[test]
