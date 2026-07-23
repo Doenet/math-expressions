@@ -11,6 +11,10 @@ export default class LatexToAst {
       Object.keys(this.params).length > 0
         ? wasm.parse_latex_with_options(latex, JSON.stringify(this.params))
         : wasm.parse_latex(latex);
-    return JSON.parse(handle.tree_json());
+    try {
+      return JSON.parse(handle.tree_json());
+    } finally {
+      handle.free(); // throwaway: created here, never handed to the caller
+    }
   }
 }

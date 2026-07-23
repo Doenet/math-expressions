@@ -5,7 +5,19 @@
 import wasm from "../_wasm";
 
 function op(method) {
-  return (tree) => JSON.parse(wasm.from_ast(JSON.stringify(tree))[method]().tree_json());
+  return (tree) => {
+    const src = wasm.from_ast(JSON.stringify(tree));
+    try {
+      const out = src[method]();
+      try {
+        return JSON.parse(out.tree_json());
+      } finally {
+        out.free(); // throwaway: method result, never returned
+      }
+    } finally {
+      src.free(); // throwaway: parse source, never returned
+    }
+  };
 }
 
 export const simplify = op("simplify");

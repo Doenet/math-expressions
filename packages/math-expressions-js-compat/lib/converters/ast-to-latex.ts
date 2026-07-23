@@ -7,6 +7,11 @@ export default class AstToLatex {
     this.params = params || {};
   }
   convert(ast) {
-    return wasm.from_ast(JSON.stringify(ast)).to_latex();
+    const handle = wasm.from_ast(JSON.stringify(ast));
+    try {
+      return handle.to_latex();
+    } finally {
+      handle.free(); // throwaway: created here, never handed to the caller
+    }
   }
 }

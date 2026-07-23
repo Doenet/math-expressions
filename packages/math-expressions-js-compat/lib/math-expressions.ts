@@ -268,7 +268,11 @@ class Expression {
   substitute(bindings) {
     let cur = this._w;
     for (const k of Object.keys(bindings || {})) {
-      cur = cur.substitute_var(k, toExpr(bindings[k], this.context)._w);
+      const next = cur.substitute_var(k, toExpr(bindings[k], this.context)._w);
+      // Free the prior intermediate handle (wrapper-owned); never `this._w`
+      // (caller's own) and never the final handle we hand back via `wrap`.
+      if (cur !== this._w) cur.free();
+      cur = next;
     }
     return wrap(cur, this.context);
   }

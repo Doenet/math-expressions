@@ -16,6 +16,22 @@ f.equals(me.fromText("1")); // true
 me.fromText("x^2").derivative("x").toString(); // "2 x"
 ```
 
+## Alpha limitation: wasm handle lifetimes
+
+Every `Expression` this package returns wraps a Rust/wasm handle that owns memory
+in the wasm heap. **This alpha does not free caller-owned handles** — there is no
+`FinalizationRegistry`/GC auto-free (an earlier attempt corrupted the wasm heap
+under rapid handle churn and was removed; see the playground's `engines.ts`). The
+wrapper frees only its own short-lived internal temporaries (converters, tree-op
+routing, `substitute` intermediates); expressions handed back to you are yours.
+
+For scripts and test runs this is harmless — the process exits and reclaims all
+wasm memory. **Long-lived hosts** (a persistent worker, a server, a long-running
+notebook) that create many expressions will accumulate wasm memory for the life
+of the process. Until a public disposal API is exposed on the compat
+`Expression`, avoid creating unbounded numbers of expressions in one long-lived
+process.
+
 ## Layout
 
 - `lib/` — the TypeScript compat layer. `lib/math-expressions.ts` is the entry

@@ -14,6 +14,10 @@ export default class TextToAst {
       Object.keys(this.params).length > 0
         ? wasm.parse_text_with_options(text, JSON.stringify(this.params))
         : wasm.parse_text(text);
-    return JSON.parse(handle.tree_json());
+    try {
+      return JSON.parse(handle.tree_json());
+    } finally {
+      handle.free(); // throwaway: created here, never handed to the caller
+    }
   }
 }
