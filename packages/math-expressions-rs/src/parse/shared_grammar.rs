@@ -31,6 +31,8 @@ macro_rules! shared_grammar_methods {
     pub fn convert(&mut self, input: &str) -> R<Expr> {
         self.lexer.set_input(input);
         self.depth = 0;
+        self.steps = 0;
+        self.max_steps = crate::resource_limits::current().max_parse_steps;
         self.advance()?;
         let result = self.statement_list()?;
         if self.token.ttype != Tok::Eof {
@@ -41,6 +43,7 @@ macro_rules! shared_grammar_methods {
     fn statement_list(&mut self) -> R<Expr> {
         let mut list = vec![self.statement(P::default())?];
         while self.token.ttype == Tok::Comma {
+            self.tick()?;
             self.advance()?;
             list.push(self.statement(P::default())?);
         }
@@ -98,6 +101,7 @@ macro_rules! shared_grammar_methods {
                 | Tok::RightArrow
                 | Tok::LeftRightArrow
         ) {
+            self.tick()?;
             let operation = self.token.ttype.op_name();
             self.advance()?;
             let rhs = self.statement_b(fwd)?;
@@ -115,6 +119,7 @@ macro_rules! shared_grammar_methods {
         let mut lhs = self.statement_c(fwd)?;
 
         while self.token.ttype == Tok::Or {
+            self.tick()?;
             self.advance()?;
             let rhs = self.statement_c(fwd)?;
             lhs = Expr::Or(vec![lhs, rhs]);
@@ -127,6 +132,7 @@ macro_rules! shared_grammar_methods {
         let mut lhs = self.relation(p)?;
 
         while self.token.ttype == Tok::And {
+            self.tick()?;
             self.advance()?;
             let rhs = self.relation(p)?;
             lhs = Expr::And(vec![lhs, rhs]);
@@ -155,6 +161,7 @@ macro_rules! shared_grammar_methods {
         let mut lhs = self.expression(p)?;
 
         loop {
+            self.tick()?;
             let op = match self.token.ttype {
                 Tok::Eq => Some(RelOp::Eq),
                 Tok::Ne => Some(RelOp::Ne),
@@ -189,6 +196,7 @@ macro_rules! shared_grammar_methods {
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
                     while self.token.ttype == Tok::Lt || self.token.ttype == Tok::Le {
+                        self.tick()?;
                         ops.push(if self.token.ttype == Tok::Lt {
                             RelOp::Lt
                         } else {
@@ -205,6 +213,7 @@ macro_rules! shared_grammar_methods {
                     let mut ops = vec![op];
                     let mut operands = vec![lhs, rhs];
                     while self.token.ttype == Tok::Gt || self.token.ttype == Tok::Ge {
+                        self.tick()?;
                         ops.push(if self.token.ttype == Tok::Gt {
                             RelOp::Gt
                         } else {
@@ -220,6 +229,7 @@ macro_rules! shared_grammar_methods {
                     let mut ops = vec![RelOp::Eq];
                     // check for sequence of multiple =
                     while self.token.ttype == Tok::Eq {
+                        self.tick()?;
                         self.advance()?;
                         operands.push(self.expression(p)?);
                         ops.push(RelOp::Eq);
@@ -313,6 +323,7 @@ macro_rules! shared_grammar_methods {
                 | Tok::Perp
                 | Tok::Parallel
         ) {
+            self.tick()?;
             let op_token = self.token.ttype;
             // Minus and plus-minus contribute a sign to an addition.
             let is_add = matches!(op_token, Tok::Plus | Tok::Minus | Tok::Pm);
@@ -395,6 +406,7 @@ macro_rules! shared_grammar_methods {
         let mut lhs = self.factor(p)?;
 
         loop {
+            self.tick()?;
             if self.token.ttype == Tok::Times {
                 self.advance()?;
                 let l = lhs.take().unwrap_or(Expr::Blank);
@@ -470,6 +482,7 @@ macro_rules! shared_grammar_methods {
 
         // allow arbitrary sequence of exponents, factorials, primes
         while matches!(self.token.ttype, Tok::Caret | Tok::Bang | Tok::Prime) {
+            self.tick()?;
             let r = result.take().unwrap_or(Expr::Blank);
             result = Some(match self.token.ttype {
                 Tok::Caret => {
@@ -502,6 +515,20 @@ macro_rules! shared_grammar_methods {
     }
     fn leave(&mut self) {
         self.depth -= 1;
+    }
+    /// Consume one unit of parse fuel; errors if the step budget is exhausted.
+    /// Called at the top of every loop body so a loop that fails to make
+    /// forward progress (a mis-lexed token, a missing EOF exit, or merely a
+    /// pathologically large input) aborts with a clean error instead of
+    /// hanging. `depth` bounds recursion; this bounds flat loops. The budget is
+    /// [`crate::resource_limits::ResourceLimits::max_parse_steps`], cached per
+    /// parse in `convert`.
+    fn tick(&mut self) -> R<()> {
+        self.steps += 1;
+        if self.steps > self.max_steps {
+            return Err(self.err("Input too large (parser step budget exceeded)"));
+        }
+        Ok(())
     }
     fn state(&self) -> (LexerState, Token) {
         (self.lexer.state(), self.token.clone())

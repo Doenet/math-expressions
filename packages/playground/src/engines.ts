@@ -28,6 +28,11 @@ export { Context };
 // wasm. Loading from the served location lets the glue resolve its .wasm sibling.
 const RUST_GLUE_URL = `${import.meta.env.BASE_URL}wasm/math_expressions_wasm.js`;
 
+// The wasm-bindgen type declarations, static-copied alongside the glue. Fetched
+// (not imported) so the palette can reflect the live API surface at runtime —
+// see wasmApi.ts. Regenerated on every `build:wasm`, so it never drifts.
+const RUST_DTS_URL = `${import.meta.env.BASE_URL}wasm/math_expressions_wasm.d.ts`;
+
 /** A minimal per-engine adapter used by the evaluator for sourcing + display. */
 export interface EngineAdapter<H> {
   tag: "js" | "rust";
@@ -40,6 +45,23 @@ export interface EngineAdapter<H> {
   toLatex(h: H): string;
   treeOf(h: H): Tree;
   free(h: H): void;
+}
+
+/**
+ * Guard LaTeX before parsing. BOTH upstream parsers (the JS library and the
+ * Rust port) infinite-loop on an opened-but-unclosed environment — e.g.
+ * `\begin{bmatrix}` with no matching `\end{bmatrix}` — which, on the main
+ * thread, freezes the whole playground. Reject unbalanced `\begin`/`\end` up
+ * front so the UI shows an error instead of hanging. Returns `s` for chaining.
+ */
+function guardLatex(s: string): string {
+  const begins = (s.match(/\\begin\b/g) ?? []).length;
+  const ends = (s.match(/\\end\b/g) ?? []).length;
+  if (begins > ends)
+    throw new Error(
+      "unclosed \\begin{…} environment — add a matching \\end{…}",
+    );
+  return s;
 }
 
 /**
@@ -93,7 +115,7 @@ export function makeJsAdapter(notation: Notation): EngineAdapter<JsExpr> {
   return {
     tag: "js",
     fromText: parse,
-    fromLatex: (s) => Context.fromLatex(toPeriodInput(s, notation)),
+    fromLatex: (s) => Context.fromLatex(toPeriodInput(guardLatex(s), notation)),
     fromAst: (tree) =>
       Context.fromAst(tree as Parameters<typeof Context.fromAst>[0]),
     parseExpr: parse,
@@ -123,7 +145,9 @@ export function makeRustAdapter(
     tag: "rust",
     fromText: parse,
     fromLatex: (s) =>
-      opts ? rust.parse_latex_with_options(s, opts) : rust.parse_latex(s),
+      opts
+        ? rust.parse_latex_with_options(guardLatex(s), opts)
+        : rust.parse_latex(guardLatex(s)),
     fromAst: (tree) => rust.from_ast(JSON.stringify(tree)),
     parseExpr: parse,
     toText: (h) => h.to_text(),
@@ -137,11 +161,22 @@ export function makeRustAdapter(
 /** The loaded wasm module; adapters are built per-notation by the caller. */
 export interface LoadedEngines {
   rustModule: RustModule;
+  /** Raw `math_expressions_wasm.d.ts` text, or "" if it could not be fetched. */
+  wasmDts: string;
 }
 
-/** Load the wasm module. Resolves once it is initialised. */
+/** Load the wasm module and its type declarations. Resolves once initialised. */
 export async function loadEngines(): Promise<LoadedEngines> {
-  const rust = (await import(/* @vite-ignore */ RUST_GLUE_URL)) as RustModule;
-  await rust.default(); // wasm-bindgen init()
-  return { rustModule: rust };
+  const [rust, wasmDts] = await Promise.all([
+    (async () => {
+      const r = (await import(/* @vite-ignore */ RUST_GLUE_URL)) as RustModule;
+      await r.default(); // wasm-bindgen init()
+      return r;
+    })(),
+    // A missing/older .d.ts just means an empty "Other" section — never fatal.
+    fetch(RUST_DTS_URL)
+      .then((r) => (r.ok ? r.text() : ""))
+      .catch(() => ""),
+  ]);
+  return { rustModule: rust, wasmDts };
 }

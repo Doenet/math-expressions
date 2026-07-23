@@ -10,6 +10,15 @@ shipped to JavaScript through wasm. The former JavaScript implementation has bee
 ported to Rust; its source and test suite are preserved out-of-tree under
 `tmp/js-legacy/` (git-ignored) for reference — see [History](#history).
 
+## Live site
+
+Deployed to GitHub Pages on every push to `main`:
+
+- **Playground** — <https://doenet.github.io/math-expressions/> — run the Rust
+  (WASM) engine and the canonical JS library side by side.
+- **Rust API docs** — <https://doenet.github.io/math-expressions/docs/> —
+  `cargo doc` for the core crate.
+
 ## Packages
 
 Everything lives under `packages/`:

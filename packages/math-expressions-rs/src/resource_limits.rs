@@ -28,6 +28,15 @@ use std::cell::Cell;
 /// adversarial input cannot exhaust memory or stall the engine.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ResourceLimits {
+    /// Total parser steps (loop iterations across a single parse) before the
+    /// input is refused. Complements the recursion-depth cap
+    /// (`MAX_PARSE_DEPTH`): depth bounds nesting, this bounds flat loops, so a
+    /// loop that fails to make forward progress aborts instead of hanging. Far
+    /// above any real expression; low enough that a spinning loop aborts in
+    /// microseconds. `usize` (wasm32's native pointer width, and the type of
+    /// the sibling `depth`/`MAX_PARSE_DEPTH` budget); the counter aborts at this
+    /// cap, far below `u32::MAX`.
+    pub max_parse_steps: usize,
     /// Largest integer exponent `expand` will multinomial-expand.
     pub max_expand_power: i64,
     /// Raw term-count cap per distribution step in `expand`; beyond it the
@@ -109,6 +118,7 @@ pub struct ResourceLimits {
 impl Default for ResourceLimits {
     fn default() -> Self {
         ResourceLimits {
+            max_parse_steps: 5_000_000,
             max_expand_power: 64,
             max_expand_terms: 4_000,
             max_simplify_rounds: 32,

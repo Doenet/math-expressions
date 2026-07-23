@@ -589,6 +589,51 @@ export const REGISTRY_BY_ID = new Map<string, OpEntry>(
   REGISTRY.map((e) => [e.id, e]),
 );
 
+/**
+ * The Rust (WASM) `Expression` methods the curated registry above already
+ * surfaces — the dedup set for the auto-generated "Other" section, so a method
+ * handled here (possibly under a different chain name, e.g. `to_text` →
+ * `toString`, `evaluate_to_complex` → `evaluate`) is not listed twice.
+ *
+ * Keep this in sync when adding/removing a curated op: list every Rust method
+ * its `rust.run` dispatches to. Forgetting one is self-correcting — the method
+ * simply reappears as an auto-generated button under "Other".
+ */
+export const CURATED_RUST_METHODS: ReadonlySet<string> = new Set([
+  "simplify",
+  "simplify_with_assumptions",
+  "expand",
+  "evaluate_numbers",
+  "collect_like_terms_factors",
+  "copy",
+  "add",
+  "subtract",
+  "multiply",
+  "divide",
+  "pow",
+  "mod",
+  "substitute_var",
+  "reduce_rational",
+  "together",
+  "factor",
+  "constants_to_floats",
+  "normalize_function_names",
+  "derivative",
+  "integrate",
+  "variables",
+  "functions",
+  "equals",
+  "evaluate_to_complex",
+  "evaluate_to_constant",
+  "evaluate_to_precision",
+  "is_zero",
+  "is_analytic",
+  "to_text",
+  "to_latex",
+  "to_serialized",
+  "tree_json",
+]);
+
 /** Palette grouping: category → its ops, in registry order. */
 export const CATEGORIES: OpCategory[] = [
   "Core",
@@ -597,4 +642,5 @@ export const CATEGORIES: OpCategory[] = [
   "Calculus",
   "Query",
   "Render",
+  "Other",
 ];

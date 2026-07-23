@@ -185,7 +185,10 @@ export type OpCategory =
   | "Algebra"
   | "Calculus"
   | "Query"
-  | "Render";
+  | "Render"
+  // Auto-generated at runtime from the wasm API surface — every `Expression`
+  // method not hand-curated above lands here (see wasmApi.ts).
+  | "Other";
 
 /**
  * The native (handle-holding) result of running one operation on one engine.

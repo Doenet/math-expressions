@@ -7,7 +7,6 @@
 
 import type { EngineAdapter } from "./engines";
 import { BASE_VAR, literalToValue } from "./chain";
-import { REGISTRY_BY_ID } from "./registry";
 import {
   complexAgrees,
   deepEqual,
@@ -20,6 +19,7 @@ import type {
   EngineOp,
   JsExpr,
   NativeResult,
+  OpEntry,
   ParsedChain,
   RustExpr,
   SafeResult,
@@ -27,6 +27,9 @@ import type {
   Syntax,
   Tree,
 } from "./types";
+
+/** Operations indexed by chain method name (curated registry + dynamic ops). */
+export type OpsById = ReadonlyMap<string, OpEntry>;
 
 /** The equation from the first box, referenced in a chain as `expr`. */
 export interface BaseExpr {
@@ -127,6 +130,7 @@ function runEngine<H>(
   tag: "js" | "rust",
   chain: ParsedChain,
   base: BaseExpr,
+  opsById: OpsById,
 ): SafeResult<Displayable>[] {
   const results: SafeResult<Displayable>[] = [];
   const total = 1 + chain.steps.length;
@@ -159,7 +163,7 @@ function runEngine<H>(
       pushEnded();
       continue;
     }
-    const entry = REGISTRY_BY_ID.get(step.method);
+    const entry = opsById.get(step.method);
     if (!entry) {
       results.push({ ok: false, error: `unknown method .${step.method}()` });
       ended = true;
@@ -276,14 +280,15 @@ export function evaluateChain(
   rust: EngineAdapter<RustExpr>,
   chain: ParsedChain,
   base: BaseExpr,
+  opsById: OpsById,
 ): StepResult[] {
-  const jsResults = runEngine(js, "js", chain, base);
-  const rustResults = runEngine(rust, "rust", chain, base);
+  const jsResults = runEngine(js, "js", chain, base, opsById);
+  const rustResults = runEngine(rust, "rust", chain, base, opsById);
   const total = 1 + chain.steps.length;
   const steps: StepResult[] = [];
   for (let i = 0; i < total; i++) {
     const entry =
-      i === 0 ? undefined : REGISTRY_BY_ID.get(chain.steps[i - 1].method);
+      i === 0 ? undefined : opsById.get(chain.steps[i - 1].method);
     const label =
       i === 0
         ? chain.source.kind === "var"

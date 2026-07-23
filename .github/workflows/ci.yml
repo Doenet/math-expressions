@@ -87,3 +87,61 @@ jobs:
                       cd packages/math-expressions-js-compat
                       ./build-wasm.sh
                       npm test || true
+
+    # ---- GitHub Pages: the playground at the site root, Rust API docs at /docs ----
+    # Deploys only on pushes to main. Requires the repo's Pages source to be set to
+    # "GitHub Actions" (Settings → Pages). `pages-build` assembles a single site and
+    # uploads it as the Pages artifact; `pages-deploy` publishes it.
+    pages-build:
+        name: Build Pages site (playground + docs)
+        runs-on: ubuntu-latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        steps:
+            - uses: actions/checkout@v6
+
+            # Built in the devcontainer (Rust + wasm toolchain + Node), then
+            # assembled into _site/ (a mounted path, so it persists on the runner):
+            #   _site/          → the playground (Vite build; base = /<repo>/ so the
+            #                     project-Pages sub-path resolves asset + wasm URLs)
+            #   _site/docs/     → `cargo doc` output, with a landing redirect
+            #   _site/.nojekyll → serve rustdoc's files verbatim (disable Jekyll)
+            - name: Build playground + Rust docs and assemble the site
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: |
+                      set -euo pipefail
+                      ( cd packages/playground
+                        npm ci
+                        npm run build:wasm
+                        npx vite build --base=/${{ github.event.repository.name }}/ )
+                      cargo doc --no-deps
+                      rm -rf _site && mkdir -p _site/docs
+                      cp -r packages/playground/dist/. _site/
+                      cp -r target/doc/. _site/docs/
+                      printf '<!doctype html><meta http-equiv="refresh" content="0; url=./math_expressions/index.html">\n' > _site/docs/index.html
+                      touch _site/.nojekyll
+
+            - name: Upload Pages artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                  path: _site
+
+    pages-deploy:
+        name: Deploy to GitHub Pages
+        runs-on: ubuntu-latest
+        needs: pages-build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deploy.outputs.page_url }}
+        # Serialize Pages deploys; never cancel one that is mid-publish.
+        concurrency:
+            group: pages
+            cancel-in-progress: false
+        steps:
+            - name: Deploy
+              id: deploy
+              uses: actions/deploy-pages@v4

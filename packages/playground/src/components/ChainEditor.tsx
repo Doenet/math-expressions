@@ -21,7 +21,7 @@ import {
 import { type Diagnostic, linter, lintKeymap } from "@codemirror/lint";
 import { BASE_VAR, parseChain } from "../chain";
 import { chainLanguage } from "../chainLanguage";
-import { REGISTRY } from "../registry";
+import type { OpEntry } from "../types";
 
 export interface ChainEditorHandle {
   /** Insert text at the caret (or over the selection) and refocus. */
@@ -31,6 +31,8 @@ export interface ChainEditorHandle {
 interface Props {
   value: string;
   onChange: (v: string) => void;
+  /** Operations offered in `.`-autocomplete (curated registry + dynamic ops). */
+  ops: OpEntry[];
 }
 
 /** Insert `text` over the completion range, placing the caret at `caret`. */
@@ -69,9 +71,13 @@ function insideString(text: string): boolean {
 
 /**
  * Autocomplete: method names after a `.`, or a source (`expr` / `parse(…)`) at
- * the very start of the chain.
+ * the very start of the chain. `opsRef` is read at completion time so newly
+ * loaded dynamic ops appear without rebuilding the editor.
  */
-function chainCompletions(context: CompletionContext): CompletionResult | null {
+function makeChainCompletions(opsRef: { current: OpEntry[] }) {
+  return function chainCompletions(
+    context: CompletionContext,
+  ): CompletionResult | null {
   // Never complete inside a string literal (e.g. a `.` within parse("a.b")).
   if (insideString(context.state.sliceDoc(0, context.pos))) return null;
 
@@ -80,7 +86,7 @@ function chainCompletions(context: CompletionContext): CompletionResult | null {
   if (dot) {
     return {
       from: dot.from + 1, // keep the dot, replace the partial after it
-      options: REGISTRY.map((e) => ({
+      options: opsRef.current.map((e) => ({
         label: e.id,
         detail: e.category,
         type: e.js && e.rust ? "function" : "method",
@@ -116,6 +122,7 @@ function chainCompletions(context: CompletionContext): CompletionResult | null {
       },
     })),
   };
+  };
 }
 
 /** Surface the current parse error as an underlined diagnostic. */
@@ -150,13 +157,17 @@ const editorTheme = EditorView.theme({
 });
 
 const ChainEditor = forwardRef<ChainEditorHandle, Props>(function ChainEditor(
-  { value, onChange },
+  { value, onChange, ops },
   ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // Read by the completion source at request time, so dynamically loaded ops
+  // become available without recreating the editor.
+  const opsRef = useRef(ops);
+  opsRef.current = ops;
 
   // Create the editor once.
   useEffect(() => {
@@ -171,7 +182,10 @@ const ChainEditor = forwardRef<ChainEditorHandle, Props>(function ChainEditor(
           EditorView.lineWrapping,
           chainLanguage,
           closeBrackets(),
-          autocompletion({ override: [chainCompletions], activateOnTyping: true }),
+          autocompletion({
+            override: [makeChainCompletions(opsRef)],
+            activateOnTyping: true,
+          }),
           chainLinter,
           placeholder('parse("x^2 - 1").reduce_rational().toLatex()'),
           keymap.of([

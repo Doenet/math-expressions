@@ -66,13 +66,49 @@ typed by the minimal interfaces there (only the members the adapter uses).
   wasm-bindgen package in **`../math-expressions-rs-wasm/pkg/`** (not vendored
   into this project). `vite.config.ts` resolves that location and uses
   [`vite-plugin-static-copy`](https://github.com/sapphi-red/vite-plugin-static-copy)
-  to serve `math_expressions_wasm.js` + `math_expressions_wasm_bg.wasm` under `/wasm/`.
+  to serve `math_expressions_wasm.js` + `math_expressions_wasm_bg.wasm` (and the
+  generated `math_expressions_wasm.d.ts` — see below) under `/wasm/`.
   `src/engines.ts` then loads the glue at runtime via a dynamic `import()` of
   that URL, so Vite never bundles the wasm — the static copy is its sole
   delivery, and the glue resolves the `.wasm` relative to its own served URL.
 
 Both engines are hidden behind one adapter interface in
 [`src/engines.ts`](src/engines.ts).
+
+## The Operations palette (curated + auto-generated)
+
+The palette is driven by the operation registry in
+[`src/registry.ts`](src/registry.ts): a hand-curated, **dual-engine** set where
+each entry maps one chain method (e.g. `.simplify()`, `.toLatex()`) onto both the
+JS library and the Rust port, capturing their API divergences.
+
+Everything the curated registry does **not** cover is filled in automatically.
+`src/engines.ts` fetches the wasm-bindgen `math_expressions_wasm.d.ts` at runtime
+(served from `/wasm/`), and [`src/wasmApi.ts`](src/wasmApi.ts) parses it, mapping
+each `Expression` method's TypeScript signature to palette arg/return kinds and
+emitting an entry under the **"Other"** category for every method not already in
+the registry (dedup via `CURATED_RUST_METHODS`). Because the `.d.ts` is
+regenerated on every `build:wasm`, **adding a `#[wasm_bindgen]` method to the
+Rust `Expression` makes it appear in the playground on the next build** — no list
+to maintain, no coverage test to keep green. Auto-generated ops run on Rust, and
+also on JS when the canonical `Expression` happens to expose a same-named method.
+
+The name set is **hybrid**: the `.d.ts` supplies the argument/return *types* (a
+live object exposes only method names and arity, not parameter types), while the
+actual set of methods to surface is gated on **runtime introspection of the live
+`Expression` prototype** (`collectMethodNames` in `src/wasmApi.ts`). A method is
+emitted only when it appears in both, so a stale or hand-edited `.d.ts` that
+declares a method the running wasm lacks never yields a dead button. The reverse
+invariant — every method reachable by introspection is also declared in the
+`.d.ts` (so the playground can type it) — is enforced by
+`packages/math-expressions-rs-wasm/tests/api-surface.test.ts`.
+
+Only `Expression` *instance methods* are reflected — they are the receiver-chain
+shape the palette models. Free functions (`parse_*`, `gcd`, `solve_ode`, …) and
+the standalone `Assumptions` / `OdeSolution` classes are not methods on an
+expression and so are intentionally out of scope. A method whose signature can't
+be represented as a chain step (e.g. a `Float64Array` argument, or an
+`Expression[]` return) is skipped and logged to the console.
 
 ## Notes
 

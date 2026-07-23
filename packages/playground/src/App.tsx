@@ -3,11 +3,13 @@ import {
   loadEngines,
   makeJsAdapter,
   makeRustAdapter,
+  type EngineAdapter,
   type LoadedEngines,
 } from "./engines";
 import { BASE_VAR, parseChain } from "./chain";
 import { evaluateChain } from "./evaluate";
 import { CATEGORIES, REGISTRY } from "./registry";
+import { buildDynamicOps, collectMethodNames } from "./wasmApi";
 import { formatComplex, formatFloat, safe } from "./util";
 import Katex from "./components/Katex";
 import Tree from "./components/Tree";
@@ -16,6 +18,7 @@ import type {
   Notation,
   Displayable,
   OpCategory,
+  OpEntry,
   SafeResult,
   StepResult,
   Syntax,
@@ -316,6 +319,42 @@ export default function App() {
     [loaded, notation],
   );
 
+  // The full operation set: the curated registry plus everything auto-generated
+  // from the live wasm API surface (the "Other" category). Rebuilt when the wasm
+  // loads. Names are read off the live prototypes of each engine's `Expression`:
+  // the wasm `.d.ts` supplies the *types*, but a method is only surfaced when it
+  // also exists on the live Rust prototype (guarding against a stale `.d.ts`);
+  // the JS predicate lets shared methods light up on both engines.
+  const allOps = useMemo<OpEntry[]>(() => {
+    if (!loaded || !engines) return REGISTRY;
+    // Introspect a throwaway handle, freeing the wasm one afterwards.
+    const probe = <H,>(a: EngineAdapter<H>): Set<string> => {
+      try {
+        const h = a.parseExpr("x");
+        try {
+          return collectMethodNames(h as object);
+        } finally {
+          a.free(h);
+        }
+      } catch {
+        return new Set<string>();
+      }
+    };
+    const jsNames = probe(engines.js);
+    const rustNames = probe(engines.rust);
+    // If Rust introspection failed, trust the `.d.ts` rather than emit nothing.
+    const rustHas = rustNames.size
+      ? (m: string) => rustNames.has(m)
+      : () => true;
+    const dynamic = buildDynamicOps(loaded.wasmDts, rustHas, (m) => jsNames.has(m));
+    return [...REGISTRY, ...dynamic];
+  }, [loaded, engines]);
+
+  const opsById = useMemo(
+    () => new Map(allOps.map((e) => [e.id, e])),
+    [allOps],
+  );
+
   // Live preview of the equation box: parse with the JS engine and render it.
   const basePreview = useMemo(() => {
     if (!engines || baseText.trim() === "") return null;
@@ -346,19 +385,22 @@ export default function App() {
     if (!parsed.ok) return { error: parsed.error, steps: null as StepResult[] | null };
     return {
       error: null,
-      steps: evaluateChain(engines.js, engines.rust, parsed.chain, {
-        text: deferredBase,
-        syntax: deferredSyntax,
-      }),
+      steps: evaluateChain(
+        engines.js,
+        engines.rust,
+        parsed.chain,
+        { text: deferredBase, syntax: deferredSyntax },
+        opsById,
+      ),
     };
-  }, [engines, deferredChain, deferredBase, deferredSyntax]);
+  }, [engines, deferredChain, deferredBase, deferredSyntax, opsById]);
 
   const byCategory = useMemo(() => {
-    const m = new Map<OpCategory, typeof REGISTRY>();
+    const m = new Map<OpCategory, OpEntry[]>();
     for (const c of CATEGORIES) m.set(c, []);
-    for (const e of REGISTRY) m.get(e.category)!.push(e);
+    for (const e of allOps) m.get(e.category)!.push(e);
     return m;
-  }, []);
+  }, [allOps]);
 
   if (loadError)
     return (
@@ -376,6 +418,9 @@ export default function App() {
           Enter an equation, then chain operations on it — run against the
           canonical <b>JavaScript</b> library and the <b>Rust (WASM)</b> port,
           side by side.
+        </p>
+        <p className="sub">
+          <a href={`${import.meta.env.BASE_URL}docs/`}>Rust API documentation →</a>
         </p>
       </header>
 
@@ -460,7 +505,12 @@ export default function App() {
             Start from <code>{BASE_VAR}</code> and evalute the following math.
           </span>
         </div>
-        <ChainEditor ref={editorRef} value={chain} onChange={setChain} />
+        <ChainEditor
+          ref={editorRef}
+          value={chain}
+          onChange={setChain}
+          ops={allOps}
+        />
         {editorError && (
           <p className="editor-err">
             <span className="err">✗ {editorError.message}</span>{" "}
@@ -510,10 +560,10 @@ export default function App() {
           <h2>Operations</h2>
           <span className="muted">
             click to append at the cursor · type <code>.</code> in the editor for
-            autocomplete
+            autocomplete · <b>Other</b> is generated from the live wasm API
           </span>
         </div>
-        {CATEGORIES.map((cat) => (
+        {CATEGORIES.filter((cat) => byCategory.get(cat)?.length).map((cat) => (
           <div key={cat} className="palette-row">
             <span className="palette-cat">{cat}</span>
             <div className="palette-ops">
@@ -561,10 +611,40 @@ export default function App() {
       )}
 
       <footer>
-        <p className="muted">
-          JS: <code>math-expressions</code> (npm) · Rust:{" "}
-          <code>math-expressions-rs</code> → wasm (rebuilt via wireit when the
-          Rust sources change).
+        <table className="build-info">
+          <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Package</th>
+              <th>Version</th>
+              <th>Bundle</th>
+              <th>gzip</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>JavaScript</td>
+              <td>
+                <code>math-expressions</code>
+              </td>
+              <td>{__BUILD_INFO__.jsVersion}</td>
+              <td>{__BUILD_INFO__.jsBundle}</td>
+              <td>{__BUILD_INFO__.jsBundleGz}</td>
+            </tr>
+            <tr>
+              <td>Rust via WASM</td>
+              <td>
+                <code>math-expressions-js-compat</code>
+              </td>
+              <td>{__BUILD_INFO__.compatVersion}</td>
+              <td>{__BUILD_INFO__.compatBundle}</td>
+              <td>{__BUILD_INFO__.compatBundleGz}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="muted foot-note">
+          Rust core <code>math-expressions-rs</code> v{__BUILD_INFO__.rsVersion}.
+          Versions and bundle sizes computed at build time.
         </p>
       </footer>
     </div>

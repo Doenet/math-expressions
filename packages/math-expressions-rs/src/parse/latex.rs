@@ -131,6 +131,11 @@ pub struct LatexToAst {
     allowed_symbols: HashSet<String>,
     /// Recursion depth through the self-recursive parse functions.
     depth: usize,
+    /// Loop-iteration fuel consumed so far, capped at `max_steps` (see
+    /// `tick`). Bounds flat loops the way `depth` bounds recursion. `usize` to
+    /// match `depth`/`MAX_PARSE_DEPTH` and wasm32's native pointer width.
+    steps: usize,
+    max_steps: usize,
 }
 
 impl LatexToAst {
@@ -150,6 +155,8 @@ impl LatexToAst {
                 original: String::new(),
             },
             depth: 0,
+            steps: 0,
+            max_steps: 0,
         }
     }
 
@@ -404,7 +411,12 @@ impl LatexToAst {
 
         self.advance()?;
 
-        while self.token.ttype != Tok::EndEnvironment {
+        // Terminate on EOF too: without a matching `\end{…}` the loop would
+        // otherwise spin forever (an unrecognized token yields a `Blank` entry
+        // without consuming input). `tick` is the general backstop; this
+        // gives the precise "Expecting \end{…}" error below.
+        while !matches!(self.token.ttype, Tok::EndEnvironment | Tok::Eof) {
+            self.tick()?;
             if self.token.ttype == Tok::Amp {
                 if last_token == Tok::Amp || last_token == Tok::Linebreak {
                     row.push(Expr::int(0));
@@ -577,10 +589,12 @@ impl LatexToAst {
             }
         } else {
             while self.token.ttype == Tok::Prime {
+                self.tick()?;
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
             while self.token.ttype == Tok::Caret {
+                self.tick()?;
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -770,6 +784,7 @@ impl LatexToAst {
                 parse_absolute_value: p.parse_absolute_value,
                 ..P::default()
             })? {
+                self.tick()?;
                 args.push(sub);
             }
             Ok(Some(if args.is_empty() {
@@ -805,6 +820,7 @@ impl LatexToAst {
             let mut ds = vec![];
             let mut i = 0;
             while i + 1 < ops.len() {
+                self.tick()?;
                 if ops[i] == Expr::sym("d") {
                     let factor2 = ops.remove(i + 1);
                     ops.remove(i);
@@ -884,6 +900,7 @@ impl LatexToAst {
         let mut exponent_sum = 0.0;
 
         loop {
+            self.tick()?;
             let matches_symbol =
                 (deriv_symbol == 'd' && self.token.ttype == Tok::Var && self.token.text == "d")
                     || (deriv_symbol == '∂'
