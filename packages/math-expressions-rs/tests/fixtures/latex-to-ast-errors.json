@@ -1,0 +1,110 @@
+[
+ {
+  "input": ")1++1",
+  "error": "Invalid location of ')'"
+ },
+ {
+  "input": "(1+1",
+  "error": "Expecting )"
+ },
+ {
+  "input": "|x_|",
+  "error": "Invalid location of '|'"
+ },
+ {
+  "input": "x@2",
+  "error": "Invalid symbol '@'"
+ },
+ {
+  "input": "[1,2,3)",
+  "error": "Expecting ]"
+ },
+ {
+  "input": "(1,2,3]",
+  "error": "Expecting )"
+ },
+ {
+  "input": "[x)",
+  "error": "Expecting ]"
+ },
+ {
+  "input": "(x]",
+  "error": "Expecting )"
+ },
+ {
+  "input": "\\logx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\lnx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\sinx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\inftyx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\cdotx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\timesx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\parallelx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\binomx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\vecx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\lfloorx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\rfloorx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\lceilx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\rceilx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\perpx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\botx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\anglex",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\circx",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\ranglex",
+  "error": "Unrecognized latex command"
+ },
+ {
+  "input": "\\langlex",
+  "error": "Unrecognized latex command"
+ }
+]

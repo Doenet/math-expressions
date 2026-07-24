@@ -1,0 +1,38 @@
+[
+ {
+  "input": ")1++1",
+  "error": "Invalid location of ')'"
+ },
+ {
+  "input": "(1+1",
+  "error": "Expecting )"
+ },
+ {
+  "input": "|x_|",
+  "error": "Invalid location of '|'"
+ },
+ {
+  "input": "x@2",
+  "error": "Invalid symbol '@'"
+ },
+ {
+  "input": "[1,2,3)",
+  "error": "Expecting ]"
+ },
+ {
+  "input": "(1,2,3]",
+  "error": "Expecting )"
+ },
+ {
+  "input": "[x)",
+  "error": "Expecting ]"
+ },
+ {
+  "input": "(x]",
+  "error": "Expecting )"
+ },
+ {
+  "input": "\\cos(x)",
+  "error": "Invalid symbol '\\'"
+ }
+]

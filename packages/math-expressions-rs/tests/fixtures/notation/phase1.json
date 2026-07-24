@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "_comment": "I18N_MATH_NOTATION_PLAN §6 conformance fixture. Language-neutral, versioned. Both the Rust port and JS math-expressions must pass every row. AST is the js_tree JSON shape. `notation` gives the declared decimal/argument separators; parsing and printing both use it. `cases` must parse to `expected_ast` and (when given) print to the expected outputs; `failing` rows must error under their notation.",
+  "cases": [
+    {
+      "name": "period decimal",
+      "notation": { "decimalSeparator": ".", "argumentSeparator": "," },
+      "input_text": "3.14",
+      "expected_ast": 3.14,
+      "expected_text_out": "3.14"
+    },
+    {
+      "name": "comma decimal",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "3,14",
+      "expected_ast": 3.14,
+      "expected_text_out": "3,14"
+    },
+    {
+      "name": "period function args",
+      "notation": { "decimalSeparator": ".", "argumentSeparator": "," },
+      "input_text": "f(x,y)",
+      "expected_ast": ["apply", "f", ["tuple", "x", "y"]],
+      "expected_text_out": "f(x, y)"
+    },
+    {
+      "name": "comma function args use semicolon",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "f(x;y)",
+      "expected_ast": ["apply", "f", ["tuple", "x", "y"]],
+      "expected_text_out": "f(x; y)"
+    },
+    {
+      "name": "comma: f(1,2) is one decimal argument",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "f(1,2)",
+      "expected_ast": ["apply", "f", 1.2],
+      "expected_text_out": "f(1,2)"
+    },
+    {
+      "name": "period tuple",
+      "notation": { "decimalSeparator": ".", "argumentSeparator": "," },
+      "input_text": "(1,2)",
+      "expected_ast": ["tuple", 1, 2],
+      "expected_text_out": "(1, 2)"
+    },
+    {
+      "name": "comma tuple",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "(1;2)",
+      "expected_ast": ["tuple", 1, 2],
+      "expected_text_out": "(1; 2)"
+    },
+    {
+      "name": "period list",
+      "notation": { "decimalSeparator": ".", "argumentSeparator": "," },
+      "input_text": "1,2,3",
+      "expected_ast": ["list", 1, 2, 3],
+      "expected_text_out": "1, 2, 3"
+    },
+    {
+      "name": "comma list",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "1;2;3",
+      "expected_ast": ["list", 1, 2, 3],
+      "expected_text_out": "1; 2; 3"
+    },
+    {
+      "name": "comma list of decimals (both meanings at once)",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "1,5;2,5",
+      "expected_ast": ["list", 1.5, 2.5],
+      "expected_text_out": "1,5; 2,5"
+    },
+    {
+      "name": "lenient comma also accepts period on input",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";", "alsoAcceptDecimal": ["."] },
+      "input_text": "3.14",
+      "expected_ast": 3.14,
+      "expected_text_out": "3,14"
+    },
+    {
+      "name": "latex comma decimal wraps as {,} (A5)",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_latex": "3{,}14",
+      "expected_ast": 3.14,
+      "expected_latex_out": "3{,}14"
+    },
+    {
+      "name": "latex comma function args",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_latex": "f(x;y)",
+      "expected_ast": ["apply", "f", ["tuple", "x", "y"]]
+    }
+  ],
+  "failing": [
+    {
+      "_why": "strict comma notation rejects a period decimal",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "3.14"
+    },
+    {
+      "_why": "under comma notation ',' is a decimal, so a bare ',' as a separator is invalid",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_text": "f(x,y)"
+    },
+    {
+      "_why": "under period notation ';' is not a separator",
+      "notation": { "decimalSeparator": ".", "argumentSeparator": "," },
+      "input_text": "f(x;y)"
+    },
+    {
+      "_why": "strict comma notation rejects a period decimal (latex)",
+      "notation": { "decimalSeparator": ",", "argumentSeparator": ";" },
+      "input_latex": "1.5"
+    }
+  ]
+}

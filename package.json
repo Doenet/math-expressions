@@ -1,58 +1,27 @@
 {
-  "name": "math-expressions",
-  "description": "Perform basic equality testing and symbolic computations on mathematical expressions involving transcendental functions",
-  "version": "2.0.0-alpha94",
+  "name": "math-expressions-workspace",
+  "description": "Monorepo root for math-expressions: the Rust core (packages/math-expressions-rs), its wasm bindings, the `math-expressions` drop-in (packages/math-expressions-js-compat), and the playground. Not published — see the individual packages.",
+  "version": "3.0.0-alpha1",
   "type": "module",
   "author": {
     "name": "Jim Fowler",
     "email": "kisonecat@gmail.com",
     "url": "http://kisonecat.com/"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "vite build && npm run build:types",
-    "build:types": "cp index.d.ts build/index.d.ts",
-    "test:watch": "vitest --reporter=verbose",
-    "test": "vitest run --reporter=verbose spec/quick_",
-    "test:all": "vitest run",
-    "lint": "jshint lib/*.js spec/*.js",
     "prettier:format": "prettier --write .",
-    "prettier:check": "prettier --check .",
-    "types:check": "tsc --noEmit --skipLibCheck"
+    "prettier:check": "prettier --check ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kisonecat/math-expressions.git"
+    "url": "git+https://github.com/Doenet/math-expressions.git"
   },
-  "types": "./build/index.d.ts",
-  "files": [
-    "/build"
-  ],
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./build/index.d.ts",
-        "default": "./build/math-expressions.js"
-      },
-      "require": {
-        "types": "./build/index.d.ts",
-        "default": "./build/math-expressions_umd.js"
-      }
-    }
-  },
-  "private": false,
-  "dependencies": {
-    "mathjs": "^15.2.0",
-    "number-theory": "1.1.0",
-    "numeric": "1.2.6",
-    "seedrandom": "^3.0.5",
-    "xml-parser": "1.2.1"
-  },
+  "private": true,
   "devDependencies": {
-    "jshint": "^2.13.6",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8"
+    "prettier": "^3.8.1"
   },
   "license": "(GPL-3.0 OR Apache-2.0)"
 }

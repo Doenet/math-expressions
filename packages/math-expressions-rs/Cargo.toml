@@ -1,0 +1,31 @@
+[package]
+name = "math-expressions"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0 OR Apache-2.0"
+description = "Rust port of the math-expressions library (educational math CAS)"
+
+# Pure Rust library. The wasm-bindgen `cdylib` now lives in the separate
+# `math-expressions-wasm` crate (packages/math-expressions-rs-wasm), which
+# depends on this one.
+[lib]
+crate-type = ["rlib"]
+
+# The size-oriented release profile lives in the WORKSPACE ROOT Cargo.toml
+# (cargo ignores profile sections in member manifests).
+
+[dependencies]
+num-bigint = "0.4"
+num-rational = "0.4"
+num-traits = "0.2"
+num-complex = "0.4"
+num-integer = "0.1"
+# default-features = false is load-bearing: rand's defaults pull in getrandom,
+# which fails on wasm32-unknown-unknown. We always seed explicitly
+# (SmallRng::seed_from_u64) and never need OS entropy.
+rand = { version = "0.9", default-features = false, features = ["small_rng"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+proptest = "1"

@@ -1,0 +1,708 @@
+[
+ {
+  "input": "a·b",
+  "tree": [
+   "*",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a⋅b",
+  "tree": [
+   "*",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a•b",
+  "tree": [
+   "*",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a×b",
+  "tree": [
+   "*",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a**b",
+  "tree": [
+   "^",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a−b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    "b"
+   ]
+  ]
+ },
+ {
+  "input": "a–b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    "b"
+   ]
+  ]
+ },
+ {
+  "input": "a—b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    "b"
+   ]
+  ]
+ },
+ {
+  "input": "a‐b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    "b"
+   ]
+  ]
+ },
+ {
+  "input": "x₋",
+  "tree": "x-"
+ },
+ {
+  "input": "a≠b",
+  "tree": [
+   "ne",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a≤b≤c",
+  "tree": [
+   "lts",
+   [
+    "tuple",
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "tuple",
+    false,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "a≥b",
+  "tree": [
+   "ge",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "¬p",
+  "tree": [
+   "not",
+   "p"
+  ]
+ },
+ {
+  "input": "p∧q∨r",
+  "tree": [
+   "or",
+   [
+    "and",
+    "p",
+    "q"
+   ],
+   "r"
+  ]
+ },
+ {
+  "input": "a᐀b",
+  "tree": [
+   "=",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "p→q",
+  "tree": [
+   "rightarrow",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p←q",
+  "tree": [
+   "leftarrow",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p↔q",
+  "tree": [
+   "leftrightarrow",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p⟹q",
+  "tree": [
+   "implies",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p⟸q",
+  "tree": [
+   "impliedby",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p⟺q",
+  "tree": [
+   "iff",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "a∈B",
+  "tree": [
+   "in",
+   "a",
+   "B"
+  ]
+ },
+ {
+  "input": "a∉B",
+  "tree": [
+   "notin",
+   "a",
+   "B"
+  ]
+ },
+ {
+  "input": "A∋b",
+  "tree": [
+   "ni",
+   "A",
+   "b"
+  ]
+ },
+ {
+  "input": "A∌b",
+  "tree": [
+   "notni",
+   "A",
+   "b"
+  ]
+ },
+ {
+  "input": "A⊆B",
+  "tree": [
+   "subseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A⊈B",
+  "tree": [
+   "notsubseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A⊇B",
+  "tree": [
+   "superseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A⊉B",
+  "tree": [
+   "notsuperseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A⊄B",
+  "tree": [
+   "notsubset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A⊅B",
+  "tree": [
+   "notsuperset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A∪B∩C",
+  "tree": [
+   "intersect",
+   [
+    "union",
+    "A",
+    "B"
+   ],
+   "C"
+  ]
+ },
+ {
+  "input": "x⟂y",
+  "tree": [
+   "perp",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x∥y",
+  "tree": [
+   "parallel",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "∠ABC",
+  "tree": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "∫x dx",
+  "tree": [
+   "apply",
+   "int",
+   [
+    "*",
+    "x",
+    [
+     "d",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "∞",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "-∞",
+  "tree": {
+   "$": "-Inf"
+  }
+ },
+ {
+  "input": "∅",
+  "tree": "emptyset"
+ },
+ {
+  "input": "ℯ^x",
+  "tree": [
+   "^",
+   "e",
+   "x"
+  ]
+ },
+ {
+  "input": "α+β",
+  "tree": [
+   "+",
+   "alpha",
+   "beta"
+  ]
+ },
+ {
+  "input": "µ",
+  "tree": "mu"
+ },
+ {
+  "input": "♠+♡",
+  "tree": [
+   "+",
+   "spade",
+   "heart"
+  ]
+ },
+ {
+  "input": "x‸2",
+  "tree": [
+   "^",
+   "x",
+   2
+  ]
+ },
+ {
+  "input": "xʌ2",
+  "tree": [
+   "^",
+   "x",
+   2
+  ]
+ },
+ {
+  "input": "f′(x)",
+  "tree": [
+   "apply",
+   [
+    "prime",
+    "f"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "infinity",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "Infinity",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "infty",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "OO",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "oo+1",
+  "tree": [
+   "+",
+   {
+    "$": "Inf"
+   },
+   1
+  ]
+ },
+ {
+  "input": "andy",
+  "tree": [
+   "*",
+   "a",
+   "n",
+   "d",
+   "y"
+  ]
+ },
+ {
+  "input": "oo2",
+  "tree": "oo2"
+ },
+ {
+  "input": "pix",
+  "tree": [
+   "*",
+   "p",
+   "i",
+   "x"
+  ]
+ },
+ {
+  "input": "plusminusx",
+  "tree": [
+   "*",
+   "p",
+   "l",
+   "u",
+   "s",
+   "m",
+   "i",
+   "n",
+   "u",
+   "s",
+   "x"
+  ]
+ },
+ {
+  "input": "intx",
+  "tree": [
+   "*",
+   "i",
+   "n",
+   "t",
+   "x"
+  ]
+ },
+ {
+  "input": "subsetx",
+  "tree": [
+   "*",
+   "s",
+   "u",
+   "b",
+   "s",
+   "e",
+   "t",
+   "x"
+  ]
+ },
+ {
+  "input": "forallx",
+  "tree": [
+   "*",
+   "f",
+   "o",
+   "r",
+   "a",
+   "l",
+   "l",
+   "x"
+  ]
+ },
+ {
+  "input": "not x",
+  "tree": [
+   "not",
+   "x"
+  ]
+ },
+ {
+  "input": "nota",
+  "tree": [
+   "*",
+   "n",
+   "o",
+   "t",
+   "a"
+  ]
+ },
+ {
+  "input": "a&&b",
+  "tree": [
+   "and",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a&b",
+  "tree": [
+   "and",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "1E5",
+  "tree": 100000
+ },
+ {
+  "input": "1E+5",
+  "tree": 100000
+ },
+ {
+  "input": "1E-5",
+  "tree": 0.00001
+ },
+ {
+  "input": "(1E5)",
+  "tree": 100000
+ },
+ {
+  "input": "1E5x",
+  "tree": [
+   "*",
+   1,
+   "E5x"
+  ]
+ },
+ {
+  "input": "1E5 x",
+  "tree": [
+   "*",
+   1,
+   "E5",
+   "x"
+  ]
+ },
+ {
+  "input": "[1E5]",
+  "tree": 100000
+ },
+ {
+  "input": "{1E5}",
+  "tree": [
+   "set",
+   100000
+  ]
+ },
+ {
+  "input": "1E5,2",
+  "tree": [
+   "list",
+   100000,
+   2
+  ]
+ },
+ {
+  "input": "2E-3+1",
+  "tree": [
+   "+",
+   [
+    "*",
+    2,
+    "E"
+   ],
+   -3,
+   1
+  ]
+ },
+ {
+  "input": "1.E3",
+  "tree": 1000
+ },
+ {
+  "input": "3.",
+  "tree": 3
+ },
+ {
+  "input": ".5",
+  "tree": 0.5
+ },
+ {
+  "input": "1.2.3",
+  "tree": [
+   "*",
+   1.2,
+   0.3
+  ]
+ },
+ {
+  "input": "50%",
+  "tree": [
+   "unit",
+   50,
+   "%"
+  ]
+ },
+ {
+  "input": "$5",
+  "tree": [
+   "unit",
+   "$",
+   5
+  ]
+ },
+ {
+  "input": "5$",
+  "tree": [
+   "*",
+   5,
+   "$"
+  ]
+ },
+ {
+  "input": "%x",
+  "tree": [
+   "*",
+   "%",
+   "x"
+  ]
+ },
+ {
+  "input": "3 deg + 2",
+  "tree": [
+   "+",
+   [
+    "unit",
+    3,
+    "deg"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "x_2^3",
+  "tree": [
+   "^",
+   [
+    "_",
+    "x",
+    2
+   ],
+   3
+  ]
+ },
+ {
+  "input": "x^3_2",
+  "tree": [
+   "^",
+   "x",
+   [
+    "_",
+    3,
+    2
+   ]
+  ]
+ },
+ {
+  "input": "C_-^+",
+  "tree": [
+   "^",
+   [
+    "_",
+    "C",
+    "-"
+   ],
+   "+"
+  ]
+ }
+]

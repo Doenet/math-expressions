@@ -1,0 +1,88 @@
+{
+  "name": "math-expressions-playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Web playground comparing the Rust (WASM) and JS math-expressions implementations",
+  "scripts": {
+    "dev": "wireit",
+    "build": "wireit",
+    "build:wasm": "wireit",
+    "typecheck": "wireit",
+    "preview": "wireit"
+  },
+  "wireit": {
+    "dev": {
+      "command": "vite",
+      "dependencies": [
+        "build:wasm"
+      ]
+    },
+    "build": {
+      "command": "vite build",
+      "dependencies": [
+        "build:wasm",
+        "typecheck"
+      ],
+      "files": [
+        "src/**",
+        "index.html",
+        "vite.config.ts",
+        "tsconfig.json"
+      ],
+      "output": [
+        "dist/**"
+      ]
+    },
+    "build:wasm": {
+      "command": "bash ./rebuild-wasm.sh",
+      "files": [
+        "rebuild-wasm.sh",
+        "../math-expressions-rs/src/**",
+        "../math-expressions-rs/Cargo.toml",
+        "../math-expressions-rs-wasm/src-rust/**",
+        "../math-expressions-rs-wasm/Cargo.toml"
+      ],
+      "output": []
+    },
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "files": [
+        "src/**",
+        "vite.config.ts",
+        "tsconfig.json",
+        "package-lock.json"
+      ],
+      "output": []
+    },
+    "preview": {
+      "command": "vite preview",
+      "dependencies": [
+        "build"
+      ]
+    }
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.10.4",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
+    "@lezer/highlight": "^1.2.3",
+    "katex": "^0.16.11",
+    "math-expressions-canonical": "npm:math-expressions@2.0.0-alpha94",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vite-plugin-static-copy": "^1.0.6",
+    "wireit": "^0.14.9"
+  }
+}

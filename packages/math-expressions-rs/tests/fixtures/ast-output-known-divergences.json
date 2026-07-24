@@ -1,0 +1,686 @@
+[
+  {
+    "kind": "latex",
+    "ast": "1.23e-11",
+    "js": "1.23 \\cdot 10^{-11}",
+    "rust": "0.0000000000123"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"x\",[\"+\",\"y\"]]",
+    "js": "x \\left(+ y\\right)",
+    "rust": "x \\left(+y\\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"y\",[\"/\",1,2],\"x\"]",
+    "js": "y \\left(\\frac{1}{2}\\right) x",
+    "rust": "y \\frac{1}{2} x"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"z\",[\"/\",-2,3]]",
+    "js": "z \\left(-\\frac{2}{3}\\right)",
+    "rust": "z \\frac{-2}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"z\",[\"/\",[\"*\",-2,\"x\"],3]]",
+    "js": "z \\left(-\\frac{2 x}{3}\\right)",
+    "rust": "z \\frac{\\left(-2\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"z\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]",
+    "js": "z \\left(-\\frac{a x}{3}\\right)",
+    "rust": "z \\frac{\\left(-a\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",\"z\",[\"/\",[\"-\",\"a\"],3]]",
+    "js": "z \\left(-\\frac{a}{3}\\right)",
+    "rust": "z \\frac{-a}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"*\",[\"angle\",\"A\",\"B\",\"C\"],\"x\"]",
+    "js": "\\left( \\angle ABC \\right) x",
+    "rust": "\\angle\\left( A, B, C \\right) x"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"-\",[\"/\",[\"*\",-2,\"x\"],3]]]",
+    "js": "z - \\frac{-2 x}{3}",
+    "rust": "z - \\frac{\\left(-2\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"-\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]]",
+    "js": "z - \\frac{-a x}{3}",
+    "rust": "z - \\frac{\\left(-a\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"/\",-2,3]]",
+    "js": "z - \\frac{2}{3}",
+    "rust": "z + \\frac{-2}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"/\",[\"*\",-2,\"x\"],3]]",
+    "js": "z - \\frac{2 x}{3}",
+    "rust": "z + \\frac{\\left(-2\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]",
+    "js": "z - \\frac{a x}{3}",
+    "rust": "z + \\frac{\\left(-a\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"+\",\"z\",[\"/\",[\"-\",\"a\"],3]]",
+    "js": "z - \\frac{a}{3}",
+    "rust": "z + \\frac{-a}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"-\",[\"+\",\"z\",[\"/\",-2,3]]]",
+    "js": "-\\left(z - \\frac{2}{3}\\right)",
+    "rust": "-\\left(z + \\frac{-2}{3}\\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"/\",-2,3]",
+    "js": "-\\frac{2}{3}",
+    "rust": "\\frac{-2}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"/\",[\"*\",-2,\"x\"],3]",
+    "js": "-\\frac{2 x}{3}",
+    "rust": "\\frac{\\left(-2\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]",
+    "js": "-\\frac{a x}{3}",
+    "rust": "\\frac{\\left(-a\\right) x}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"/\",[\"-\",\"a\"],3]",
+    "js": "-\\frac{a}{3}",
+    "rust": "\\frac{-a}{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"^\",1.23e-11,5]",
+    "js": "\\left(1.23 \\cdot 10^{-11}\\right)^{5}",
+    "rust": "0.0000000000123^{5}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"^\",[\"apply\",\"nthroot\",2],3]",
+    "js": "\\left(\\sqrt{2}\\right)^{3}",
+    "rust": "\\operatorname{nthroot}\\left(2\\right)^{3}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"angle\",\"A\",\"B\",\"C\"]",
+    "js": "\\angle ABC",
+    "rust": "\\angle\\left( A, B, C \\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"angle\",[\"^\",\"A\",2],[\"_\",\"B\",\"n\"],[\"prime\",\"C\"]]",
+    "js": "\\angle A^{2}B_{n}C'",
+    "rust": "\\angle\\left( A^{2}, B_{n}, C' \\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"apply\",\"f\",[\"tuple\",\"x\",\"y\",\"z\"]]",
+    "js": "f\\left( x, y, z \\right)",
+    "rust": "f\\left(x, y, z\\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"apply\",\"nCr\",[\"tuple\",\"x\",\"y\"]]",
+    "js": "\\operatorname{nCr}\\left( x, y \\right)",
+    "rust": "\\operatorname{nCr}\\left(x, y\\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"apply\",\"nPr\",[\"tuple\",\"x\",\"y\"]]",
+    "js": "\\operatorname{nPr}\\left( x, y \\right)",
+    "rust": "\\operatorname{nPr}\\left(x, y\\right)"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"derivative_leibniz\",\"x\",[\"tuple\",\"t\"]]",
+    "js": "\\frac{ dx }{ dt }",
+    "rust": "\\frac{dx}{dt}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"mu\",2],[\"tuple\",\"tau\",\"xi\"]]",
+    "js": "\\frac{ d^{2}\\mu }{ d\\tau d\\xi }",
+    "rust": "\\frac{d^2\\mu}{d\\tau d\\xi}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",2],[\"tuple\",[\"tuple\",\"t\",2]]]",
+    "js": "\\frac{ d^{2}x }{ dt^{2} }",
+    "rust": "\\frac{d^2x}{dt^2}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",\"s\",[\"tuple\",\"t\",2]]]",
+    "js": "\\frac{ d^{3}x }{ ds dt^{2} }",
+    "rust": "\\frac{d^3x}{ds dt^2}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",[\"tuple\",\"s\",2],[\"tuple\",\"t\",1]]]",
+    "js": "\\frac{ d^{3}x }{ ds^{2} dt }",
+    "rust": "\\frac{d^3x}{ds^2 dt}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"partial_derivative_leibniz\",\"x\",[\"tuple\",\"t\"]]",
+    "js": "\\frac{ \\partial x }{ \\partial t }",
+    "rust": "\\frac{\\partial x}{\\partial t}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"mu\",2],[\"tuple\",\"tau\",\"xi\"]]",
+    "js": "\\frac{ \\partial^{2}\\mu }{ \\partial \\tau \\partial \\xi }",
+    "rust": "\\frac{\\partial ^2\\mu}{\\partial \\tau \\partial \\xi}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",2],[\"tuple\",[\"tuple\",\"t\",2]]]",
+    "js": "\\frac{ \\partial^{2}x }{ \\partial t^{2} }",
+    "rust": "\\frac{\\partial ^2x}{\\partial t^2}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",\"s\",[\"tuple\",\"t\",2]]]",
+    "js": "\\frac{ \\partial^{3}x }{ \\partial s \\partial t^{2} }",
+    "rust": "\\frac{\\partial ^3x}{\\partial s \\partial t^2}"
+  },
+  {
+    "kind": "latex",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",[\"tuple\",\"s\",2],[\"tuple\",\"t\",1]]]",
+    "js": "\\frac{ \\partial^{3}x }{ \\partial s^{2} \\partial t }",
+    "rust": "\\frac{\\partial ^3x}{\\partial s^2 \\partial t}"
+  },
+  {
+    "kind": "text",
+    "ast": "1.23e+22",
+    "js": "1.23 * 10^22",
+    "rust": "12300000000000000000000"
+  },
+  {
+    "kind": "text",
+    "ast": "1.23e-11",
+    "js": "1.23 * 10^(-11)",
+    "rust": "0.0000000000123"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",\"x\",[\"+\",\"y\"]]",
+    "js": "x (+ y)",
+    "rust": "x (+y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",\"z\",[\"/\",-2,3]]",
+    "js": "z (-2/3)",
+    "rust": "z ((-2)/3)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",\"z\",[\"/\",[\"*\",-2,\"x\"],3]]",
+    "js": "z (-(2 x)/3)",
+    "rust": "z ((-2) x/3)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",\"z\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]",
+    "js": "z (-(a x)/3)",
+    "rust": "z ((-a) x/3)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",\"z\",[\"/\",[\"-\",\"a\"],3]]",
+    "js": "z (-a/3)",
+    "rust": "z ((-a)/3)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",[\"/\",1,2],\"x\"]",
+    "js": "(1/2) x",
+    "rust": "1/2 x"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"*\",[\"angle\",\"A\",\"B\",\"C\"],\"x\"]",
+    "js": "( ∠ABC ) x",
+    "rust": "∠(A, B, C) x"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"-\",[\"/\",[\"*\",-2,\"x\"],3]]]",
+    "js": "z - (-2 x)/3",
+    "rust": "z - (-2) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"-\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]]",
+    "js": "z - (-a x)/3",
+    "rust": "z - (-a) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"/\",-2,3]]",
+    "js": "z - 2/3",
+    "rust": "z + (-2)/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"/\",[\"*\",-2,\"x\"],3]]",
+    "js": "z - (2 x)/3",
+    "rust": "z + (-2) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]]",
+    "js": "z - (a x)/3",
+    "rust": "z + (-a) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",\"z\",[\"/\",[\"-\",\"a\"],3]]",
+    "js": "z - a/3",
+    "rust": "z + (-a)/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"+\",[\"tuple\",\"x\",\"y\"],[\"-\",[\"array\",\"x\",\"y\"]]]",
+    "js": "( x, y ) - [ x, y ]",
+    "rust": "(x, y) - [x, y]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"-\",[\"+\",\"z\",[\"/\",-2,3]]]",
+    "js": "-(z - 2/3)",
+    "rust": "-(z + (-2)/3)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"/\",-2,3]",
+    "js": "-2/3",
+    "rust": "(-2)/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"/\",[\"*\",-2,\"x\"],3]",
+    "js": "-(2 x)/3",
+    "rust": "(-2) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"/\",[\"*\",[\"-\",\"a\"],\"x\"],3]",
+    "js": "-(a x)/3",
+    "rust": "(-a) x/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"/\",[\"-\",\"a\"],3]",
+    "js": "-a/3",
+    "rust": "(-a)/3"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",\"x\",[\"_\",\"y\",\"z\"]]",
+    "js": "x^(y_z)",
+    "rust": "x^y_z"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",\"x\",[\"apply\",\"factorial\",\"a\"]]",
+    "js": "x^a!",
+    "rust": "x^(a!)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",\"x\",[\"apply\",\"factorial\",2]]",
+    "js": "x^2!",
+    "rust": "x^(2!)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",\"x\",[\"apply\",\"factorial\",[\"apply\",\"factorial\",2]]]",
+    "js": "x^2!!",
+    "rust": "x^(2!!)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",1.23e-11,5]",
+    "js": "(1.23 * 10^(-11))^5",
+    "rust": "0.0000000000123^5"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",[\"altvector\",\"x\",\"y\"],\"T\"]",
+    "js": "⟨ x, y ⟩^T",
+    "rust": "⟨x, y⟩^T"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",[\"apply\",\"f\",\"x\"],[\"_\",\"t\",\"y\"]]",
+    "js": "f(x)^(t_y)",
+    "rust": "f(x)^t_y"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",[\"tuple\",1,2],\"T\"]",
+    "js": "( 1, 2 )^T",
+    "rust": "(1, 2)^T"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"^\",[\"vector\",1,2],\"T\"]",
+    "js": "( 1, 2 )^T",
+    "rust": "(1, 2)^T"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"_\",\"x\",[\"_\",\"y\",\"z\"]]",
+    "js": "x_(y_z)",
+    "rust": "x_y_z"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"altvector\",\"x\",\"y\"]",
+    "js": "⟨ x, y ⟩",
+    "rust": "⟨x, y⟩"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"angle\",\"A\",\"B\",\"C\"]",
+    "js": "∠ABC",
+    "rust": "∠(A, B, C)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"angle\",[\"+\",\"A\",\"B\"],[\"*\",\"B\",\"D\"],[\"/\",\"x\",\"y\"]]",
+    "js": "∠( A + B, B D, x/y )",
+    "rust": "∠(A + B, B D, x/y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"angle\",[\"^\",\"A\",2],[\"_\",\"B\",\"n\"],[\"prime\",\"C\"]]",
+    "js": "∠A^2B_nC'",
+    "rust": "∠(A^2, B_n, C')"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"apply\",\"f\",[\"tuple\",\"x\",\"y\",\"z\"]]",
+    "js": "f( x, y, z )",
+    "rust": "f(x, y, z)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"apply\",\"nCr\",[\"tuple\",\"x\",\"y\"]]",
+    "js": "nCr( x, y )",
+    "rust": "nCr(x, y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"apply\",\"nPr\",[\"tuple\",\"x\",\"y\"]]",
+    "js": "nPr( x, y )",
+    "rust": "nPr(x, y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"apply\",\"nthroot\",[\"tuple\",\"x\",4]]",
+    "js": "nthroot( x, 4 )",
+    "rust": "nthroot(x, 4)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"array\",1,2]",
+    "js": "[ 1, 2 ]",
+    "rust": "[1, 2]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"binom\",\"x\",\"y\"]",
+    "js": "binom( x, y )",
+    "rust": "binom(x, y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"derivative_leibniz\",\"x\",[\"tuple\",\"t\"]]",
+    "js": "dx/dt",
+    "rust": "d x/d t"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"mu\",2],[\"tuple\",\"tau\",\"xi\"]]",
+    "js": "d^2μ/dτdξ",
+    "rust": "d^2 μ/d τ d ξ"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",2],[\"tuple\",[\"tuple\",\"t\",2]]]",
+    "js": "d^2x/dt^2",
+    "rust": "d^2 x/d t^2"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",\"s\",[\"tuple\",\"t\",2]]]",
+    "js": "d^3x/dsdt^2",
+    "rust": "d^3 x/d s d t^2"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",[\"tuple\",\"s\",2],[\"tuple\",\"t\",1]]]",
+    "js": "d^3x/ds^2dt",
+    "rust": "d^3 x/d s^2 d t"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"iff\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) ⟺ (not C) or D",
+    "rust": "A and ¬B ⟺ ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"impliedby\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) ⟸ (not C) or D",
+    "rust": "A and ¬B ⟸ ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"implies\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) ⟹ (not C) or D",
+    "rust": "A and ¬B ⟹ ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"interval\",[\"tuple\",1,2],[\"tuple\",false,true]]",
+    "js": "( 1, 2 ]",
+    "rust": "(1, 2]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"leftarrow\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) ← (not C) or D",
+    "rust": "A and ¬B ← ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"leftrightarrow\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) ↔ (not C) or D",
+    "rust": "A and ¬B ↔ ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"linesegment\",\"A\",\"B\"]",
+    "js": "linesegment( A, B )",
+    "rust": "linesegment(A, B)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"linesegment\",[\"prime\",\"A\"],[\"prime\",\"B\"]]",
+    "js": "linesegment( A', B' )",
+    "rust": "linesegment(A', B')"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"matrix\",[\"tuple\",1,2],[\"tuple\",[\"tuple\",[\"+\",\"a\",[\"*\",3,\"y\"]],[\"*\",2,[\"apply\",\"sin\",\"theta\"]]]]]",
+    "js": "[ [ a + 3 y, 2 sin(θ) ] ]",
+    "rust": "[[a + 3 y, 2 sin(θ)]]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"matrix\",[\"tuple\",2,2],[\"tuple\",[\"tuple\",\"a\",\"b\"],[\"tuple\",\"c\",\"d\"]]]",
+    "js": "[ [ a, b ], [ c, d ] ]",
+    "rust": "[[a, b], [c, d]]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"matrix\",[\"tuple\",2,3],[\"tuple\",[\"tuple\",8,0,0],[\"tuple\",1,2,3]]]",
+    "js": "[ [ 8, 0, 0 ], [ 1, 2, 3 ] ]",
+    "rust": "[[8, 0, 0], [1, 2, 3]]"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"not\",[\"=\",\"x\",\"y\"]]",
+    "js": "not (x = y)",
+    "rust": "¬(x = y)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"not\",[\"=\",\"x\",1]]",
+    "js": "not (x = 1)",
+    "rust": "¬(x = 1)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"or\",[\"not\",[\"=\",\"x\",\"y\"]],[\"ne\",\"z\",\"w\"]]",
+    "js": "(not (x = y)) or (z ≠ w)",
+    "rust": "(¬(x = y)) or (z ≠ w)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"partial_derivative_leibniz\",\"x\",[\"tuple\",\"t\"]]",
+    "js": "∂x/∂t",
+    "rust": "∂ x/∂ t"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"mu\",2],[\"tuple\",\"tau\",\"xi\"]]",
+    "js": "∂^2μ/∂τ∂ξ",
+    "rust": "∂^2 μ/∂ τ ∂ ξ"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",2],[\"tuple\",[\"tuple\",\"t\",2]]]",
+    "js": "∂^2x/∂t^2",
+    "rust": "∂^2 x/∂ t^2"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",\"s\",[\"tuple\",\"t\",2]]]",
+    "js": "∂^3x/∂s∂t^2",
+    "rust": "∂^3 x/∂ s ∂ t^2"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"partial_derivative_leibniz\",[\"tuple\",\"x\",3],[\"tuple\",[\"tuple\",\"s\",2],[\"tuple\",\"t\",1]]]",
+    "js": "∂^3x/∂s^2∂t",
+    "rust": "∂^3 x/∂ s^2 ∂ t"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"prime\",[\"altvector\",\"x\",\"y\"]]",
+    "js": "⟨ x, y ⟩'",
+    "rust": "⟨x, y⟩'"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"prime\",[\"tuple\",1,2]]",
+    "js": "( 1, 2 )'",
+    "rust": "(1, 2)'"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"prime\",[\"vector\",1,2]]",
+    "js": "( 1, 2 )'",
+    "rust": "(1, 2)'"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"rightarrow\",[\"and\",\"A\",[\"not\",\"B\"]],[\"or\",[\"not\",\"C\"],\"D\"]]",
+    "js": "A and (not B) → (not C) or D",
+    "rust": "A and ¬B → ¬C or D"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"set\",\"x\",\"x\"]",
+    "js": "{ x, x }",
+    "rust": "{x, x}"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"set\",\"x\"]",
+    "js": "{ x }",
+    "rust": "{x}"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"set\",1,2,\"x\"]",
+    "js": "{ 1, 2, x }",
+    "rust": "{1, 2, x}"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"set\",[\":\",\"x\",[\">\",\"x\",0]]]",
+    "js": "{ x : x > 0 }",
+    "rust": "{x : x > 0}"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"set\",[\"|\",\"x\",[\">\",\"x\",0]]]",
+    "js": "{ x | x > 0 }",
+    "rust": "{x | x > 0}"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"tuple\",\"x\",\"y\",\"z\"]",
+    "js": "( x, y, z )",
+    "rust": "(x, y, z)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"tuple\",1,2,3,[\"ldots\"]]",
+    "js": "( 1, 2, 3, ... )",
+    "rust": "(1, 2, 3, ...)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"tuple\",1,2]",
+    "js": "( 1, 2 )",
+    "rust": "(1, 2)"
+  },
+  {
+    "kind": "text",
+    "ast": "[\"vector\",1,2]",
+    "js": "( 1, 2 )",
+    "rust": "(1, 2)"
+  }
+]

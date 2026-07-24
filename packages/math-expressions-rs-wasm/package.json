@@ -1,0 +1,35 @@
+{
+  "name": "math-expressions-rs-wasm",
+  "version": "0.1.0",
+  "description": "TypeScript bindings that adapt the math-expressions Rust/WASM port for JS consumers (e.g. Doenet + jsxgraph): AST → math.js numeric evaluation.",
+  "license": "(GPL-3.0 OR Apache-2.0)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src-js"
+  ],
+  "scripts": {
+    "build:wasm": "bash build-wasm.sh web pkg",
+    "build": "tsc -p tsconfig.json",
+    "types:check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "mathjs": "^15.2.0"
+  },
+  "devDependencies": {
+    "mathjs": "^15.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.8"
+  }
+}

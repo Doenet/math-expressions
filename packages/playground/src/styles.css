@@ -1,0 +1,630 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --card2: #f1f3f7;
+  --code-bg: #eef1f6;
+  --border: #dfe3ea;
+  --fg: #1c2230;
+  --muted: #667085;
+  --accent: #2563eb;
+  --js: #b7791f;
+  --rust: #c2410c;
+  --ok: #15803d;
+  --diff: #dc2626;
+  --err: #dc2626;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px 36px;
+}
+
+/* Title and description on one line when there's room; wraps on narrow. */
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+header h1 {
+  margin: 0;
+  font-size: 19px;
+  white-space: nowrap;
+}
+.sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  flex: 1 1 300px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin-top: 10px;
+}
+
+h2 {
+  font-size: 15px;
+  margin: 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.eq-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.showcase {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 8px;
+  max-width: 260px;
+  color: var(--fg);
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.showcase:hover {
+  border-color: var(--accent);
+}
+.eq-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.eq-note code {
+  font-size: 11px;
+}
+
+/* Responsive side-by-side splits: stacked on narrow, two columns when wide.
+   `.io-split` pairs the equation input with its parsed preview; `.chain-split`
+   pairs the chain editor card with the operations palette card. */
+.io-split,
+.chain-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 900px) {
+  .io-split,
+  .chain-split {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Side-by-side: both cards match the taller (palette) column, and the chain
+     card gives all of its extra vertical space to the CodeMirror editor. */
+  .chain-split {
+    align-items: stretch;
+  }
+  .chain-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .chain-card .editor-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .chain-card .cm-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+/* Let the input stretch to the preview's height when side-by-side (grid's
+   default `stretch`); when stacked, each is alone in its row so it stays
+   natural. */
+.io-split .base-preview {
+  margin-top: 0;
+}
+.chain-split {
+  margin-top: 10px;
+}
+.chain-split > .card {
+  margin-top: 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+code.block {
+  display: block;
+  padding: 8px 10px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.muted {
+  color: var(--muted);
+}
+.err {
+  color: var(--err);
+}
+.num {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+/* ---------------- editor (CodeMirror) ---------------- */
+
+.editor-wrap {
+  position: relative;
+}
+.editor-wrap .cm-editor {
+  border-radius: 8px;
+}
+.editor-err {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+/* autocomplete popup + lint diagnostic, themed to match the app */
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(20, 25, 40, 0.16);
+  overflow: hidden;
+}
+.cm-tooltip-autocomplete > ul {
+  font-family: var(--mono);
+  font-size: 13px;
+  max-height: 260px;
+}
+.cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 9px;
+  text-align: left;
+}
+.cm-completionLabel {
+  text-align: left;
+}
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--card2);
+  color: var(--fg);
+}
+.cm-completionDetail {
+  margin-left: auto; /* push the category to the right; keep the name left */
+  padding-left: 12px;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cm-tooltip.cm-tooltip-lint {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+}
+.cm-diagnostic-error {
+  border-left-color: var(--err);
+}
+
+/* equation box (box 1) */
+.expr-input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 16px;
+  padding: 9px 12px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+}
+.expr-input:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+.radios {
+  display: flex;
+  gap: 16px;
+}
+.radios label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+}
+.base-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  min-height: 36px;
+  overflow-x: auto;
+}
+
+.examples {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+/* Examples dropdown, pinned below the chain editor. */
+.examples-row {
+  margin-top: 10px;
+}
+.chip-btn {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.chip-btn:hover {
+  border-color: var(--accent);
+}
+
+/* ---------------- palette ---------------- */
+
+.palette-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.palette-row:first-of-type {
+  border-top: none;
+}
+.palette-cat {
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: 4px;
+}
+.palette-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: 5px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.op-btn:hover {
+  border-color: var(--accent);
+}
+.op-btn.js-only {
+  border-left: 3px solid var(--js);
+}
+.op-btn.rust-only {
+  border-left: 3px solid var(--rust);
+}
+.only-tag {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* ---------------- results ---------------- */
+
+.results-list {
+  margin-top: 4px;
+}
+.stale {
+  opacity: 0.55;
+  transition: opacity 0.15s ease 0.1s;
+}
+
+.card.step {
+  padding: 9px 12px;
+}
+.step h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  text-transform: none;
+}
+.step-num {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.step-label {
+  font-size: 13.5px;
+}
+
+/* Collapsed (agreeing) step: math-only summary, expandable to the full compare. */
+.agree-collapse > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.agree-collapse > summary::-webkit-details-marker {
+  display: none;
+}
+.agree-collapse > summary > h3 {
+  flex: none;
+}
+.abbrev {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+.abbrev .katex-display {
+  margin: 0;
+  text-align: left;
+}
+.expand-hint {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.expand-hint::after {
+  content: " ▸";
+}
+.agree-collapse[open] > summary .expand-hint::after {
+  content: " ▾";
+}
+.agree-collapse[open] > summary {
+  margin-bottom: 12px;
+}
+.agree-collapse[open] .cols {
+  margin-top: 0;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 760px) {
+  .cols {
+    grid-template-columns: 1fr;
+  }
+}
+.col {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+.col h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.col:nth-child(1) {
+  border-top: 3px solid var(--js);
+}
+.col:nth-child(2) {
+  border-top: 3px solid var(--rust);
+}
+
+.cell {
+  min-height: 24px;
+}
+.call {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+
+.rendered {
+  min-height: 36px;
+  padding: 8px 10px;
+  background: var(--code-bg);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+}
+.disp .kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.disp .kv .k {
+  color: var(--muted);
+  font-size: 12px;
+}
+.disp .kv code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+}
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 6px;
+  margin: 0 4px 4px 0;
+}
+.bool {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.bool.true {
+  color: var(--ok);
+}
+.bool.false {
+  color: var(--diff);
+}
+.na {
+  font-style: italic;
+  border-bottom: 1px dotted var(--muted);
+  cursor: help;
+}
+
+details {
+  margin-top: 8px;
+}
+summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.tree-box {
+  margin-top: 8px;
+  max-height: 320px;
+  overflow: auto;
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* AST tree */
+.ast-tree,
+.ast-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 16px;
+}
+.ast-tree {
+  padding-left: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.ast-tree li {
+  position: relative;
+}
+.ast-tree ul {
+  border-left: 1px solid var(--border);
+}
+.node-op {
+  color: #be185d;
+}
+.node-apply {
+  color: #047857;
+}
+.node-seq {
+  color: #6d28d9;
+}
+.node-head {
+  color: var(--fg);
+}
+.leaf-num {
+  color: var(--accent);
+}
+.leaf-sym {
+  color: var(--js);
+}
+.leaf-bool {
+  color: var(--rust);
+}
+
+.badge {
+  font-size: 12px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge.ok {
+  background: rgba(21, 128, 61, 0.12);
+  color: var(--ok);
+}
+.badge.diff {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--diff);
+}
+
+footer {
+  margin-top: 16px;
+}
+footer p {
+  margin: 2px 0;
+}
+footer code {
+  background: transparent;
+  padding: 0;
+}
+.foot-note {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 6px;
+}
+
+.build-info {
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--muted);
+}
+.build-info th,
+.build-info td {
+  text-align: left;
+  padding: 3px 16px 3px 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.build-info th {
+  font-weight: 500;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.build-info td:nth-child(4),
+.build-info td:nth-child(5) {
+  font-variant-numeric: tabular-nums;
+}
+.build-info code {
+  color: var(--fg);
+}

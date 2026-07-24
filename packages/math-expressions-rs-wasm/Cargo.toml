@@ -1,0 +1,23 @@
+[package]
+name = "math-expressions-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0 OR Apache-2.0"
+description = "WebAssembly / JavaScript bindings for the math-expressions Rust core (wasm-bindgen surface)."
+
+# cdylib for the wasm-bindgen build. No rlib: this crate has no downstream Rust
+# consumers — it is the JS boundary and nothing else. Rust sources live in
+# `src-rust/` (peer of the `src-js/` TypeScript), so the lib path is explicit.
+[lib]
+crate-type = ["cdylib"]
+path = "src-rust/lib.rs"
+
+# The size-oriented release profile lives in the WORKSPACE ROOT Cargo.toml
+# (cargo ignores profile sections in member manifests).
+
+[dependencies]
+math-expressions = { path = "../math-expressions-rs" }
+wasm-bindgen = "=0.2.126"
+js-sys = "0.3"
+serde_json = "1"
+num-complex = "0.4"

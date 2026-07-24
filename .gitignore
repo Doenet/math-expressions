@@ -8,8 +8,18 @@
 *~
 npm-debug.log
 node_modules
-components
 bower_components
 
 .vscode
+.claude
 tmp/
+target
+Cargo.lock
+
+# playground (node_modules covered by the pattern above)
+/packages/playground/dist/
+/packages/playground/.wireit/
+
+# math-expressions-rs-wasm (wasm-bindgen output + tsc output)
+/packages/math-expressions-rs-wasm/pkg/
+/packages/math-expressions-rs-wasm/dist/

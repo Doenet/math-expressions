@@ -1,0 +1,6152 @@
+[
+ {
+  "input": "1+x+3",
+  "tree": [
+   "+",
+   1,
+   "x",
+   3
+  ]
+ },
+ {
+  "input": "1 + - x",
+  "tree": [
+   "+",
+   1,
+   [
+    "-",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "1 - x",
+  "tree": [
+   "+",
+   1,
+   [
+    "-",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "1 - - x",
+  "tree": [
+   "+",
+   1,
+   [
+    "-",
+    [
+     "-",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "1 + x/2",
+  "tree": [
+   "+",
+   1,
+   [
+    "/",
+    "x",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "1-x-3",
+  "tree": [
+   "+",
+   1,
+   [
+    "-",
+    "x"
+   ],
+   -3
+  ]
+ },
+ {
+  "input": "1.+x+3.0",
+  "tree": [
+   "+",
+   1,
+   "x",
+   3
+  ]
+ },
+ {
+  "input": "1-3",
+  "tree": [
+   "+",
+   1,
+   -3
+  ]
+ },
+ {
+  "input": "1-0",
+  "tree": [
+   "+",
+   1,
+   [
+    "-",
+    0
+   ]
+  ]
+ },
+ {
+  "input": "x^2",
+  "tree": [
+   "^",
+   "x",
+   2
+  ]
+ },
+ {
+  "input": "-x^2",
+  "tree": [
+   "-",
+   [
+    "^",
+    "x",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "-3^2",
+  "tree": [
+   "-",
+   [
+    "^",
+    3,
+    2
+   ]
+  ]
+ },
+ {
+  "input": "x^47",
+  "tree": [
+   "^",
+   "x",
+   47
+  ]
+ },
+ {
+  "input": "x^ab",
+  "tree": [
+   "*",
+   [
+    "^",
+    "x",
+    "a"
+   ],
+   "b"
+  ]
+ },
+ {
+  "input": "x^(a!)",
+  "tree": [
+   "^",
+   "x",
+   [
+    "apply",
+    "factorial",
+    "a"
+   ]
+  ]
+ },
+ {
+  "input": "x^a!",
+  "tree": [
+   "apply",
+   "factorial",
+   [
+    "^",
+    "x",
+    "a"
+   ]
+  ]
+ },
+ {
+  "input": "log x",
+  "tree": [
+   "apply",
+   "log",
+   "x"
+  ]
+ },
+ {
+  "input": "ln x",
+  "tree": [
+   "apply",
+   "ln",
+   "x"
+  ]
+ },
+ {
+  "input": "log_10 x",
+  "tree": [
+   "apply",
+   "log10",
+   "x"
+  ]
+ },
+ {
+  "input": "x*y*z",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ {
+  "input": "xyz",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ {
+  "input": "xyz2",
+  "tree": "xyz2"
+ },
+ {
+  "input": "in",
+  "tree": [
+   "*",
+   "i",
+   "n"
+  ]
+ },
+ {
+  "input": "ni",
+  "tree": [
+   "*",
+   "n",
+   "i"
+  ]
+ },
+ {
+  "input": "x*y*z*w",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   "z",
+   "w"
+  ]
+ },
+ {
+  "input": "xyzw",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   "z",
+   "w"
+  ]
+ },
+ {
+  "input": "(x*y)*(z*w)",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   "z",
+   "w"
+  ]
+ },
+ {
+  "input": "c*(a+b)",
+  "tree": [
+   "*",
+   "c",
+   [
+    "+",
+    "a",
+    "b"
+   ]
+  ]
+ },
+ {
+  "input": "(a+b)*c",
+  "tree": [
+   "*",
+   [
+    "+",
+    "a",
+    "b"
+   ],
+   "c"
+  ]
+ },
+ {
+  "input": "|x|",
+  "tree": [
+   "apply",
+   "abs",
+   "x"
+  ]
+ },
+ {
+  "input": "a!",
+  "tree": [
+   "apply",
+   "factorial",
+   "a"
+  ]
+ },
+ {
+  "input": "theta",
+  "tree": "theta"
+ },
+ {
+  "input": "cos(theta)",
+  "tree": [
+   "apply",
+   "cos",
+   "theta"
+  ]
+ },
+ {
+  "input": "x!",
+  "tree": [
+   "apply",
+   "factorial",
+   "x"
+  ]
+ },
+ {
+  "input": "sqrt(x)",
+  "tree": [
+   "apply",
+   "sqrt",
+   "x"
+  ]
+ },
+ {
+  "input": "cbrt(x)",
+  "tree": [
+   "apply",
+   "cbrt",
+   "x"
+  ]
+ },
+ {
+  "input": "nthroot(x, n)",
+  "tree": [
+   "apply",
+   "nthroot",
+   [
+    "tuple",
+    "x",
+    "n"
+   ]
+  ]
+ },
+ {
+  "input": "|sin(|x|)|",
+  "tree": [
+   "apply",
+   "abs",
+   [
+    "apply",
+    "sin",
+    [
+     "apply",
+     "abs",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "sin(θ)",
+  "tree": [
+   "apply",
+   "sin",
+   "theta"
+  ]
+ },
+ {
+  "input": "|x+3=2|",
+  "tree": [
+   "apply",
+   "abs",
+   [
+    "=",
+    [
+     "+",
+     "x",
+     3
+    ],
+    2
+   ]
+  ]
+ },
+ {
+  "input": "x_y_z",
+  "tree": [
+   "_",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "x_(y_z)",
+  "tree": [
+   "_",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "(x_y)_z",
+  "tree": [
+   "_",
+   [
+    "_",
+    "x",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "x^y^z",
+  "tree": [
+   "^",
+   [
+    "^",
+    "x",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "x^(y^z)",
+  "tree": [
+   "^",
+   "x",
+   [
+    "^",
+    "y",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "(x^y)^z",
+  "tree": [
+   "^",
+   [
+    "^",
+    "x",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "x^y_z",
+  "tree": [
+   "^",
+   "x",
+   [
+    "_",
+    "y",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "x_y^z",
+  "tree": [
+   "^",
+   [
+    "_",
+    "x",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "f_g_z",
+  "tree": [
+   "_",
+   "f",
+   [
+    "_",
+    "g",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "f_(g_z)",
+  "tree": [
+   "_",
+   "f",
+   [
+    "_",
+    "g",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "(f_g)_z",
+  "tree": [
+   "_",
+   [
+    "_",
+    "f",
+    "g"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "f^g^z",
+  "tree": [
+   "^",
+   [
+    "^",
+    "f",
+    "g"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "f^(g^z)",
+  "tree": [
+   "^",
+   "f",
+   [
+    "^",
+    "g",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "(f^g)^z",
+  "tree": [
+   "^",
+   [
+    "^",
+    "f",
+    "g"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "f^g_z",
+  "tree": [
+   "^",
+   "f",
+   [
+    "_",
+    "g",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "f_g^z",
+  "tree": [
+   "^",
+   [
+    "_",
+    "f",
+    "g"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "xyz!",
+  "tree": [
+   "*",
+   "x",
+   "y",
+   [
+    "apply",
+    "factorial",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "xy!z",
+  "tree": [
+   "*",
+   "x",
+   [
+    "apply",
+    "factorial",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "x",
+  "tree": "x"
+ },
+ {
+  "input": "f",
+  "tree": "f"
+ },
+ {
+  "input": "fg",
+  "tree": [
+   "*",
+   "f",
+   "g"
+  ]
+ },
+ {
+  "input": "f+g",
+  "tree": [
+   "+",
+   "f",
+   "g"
+  ]
+ },
+ {
+  "input": "f(x)",
+  "tree": [
+   "apply",
+   "f",
+   "x"
+  ]
+ },
+ {
+  "input": "f(x,y,z)",
+  "tree": [
+   "apply",
+   "f",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "fg(x)",
+  "tree": [
+   "*",
+   "f",
+   [
+    "apply",
+    "g",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "fp(x)",
+  "tree": [
+   "*",
+   "f",
+   "p",
+   "x"
+  ]
+ },
+ {
+  "input": "fx",
+  "tree": [
+   "*",
+   "f",
+   "x"
+  ]
+ },
+ {
+  "input": "f'",
+  "tree": [
+   "prime",
+   "f"
+  ]
+ },
+ {
+  "input": "f′",
+  "tree": [
+   "prime",
+   "f"
+  ]
+ },
+ {
+  "input": "fg'",
+  "tree": [
+   "*",
+   "f",
+   [
+    "prime",
+    "g"
+   ]
+  ]
+ },
+ {
+  "input": "f'g",
+  "tree": [
+   "*",
+   [
+    "prime",
+    "f"
+   ],
+   "g"
+  ]
+ },
+ {
+  "input": "f'g''",
+  "tree": [
+   "*",
+   [
+    "prime",
+    "f"
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     "g"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x'",
+  "tree": [
+   "prime",
+   "x"
+  ]
+ },
+ {
+  "input": "f'(x)",
+  "tree": [
+   "apply",
+   [
+    "prime",
+    "f"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f(x)'",
+  "tree": [
+   "prime",
+   [
+    "apply",
+    "f",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "sin(x)'",
+  "tree": [
+   "prime",
+   [
+    "apply",
+    "sin",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "sin'(x)",
+  "tree": [
+   "apply",
+   [
+    "prime",
+    "sin"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f''(x)",
+  "tree": [
+   "apply",
+   [
+    "prime",
+    [
+     "prime",
+     "f"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "sin(x)''",
+  "tree": [
+   "prime",
+   [
+    "prime",
+    [
+     "apply",
+     "sin",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "f(x)^t_y",
+  "tree": [
+   "^",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   [
+    "_",
+    "t",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "f_t(x)",
+  "tree": [
+   "apply",
+   [
+    "_",
+    "f",
+    "t"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f(x)_t",
+  "tree": [
+   "*",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   [
+    "_",
+    "＿",
+    "t"
+   ]
+  ]
+ },
+ {
+  "input": "f^2(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    "f",
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f(x)^2",
+  "tree": [
+   "^",
+   [
+    "apply",
+    "f",
+    "x"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f'^a(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "prime",
+     "f"
+    ],
+    "a"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f^(a')(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    "f",
+    [
+     "prime",
+     "a"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f^a'(x)",
+  "tree": [
+   "*",
+   [
+    "prime",
+    [
+     "^",
+     "f",
+     "a"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_a^(b')(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "_",
+     "f",
+     "a"
+    ],
+    [
+     "prime",
+     "b"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_a^b'(x)",
+  "tree": [
+   "*",
+   [
+    "prime",
+    [
+     "^",
+     [
+      "_",
+      "f",
+      "a"
+     ],
+     "b"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_a'^b(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "prime",
+     [
+      "_",
+      "f",
+      "a"
+     ]
+    ],
+    "b"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_(a')^b(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "_",
+     "f",
+     [
+      "prime",
+      "a"
+     ]
+    ],
+    "b"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "sin x",
+  "tree": [
+   "apply",
+   "sin",
+   "x"
+  ]
+ },
+ {
+  "input": "f x",
+  "tree": [
+   "*",
+   "f",
+   "x"
+  ]
+ },
+ {
+  "input": "sin^xyz",
+  "tree": [
+   "*",
+   [
+    "apply",
+    [
+     "^",
+     "sin",
+     "x"
+    ],
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "sin xy",
+  "tree": [
+   "*",
+   [
+    "apply",
+    "sin",
+    "x"
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "sin^2(x)",
+  "tree": [
+   "apply",
+   [
+    "^",
+    "sin",
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "x^2!",
+  "tree": [
+   "apply",
+   "factorial",
+   [
+    "^",
+    "x",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "x^2!!",
+  "tree": [
+   "apply",
+   "factorial",
+   [
+    "apply",
+    "factorial",
+    [
+     "^",
+     "x",
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x_t^2",
+  "tree": [
+   "^",
+   [
+    "_",
+    "x",
+    "t"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "x_(f^2)",
+  "tree": [
+   "_",
+   "x",
+   [
+    "^",
+    "f",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "x_f^2",
+  "tree": [
+   "^",
+   [
+    "_",
+    "x",
+    "f"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "x_t'",
+  "tree": [
+   "prime",
+   [
+    "_",
+    "x",
+    "t"
+   ]
+  ]
+ },
+ {
+  "input": "x_(f')",
+  "tree": [
+   "_",
+   "x",
+   [
+    "prime",
+    "f"
+   ]
+  ]
+ },
+ {
+  "input": "x_f'",
+  "tree": [
+   "prime",
+   [
+    "_",
+    "x",
+    "f"
+   ]
+  ]
+ },
+ {
+  "input": "x^^",
+  "tree": [
+   "^",
+   [
+    "^",
+    "x",
+    "＿"
+   ],
+   "＿"
+  ]
+ },
+ {
+  "input": "f^^",
+  "tree": [
+   "^",
+   [
+    "^",
+    "f",
+    "＿"
+   ],
+   "＿"
+  ]
+ },
+ {
+  "input": "sin^^",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "^",
+     "sin",
+     "＿"
+    ],
+    "＿"
+   ],
+   "＿"
+  ]
+ },
+ {
+  "input": "y^f(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    "y",
+    "f"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(f(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    "f",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^f_2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    "y",
+    [
+     "_",
+     "f",
+     2
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(f_2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "_",
+     "f",
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^f^2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    [
+     "^",
+     "y",
+     "f"
+    ],
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(f^2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     "f",
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^f_1^2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    [
+     "^",
+     "y",
+     [
+      "_",
+      "f",
+      1
+     ]
+    ],
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(f_1^2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     [
+      "_",
+      "f",
+      1
+     ],
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^f",
+  "tree": [
+   "^",
+   "y",
+   "f"
+  ]
+ },
+ {
+  "input": "y^(f)",
+  "tree": [
+   "^",
+   "y",
+   "f"
+  ]
+ },
+ {
+  "input": "y^f_2",
+  "tree": [
+   "^",
+   "y",
+   [
+    "_",
+    "f",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "y^(f_2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "_",
+    "f",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "y^f^2",
+  "tree": [
+   "^",
+   [
+    "^",
+    "y",
+    "f"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "y^(f^2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "^",
+    "f",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "y^f_1^2",
+  "tree": [
+   "^",
+   [
+    "^",
+    "y",
+    [
+     "_",
+     "f",
+     1
+    ]
+   ],
+   2
+  ]
+ },
+ {
+  "input": "y^(f_1^2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "^",
+    [
+     "_",
+     "f",
+     1
+    ],
+    2
+   ]
+  ]
+ },
+ {
+  "input": "y^sin(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    "y",
+    [
+     "apply",
+     "sin",
+     "＿"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(sin(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    "sin",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin_2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    "y",
+    [
+     "apply",
+     [
+      "_",
+      "sin",
+      2
+     ],
+     "＿"
+    ]
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(sin_2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "_",
+     "sin",
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin^2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    [
+     "^",
+     "y",
+     [
+      "apply",
+      "sin",
+      "＿"
+     ]
+    ],
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(sin^2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     "sin",
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin_1^2(x)",
+  "tree": [
+   "*",
+   [
+    "^",
+    [
+     "^",
+     "y",
+     [
+      "apply",
+      [
+       "_",
+       "sin",
+       1
+      ],
+      "＿"
+     ]
+    ],
+    2
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "y^(sin_1^2(x))",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     [
+      "_",
+      "sin",
+      1
+     ],
+     2
+    ],
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    "sin",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "y^(sin)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    "sin",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin_2",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "_",
+     "sin",
+     2
+    ],
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "y^(sin_2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "_",
+     "sin",
+     2
+    ],
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin^2",
+  "tree": [
+   "^",
+   [
+    "^",
+    "y",
+    [
+     "apply",
+     "sin",
+     "＿"
+    ]
+   ],
+   2
+  ]
+ },
+ {
+  "input": "y^(sin^2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     "sin",
+     2
+    ],
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "y^sin_1^2",
+  "tree": [
+   "^",
+   [
+    "^",
+    "y",
+    [
+     "apply",
+     [
+      "_",
+      "sin",
+      1
+     ],
+     "＿"
+    ]
+   ],
+   2
+  ]
+ },
+ {
+  "input": "y^(sin_1^2)",
+  "tree": [
+   "^",
+   "y",
+   [
+    "apply",
+    [
+     "^",
+     [
+      "_",
+      "sin",
+      1
+     ],
+     2
+    ],
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "f_y(x)_z",
+  "tree": [
+   "*",
+   [
+    "apply",
+    [
+     "_",
+     "f",
+     "y"
+    ],
+    "x"
+   ],
+   [
+    "_",
+    "＿",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "f(x)'^2",
+  "tree": [
+   "^",
+   [
+    "prime",
+    [
+     "apply",
+     "f",
+     "x"
+    ]
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f(x)'^2''",
+  "tree": [
+   "prime",
+   [
+    "prime",
+    [
+     "^",
+     [
+      "prime",
+      [
+       "apply",
+       "f",
+       "x"
+      ]
+     ],
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "f(x)'^2''^a",
+  "tree": [
+   "^",
+   [
+    "prime",
+    [
+     "prime",
+     [
+      "^",
+      [
+       "prime",
+       [
+        "apply",
+        "f",
+        "x"
+       ]
+      ],
+      2
+     ]
+    ]
+   ],
+   "a"
+  ]
+ },
+ {
+  "input": "x'^2",
+  "tree": [
+   "^",
+   [
+    "prime",
+    "x"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "x'^2''",
+  "tree": [
+   "prime",
+   [
+    "prime",
+    [
+     "^",
+     [
+      "prime",
+      "x"
+     ],
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x'^2''^a",
+  "tree": [
+   "^",
+   [
+    "prime",
+    [
+     "prime",
+     [
+      "^",
+      [
+       "prime",
+       "x"
+      ],
+      2
+     ]
+    ]
+   ],
+   "a"
+  ]
+ },
+ {
+  "input": "(x,y,z)",
+  "tree": [
+   "tuple",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ {
+  "input": "⟨x,y,z⟩",
+  "tree": [
+   "altvector",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ {
+  "input": "〈x,y,z〉",
+  "tree": [
+   "altvector",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ {
+  "input": "(x,y)-[x,y]",
+  "tree": [
+   "+",
+   [
+    "tuple",
+    "x",
+    "y"
+   ],
+   [
+    "-",
+    [
+     "array",
+     "x",
+     "y"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "2[z-(x+1)]",
+  "tree": [
+   "*",
+   2,
+   [
+    "+",
+    "z",
+    [
+     "-",
+     [
+      "+",
+      "x",
+      1
+     ]
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "{1,2,x}",
+  "tree": [
+   "set",
+   1,
+   2,
+   "x"
+  ]
+ },
+ {
+  "input": "{x, x}",
+  "tree": [
+   "set",
+   "x",
+   "x"
+  ]
+ },
+ {
+  "input": "{x}",
+  "tree": [
+   "set",
+   "x"
+  ]
+ },
+ {
+  "input": "{-x}",
+  "tree": [
+   "set",
+   [
+    "-",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "(1,2]",
+  "tree": [
+   "interval",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "[1,2)",
+  "tree": [
+   "interval",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   [
+    "tuple",
+    true,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "[1,2]",
+  "tree": [
+   "array",
+   1,
+   2
+  ]
+ },
+ {
+  "input": "(1,2)",
+  "tree": [
+   "tuple",
+   1,
+   2
+  ]
+ },
+ {
+  "input": "1,2,3",
+  "tree": [
+   "list",
+   1,
+   2,
+   3
+  ]
+ },
+ {
+  "input": "x=a",
+  "tree": [
+   "=",
+   "x",
+   "a"
+  ]
+ },
+ {
+  "input": "x=y=1",
+  "tree": [
+   "=",
+   "x",
+   "y",
+   1
+  ]
+ },
+ {
+  "input": "x=(y=1)",
+  "tree": [
+   "=",
+   "x",
+   [
+    "=",
+    "y",
+    1
+   ]
+  ]
+ },
+ {
+  "input": "(x=y)=1",
+  "tree": [
+   "=",
+   [
+    "=",
+    "x",
+    "y"
+   ],
+   1
+  ]
+ },
+ {
+  "input": "7 != 2",
+  "tree": [
+   "ne",
+   7,
+   2
+  ]
+ },
+ {
+  "input": "7 ≠ 2",
+  "tree": [
+   "ne",
+   7,
+   2
+  ]
+ },
+ {
+  "input": "(not x)=y",
+  "tree": [
+   "=",
+   [
+    "not",
+    "x"
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "(!x)=y",
+  "tree": [
+   "=",
+   [
+    "not",
+    "x"
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "not x=y",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "!x=y",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "x=not y",
+  "tree": [
+   "=",
+   "x",
+   [
+    "not",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "x=!y",
+  "tree": [
+   "=",
+   "x",
+   [
+    "not",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "!(x=y)",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "not(x=y)",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "(!x)=1",
+  "tree": [
+   "=",
+   [
+    "not",
+    "x"
+   ],
+   1
+  ]
+ },
+ {
+  "input": "!x=1",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    1
+   ]
+  ]
+ },
+ {
+  "input": "!(x=1)",
+  "tree": [
+   "not",
+   [
+    "=",
+    "x",
+    1
+   ]
+  ]
+ },
+ {
+  "input": "!(x=y) or z != w",
+  "tree": [
+   "or",
+   [
+    "not",
+    [
+     "=",
+     "x",
+     "y"
+    ]
+   ],
+   [
+    "ne",
+    "z",
+    "w"
+   ]
+  ]
+ },
+ {
+  "input": "x>y",
+  "tree": [
+   ">",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x>=y",
+  "tree": [
+   "ge",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x≥y",
+  "tree": [
+   "ge",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x>y>z",
+  "tree": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "x>y>=z",
+  "tree": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "x>=y>z",
+  "tree": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "x>=y>=z",
+  "tree": [
+   "gts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "x<y",
+  "tree": [
+   "<",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x<=y",
+  "tree": [
+   "le",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x≤y",
+  "tree": [
+   "le",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x<y<z",
+  "tree": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "x<y<=z",
+  "tree": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    true,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "x<=y<z",
+  "tree": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "x<=y<=z",
+  "tree": [
+   "lts",
+   [
+    "tuple",
+    "x",
+    "y",
+    "z"
+   ],
+   [
+    "tuple",
+    false,
+    false
+   ]
+  ]
+ },
+ {
+  "input": "x<y>z",
+  "tree": [
+   ">",
+   [
+    "<",
+    "x",
+    "y"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "A subset B",
+  "tree": [
+   "subset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊂ B",
+  "tree": [
+   "subset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A subseteq B",
+  "tree": [
+   "subseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊆ B",
+  "tree": [
+   "subseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A notsubset B",
+  "tree": [
+   "notsubset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊄ B",
+  "tree": [
+   "notsubset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A notsubseteq B",
+  "tree": [
+   "notsubseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊈ B",
+  "tree": [
+   "notsubseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A superset B",
+  "tree": [
+   "superset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊃ B",
+  "tree": [
+   "superset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A superseteq B",
+  "tree": [
+   "superseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊇ B",
+  "tree": [
+   "superseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A notsuperset B",
+  "tree": [
+   "notsuperset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊅ B",
+  "tree": [
+   "notsuperset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A notsuperseteq B",
+  "tree": [
+   "notsuperseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⊉ B",
+  "tree": [
+   "notsuperseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "forall x",
+  "tree": [
+   "forall",
+   "x"
+  ]
+ },
+ {
+  "input": "∀x",
+  "tree": [
+   "forall",
+   "x"
+  ]
+ },
+ {
+  "input": "forall x elementof A",
+  "tree": [
+   "forall",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ]
+ },
+ {
+  "input": "∀x∈A",
+  "tree": [
+   "forall",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ]
+ },
+ {
+  "input": "exists x",
+  "tree": [
+   "exists",
+   "x"
+  ]
+ },
+ {
+  "input": "∃x",
+  "tree": [
+   "exists",
+   "x"
+  ]
+ },
+ {
+  "input": "exists x elementof A",
+  "tree": [
+   "exists",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ]
+ },
+ {
+  "input": "∃x∈A",
+  "tree": [
+   "exists",
+   [
+    "in",
+    "x",
+    "A"
+   ]
+  ]
+ },
+ {
+  "input": "x elementof A",
+  "tree": [
+   "in",
+   "x",
+   "A"
+  ]
+ },
+ {
+  "input": "x ∈ A",
+  "tree": [
+   "in",
+   "x",
+   "A"
+  ]
+ },
+ {
+  "input": "x notelementof A",
+  "tree": [
+   "notin",
+   "x",
+   "A"
+  ]
+ },
+ {
+  "input": "x ∉ A",
+  "tree": [
+   "notin",
+   "x",
+   "A"
+  ]
+ },
+ {
+  "input": "A containselement x",
+  "tree": [
+   "ni",
+   "A",
+   "x"
+  ]
+ },
+ {
+  "input": "A ∋ x",
+  "tree": [
+   "ni",
+   "A",
+   "x"
+  ]
+ },
+ {
+  "input": "A notcontainselement x",
+  "tree": [
+   "notni",
+   "A",
+   "x"
+  ]
+ },
+ {
+  "input": "A ∌ x",
+  "tree": [
+   "notni",
+   "A",
+   "x"
+  ]
+ },
+ {
+  "input": "A union B",
+  "tree": [
+   "union",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ∪ B",
+  "tree": [
+   "union",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A intersect B",
+  "tree": [
+   "intersect",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ∩ B",
+  "tree": [
+   "intersect",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A and B",
+  "tree": [
+   "and",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A & B",
+  "tree": [
+   "and",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A && B",
+  "tree": [
+   "and",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ∧ B",
+  "tree": [
+   "and",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A or B",
+  "tree": [
+   "or",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ∨ B",
+  "tree": [
+   "or",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ∧ B ∧ C",
+  "tree": [
+   "and",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "A ∨ B ∨ C",
+  "tree": [
+   "or",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "A and B or C",
+  "tree": [
+   "or",
+   [
+    "and",
+    "A",
+    "B"
+   ],
+   "C"
+  ]
+ },
+ {
+  "input": "A or B and C",
+  "tree": [
+   "or",
+   "A",
+   [
+    "and",
+    "B",
+    "C"
+   ]
+  ]
+ },
+ {
+  "input": "A implies B",
+  "tree": [
+   "implies",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⇒ B",
+  "tree": [
+   "implies",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟹ B",
+  "tree": [
+   "implies",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A impliedby B",
+  "tree": [
+   "impliedby",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⇐ B",
+  "tree": [
+   "impliedby",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟸ B",
+  "tree": [
+   "impliedby",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A iff B",
+  "tree": [
+   "iff",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⇔ B",
+  "tree": [
+   "iff",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟺ B",
+  "tree": [
+   "iff",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A and not B ⟹ not C or D",
+  "tree": [
+   "implies",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "A and not B ⟸ not C or D",
+  "tree": [
+   "impliedby",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "A and not B ⟺ not C or D",
+  "tree": [
+   "iff",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "A rightarrow B",
+  "tree": [
+   "rightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A → B",
+  "tree": [
+   "rightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟶ B",
+  "tree": [
+   "rightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A leftarrow B",
+  "tree": [
+   "leftarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ← B",
+  "tree": [
+   "leftarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟵ B",
+  "tree": [
+   "leftarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A leftrightarrow B",
+  "tree": [
+   "leftrightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ↔ B",
+  "tree": [
+   "leftrightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A ⟷ B",
+  "tree": [
+   "leftrightarrow",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A and not B → not C or D",
+  "tree": [
+   "rightarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "A and not B ← not C or D",
+  "tree": [
+   "leftarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "A and not B ↔ not C or D",
+  "tree": [
+   "leftrightarrow",
+   [
+    "and",
+    "A",
+    [
+     "not",
+     "B"
+    ]
+   ],
+   [
+    "or",
+    [
+     "not",
+     "C"
+    ],
+    "D"
+   ]
+  ]
+ },
+ {
+  "input": "x elementof emptyset",
+  "tree": [
+   "in",
+   "x",
+   "emptyset"
+  ]
+ },
+ {
+  "input": "x ∈ ∅",
+  "tree": [
+   "in",
+   "x",
+   "emptyset"
+  ]
+ },
+ {
+  "input": "1.2E3",
+  "tree": 1200
+ },
+ {
+  "input": "1.2E+3  ",
+  "tree": 1200
+ },
+ {
+  "input": "3.1E-3 ",
+  "tree": 0.0031
+ },
+ {
+  "input": "3.1E- 3 ",
+  "tree": [
+   "+",
+   [
+    "*",
+    3.1,
+    "E"
+   ],
+   -3
+  ]
+ },
+ {
+  "input": "3.1E -3 ",
+  "tree": [
+   "+",
+   [
+    "*",
+    3.1,
+    "E"
+   ],
+   -3
+  ]
+ },
+ {
+  "input": "3.1E - 3 ",
+  "tree": [
+   "+",
+   [
+    "*",
+    3.1,
+    "E"
+   ],
+   -3
+  ]
+ },
+ {
+  "input": "3.1E-3 + 2 ",
+  "tree": [
+   "+",
+   [
+    "*",
+    3.1,
+    "E"
+   ],
+   -3,
+   2
+  ]
+ },
+ {
+  "input": "(3.1E-3) + 2",
+  "tree": [
+   "+",
+   0.0031,
+   2
+  ]
+ },
+ {
+  "input": "sin((3.1E-3)x)",
+  "tree": [
+   "apply",
+   "sin",
+   [
+    "*",
+    0.0031,
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "sin( 3.1E-3 x)",
+  "tree": [
+   "apply",
+   "sin",
+   [
+    "+",
+    [
+     "*",
+     3.1,
+     "E"
+    ],
+    [
+     "-",
+     [
+      "*",
+      3,
+      "x"
+     ]
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "|3.1E-3|",
+  "tree": [
+   "apply",
+   "abs",
+   0.0031
+  ]
+ },
+ {
+  "input": "(3.1E-3, 1E2)",
+  "tree": [
+   "tuple",
+   0.0031,
+   100
+  ]
+ },
+ {
+  "input": "(3.1E-3, 1E2]",
+  "tree": [
+   "interval",
+   [
+    "tuple",
+    0.0031,
+    100
+   ],
+   [
+    "tuple",
+    false,
+    true
+   ]
+  ]
+ },
+ {
+  "input": "{ 3.1E-3, 1E2 }",
+  "tree": [
+   "set",
+   0.0031,
+   100
+  ]
+ },
+ {
+  "input": "1.2e-3",
+  "tree": [
+   "+",
+   [
+    "*",
+    1.2,
+    "e"
+   ],
+   -3
+  ]
+ },
+ {
+  "input": "+2",
+  "tree": [
+   "+",
+   2
+  ]
+ },
+ {
+  "input": "oo",
+  "tree": {
+   "$": "Inf"
+  }
+ },
+ {
+  "input": "+oo",
+  "tree": [
+   "+",
+   {
+    "$": "Inf"
+   }
+  ]
+ },
+ {
+  "input": "dx/dt=q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "dx / dt = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d x/dt = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "dx/d t = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "(dx)/(dt)=q",
+  "tree": [
+   "=",
+   [
+    "/",
+    [
+     "*",
+     "d",
+     "x"
+    ],
+    [
+     "*",
+     "d",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "dx_2/dt = q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      "d",
+      [
+       "_",
+       "x",
+       2
+      ]
+     ],
+     "d"
+    ],
+    "t"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d hello1 /d bye2 = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    "hello1",
+    [
+     "tuple",
+     "bye2"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2x/dt^2=q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     2
+    ],
+    [
+     "tuple",
+     [
+      "tuple",
+      "t",
+      2
+     ]
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d ^ 2 x / d t ^ 2 = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     2
+    ],
+    [
+     "tuple",
+     [
+      "tuple",
+      "t",
+      2
+     ]
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2x/dt^3 = q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      [
+       "^",
+       "d",
+       2
+      ],
+      "x"
+     ],
+     "d"
+    ],
+    [
+     "^",
+     "t",
+     3
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2x/dsdt=q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     2
+    ],
+    [
+     "tuple",
+     "s",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2x/dsdta=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      [
+       "^",
+       "d",
+       2
+      ],
+      "x"
+     ],
+     "d"
+    ],
+    "s",
+    "d",
+    "t",
+    "a"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2x/ds dt=q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     2
+    ],
+    [
+     "tuple",
+     "s",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d ^ 2 x / d s d t =q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     2
+    ],
+    [
+     "tuple",
+     "s",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^2 hello1 /d bye2^2 = q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "hello1",
+     2
+    ],
+    [
+     "tuple",
+     [
+      "tuple",
+      "bye2",
+      2
+     ]
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3x/dsdt^2 a=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "derivative_leibniz",
+     [
+      "tuple",
+      "x",
+      3
+     ],
+     [
+      "tuple",
+      "s",
+      [
+       "tuple",
+       "t",
+       2
+      ]
+     ]
+    ],
+    "a"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3x/dsdt^2a=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      [
+       "^",
+       "d",
+       3
+      ],
+      "x"
+     ],
+     "d"
+    ],
+    "s",
+    "d",
+    [
+     "^",
+     "t",
+     2
+    ],
+    "a"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3x/dsdt=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      [
+       "^",
+       "d",
+       3
+      ],
+      "x"
+     ],
+     "d"
+    ],
+    "s",
+    "d",
+    "t"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3x/ds^2dt=q",
+  "tree": [
+   "=",
+   [
+    "derivative_leibniz",
+    [
+     "tuple",
+     "x",
+     3
+    ],
+    [
+     "tuple",
+     [
+      "tuple",
+      "s",
+      2
+     ],
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3κ/dξdβ^2 ♡=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "derivative_leibniz",
+     [
+      "tuple",
+      "kappa",
+      3
+     ],
+     [
+      "tuple",
+      "xi",
+      [
+       "tuple",
+       "beta",
+       2
+      ]
+     ]
+    ],
+    "heart"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d^3κ/dξdβ^2♡=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      [
+       "^",
+       "d",
+       3
+      ],
+      "kappa"
+     ],
+     "d"
+    ],
+    "xi",
+    "d",
+    [
+     "^",
+     "beta",
+     2
+    ],
+    "heart"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "dx/d2 = q",
+  "tree": [
+   "=",
+   [
+    "/",
+    [
+     "*",
+     "d",
+     "x"
+    ],
+    "d2"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "d2/dt = q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     "d2",
+     "d"
+    ],
+    "t"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "dxy/dt = q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "/",
+     [
+      "*",
+      "d",
+      "x",
+      "y"
+     ],
+     "d"
+    ],
+    "t"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "∂x/∂t=q",
+  "tree": [
+   "=",
+   [
+    "partial_derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "∂x / ∂t = q",
+  "tree": [
+   "=",
+   [
+    "partial_derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "∂ x/∂t = q",
+  "tree": [
+   "=",
+   [
+    "partial_derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "∂x/∂ t = q",
+  "tree": [
+   "=",
+   [
+    "partial_derivative_leibniz",
+    "x",
+    [
+     "tuple",
+     "t"
+    ]
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "∂^3κ/∂ξ∂β^2 ♡=q",
+  "tree": [
+   "=",
+   [
+    "*",
+    [
+     "partial_derivative_leibniz",
+     [
+      "tuple",
+      "kappa",
+      3
+     ],
+     [
+      "tuple",
+      "xi",
+      [
+       "tuple",
+       "beta",
+       2
+      ]
+     ]
+    ],
+    "heart"
+   ],
+   "q"
+  ]
+ },
+ {
+  "input": "3|x|",
+  "tree": [
+   "*",
+   3,
+   [
+    "apply",
+    "abs",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "|a|b|c|",
+  "tree": [
+   "*",
+   [
+    "apply",
+    "abs",
+    "a"
+   ],
+   "b",
+   [
+    "apply",
+    "abs",
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "|a|*b*|c|",
+  "tree": [
+   "*",
+   [
+    "apply",
+    "abs",
+    "a"
+   ],
+   "b",
+   [
+    "apply",
+    "abs",
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "|a*|b|*c|",
+  "tree": [
+   "apply",
+   "abs",
+   [
+    "*",
+    "a",
+    [
+     "apply",
+     "abs",
+     "b"
+    ],
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "|a(q|b|r)c|",
+  "tree": [
+   "apply",
+   "abs",
+   [
+    "*",
+    "a",
+    "q",
+    [
+     "apply",
+     "abs",
+     "b"
+    ],
+    "r",
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "r=1|x",
+  "tree": [
+   "|",
+   [
+    "=",
+    "r",
+    1
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "{ x | x > 0 }",
+  "tree": [
+   "set",
+   [
+    "|",
+    "x",
+    [
+     ">",
+     "x",
+     0
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "r=1:x",
+  "tree": [
+   ":",
+   [
+    "=",
+    "r",
+    1
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "{ x : x > 0 }",
+  "tree": [
+   "set",
+   [
+    ":",
+    "x",
+    [
+     ">",
+     "x",
+     0
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "...",
+  "tree": [
+   "ldots"
+  ]
+ },
+ {
+  "input": "1,2,3,...",
+  "tree": [
+   "list",
+   1,
+   2,
+   3,
+   [
+    "ldots"
+   ]
+  ]
+ },
+ {
+  "input": "(1,2,3,...)",
+  "tree": [
+   "tuple",
+   1,
+   2,
+   3,
+   [
+    "ldots"
+   ]
+  ]
+ },
+ {
+  "input": "a-2b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    [
+     "*",
+     2,
+     "b"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "a+-2b",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    [
+     "*",
+     2,
+     "b"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "a+(-2b)",
+  "tree": [
+   "+",
+   "a",
+   [
+    "-",
+    [
+     "*",
+     2,
+     "b"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "1++1",
+  "tree": [
+   "+",
+   1,
+   [
+    "+",
+    1
+   ]
+  ]
+ },
+ {
+  "input": "1(+1)",
+  "tree": [
+   "*",
+   1,
+   [
+    "+",
+    1
+   ]
+  ]
+ },
+ {
+  "input": "1(++1)",
+  "tree": [
+   "*",
+   1,
+   [
+    "+",
+    [
+     "+",
+     1
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x+++y",
+  "tree": [
+   "+",
+   "x",
+   [
+    "+",
+    [
+     "+",
+     "y"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x-y-",
+  "tree": [
+   "+",
+   "x",
+   [
+    "-",
+    "y"
+   ],
+   [
+    "-",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "_x",
+  "tree": [
+   "_",
+   "＿",
+   "x"
+  ]
+ },
+ {
+  "input": "x_",
+  "tree": [
+   "_",
+   "x",
+   "＿"
+  ]
+ },
+ {
+  "input": "|y/v",
+  "tree": [
+   "|",
+   "＿",
+   [
+    "/",
+    "y",
+    "v"
+   ]
+  ]
+ },
+ {
+  "input": "x+^2",
+  "tree": [
+   "+",
+   "x",
+   [
+    "^",
+    "＿",
+    2
+   ]
+  ]
+ },
+ {
+  "input": "x/'y",
+  "tree": [
+   "*",
+   [
+    "/",
+    "x",
+    [
+     "prime",
+     "＿"
+    ]
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "sin",
+  "tree": [
+   "apply",
+   "sin",
+   "＿"
+  ]
+ },
+ {
+  "input": "sin+cos",
+  "tree": [
+   "apply",
+   "sin",
+   [
+    "+",
+    [
+     "apply",
+     "cos",
+     "＿"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "/a",
+  "tree": [
+   "/",
+   "＿",
+   "a"
+  ]
+ },
+ {
+  "input": "a/",
+  "tree": [
+   "/",
+   "a",
+   "＿"
+  ]
+ },
+ {
+  "input": "/",
+  "tree": [
+   "/",
+   "＿",
+   "＿"
+  ]
+ },
+ {
+  "input": "C^+",
+  "tree": [
+   "^",
+   "C",
+   "+"
+  ]
+ },
+ {
+  "input": "C^-",
+  "tree": [
+   "^",
+   "C",
+   "-"
+  ]
+ },
+ {
+  "input": "C^+x",
+  "tree": [
+   "*",
+   [
+    "^",
+    "C",
+    "+"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "C^-x",
+  "tree": [
+   "*",
+   [
+    "^",
+    "C",
+    "-"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "C^+2",
+  "tree": [
+   "*",
+   [
+    "^",
+    "C",
+    "+"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "C^-2",
+  "tree": [
+   "*",
+   [
+    "^",
+    "C",
+    "-"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "C^(++)",
+  "tree": [
+   "^",
+   "C",
+   "++"
+  ]
+ },
+ {
+  "input": "C^(--)",
+  "tree": [
+   "^",
+   "C",
+   "--"
+  ]
+ },
+ {
+  "input": "C^(+++)",
+  "tree": [
+   "^",
+   "C",
+   "+++"
+  ]
+ },
+ {
+  "input": "C^(---)",
+  "tree": [
+   "^",
+   "C",
+   "---"
+  ]
+ },
+ {
+  "input": "C^(++++)",
+  "tree": [
+   "^",
+   "C",
+   "++++"
+  ]
+ },
+ {
+  "input": "C^(----)",
+  "tree": [
+   "^",
+   "C",
+   "----"
+  ]
+ },
+ {
+  "input": "C^(+++++)",
+  "tree": [
+   "^",
+   "C",
+   "+++++"
+  ]
+ },
+ {
+  "input": "C^(-----)",
+  "tree": [
+   "^",
+   "C",
+   "-----"
+  ]
+ },
+ {
+  "input": "C^(++++++)",
+  "tree": [
+   "^",
+   "C",
+   "++++++"
+  ]
+ },
+ {
+  "input": "C^(------)",
+  "tree": [
+   "^",
+   "C",
+   "------"
+  ]
+ },
+ {
+  "input": "C^(2+)",
+  "tree": [
+   "^",
+   "C",
+   "2+"
+  ]
+ },
+ {
+  "input": "C^(2-)",
+  "tree": [
+   "^",
+   "C",
+   "2-"
+  ]
+ },
+ {
+  "input": "C^(2++)",
+  "tree": [
+   "^",
+   "C",
+   "2++"
+  ]
+ },
+ {
+  "input": "C^(2--)",
+  "tree": [
+   "^",
+   "C",
+   "2--"
+  ]
+ },
+ {
+  "input": "C^(2+++)",
+  "tree": [
+   "^",
+   "C",
+   "2+++"
+  ]
+ },
+ {
+  "input": "C^(2---)",
+  "tree": [
+   "^",
+   "C",
+   "2---"
+  ]
+ },
+ {
+  "input": "C^(2++++)",
+  "tree": [
+   "^",
+   "C",
+   "2++++"
+  ]
+ },
+ {
+  "input": "C^(2----)",
+  "tree": [
+   "^",
+   "C",
+   "2----"
+  ]
+ },
+ {
+  "input": "C^(2+++++)",
+  "tree": [
+   "^",
+   "C",
+   "2+++++"
+  ]
+ },
+ {
+  "input": "C^(2-----)",
+  "tree": [
+   "^",
+   "C",
+   "2-----"
+  ]
+ },
+ {
+  "input": "C_+",
+  "tree": [
+   "_",
+   "C",
+   "+"
+  ]
+ },
+ {
+  "input": "C_-",
+  "tree": [
+   "_",
+   "C",
+   "-"
+  ]
+ },
+ {
+  "input": "C_(++)",
+  "tree": [
+   "_",
+   "C",
+   "++"
+  ]
+ },
+ {
+  "input": "C_(--)",
+  "tree": [
+   "_",
+   "C",
+   "--"
+  ]
+ },
+ {
+  "input": "C_+x",
+  "tree": [
+   "*",
+   [
+    "_",
+    "C",
+    "+"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "C_-x",
+  "tree": [
+   "*",
+   [
+    "_",
+    "C",
+    "-"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "C_+2",
+  "tree": [
+   "*",
+   [
+    "_",
+    "C",
+    "+"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "C_-2",
+  "tree": [
+   "*",
+   [
+    "_",
+    "C",
+    "-"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f^+",
+  "tree": [
+   "^",
+   "f",
+   "+"
+  ]
+ },
+ {
+  "input": "f^-",
+  "tree": [
+   "^",
+   "f",
+   "-"
+  ]
+ },
+ {
+  "input": "f^+x",
+  "tree": [
+   "*",
+   [
+    "^",
+    "f",
+    "+"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f^-x",
+  "tree": [
+   "*",
+   [
+    "^",
+    "f",
+    "-"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f^+2",
+  "tree": [
+   "*",
+   [
+    "^",
+    "f",
+    "+"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f^-2",
+  "tree": [
+   "*",
+   [
+    "^",
+    "f",
+    "-"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f^(++)",
+  "tree": [
+   "^",
+   "f",
+   "++"
+  ]
+ },
+ {
+  "input": "f^(--)",
+  "tree": [
+   "^",
+   "f",
+   "--"
+  ]
+ },
+ {
+  "input": "f^(+++)",
+  "tree": [
+   "^",
+   "f",
+   "+++"
+  ]
+ },
+ {
+  "input": "f^(---)",
+  "tree": [
+   "^",
+   "f",
+   "---"
+  ]
+ },
+ {
+  "input": "f^(++++)",
+  "tree": [
+   "^",
+   "f",
+   "++++"
+  ]
+ },
+ {
+  "input": "f^(----)",
+  "tree": [
+   "^",
+   "f",
+   "----"
+  ]
+ },
+ {
+  "input": "f^(+++++)",
+  "tree": [
+   "^",
+   "f",
+   "+++++"
+  ]
+ },
+ {
+  "input": "f^(-----)",
+  "tree": [
+   "^",
+   "f",
+   "-----"
+  ]
+ },
+ {
+  "input": "f^(++++++)",
+  "tree": [
+   "^",
+   "f",
+   "++++++"
+  ]
+ },
+ {
+  "input": "f^(------)",
+  "tree": [
+   "^",
+   "f",
+   "------"
+  ]
+ },
+ {
+  "input": "f^(2+)",
+  "tree": [
+   "^",
+   "f",
+   "2+"
+  ]
+ },
+ {
+  "input": "f^(2-)",
+  "tree": [
+   "^",
+   "f",
+   "2-"
+  ]
+ },
+ {
+  "input": "f^(2++)",
+  "tree": [
+   "^",
+   "f",
+   "2++"
+  ]
+ },
+ {
+  "input": "f^(2--)",
+  "tree": [
+   "^",
+   "f",
+   "2--"
+  ]
+ },
+ {
+  "input": "f^(2+++)",
+  "tree": [
+   "^",
+   "f",
+   "2+++"
+  ]
+ },
+ {
+  "input": "f^(2---)",
+  "tree": [
+   "^",
+   "f",
+   "2---"
+  ]
+ },
+ {
+  "input": "f^(2++++)",
+  "tree": [
+   "^",
+   "f",
+   "2++++"
+  ]
+ },
+ {
+  "input": "f^(2----)",
+  "tree": [
+   "^",
+   "f",
+   "2----"
+  ]
+ },
+ {
+  "input": "f^(2+++++)",
+  "tree": [
+   "^",
+   "f",
+   "2+++++"
+  ]
+ },
+ {
+  "input": "f^(2-----)",
+  "tree": [
+   "^",
+   "f",
+   "2-----"
+  ]
+ },
+ {
+  "input": "f_+",
+  "tree": [
+   "_",
+   "f",
+   "+"
+  ]
+ },
+ {
+  "input": "f_-",
+  "tree": [
+   "_",
+   "f",
+   "-"
+  ]
+ },
+ {
+  "input": "f_(++)",
+  "tree": [
+   "_",
+   "f",
+   "++"
+  ]
+ },
+ {
+  "input": "f_(--)",
+  "tree": [
+   "_",
+   "f",
+   "--"
+  ]
+ },
+ {
+  "input": "f_+x",
+  "tree": [
+   "*",
+   [
+    "_",
+    "f",
+    "+"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_-x",
+  "tree": [
+   "*",
+   [
+    "_",
+    "f",
+    "-"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "f_+2",
+  "tree": [
+   "*",
+   [
+    "_",
+    "f",
+    "+"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "f_-2",
+  "tree": [
+   "*",
+   [
+    "_",
+    "f",
+    "-"
+   ],
+   2
+  ]
+ },
+ {
+  "input": "_6^14C",
+  "tree": [
+   "*",
+   [
+    "^",
+    [
+     "_",
+     "＿",
+     6
+    ],
+    14
+   ],
+   "C"
+  ]
+ },
+ {
+  "input": "+",
+  "tree": "+"
+ },
+ {
+  "input": "++",
+  "tree": "++"
+ },
+ {
+  "input": "+++",
+  "tree": "+++"
+ },
+ {
+  "input": "++++",
+  "tree": "++++"
+ },
+ {
+  "input": "+++++",
+  "tree": "+++++"
+ },
+ {
+  "input": "++++++",
+  "tree": "++++++"
+ },
+ {
+  "input": "-",
+  "tree": "-"
+ },
+ {
+  "input": "--",
+  "tree": "--"
+ },
+ {
+  "input": "---",
+  "tree": "---"
+ },
+ {
+  "input": "----",
+  "tree": "----"
+ },
+ {
+  "input": "-----",
+  "tree": "-----"
+ },
+ {
+  "input": "------",
+  "tree": "------"
+ },
+ {
+  "input": "-+",
+  "tree": "-+"
+ },
+ {
+  "input": "+-",
+  "tree": "+-"
+ },
+ {
+  "input": "++-",
+  "tree": "++-"
+ },
+ {
+  "input": "--+",
+  "tree": "--+"
+ },
+ {
+  "input": "-++---++++",
+  "tree": "-++---++++"
+ },
+ {
+  "input": "+--+++----",
+  "tree": "+--+++----"
+ },
+ {
+  "input": "+5",
+  "tree": [
+   "+",
+   5
+  ]
+ },
+ {
+  "input": "++5",
+  "tree": [
+   "+",
+   [
+    "+",
+    5
+   ]
+  ]
+ },
+ {
+  "input": "+()",
+  "tree": [
+   "+",
+   "＿"
+  ]
+ },
+ {
+  "input": "++()",
+  "tree": [
+   "+",
+   [
+    "+",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "x+",
+  "tree": "x+"
+ },
+ {
+  "input": "x++",
+  "tree": "x++"
+ },
+ {
+  "input": "x+++",
+  "tree": "x+++"
+ },
+ {
+  "input": "x++++",
+  "tree": "x++++"
+ },
+ {
+  "input": "x+++++",
+  "tree": "x+++++"
+ },
+ {
+  "input": "x++++++",
+  "tree": "x++++++"
+ },
+ {
+  "input": "x-",
+  "tree": "x-"
+ },
+ {
+  "input": "x--",
+  "tree": "x--"
+ },
+ {
+  "input": "x---",
+  "tree": "x---"
+ },
+ {
+  "input": "x----",
+  "tree": "x----"
+ },
+ {
+  "input": "x-----",
+  "tree": "x-----"
+ },
+ {
+  "input": "x------",
+  "tree": "x------"
+ },
+ {
+  "input": "x-+",
+  "tree": "x-+"
+ },
+ {
+  "input": "x+-",
+  "tree": "x+-"
+ },
+ {
+  "input": "x++-",
+  "tree": "x++-"
+ },
+ {
+  "input": "x--+",
+  "tree": "x--+"
+ },
+ {
+  "input": "x-++---++++",
+  "tree": "x-++---++++"
+ },
+ {
+  "input": "x+--+++----",
+  "tree": "x+--+++----"
+ },
+ {
+  "input": "x^2+",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "＿"
+  ]
+ },
+ {
+  "input": "x^2++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "+"
+  ]
+ },
+ {
+  "input": "x^2+++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "++"
+  ]
+ },
+ {
+  "input": "x^2++++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "+++"
+  ]
+ },
+ {
+  "input": "x^2+++++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "++++"
+  ]
+ },
+ {
+  "input": "x^2++++++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "+++++"
+  ]
+ },
+ {
+  "input": "x^2-",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "x^2--",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "-"
+   ]
+  ]
+ },
+ {
+  "input": "x^2---",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "--"
+   ]
+  ]
+ },
+ {
+  "input": "x^2----",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "---"
+   ]
+  ]
+ },
+ {
+  "input": "x^2-----",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "----"
+   ]
+  ]
+ },
+ {
+  "input": "x^2------",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "-----"
+   ]
+  ]
+ },
+ {
+  "input": "x^2-+",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "+"
+   ]
+  ]
+ },
+ {
+  "input": "x^2+-",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "＿"
+   ]
+  ]
+ },
+ {
+  "input": "x^2++-",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   "+-"
+  ]
+ },
+ {
+  "input": "x^2--+",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "-+"
+   ]
+  ]
+ },
+ {
+  "input": "x^2-++---++++",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "++---++++"
+   ]
+  ]
+ },
+ {
+  "input": "x^2+--+++----",
+  "tree": [
+   "+",
+   [
+    "^",
+    "x",
+    2
+   ],
+   [
+    "-",
+    "-+++----"
+   ]
+  ]
+ },
+ {
+  "input": "^+",
+  "tree": [
+   "^",
+   "＿",
+   "+"
+  ]
+ },
+ {
+  "input": "^-",
+  "tree": [
+   "^",
+   "＿",
+   "-"
+  ]
+ },
+ {
+  "input": "x^/(3-)",
+  "tree": [
+   "/",
+   [
+    "^",
+    "x",
+    "＿"
+   ],
+   "3-"
+  ]
+ },
+ {
+  "input": "1+2+",
+  "tree": [
+   "+",
+   1,
+   2,
+   "＿"
+  ]
+ },
+ {
+  "input": "3C^+x",
+  "tree": [
+   "*",
+   3,
+   [
+    "^",
+    "C",
+    "+"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "3C^-x",
+  "tree": [
+   "*",
+   3,
+   [
+    "^",
+    "C",
+    "-"
+   ],
+   "x"
+  ]
+ },
+ {
+  "input": "5+()",
+  "tree": [
+   "+",
+   5,
+   "＿"
+  ]
+ },
+ {
+  "input": "5+()+2",
+  "tree": [
+   "+",
+   5,
+   "＿",
+   2
+  ]
+ },
+ {
+  "input": "re(x)",
+  "tree": [
+   "apply",
+   "re",
+   "x"
+  ]
+ },
+ {
+  "input": "im(x)",
+  "tree": [
+   "apply",
+   "im",
+   "x"
+  ]
+ },
+ {
+  "input": "det(A)",
+  "tree": [
+   "apply",
+   "det",
+   "A"
+  ]
+ },
+ {
+  "input": "trace(A)",
+  "tree": [
+   "apply",
+   "trace",
+   "A"
+  ]
+ },
+ {
+  "input": "nPr(x,y)",
+  "tree": [
+   "apply",
+   "nPr",
+   [
+    "tuple",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "nCr(x,y)",
+  "tree": [
+   "apply",
+   "nCr",
+   [
+    "tuple",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "binom(x,y)",
+  "tree": [
+   "binom",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "vec(a)",
+  "tree": [
+   "vec",
+   "a"
+  ]
+ },
+ {
+  "input": "linesegment(A,B)",
+  "tree": [
+   "linesegment",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "linesegment(A',B')",
+  "tree": [
+   "linesegment",
+   [
+    "prime",
+    "A"
+   ],
+   [
+    "prime",
+    "B"
+   ]
+  ]
+ },
+ {
+  "input": "floor(a)",
+  "tree": [
+   "apply",
+   "floor",
+   "a"
+  ]
+ },
+ {
+  "input": "ceil(a)",
+  "tree": [
+   "apply",
+   "ceil",
+   "a"
+  ]
+ },
+ {
+  "input": "round(a)",
+  "tree": [
+   "apply",
+   "round",
+   "a"
+  ]
+ },
+ {
+  "input": "x perp y",
+  "tree": [
+   "perp",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x ⟂ y",
+  "tree": [
+   "perp",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x^(perp)",
+  "tree": [
+   "^",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x^(⟂)",
+  "tree": [
+   "^",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x^perp",
+  "tree": [
+   "^",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x^⟂",
+  "tree": [
+   "^",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x_(perp)",
+  "tree": [
+   "_",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x_(⟂)",
+  "tree": [
+   "_",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x_perp",
+  "tree": [
+   "_",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "x_⟂",
+  "tree": [
+   "_",
+   "x",
+   "perp"
+  ]
+ },
+ {
+  "input": "f^(perp)",
+  "tree": [
+   "^",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f^(⟂)",
+  "tree": [
+   "^",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f^perp",
+  "tree": [
+   "^",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f^⟂",
+  "tree": [
+   "^",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f_(perp)",
+  "tree": [
+   "_",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f_(⟂)",
+  "tree": [
+   "_",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f_perp",
+  "tree": [
+   "_",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "f_⟂",
+  "tree": [
+   "_",
+   "f",
+   "perp"
+  ]
+ },
+ {
+  "input": "x parallel y",
+  "tree": [
+   "parallel",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x ∥ y",
+  "tree": [
+   "parallel",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "angle",
+  "tree": "angle"
+ },
+ {
+  "input": "angle ABC",
+  "tree": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "angle A_1B_xC_+",
+  "tree": [
+   "angle",
+   [
+    "_",
+    "A",
+    1
+   ],
+   [
+    "_",
+    "B",
+    "x"
+   ],
+   [
+    "_",
+    "C",
+    "+"
+   ]
+  ]
+ },
+ {
+  "input": "angle A^1B^xC^+",
+  "tree": [
+   "angle",
+   [
+    "^",
+    "A",
+    1
+   ],
+   [
+    "^",
+    "B",
+    "x"
+   ],
+   [
+    "^",
+    "C",
+    "+"
+   ]
+  ]
+ },
+ {
+  "input": "angle A'B''C'''",
+  "tree": [
+   "angle",
+   [
+    "prime",
+    "A"
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     "B"
+    ]
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     [
+      "prime",
+      "C"
+     ]
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "angle A+B",
+  "tree": [
+   "+",
+   [
+    "angle",
+    "A"
+   ],
+   "B"
+  ]
+ },
+ {
+  "input": "angle A*B",
+  "tree": [
+   "*",
+   [
+    "angle",
+    "A"
+   ],
+   "B"
+  ]
+ },
+ {
+  "input": "angle (ABC)",
+  "tree": [
+   "angle",
+   [
+    "*",
+    "A",
+    "B",
+    "C"
+   ]
+  ]
+ },
+ {
+  "input": "angle (A,B,C)",
+  "tree": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "∠",
+  "tree": "angle"
+ },
+ {
+  "input": "∠ABC",
+  "tree": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "∠A_1B_xC_+",
+  "tree": [
+   "angle",
+   [
+    "_",
+    "A",
+    1
+   ],
+   [
+    "_",
+    "B",
+    "x"
+   ],
+   [
+    "_",
+    "C",
+    "+"
+   ]
+  ]
+ },
+ {
+  "input": "∠A^1B^xC^+",
+  "tree": [
+   "angle",
+   [
+    "^",
+    "A",
+    1
+   ],
+   [
+    "^",
+    "B",
+    "x"
+   ],
+   [
+    "^",
+    "C",
+    "+"
+   ]
+  ]
+ },
+ {
+  "input": "∠A'B''C'''",
+  "tree": [
+   "angle",
+   [
+    "prime",
+    "A"
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     "B"
+    ]
+   ],
+   [
+    "prime",
+    [
+     "prime",
+     [
+      "prime",
+      "C"
+     ]
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "∠A+B",
+  "tree": [
+   "+",
+   [
+    "angle",
+    "A"
+   ],
+   "B"
+  ]
+ },
+ {
+  "input": "∠A*B",
+  "tree": [
+   "*",
+   [
+    "angle",
+    "A"
+   ],
+   "B"
+  ]
+ },
+ {
+  "input": "∠(ABC)",
+  "tree": [
+   "angle",
+   [
+    "*",
+    "A",
+    "B",
+    "C"
+   ]
+  ]
+ },
+ {
+  "input": "∠(A,B,C)",
+  "tree": [
+   "angle",
+   "A",
+   "B",
+   "C"
+  ]
+ },
+ {
+  "input": "$x",
+  "tree": [
+   "unit",
+   "$",
+   "x"
+  ]
+ },
+ {
+  "input": "x%",
+  "tree": [
+   "unit",
+   "x",
+   "%"
+  ]
+ },
+ {
+  "input": "x deg",
+  "tree": [
+   "unit",
+   "x",
+   "deg"
+  ]
+ },
+ {
+  "input": "$xy",
+  "tree": [
+   "unit",
+   "$",
+   [
+    "*",
+    "x",
+    "y"
+   ]
+  ]
+ },
+ {
+  "input": "x%y",
+  "tree": [
+   "*",
+   [
+    "unit",
+    "x",
+    "%"
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "x deg y",
+  "tree": [
+   "*",
+   [
+    "unit",
+    "x",
+    "deg"
+   ],
+   "y"
+  ]
+ },
+ {
+  "input": "y$x",
+  "tree": [
+   "*",
+   "y",
+   [
+    "unit",
+    "$",
+    "x"
+   ]
+  ]
+ },
+ {
+  "input": "yx%",
+  "tree": [
+   "unit",
+   [
+    "*",
+    "y",
+    "x"
+   ],
+   "%"
+  ]
+ },
+ {
+  "input": "yx deg",
+  "tree": [
+   "unit",
+   [
+    "*",
+    "y",
+    "x"
+   ],
+   "deg"
+  ]
+ },
+ {
+  "input": "y$xz",
+  "tree": [
+   "*",
+   "y",
+   [
+    "unit",
+    "$",
+    [
+     "*",
+     "x",
+     "z"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "yx%z",
+  "tree": [
+   "*",
+   [
+    "unit",
+    [
+     "*",
+     "y",
+     "x"
+    ],
+    "%"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "yx deg z",
+  "tree": [
+   "*",
+   [
+    "unit",
+    [
+     "*",
+     "y",
+     "x"
+    ],
+    "deg"
+   ],
+   "z"
+  ]
+ },
+ {
+  "input": "$x%",
+  "tree": [
+   "unit",
+   "$",
+   [
+    "unit",
+    "x",
+    "%"
+   ]
+  ]
+ },
+ {
+  "input": "%x$",
+  "tree": [
+   "*",
+   "%",
+   "x",
+   "$"
+  ]
+ },
+ {
+  "input": "x%y$z",
+  "tree": [
+   "*",
+   [
+    "unit",
+    "x",
+    "%"
+   ],
+   "y",
+   [
+    "unit",
+    "$",
+    "z"
+   ]
+  ]
+ },
+ {
+  "input": "5 ± 3",
+  "tree": [
+   "+",
+   5,
+   [
+    "pm",
+    3
+   ]
+  ]
+ },
+ {
+  "input": "± 3",
+  "tree": [
+   "pm",
+   3
+  ]
+ },
+ {
+  "input": "5 ± 3 ± 4",
+  "tree": [
+   "+",
+   5,
+   [
+    "pm",
+    3
+   ],
+   [
+    "pm",
+    4
+   ]
+  ]
+ },
+ {
+  "input": "a + b ± c",
+  "tree": [
+   "+",
+   "a",
+   "b",
+   [
+    "pm",
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "5 plusminus 3",
+  "tree": [
+   "+",
+   5,
+   [
+    "pm",
+    3
+   ]
+  ]
+ },
+ {
+  "input": "plusminus 3",
+  "tree": [
+   "pm",
+   3
+  ]
+ },
+ {
+  "input": "a plusminus b plusminus c",
+  "tree": [
+   "+",
+   "a",
+   [
+    "pm",
+    "b"
+   ],
+   [
+    "pm",
+    "c"
+   ]
+  ]
+ },
+ {
+  "input": "-(5 ± 3)",
+  "tree": [
+   "-",
+   [
+    "+",
+    5,
+    [
+     "pm",
+     3
+    ]
+   ]
+  ]
+ }
+]

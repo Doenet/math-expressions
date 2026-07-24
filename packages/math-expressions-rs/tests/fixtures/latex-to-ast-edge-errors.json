@@ -1,0 +1,34 @@
+[
+ {
+  "input": "1E2\\\\3",
+  "error": "Invalid location of '\\\\'"
+ },
+ {
+  "input": "\\frac[1]{2}",
+  "error": "Expecting {"
+ },
+ {
+  "input": "\\frac\\pi2",
+  "error": "Expecting {"
+ },
+ {
+  "input": "\\sqrt2",
+  "error": "Expecting {"
+ },
+ {
+  "input": "\\mathbb{R}",
+  "error": "Unrecognized latex command \\mathbb"
+ },
+ {
+  "input": "\\begin{foo}x\\end{foo}",
+  "error": "Unrecognized environment foo"
+ },
+ {
+  "input": "\\begin{matrix}1\\end{pmatrix}",
+  "error": "Expecting \\end{matrix}"
+ },
+ {
+  "input": "\\sin \\left( x \\right]",
+  "error": "Expecting )"
+ }
+]

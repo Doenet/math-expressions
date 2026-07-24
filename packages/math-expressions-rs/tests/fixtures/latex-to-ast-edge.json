@@ -1,0 +1,449 @@
+[
+ {
+  "input": "\\bigl( x \\bigr)",
+  "tree": "x"
+ },
+ {
+  "input": "\\Bigl[ x \\Bigr]",
+  "tree": "x"
+ },
+ {
+  "input": "\\biggl( x+1 \\biggr)",
+  "tree": [
+   "+",
+   "x",
+   1
+  ]
+ },
+ {
+  "input": "\\Biggl( x \\Biggr)",
+  "tree": "x"
+ },
+ {
+  "input": "\\bigl\\{ x \\bigr\\}",
+  "tree": [
+   "set",
+   "x"
+  ]
+ },
+ {
+  "input": "\\big| x \\big|",
+  "tree": [
+   "apply",
+   "abs",
+   "x"
+  ]
+ },
+ {
+  "input": "\\Bigg| x \\Bigg|",
+  "tree": [
+   "apply",
+   "abs",
+   "x"
+  ]
+ },
+ {
+  "input": "\\bigl| x \\bigr|",
+  "tree": [
+   "apply",
+   "abs",
+   "x"
+  ]
+ },
+ {
+  "input": "\\bigl\\lfloor x \\bigr\\rfloor",
+  "tree": [
+   "apply",
+   "floor",
+   "x"
+  ]
+ },
+ {
+  "input": "\\Bigl\\lceil x \\Bigr\\rceil",
+  "tree": [
+   "apply",
+   "ceil",
+   "x"
+  ]
+ },
+ {
+  "input": "\\biggl\\langle x, y \\biggr\\rangle",
+  "tree": [
+   "altvector",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "\\varepsilon + \\vartheta",
+  "tree": [
+   "+",
+   "epsilon",
+   "theta"
+  ]
+ },
+ {
+  "input": "\\varnothing",
+  "tree": "emptyset"
+ },
+ {
+  "input": "\\varrho",
+  "tree": "rho"
+ },
+ {
+  "input": "\\varphi",
+  "tree": "phi"
+ },
+ {
+  "input": "\\asin(x)",
+  "tree": [
+   "apply",
+   "arcsin",
+   "x"
+  ]
+ },
+ {
+  "input": "\\acos(x)",
+  "tree": [
+   "apply",
+   "arccos",
+   "x"
+  ]
+ },
+ {
+  "input": "\\atan(x)",
+  "tree": [
+   "apply",
+   "arctan",
+   "x"
+  ]
+ },
+ {
+  "input": "p \\to q",
+  "tree": [
+   "rightarrow",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p \\gets q",
+  "tree": [
+   "leftarrow",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p \\Longrightarrow q",
+  "tree": [
+   "implies",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p \\Longleftarrow q",
+  "tree": [
+   "impliedby",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "p \\Longleftrightarrow q",
+  "tree": [
+   "iff",
+   "p",
+   "q"
+  ]
+ },
+ {
+  "input": "x \\bot y",
+  "tree": [
+   "perp",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "a \\ne b",
+  "tree": [
+   "ne",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a \\not= b",
+  "tree": [
+   "ne",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a \\not \\in B",
+  "tree": [
+   "notin",
+   "a",
+   "B"
+  ]
+ },
+ {
+  "input": "A \\not\\subseteq B",
+  "tree": [
+   "notsubseteq",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "A \\not \\supset B",
+  "tree": [
+   "notsuperset",
+   "A",
+   "B"
+  ]
+ },
+ {
+  "input": "\\int x dx",
+  "tree": [
+   "apply",
+   "int",
+   [
+    "*",
+    "x",
+    [
+     "d",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "\\int_0^1 x^2 dx",
+  "tree": [
+   "apply",
+   [
+    "^",
+    [
+     "_",
+     "int",
+     0
+    ],
+    1
+   ],
+   [
+    "*",
+    [
+     "^",
+     "x",
+     2
+    ],
+    [
+     "d",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "\\int x\\,dx",
+  "tree": [
+   "apply",
+   "int",
+   [
+    "*",
+    "x",
+    [
+     "d",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "x \\qquad y",
+  "tree": [
+   "*",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x\\;y",
+  "tree": [
+   "*",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x\\:y",
+  "tree": [
+   "*",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x\\>y",
+  "tree": [
+   "*",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "x\\!y",
+  "tree": [
+   "*",
+   "x",
+   "y"
+  ]
+ },
+ {
+  "input": "a\\ b",
+  "tree": [
+   "*",
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "\\operatorname{foo}^2",
+  "tree": [
+   "^",
+   "foo",
+   2
+  ]
+ },
+ {
+  "input": "\\operatorname{a+b}",
+  "tree": "a+b"
+ },
+ {
+  "input": "\\operatorname{ sin2 }(x)",
+  "tree": [
+   "*",
+   "sin2",
+   "x"
+  ]
+ },
+ {
+  "input": "45^\\circ",
+  "tree": [
+   "unit",
+   45,
+   "deg"
+  ]
+ },
+ {
+  "input": "x^\\circ + 90",
+  "tree": [
+   "+",
+   [
+    "unit",
+    "x",
+    "deg"
+   ],
+   90
+  ]
+ },
+ {
+  "input": "x^{\\circ}",
+  "tree": [
+   "unit",
+   "x",
+   "deg"
+  ]
+ },
+ {
+  "input": "x^{1E2}",
+  "tree": [
+   "^",
+   "x",
+   100
+  ]
+ },
+ {
+  "input": "\\begin{matrix}1E2 & 2\\end{matrix}",
+  "tree": [
+   "matrix",
+   [
+    "tuple",
+    1,
+    2
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     100,
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "\\begin{matrix} & 1 \\\\ 2 \\end{matrix}",
+  "tree": [
+   "matrix",
+   [
+    "tuple",
+    2,
+    1
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     1
+    ],
+    [
+     "tuple",
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "\\begin{matrix}1 & 2 & \\\\ 3 \\end{matrix}",
+  "tree": [
+   "matrix",
+   [
+    "tuple",
+    2,
+    3
+   ],
+   [
+    "tuple",
+    [
+     "tuple",
+     1,
+     2,
+     0
+    ],
+    [
+     "tuple",
+     3,
+     0,
+     0
+    ]
+   ]
+  ]
+ },
+ {
+  "input": "\\sqrt[3]{8}y",
+  "tree": [
+   "*",
+   [
+    "apply",
+    "cbrt",
+    8
+   ],
+   "y"
+  ]
+ }
+]

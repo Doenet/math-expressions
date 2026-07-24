@@ -1,0 +1,33 @@
+{
+  "name": "math-expressions",
+  "version": "3.0.0-alpha1",
+  "description": "Parse and perform symbolic computation on mathematical expressions. A drop-in replacement for the original math-expressions JavaScript API, backed by the Rust core (math-expressions-rs) compiled to wasm — same `me.fromText(...).equals(...)` surface, no math of its own.",
+  "license": "(GPL-3.0 OR Apache-2.0)",
+  "type": "module",
+  "main": "./dist/math-expressions.js",
+  "module": "./dist/math-expressions.js",
+  "exports": {
+    ".": "./dist/math-expressions.js",
+    "./lib/*": "./lib/*"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "vendor"
+  ],
+  "scripts": {
+    "build:wasm": "./build-wasm.sh",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "math-expressions-rs-wasm": "*",
+    "mathjs": "^15.2.0"
+  },
+  "devDependencies": {
+    "underscore": "^1.13.6",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
