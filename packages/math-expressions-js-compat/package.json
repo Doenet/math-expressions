@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "math-expressions-rs-wasm": "*",
-    "mathjs": "^15.2.0"
+    "mathjs": "^15.2.0",
+    "numeric": "1.2.6"
   },
   "devDependencies": {
     "underscore": "^1.13.6",
