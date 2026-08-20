@@ -1415,6 +1415,74 @@ describe("matrix and vector simplify", function () {
         .tree,
     ).toEqual(me.fromLatex("\\begin{bmatrix}mq+or & nq+pr\\end{bmatrix}").tree);
   });
+
+  it("negate numeric matrix with entries of -1", function () {
+    // negating an entry of -1 creates the product (-1)(-1),
+    // which must simplify to 1 rather than to an empty product
+    expect(
+      me
+        .fromAst([
+          "-",
+          me.fromLatex("\\begin{bmatrix}-2&-4\\\\1&-1\\end{bmatrix}").tree,
+        ])
+        .simplify().tree,
+    ).toEqual(me.fromLatex("\\begin{bmatrix}2&4\\\\-1&1\\end{bmatrix}").tree);
+  });
+
+  it("subtract numeric matrix with entry of -1, rest of entry sum negative", function () {
+    // the -1 entry of the subtracted matrix vanished from the sum,
+    // leaving the (2,2) entry as -8 rather than -7
+    let matrixA = me.fromLatex(
+      "\\begin{bmatrix}-1&5\\\\-1&-3\\end{bmatrix}",
+    ).tree;
+    let matrixB = me.fromLatex(
+      "\\begin{bmatrix}-2&-1\\\\-3&-5\\end{bmatrix}",
+    ).tree;
+    let matrixC = me.fromLatex(
+      "\\begin{bmatrix}-2&-4\\\\1&-1\\end{bmatrix}",
+    ).tree;
+
+    expect(
+      me.fromAst(["+", matrixA, matrixB, ["-", matrixC]]).simplify().tree,
+    ).toEqual(me.fromLatex("\\begin{bmatrix}-1&8\\\\-5&-7\\end{bmatrix}").tree);
+  });
+
+  it("subtract numeric matrix with entry of -1, rest of entry sum positive", function () {
+    // the vanished -1 entry sorted to the front of the (1,2) entry's sum,
+    // which threw a TypeError rather than giving a wrong value
+    let matrixA = me.fromLatex(
+      "\\begin{bmatrix}4&3\\\\1&-2\\end{bmatrix}",
+    ).tree;
+    let matrixB = me.fromLatex(
+      "\\begin{bmatrix}2&-2\\\\-4&-1\\end{bmatrix}",
+    ).tree;
+    let matrixC = me.fromLatex(
+      "\\begin{bmatrix}-3&-1\\\\4&1\\end{bmatrix}",
+    ).tree;
+
+    expect(
+      me.fromAst(["+", matrixA, matrixB, ["-", matrixC]]).simplify().tree,
+    ).toEqual(me.fromLatex("\\begin{bmatrix}9&2\\\\-7&-4\\end{bmatrix}").tree);
+  });
+
+  it("add and subtract numeric tuples and vectors with entries of -1", function () {
+    expect(me.fromText("-(-1,-2)").simplify().tree).toEqual(
+      me.fromText("(1,2)").tree,
+    );
+    expect(me.fromText("(3,4)-(-1,-2)").simplify().tree).toEqual(
+      me.fromText("(4,6)").tree,
+    );
+    expect(me.fromText("(-3,-4)-(-1,-2)").simplify().tree).toEqual(
+      me.fromText("(-2,-2)").tree,
+    );
+    expect(
+      me.fromText("(3,4)-(-1,-2)").tuples_to_vectors().simplify().tree,
+    ).toEqual(me.fromText("(4,6)").tuples_to_vectors().tree);
+    expect(
+      me.fromLatex("\\langle 3,4 \\rangle - \\langle -1,-2 \\rangle").simplify()
+        .tree,
+    ).toEqual(me.fromLatex("\\langle 4,6 \\rangle").tree);
+  });
 });
 
 describe("square root of integers", function () {
