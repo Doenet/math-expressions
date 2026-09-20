@@ -8,12 +8,12 @@
 //! brace-based Leibniz notation, and the `\circ` exponent unit.
 
 use super::common::{
-    atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string,
+    apply, atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string,
     MAX_PARSE_DEPTH, P,
 };
 use super::error::ParseError;
 use super::lexer::{Lexer, LexerState, Tok, Token};
-use crate::expr::{flatten, Expr, MathConst, RelOp, SeqKind};
+use crate::expr::{flatten, Expr, Mat, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 use std::collections::HashSet;
 
@@ -26,6 +26,10 @@ pub struct LatexToAstOptions {
     pub applied_function_symbols: Vec<String>,
     pub function_symbols: Vec<String>,
     pub parse_leibniz_notation: bool,
+    /// Read `3.2E-12` as a single number rather than `3.2·E − 12`. Uppercase
+    /// `E` only — see
+    /// [`TextToAstOptions::parse_scientific_notation`](crate::TextToAstOptions::parse_scientific_notation)
+    /// for why lowercase cannot be accepted.
     pub parse_scientific_notation: bool,
     /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
@@ -305,7 +309,12 @@ impl LatexToAst {
         // Behavior is unchanged under default `.` notation (a `.`-leading
         // number was, and still is, excluded here).
         if self.token.ttype == Tok::Number
-            && self.token.text.as_bytes().first().is_some_and(u8::is_ascii_digit)
+            && self
+                .token
+                .text
+                .as_bytes()
+                .first()
+                .is_some_and(u8::is_ascii_digit)
         {
             let first = self.token.text.as_bytes()[0] as char;
             let num = (first as u8 - b'0') as i64;
@@ -352,7 +361,12 @@ impl LatexToAst {
 
         if self.token.ttype == Tok::Number {
             // Decimals parse to exact rationals, never floats (§3a).
-            result = Some(Expr::Num(Number::from_decimal_str(self.opts.notation.normalize_number(&self.token.text).as_ref())));
+            result = Some(Expr::Num(Number::from_decimal_str(
+                self.opts
+                    .notation
+                    .normalize_number(&self.token.text)
+                    .as_ref(),
+            )));
             self.advance()?;
         } else if self.token.ttype == Tok::Infinity {
             result = Some(Expr::Const(MathConst::Inf));
@@ -388,7 +402,7 @@ impl LatexToAst {
                 return Err(self.err("Expecting |"));
             }
             self.advance()?;
-            result = Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![st]));
+            result = Some(apply(Expr::sym("abs"), vec![st]));
         } else if matches!(self.token.ttype, Tok::LFloor | Tok::LCeil) {
             result = Some(self.floor_ceil()?);
         } else if self.token.ttype == Tok::Angle {
@@ -474,11 +488,14 @@ impl LatexToAst {
             }
         }
 
-        Ok(Expr::Matrix {
-            rows: n_rows as u32,
-            cols: n_cols as u32,
-            entries,
-        })
+        // Every row was padded to `n_cols` just above, so the count matches;
+        // if it somehow did not, this is a parse error rather than a tree
+        // carrying a shape the rest of the crate indexes on faith.
+        Mat::new(n_rows as u32, n_cols as u32, entries)
+            .map(Expr::Matrix)
+            .ok_or_else(|| {
+                ParseError::new("matrix rows do not form a rectangle", self.lexer.location)
+            })
     }
 
     fn sqrt_factor(&mut self, p: P) -> R<Expr> {
@@ -512,11 +529,11 @@ impl LatexToAst {
         self.advance()?;
 
         Ok(if root == Expr::int(2) {
-            Expr::Apply(Box::new(Expr::sym("sqrt")), vec![parameter])
+            apply(Expr::sym("sqrt"), vec![parameter])
         } else if root == Expr::int(3) {
-            Expr::Apply(Box::new(Expr::sym("cbrt")), vec![parameter])
+            apply(Expr::sym("cbrt"), vec![parameter])
         } else {
-            Expr::Apply(Box::new(Expr::sym("nthroot")), vec![parameter, root])
+            apply(Expr::sym("nthroot"), vec![parameter, root])
         })
     }
 
@@ -528,7 +545,7 @@ impl LatexToAst {
         };
         self.advance()?;
         let st = self.statement(P::default())?;
-        let result = Expr::Apply(Box::new(Expr::sym(function_name)), vec![st]);
+        let result = apply(Expr::sym(function_name), vec![st]);
         if self.token.ttype != expected_right {
             return Err(self.err(format!("Expecting {}", expected_right)));
         }
@@ -596,16 +613,30 @@ impl LatexToAst {
 
         if p.in_subsuperscript {
             if must_apply {
-                result = Expr::Apply(Box::new(result), vec![Expr::Blank]);
+                result = apply(result, vec![Expr::Blank]);
             }
         } else {
+            // Prime/caret runs on a function symbol (`\sin''`, `\sin^2^2…`)
+            // each wrap `result` one level deeper. Like the shared postfix
+            // loop, charge that growth against `MAX_PARSE_DEPTH` so a long run
+            // errors cleanly rather than building a spine that overflows a
+            // later recursive pass (and traps the wasm instance).
+            let mut nesting = 0usize;
             while self.token.ttype == Tok::Prime {
                 self.tick()?;
+                nesting += 1;
+                if self.depth + nesting > MAX_PARSE_DEPTH {
+                    return Err(self.err("Expression too deeply nested"));
+                }
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
             while self.token.ttype == Tok::Caret {
                 self.tick()?;
+                nesting += 1;
+                if self.depth + nesting > MAX_PARSE_DEPTH {
+                    return Err(self.err("Expression too deeply nested"));
+                }
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -630,7 +661,7 @@ impl LatexToAst {
                     Expr::Seq(SeqKind::List, xs) => xs,
                     other => vec![other],
                 };
-                result = Expr::Apply(Box::new(result), args);
+                result = apply(result, args);
             } else if must_apply {
                 if !self.opts.allow_simplified_function_application {
                     return Err(self.err("Expecting ( after function"));
@@ -641,7 +672,7 @@ impl LatexToAst {
                         ..P::default()
                     })?
                     .unwrap_or(Expr::Blank);
-                result = Expr::Apply(Box::new(result), vec![arg]);
+                result = apply(result, vec![arg]);
             }
         }
 
@@ -843,7 +874,7 @@ impl LatexToAst {
             ops.extend(ds);
         }
 
-        Ok(Expr::Apply(Box::new(head), vec![integrand]))
+        Ok(apply(head, vec![integrand]))
     }
 
     /// `\frac{d^n f}{d x^n}` derivative in Leibniz notation. Assumes the
@@ -877,7 +908,12 @@ impl LatexToAst {
             if self.token.ttype != Tok::Number {
                 return Ok(None);
             }
-            n_deriv = parse_js_float(self.opts.notation.normalize_number(&self.token.text).as_ref());
+            n_deriv = parse_js_float(
+                self.opts
+                    .notation
+                    .normalize_number(&self.token.text)
+                    .as_ref(),
+            );
             if n_deriv.fract() != 0.0 {
                 return Ok(None);
             }
@@ -939,7 +975,12 @@ impl LatexToAst {
                 if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
-                this_exponent = parse_js_float(self.opts.notation.normalize_number(&self.token.text).as_ref());
+                this_exponent = parse_js_float(
+                    self.opts
+                        .notation
+                        .normalize_number(&self.token.text)
+                        .as_ref(),
+                );
                 if this_exponent.fract() != 0.0 {
                     return Ok(None);
                 }
@@ -1033,5 +1074,9 @@ enum SymbolResult {
 fn brace_content(s: &str) -> String {
     let start = s.find('{').map(|i| i + 1).unwrap_or(0);
     let end = s.rfind('}').unwrap_or(s.len());
-    s[start..end].trim().to_string()
+    // `start > end` (a `}` before the `{`) would make `s[start..end]` panic —
+    // an uncatchable abort in wasm. No lexer token feeds that shape today, but
+    // keep the safety local rather than resting on a lexer invariant enforced
+    // elsewhere: `get` yields `None` for an out-of-order or non-boundary range.
+    s.get(start..end).unwrap_or("").trim().to_string()
 }

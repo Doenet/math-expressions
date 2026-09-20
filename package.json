@@ -1,7 +1,7 @@
 {
   "name": "math-expressions-workspace",
   "description": "Monorepo root for math-expressions: the Rust core (packages/math-expressions-rs), its wasm bindings, the `math-expressions` drop-in (packages/math-expressions-js-compat), and the playground. Not published — see the individual packages.",
-  "version": "3.0.0-alpha1",
+  "version": "3.0.0-alpha.1",
   "type": "module",
   "author": {
     "name": "Jim Fowler",

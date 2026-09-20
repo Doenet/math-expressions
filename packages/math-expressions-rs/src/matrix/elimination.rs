@@ -35,19 +35,14 @@ pub(super) fn as_rationals(entries: &[Expr]) -> Option<Vec<BigRational>> {
 
 /// A canonical square literal matrix with its dimension, under the dim cap.
 pub(super) fn square_literal(c: &Expr) -> Option<(usize, &[Expr])> {
-    let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = c
-    else {
+    let Expr::Matrix(m) = c else {
         return None;
     };
-    let n = *rows as usize;
-    if rows != cols || n == 0 || n > crate::resource_limits::current().max_matrix_dim {
+    let n = m.rows() as usize;
+    if !m.is_square() || n == 0 || n > crate::resource_limits::current().max_matrix_dim {
         return None;
     }
-    Some((n, entries))
+    Some((n, m.entries()))
 }
 
 /// Is this entry provably zero? Pivot/rank/discriminant decisions ride on
@@ -160,9 +155,7 @@ pub(super) fn is_polynomial(e: &Expr) -> bool {
     match e {
         Expr::Num(_) | Expr::Sym(_) => true,
         Expr::Add(ts) | Expr::Mul(ts) => ts.iter().all(is_polynomial),
-        Expr::Pow(b, x) => {
-            is_polynomial(b) && matches!(&**x, Expr::Num(Number::Int(k)) if *k >= 0)
-        }
+        Expr::Pow(b, x) => is_polynomial(b) && matches!(&**x, Expr::Num(Number::Int(k)) if *k >= 0),
         _ => false,
     }
 }
@@ -193,12 +186,14 @@ pub(super) fn det_bareiss(entries: &[Expr], n: usize) -> Option<Expr> {
             for j in k + 1..n {
                 let num = add(vec![
                     mul(vec![m[i * n + j].clone(), m[k * n + k].clone()]),
-                    mul(vec![Expr::int(-1), m[i * n + k].clone(), m[k * n + j].clone()]),
+                    mul(vec![
+                        Expr::int(-1),
+                        m[i * n + k].clone(),
+                        m[k * n + j].clone(),
+                    ]),
                 ]);
-                let q = crate::ops::reduce_rational(&Expr::Div(
-                    Box::new(num),
-                    Box::new(prev.clone()),
-                ));
+                let q =
+                    crate::ops::reduce_rational(&Expr::Div(Box::new(num), Box::new(prev.clone())));
                 if !is_polynomial(&canonicalize(&q)) {
                     return None;
                 }

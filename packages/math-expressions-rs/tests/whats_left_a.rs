@@ -25,7 +25,11 @@ fn eq(a: &Expr, b: &str) -> bool {
 #[test]
 fn factor_difference_of_squares() {
     let f = factor(&parse("x^2 - 1"));
-    assert!(eq(&f, "(x-1)(x+1)"), "got {}", to_text(&f, &Default::default()));
+    assert!(
+        eq(&f, "(x-1)(x+1)"),
+        "got {}",
+        to_text(&f, &Default::default())
+    );
     // Structurally a product, not the expanded form.
     assert!(matches!(f, Expr::Mul(_)), "expected a product, got {f:?}");
 }
@@ -86,7 +90,10 @@ fn factor_degree_cap_is_scoped() {
     };
     let under = resource_limits::with(strict, || factor(&e));
     assert_eq!(under, canonicalize(&e), "expected refusal under tight cap");
-    assert!(matches!(factor(&e), Expr::Mul(_)), "default cap must factor");
+    assert!(
+        matches!(factor(&e), Expr::Mul(_)),
+        "default cap must factor"
+    );
 }
 
 // ---- item 9: simplify_logical ----
@@ -117,8 +124,14 @@ fn simplify_logical_negates_relation() {
 
 #[test]
 fn analytic_polynomial_is_analytic() {
-    assert!(is_analytic(&parse("x^2 + 3x - 1"), &AnalyticOpts::default()));
-    assert!(is_analytic(&parse("sin(x) + cos(x)"), &AnalyticOpts::default()));
+    assert!(is_analytic(
+        &parse("x^2 + 3x - 1"),
+        &AnalyticOpts::default()
+    ));
+    assert!(is_analytic(
+        &parse("sin(x) + cos(x)"),
+        &AnalyticOpts::default()
+    ));
 }
 
 #[test]
@@ -133,7 +146,10 @@ fn abs_is_not_analytic_by_default() {
 
 #[test]
 fn logical_and_relations_are_not_analytic() {
-    assert!(!is_analytic(&parse("x > 0 and y > 0"), &AnalyticOpts::default()));
+    assert!(!is_analytic(
+        &parse("x > 0 and y > 0"),
+        &AnalyticOpts::default()
+    ));
     // A bare order relation is analytic only under allow_relation.
     assert!(!is_analytic(&parse("x > 0"), &AnalyticOpts::default()));
     let opts = AnalyticOpts {
@@ -163,7 +179,11 @@ fn non_analytic_structural_operators_are_rejected() {
 #[test]
 fn equals_via_real_agrees_on_reals() {
     let opts = EqOptions::default();
-    assert!(equals_via_real(&parse("(x+1)^2"), &parse("x^2 + 2x + 1"), &opts));
+    assert!(equals_via_real(
+        &parse("(x+1)^2"),
+        &parse("x^2 + 2x + 1"),
+        &opts
+    ));
 }
 
 #[test]
@@ -171,7 +191,11 @@ fn equals_via_real_rejects_nonanalytic() {
     // abs is non-analytic, so equalsViaReal declines (returns false) even though
     // abs(x) == sqrt(x^2) on the reals.
     let opts = EqOptions::default();
-    assert!(!equals_via_real(&parse("abs(x)"), &parse("sqrt(x^2)"), &opts));
+    assert!(!equals_via_real(
+        &parse("abs(x)"),
+        &parse("sqrt(x^2)"),
+        &opts
+    ));
 }
 
 // ---- item 16: finite_field_evaluate ----
@@ -189,7 +213,11 @@ fn finite_field_evaluate_basic() {
 #[test]
 fn vector_add_and_sub() {
     let s = vector_add(&parse("(1,2,3)"), &parse("(4,5,6)"));
-    assert!(eq(&s, "(5,7,9)"), "got {}", to_text(&s, &Default::default()));
+    assert!(
+        eq(&s, "(5,7,9)"),
+        "got {}",
+        to_text(&s, &Default::default())
+    );
     let d = vector_sub(&parse("(4,5,6)"), &parse("(1,2,3)"));
     assert!(eq(&d, "(3,3,3)"));
 }
@@ -200,7 +228,11 @@ fn dot_and_cross_product() {
     // 1*4 + 2*5 + 3*6 = 32
     assert!(eq(&dp, "32"), "got {}", to_text(&dp, &Default::default()));
     let cp = cross_prod(&parse("(1,0,0)"), &parse("(0,1,0)"));
-    assert!(eq(&cp, "(0,0,1)"), "got {}", to_text(&cp, &Default::default()));
+    assert!(
+        eq(&cp, "(0,0,1)"),
+        "got {}",
+        to_text(&cp, &Default::default())
+    );
 }
 
 // ---- item 17: set_small_zero ----
@@ -217,9 +249,17 @@ fn set_small_zero_clears_noise() {
 fn remove_units_with_and_without_scaling() {
     // 50% scaled -> 1/2, unscaled -> 50
     let scaled = remove_units(&parse("50%"), true);
-    assert!(eq(&scaled, "1/2"), "got {}", to_text(&scaled, &Default::default()));
+    assert!(
+        eq(&scaled, "1/2"),
+        "got {}",
+        to_text(&scaled, &Default::default())
+    );
     let bare = remove_units(&parse("50%"), false);
-    assert!(eq(&bare, "50"), "got {}", to_text(&bare, &Default::default()));
+    assert!(
+        eq(&bare, "50"),
+        "got {}",
+        to_text(&bare, &Default::default())
+    );
 }
 
 #[test]

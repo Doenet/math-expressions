@@ -14,13 +14,12 @@ use super::numeric::{
     close_numeric_fuzzy, sample_point, BINDING_SCALES, MAX_VALUE, MINIMUM_MATCHES, NUMBER_TRIES,
 };
 use super::relations::{as_comparison, proportional, Comparison};
+use super::seedrandom::SeedRandom;
 use super::{equals, EqOptions};
 use crate::eval_numeric::complex::{eval_complex, free_symbols};
 use crate::expr::{Expr, RelOp};
 use crate::normalize::{canonicalize, simplify_canonical};
 use num_complex::Complex64;
-use rand::rngs::SmallRng;
-use rand::SeedableRng;
 
 pub(super) fn pm_equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     // Sequences (tuples/vectors/…): compare componentwise, re-entering `equals`
@@ -50,9 +49,8 @@ pub(super) fn pm_equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
         if ca.op != cb.op {
             return false;
         }
-        let std_form = |c: Comparison| {
-            canonicalize(&Expr::Add(vec![c.lhs, Expr::Neg(Box::new(c.rhs))]))
-        };
+        let std_form =
+            |c: Comparison| canonicalize(&Expr::Add(vec![c.lhs, Expr::Neg(Box::new(c.rhs))]));
         let sa = std_form(ca);
         let sb = std_form(cb);
         if a_is_equation(a) {
@@ -99,9 +97,10 @@ fn pm_branch_product(e: &Expr) -> Option<Expr> {
 /// accept; any mismatch rejects). Per-variant numeric-error tolerance is built
 /// from the `a` (LHS) side only, mirroring `component_equals`.
 fn pm_multiset_equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
-    let (Ok(a_variants), Ok(b_variants)) =
-        (crate::ops::pm::expand_pm_signs(a), crate::ops::pm::expand_pm_signs(b))
-    else {
+    let (Ok(a_variants), Ok(b_variants)) = (
+        crate::ops::pm::expand_pm_signs(a),
+        crate::ops::pm::expand_pm_signs(b),
+    ) else {
         return false;
     };
 
@@ -121,7 +120,12 @@ fn pm_multiset_equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
         Vec::new()
     };
 
-    let mut rng = SmallRng::seed_from_u64(0x5EED_1234_ABCD_0003);
+    // The ± stage is reached from the complex stage in the JS and inherits its
+    // generator mid-stream, so byte-for-byte parity is not available here the
+    // way it is in `numeric`; a fresh stream from the same seed is the closest
+    // faithful choice. (Our scale cycling below is already a divergence — the
+    // JS keeps one scale.)
+    let mut rng = SeedRandom::new("complex_seed");
     let minimum_matches = if vars.is_empty() { 1 } else { MINIMUM_MATCHES };
     let max_iter = 10 * NUMBER_TRIES;
     let mut matches = 0;
@@ -129,11 +133,18 @@ fn pm_multiset_equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     for i in 0..max_iter {
         let scale = BINDING_SCALES[(i / 20) % BINDING_SCALES.len()];
         // JS `randomBindings` uses real bindings for the pm path.
-        let env = sample_point(&vars, scale, None, &mut rng, true);
+        // No assumption context here, so no variable is sampled as an integer.
+        let env = sample_point(&vars, scale, None, &mut rng, true, &[]);
 
         let (Some(av), Some(bv)) = (
-            a_variants.iter().map(|e| eval_complex(e, &env)).collect::<Option<Vec<_>>>(),
-            b_variants.iter().map(|e| eval_complex(e, &env)).collect::<Option<Vec<_>>>(),
+            a_variants
+                .iter()
+                .map(|e| eval_complex(e, &env))
+                .collect::<Option<Vec<_>>>(),
+            b_variants
+                .iter()
+                .map(|e| eval_complex(e, &env))
+                .collect::<Option<Vec<_>>>(),
         ) else {
             continue;
         };

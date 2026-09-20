@@ -4,7 +4,9 @@
 //! from slow convergence); merely near-singular but smooth integrands must
 //! converge to certified digits, however sharp the spike.
 
-use math_expressions::eval_numeric::certified_digits::{evaluate_to_precision, integrate_to_precision, Precise};
+use math_expressions::eval_numeric::certified_digits::{
+    evaluate_to_precision, integrate_to_precision, Precise,
+};
 use math_expressions::{Expr, TextToAst, TextToAstOptions};
 use std::time::Instant;
 
@@ -24,12 +26,12 @@ fn divergent_and_improper_integrals_refuse_fast() {
     // endpoint singularities) alike: the certified machinery cannot bound
     // them, so both refuse — quickly, via the budget/domain caps.
     let cases = [
-        ("1/x^2", "-1", "1"),      // divergent, interior pole
-        ("1/x", "0", "1"),         // divergent, endpoint pole
-        ("tan(x)", "0", "2"),      // divergent, pole at π/2
+        ("1/x^2", "-1", "1"),        // divergent, interior pole
+        ("1/x", "0", "1"),           // divergent, endpoint pole
+        ("tan(x)", "0", "2"),        // divergent, pole at π/2
         ("1/(x - 1/3)^2", "0", "1"), // divergent, interior rational pole
-        ("1/sqrt(x)", "0", "1"),   // CONVERGENT improper — still refused
-        ("ln(x)", "0", "1"),       // convergent improper — still refused
+        ("1/sqrt(x)", "0", "1"),     // CONVERGENT improper — still refused
+        ("ln(x)", "0", "1"),         // convergent improper — still refused
     ];
     for (f, a, b) in cases {
         let t = Instant::now();

@@ -237,6 +237,16 @@ Consequences and mechanics:
   NUMBER branches (needs gcd/reduction — lands with the `Number` arithmetic).
 - Normalisation folds constants exactly; `0.1 + 0.2 = 0.3` becomes
   structurally true, shrinking reliance on tolerance-based equality.
+- **Shrinking, not removing (amended 2026-08-07).** Equality's bare-number
+  stage decides an *exact* pair exactly — that is this section's payoff, and
+  `10^20+1 ≠ 10^20+2` depends on it. It must not decide a `Float` pair that
+  way. A `Float` is by construction the result of inexact arithmetic, so its
+  low digits are an artifact of the route taken, and JS callers arrive at one
+  wherever a value crossed the JSON boundary or came back from evaluation:
+  DoenetML's `<sequence type="math" from=".1" step=".1">` generates
+  `0.30000000000000004` and expects `.3` to exclude it, exactly as the JS
+  library's `1e-12` relative epsilon did. When either side is a `Float`,
+  `equals` compares within `relative_tolerance`. `tests/equality.rs`.
 - Formatters render any rational whose denominator is `2^a·5^b` in decimal
   form (`Rat(1,2)` → `0.5`, not `1/2`), so decimal input round-trips exactly.
   Other denominators render as `a/b` / `\frac{a}{b}`.

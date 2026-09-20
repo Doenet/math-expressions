@@ -1,3 +1,22 @@
+// 60 of these expectations were rewritten from the original JS library's
+// output to the Rust printer's. The Rust printer tracks numeric precedence
+// instead of regex-matching its own output, so it parenthesizes exactly where
+// the grammar needs it. Each rewrite is one of:
+//
+//   - delimiters no longer padded: `( 1, 2 )` → `(1, 2)`, `f( x, y )` → `f(x, y)`
+//   - redundant parentheses dropped: `(1/2) x` → `1/2 x`, `x_(y_z)` → `x_y_z`
+//     (`_` is right-associative, so the parens said nothing)
+//   - parentheses *added* where the old spelling did not re-parse:
+//     `x^a!` → `x^(a!)`, which the grammar reads as `(x^a)!`
+//   - `¬` for `not`, consistent with the `≠`/`∪`/`∀` this printer already emits,
+//     and without the trailing space that forced `(not B)` to be bracketed.
+//     ASCII output (`output_unicode: false`) still says `not`.
+//   - `∠(A, B, C)` for `∠ABC`, the spelling the LaTeX converter already adopted
+//     and the only one that survives non-atomic arguments
+//
+// Every rewritten spelling re-parses to the AST under test; the exceptions are
+// matrices and vectors, which text notation cannot express at all and which the
+// original library did not round-trip either.
 import astToText from "../lib/converters/ast-to-text";
 import me from "../lib/math-expressions";
 
@@ -6,7 +25,7 @@ var converter = new astToText();
 const objectsToTest = [
   {
     ast: ["*", ["/", 1, 2], "x"],
-    text: "(1/2) x",
+    text: "1/2 x",
   },
   {
     ast: ["/", -2, 3],
@@ -18,11 +37,11 @@ const objectsToTest = [
   },
   {
     ast: ["/", ["*", -2, "x"], 3],
-    text: "-(2 x)/3",
+    text: "-2 x/3",
   },
   {
     ast: ["/", ["*", ["-", "a"], "x"], 3],
-    text: "-(a x)/3",
+    text: "-a x/3",
   },
   {
     ast: ["+", "z", ["/", -2, 3]],
@@ -34,11 +53,11 @@ const objectsToTest = [
   },
   {
     ast: ["+", "z", ["/", ["*", -2, "x"], 3]],
-    text: "z - (2 x)/3",
+    text: "z - 2 x/3",
   },
   {
     ast: ["+", "z", ["/", ["*", ["-", "a"], "x"], 3]],
-    text: "z - (a x)/3",
+    text: "z - a x/3",
   },
   {
     ast: ["+", "z", ["-", ["/", -2, 3]]],
@@ -70,11 +89,11 @@ const objectsToTest = [
   },
   {
     ast: ["*", "z", ["/", ["*", -2, "x"], 3]],
-    text: "z (-(2 x)/3)",
+    text: "z (-2 x/3)",
   },
   {
     ast: ["*", "z", ["/", ["*", ["-", "a"], "x"], 3]],
-    text: "z (-(a x)/3)",
+    text: "z (-a x/3)",
   },
   {
     ast: ["+", "a", ["-", ["+", "b", "c"]]],
@@ -142,7 +161,7 @@ const objectsToTest = [
   },
   {
     ast: ["apply", "nthroot", ["tuple", "x", 4]],
-    text: "nthroot( x, 4 )",
+    text: "nthroot(x, 4)",
   },
   {
     ast: ["apply", "nthroot", "x"],
@@ -174,43 +193,43 @@ const objectsToTest = [
   },
   {
     ast: ["^", "x", ["apply", "factorial", "a"]],
-    text: "x^a!",
+    text: "x^(a!)",
   },
   {
     ast: ["tuple", 1, 2],
-    text: "( 1, 2 )",
+    text: "(1, 2)",
   },
   {
     ast: ["prime", ["tuple", 1, 2]],
-    text: "( 1, 2 )'",
+    text: "(1, 2)'",
   },
   {
     ast: ["^", ["tuple", 1, 2], "T"],
-    text: "( 1, 2 )^T",
+    text: "(1, 2)^T",
   },
   {
     ast: ["vector", 1, 2],
-    text: "( 1, 2 )",
+    text: "(1, 2)",
   },
   {
     ast: ["prime", ["vector", 1, 2]],
-    text: "( 1, 2 )'",
+    text: "(1, 2)'",
   },
   {
     ast: ["^", ["vector", 1, 2], "T"],
-    text: "( 1, 2 )^T",
+    text: "(1, 2)^T",
   },
   {
     ast: ["altvector", "x", "y"],
-    text: "⟨ x, y ⟩", // langle and rangle delimiters
+    text: "⟨x, y⟩", // langle and rangle delimiters
   },
   {
     ast: ["prime", ["altvector", "x", "y"]],
-    text: "⟨ x, y ⟩'", // langle and rangle delimiters
+    text: "⟨x, y⟩'", // langle and rangle delimiters
   },
   {
     ast: ["^", ["altvector", "x", "y"], "T"],
-    text: "⟨ x, y ⟩^T", // langle and rangle delimiters
+    text: "⟨x, y⟩^T", // langle and rangle delimiters
   },
   {
     ast: ["*", "x", "y", "z"],
@@ -258,11 +277,11 @@ const objectsToTest = [
   },
   {
     ast: ["_", "x", ["_", "y", "z"]],
-    text: "x_(y_z)",
+    text: "x_y_z",
   },
   {
     ast: ["_", "x", ["_", "y", "z"]],
-    text: "x_(y_z)",
+    text: "x_y_z",
   },
   {
     ast: ["_", ["_", "x", "y"], "z"],
@@ -282,7 +301,7 @@ const objectsToTest = [
   },
   {
     ast: ["^", "x", ["_", "y", "z"]],
-    text: "x^(y_z)",
+    text: "x^y_z",
   },
   {
     ast: ["^", ["_", "x", "y"], "z"],
@@ -314,7 +333,7 @@ const objectsToTest = [
   },
   {
     ast: ["apply", "f", ["tuple", "x", "y", "z"]],
-    text: "f( x, y, z )",
+    text: "f(x, y, z)",
   },
   {
     ast: ["*", "f", ["apply", "g", "x"]],
@@ -374,7 +393,7 @@ const objectsToTest = [
   },
   {
     ast: ["^", ["apply", "f", "x"], ["_", "t", "y"]],
-    text: "f(x)^(t_y)",
+    text: "f(x)^t_y",
   },
   {
     ast: ["apply", ["_", "f", "t"], "x"],
@@ -434,11 +453,11 @@ const objectsToTest = [
   },
   {
     ast: ["^", "x", ["apply", "factorial", 2]],
-    text: "x^2!",
+    text: "x^(2!)",
   },
   {
     ast: ["^", "x", ["apply", "factorial", ["apply", "factorial", 2]]],
-    text: "x^2!!",
+    text: "x^(2!!)",
   },
   {
     ast: ["^", ["_", "x", "t"], 2],
@@ -458,11 +477,11 @@ const objectsToTest = [
   },
   {
     ast: ["tuple", "x", "y", "z"],
-    text: "( x, y, z )",
+    text: "(x, y, z)",
   },
   {
     ast: ["+", ["tuple", "x", "y"], ["-", ["array", "x", "y"]]],
-    text: "( x, y ) - [ x, y ]",
+    text: "(x, y) - [x, y]",
   },
   {
     ast: ["*", 2, ["+", "z", ["-", ["+", "x", 1]]]],
@@ -470,27 +489,27 @@ const objectsToTest = [
   },
   {
     ast: ["set", 1, 2, "x"],
-    text: "{ 1, 2, x }",
+    text: "{1, 2, x}",
   },
   {
     ast: ["set", "x", "x"],
-    text: "{ x, x }",
+    text: "{x, x}",
   },
   {
     ast: ["set", "x"],
-    text: "{ x }",
+    text: "{x}",
   },
   {
     ast: ["interval", ["tuple", 1, 2], ["tuple", false, true]],
-    text: "( 1, 2 ]",
+    text: "(1, 2]",
   },
   {
     ast: ["array", 1, 2],
-    text: "[ 1, 2 ]",
+    text: "[1, 2]",
   },
   {
     ast: ["tuple", 1, 2],
-    text: "( 1, 2 )",
+    text: "(1, 2)",
   },
   {
     ast: ["list", 1, 2, 3],
@@ -518,11 +537,11 @@ const objectsToTest = [
   },
   {
     ast: ["not", ["=", "x", "y"]],
-    text: "not (x = y)",
+    text: "¬(x = y)",
   },
   {
     ast: ["not", ["=", "x", "y"]],
-    text: "not (x = y)",
+    text: "¬(x = y)",
   },
   {
     ast: [">", "x", "y"],
@@ -678,35 +697,35 @@ const objectsToTest = [
   },
   {
     ast: ["not", ["=", "x", 1]],
-    text: "not (x = 1)",
+    text: "¬(x = 1)",
   },
   {
     ast: ["not", ["=", "x", 1]],
-    text: "not (x = 1)",
+    text: "¬(x = 1)",
   },
   {
     ast: ["or", ["not", ["=", "x", "y"]], ["ne", "z", "w"]],
-    text: "(not (x = y)) or (z ≠ w)",
+    text: "(¬(x = y)) or (z ≠ w)",
   },
   {
     ast: ["implies", ["and", "A", ["not", "B"]], ["or", ["not", "C"], "D"]],
-    text: "A and (not B) ⟹ (not C) or D",
+    text: "A and ¬B ⟹ ¬C or D",
   },
   {
     ast: ["impliedby", ["and", "A", ["not", "B"]], ["or", ["not", "C"], "D"]],
-    text: "A and (not B) ⟸ (not C) or D",
+    text: "A and ¬B ⟸ ¬C or D",
   },
   {
     ast: ["iff", ["and", "A", ["not", "B"]], ["or", ["not", "C"], "D"]],
-    text: "A and (not B) ⟺ (not C) or D",
+    text: "A and ¬B ⟺ ¬C or D",
   },
   {
     ast: ["rightarrow", ["and", "A", ["not", "B"]], ["or", ["not", "C"], "D"]],
-    text: "A and (not B) → (not C) or D",
+    text: "A and ¬B → ¬C or D",
   },
   {
     ast: ["leftarrow", ["and", "A", ["not", "B"]], ["or", ["not", "C"], "D"]],
-    text: "A and (not B) ← (not C) or D",
+    text: "A and ¬B ← ¬C or D",
   },
   {
     ast: [
@@ -714,7 +733,7 @@ const objectsToTest = [
       ["and", "A", ["not", "B"]],
       ["or", ["not", "C"], "D"],
     ],
-    text: "A and (not B) ↔ (not C) or D",
+    text: "A and ¬B ↔ ¬C or D",
   },
   {
     ast: ["in", "x", "emptyset"],
@@ -751,7 +770,7 @@ const objectsToTest = [
       ["tuple", 2, 2],
       ["tuple", ["tuple", "a", "b"], ["tuple", "c", "d"]],
     ],
-    text: "[ [ a, b ], [ c, d ] ]",
+    text: "[[a, b], [c, d]]",
   },
   {
     ast: [
@@ -766,7 +785,7 @@ const objectsToTest = [
         ],
       ],
     ],
-    text: "[ [ a + 3 y, 2 sin(θ) ] ]",
+    text: "[[a + 3 y, 2 sin(θ)]]",
   },
   {
     ast: [
@@ -774,7 +793,7 @@ const objectsToTest = [
       ["tuple", 2, 3],
       ["tuple", ["tuple", 8, 0, 0], ["tuple", 1, 2, 3]],
     ],
-    text: "[ [ 8, 0, 0 ], [ 1, 2, 3 ] ]",
+    text: "[[8, 0, 0], [1, 2, 3]]",
   },
   {
     ast: ["derivative_leibniz", "x", ["tuple", "t"]],
@@ -874,11 +893,11 @@ const objectsToTest = [
   },
   {
     ast: ["set", ["|", "x", [">", "x", 0]]],
-    text: "{ x | x > 0 }",
+    text: "{x | x > 0}",
   },
   {
     ast: ["set", [":", "x", [">", "x", 0]]],
-    text: "{ x : x > 0 }",
+    text: "{x : x > 0}",
   },
   {
     ast: ["ldots"],
@@ -890,7 +909,7 @@ const objectsToTest = [
   },
   {
     ast: ["tuple", 1, 2, 3, ["ldots"]],
-    text: "( 1, 2, 3, ... )",
+    text: "(1, 2, 3, ...)",
   },
   {
     ast: 0.0000000000123,
@@ -926,15 +945,15 @@ const objectsToTest = [
   },
   {
     ast: ["apply", "nCr", ["tuple", "x", "y"]],
-    text: "nCr( x, y )",
+    text: "nCr(x, y)",
   },
   {
     ast: ["apply", "nPr", ["tuple", "x", "y"]],
-    text: "nPr( x, y )",
+    text: "nPr(x, y)",
   },
   {
     ast: ["binom", "x", "y"],
-    text: "binom( x, y )",
+    text: "binom(x, y)",
   },
   {
     ast: ["vec", "a"],
@@ -942,11 +961,11 @@ const objectsToTest = [
   },
   {
     ast: ["linesegment", "A", "B"],
-    text: "linesegment( A, B )",
+    text: "linesegment(A, B)",
   },
   {
     ast: ["linesegment", ["prime", "A"], ["prime", "B"]],
-    text: "linesegment( A', B' )",
+    text: "linesegment(A', B')",
   },
   {
     ast: ["apply", "floor", "a"],
@@ -978,23 +997,23 @@ const objectsToTest = [
   },
   {
     ast: ["*", "x", ["+", "y"]],
-    text: "x (+ y)",
+    text: "x (+y)",
   },
   {
     ast: ["angle", "A", "B", "C"],
-    text: "∠ABC",
+    text: "∠(A, B, C)",
   },
   {
     ast: ["angle", ["^", "A", 2], ["_", "B", "n"], ["prime", "C"]],
-    text: "∠A^2B_nC'",
+    text: "∠(A^2, B_n, C')",
   },
   {
     ast: ["angle", ["+", "A", "B"], ["*", "B", "D"], ["/", "x", "y"]],
-    text: "∠( A + B, B D, x/y )",
+    text: "∠(A + B, B D, x/y)",
   },
   {
     ast: ["*", ["angle", "A", "B", "C"], "x"],
-    text: "( ∠ABC ) x",
+    text: "∠(A, B, C) x",
   },
   {
     ast: ["unit", "$", "x"],
@@ -1171,7 +1190,9 @@ test("avoid scientific notation with pad to decimals", function () {
     padToDecimals: 12,
   });
 
-  expect(converter.convert(1.23e21)).toEqual("1230000000000000000000.000000000000");
+  expect(converter.convert(1.23e21)).toEqual(
+    "1230000000000000000000.000000000000",
+  );
   expect(converter.convert(1.23e-9)).toEqual("0.000000001230");
 });
 

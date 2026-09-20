@@ -168,6 +168,37 @@ fn text_parse_scientific_notation() {
     assert_eq!(text(on, "2E^2-3E+2"), sci);
 }
 
+/// The two limits of the rule, both inherited from legacy and both pinned by
+/// its spec: the exponent marker is uppercase `E`, and the exponent has to end
+/// the expression or be followed by `, | ) } ]`.
+///
+/// Lowercase is not an oversight to fix — `e` is Euler's number in this
+/// grammar, so `1.2e-3` is `1.2·e − 3` and legacy asserted exactly that.
+/// DoenetML filed the option as having no effect (upstream request 09) after
+/// testing it as `7e-12`; this is the case they were reading.
+#[test]
+fn scientific_notation_is_uppercase_and_delimited() {
+    let on = || TextToAstOptions {
+        parse_scientific_notation: true,
+        ..Default::default()
+    };
+    // Uppercase, at the end → a number.
+    assert_eq!(text(on(), "7E-12"), json!(7e-12));
+    assert_eq!(text(on(), "3.2E-12"), json!(3.2e-12));
+    // Lowercase → Euler's number, flag or no flag.
+    let euler = json!(["+", ["*", 7, "e"], -12]);
+    assert_eq!(text(on(), "7e-12"), euler);
+    assert_eq!(text(TextToAstOptions::default(), "7e-12"), euler);
+    assert_eq!(text(on(), "1.2e-3"), json!(["+", ["*", 1.2, "e"], -3]));
+    // Uppercase but not delimited → the `+ 2` is not part of the exponent.
+    assert_eq!(
+        text(on(), "3.1E-3 + 2"),
+        json!(["+", ["*", 3.1, "E"], -3, 2])
+    );
+    // Delimited by one of the closers → a number again.
+    assert_eq!(text(on(), "(3.1E-3, 1E2)"), json!(["tuple", 0.0031, 100]));
+}
+
 #[test]
 fn text_conditional_probability() {
     let p = || TextToAstOptions {

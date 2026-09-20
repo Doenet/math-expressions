@@ -129,7 +129,11 @@ fn divergences_are_snapshotted() {
         new.is_empty(),
         "{} NEW divergences from the JS oracle:\n{}",
         new.len(),
-        new.iter().take(40).map(|k| format!("  {k}")).collect::<Vec<_>>().join("\n"),
+        new.iter()
+            .take(40)
+            .map(|k| format!("  {k}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
 }
 

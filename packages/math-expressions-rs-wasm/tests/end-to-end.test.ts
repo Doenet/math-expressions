@@ -55,7 +55,12 @@ describe("algebra", () => {
   // tell whether the reduction actually happened across the boundary.
   test("simplify is the aggressive simplifier", () => {
     expect(P("exp(log(x))").simplify().tree_json()).toBe('"x"');
-    expect(P("cos(pi/3)").simplify().tree_json()).toBe("0.5");
+    // A fraction, not `0.5`: an exact rational that was never *written* as a
+    // decimal crosses the boundary as `["/", n, d]`, because DoenetML's
+    // structural criteria (`ReducedFraction`, `ExactValue`) cannot see a
+    // fraction in a value that has already been decimalized. Only a rational
+    // carrying the `Decimal` spelling — a user-typed `0.5` — stays positional.
+    expect(P("cos(pi/3)").simplify().tree_json()).toBe('["/",1,2]');
     expect(P("(x^2-1)/(x-1)").simplify().tree_json()).toBe('["+","x",1]');
     // The `simplify-known-failures.json` row: correct, but `equals` samples
     // sin(pi) as ~1e-16 and so cannot confirm it.

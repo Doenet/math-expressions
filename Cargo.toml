@@ -21,3 +21,12 @@ lto = "fat"
 codegen-units = 1
 panic = "abort"
 strip = "debuginfo"
+
+# Note on `panic = "abort"` and diagnosability (DOENET_INTEGRATION item 2): it
+# was long assumed that this line is why a wasm panic reaches the browser as a
+# bare `RuntimeError: unreachable`. It is not. std runs the panic hook *before*
+# aborting, so the message survives this profile intact — what was missing was
+# a hook, since the default one writes to a stderr that goes nowhere on
+# wasm32-unknown-unknown. One is now installed unconditionally in the wasm
+# crate; measured cost 1,958 bytes. There is no separate diagnostic profile
+# because a separate profile turned out to buy nothing.

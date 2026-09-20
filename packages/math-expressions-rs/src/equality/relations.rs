@@ -144,7 +144,11 @@ mod tests {
     use super::*;
 
     fn e(s: &str) -> Expr {
-        canonicalize(&crate::TextToAst::new(Default::default()).convert(s).unwrap())
+        canonicalize(
+            &crate::TextToAst::new(Default::default())
+                .convert(s)
+                .unwrap(),
+        )
     }
 
     /// `proportional` fixes the constant factor at the first live point and

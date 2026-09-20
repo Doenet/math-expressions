@@ -3,9 +3,9 @@
 //! every answer is *certified* (exact Sturm counts + certified refinement)
 //! or an honest refusal — never a wrong value or a wrong index order.
 
-use math_expressions::eval_numeric::complex::{eval_complex, Env};
 use math_expressions::eval_numeric::certified_digits::{evaluate_to_precision, Precise};
-use math_expressions::{canonicalize, Expr, TextToAst, TextToAstOptions};
+use math_expressions::eval_numeric::complex::{eval_complex, Env};
+use math_expressions::{canonicalize, equals, EqOptions, Expr, TextToAst, TextToAstOptions};
 use num_complex::Complex64;
 
 fn parse(s: &str) -> Expr {
@@ -106,7 +106,10 @@ fn mignotte_close_real_pair() {
             }
         }
     }
-    let near: Vec<&(usize, f64)> = reals.iter().filter(|(_, v)| (v - 0.1).abs() < 1e-3).collect();
+    let near: Vec<&(usize, f64)> = reals
+        .iter()
+        .filter(|(_, v)| (v - 0.1).abs() < 1e-3)
+        .collect();
     assert_eq!(near.len(), 2, "two roots near 1/10: {reals:?}");
     let (k0, v0) = *near[0];
     let (k1, v1) = *near[1];
@@ -128,7 +131,10 @@ fn mignotte_close_real_pair() {
         40,
     );
     assert_ne!(d0, d1, "certified digits distinguish the pair");
-    assert!(d0.starts_with("9999") && d1.starts_with("1000"), "{d0} / {d1}");
+    assert!(
+        d0.starts_with("9999") && d1.starts_with("1000"),
+        "{d0} / {d1}"
+    );
 }
 
 #[test]
@@ -238,4 +244,92 @@ fn degree_cap_refuses() {
     );
     let p = evaluate_to_precision(&parse(&rootof_text(&coeffs, 0)), 10);
     assert!(matches!(p, Precise::Unknown(_)));
+}
+
+/// A `rootof` whose polynomial is written as a *product* reaches the same leaf
+/// as its expanded spelling.
+///
+/// `canon_apply` turns the application into the [`Expr::RootOf`] leaf only when
+/// `from_apply_args` accepts, and a spelling it declines stays an application of
+/// a head with no evaluation at all — an opaque atom. Since canonicalization
+/// does not expand products, reading only the sum-of-monomials spelling made
+/// two spellings of *the same number* compare unequal, which is the failure
+/// this pins: `rootof((x-1)(x-2), 0)` was neither `1` nor
+/// `rootof(x^2-3x+2, 0)`.
+#[test]
+fn a_factored_polynomial_reaches_the_same_leaf_as_its_expanded_form() {
+    let expanded = canonicalize(&parse("rootof(x^2-3x+2, 0)"));
+    assert!(matches!(expanded, Expr::RootOf { .. }));
+    for spelling in [
+        "rootof((x-1)(x-2), 0)",
+        "rootof(-(x-1)(x-2), 0)",
+        "rootof((x-1)(x-2)/2, 0)",
+        "rootof(4(x-1)(x-2), 0)",
+        // Repeated factors: `make_rootof` takes the squarefree radical, so the
+        // distinct roots — and hence the index — are the same.
+        "rootof((x-1)^2 (x-2), 0)",
+    ] {
+        assert_eq!(
+            canonicalize(&parse(spelling)),
+            expanded,
+            "{spelling} must reach the same leaf as its expanded spelling"
+        );
+    }
+    // …and therefore compares equal to the number it denotes.
+    let opts = EqOptions::default();
+    assert!(equals(&parse("rootof((x-1)(x-2), 0)"), &parse("1"), &opts));
+    assert!(equals(&parse("rootof((x-1)(x-2), 1)"), &parse("2"), &opts));
+    assert!(equals(
+        &parse("rootof(2(x^2-2), 0)"),
+        &parse("-sqrt(2)"),
+        &opts
+    ));
+    assert!(equals(
+        &parse("rootof((x-1)(x-2)(x-3), 2)"),
+        &parse("3"),
+        &opts
+    ));
+}
+
+/// What the product reading must *not* do.
+///
+/// The two halves are different refusals. A tree that is not a polynomial in
+/// one variable is declined on meaning; a product whose expanded degree passes
+/// `max_rootof_degree` is declined on cost, since multiplying many-term
+/// polynomials grows the coefficients as well as the degree. Both leave the
+/// application exactly as written.
+#[test]
+fn the_product_reading_refuses_non_polynomials_and_oversized_expansions() {
+    for spelling in [
+        "rootof((x-y)(x-2), 0)", // two variables
+        "rootof(sin(x)(x-1), 0)",
+        "rootof(2^x - 1, 0)",
+        "rootof(x^(-1) - 1, 0)", // a quotient by a non-constant
+        "rootof((x^8-1)^64, 0)", // expands to degree 512
+        "rootof((x-1)^1000000, 0)",
+    ] {
+        assert!(
+            !matches!(canonicalize(&parse(spelling)), Expr::RootOf { .. }),
+            "{spelling} must stay an unevaluated application"
+        );
+    }
+    // The refusals above are cheap — nothing is expanded before it is refused.
+    // (Without the check on the exponent, `(x^2+x+1)^200` alone spends ten
+    // seconds building integers that are then thrown away.)
+    let start = std::time::Instant::now();
+    let big = canonicalize(&parse("rootof((x^2+x+1)^200 (x^3-2)^100, 0)"));
+    assert!(!matches!(big, Expr::RootOf { .. }));
+    assert!(
+        start.elapsed() < std::time::Duration::from_secs(1),
+        "an oversized product must be refused without expanding it (took {:?})",
+        start.elapsed()
+    );
+
+    // A *monomial* sum carries no such cost — no coefficient ever grows — so it
+    // is read at any degree, exactly as it was before products were handled:
+    // `x^70 - x^69` has a squarefree radical of degree 2.
+    assert_eq!(
+        canonicalize(&parse("rootof(x^70 - x^69, 0)")),
+        canonicalize(&parse("rootof(x^2 - x, 0)")),
+    );
 }

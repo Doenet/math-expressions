@@ -195,8 +195,10 @@ impl NumberNotation {
         if self.argument_separator == '.' {
             // `.` as the argument separator would shadow `...` (Ldots) and
             // leading-decimal numbers; only its decimal role is coherent.
-            return Err("argument separator must not be '.' (conflicts with '...' and decimals)"
-                .to_string());
+            return Err(
+                "argument separator must not be '.' (conflicts with '...' and decimals)"
+                    .to_string(),
+            );
         }
         if self.decimal_separator == self.argument_separator {
             return Err(format!(

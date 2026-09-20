@@ -218,7 +218,13 @@ pub fn csqrt(z: &CFix, s: i32, budget: &mut Budget) -> Option<CFix> {
     let cs = m.scale.min(z.re.scale);
     let m_c = m.at_scale(cs);
     let re_c = z.re.at_scale(cs);
-    let clamp = |mant: BigInt| if mant.is_negative() { BigInt::zero() } else { mant };
+    let clamp = |mant: BigInt| {
+        if mant.is_negative() {
+            BigInt::zero()
+        } else {
+            mant
+        }
+    };
     let plus = MpFix {
         mant: clamp(&m_c.mant + &re_c.mant),
         scale: cs,
@@ -237,7 +243,9 @@ pub fn csqrt(z: &CFix, s: i32, budget: &mut Budget) -> Option<CFix> {
     } else {
         (half(&minus), true) // big = im component²
     };
-    let big_arg = big.at_scale(2 * (g - 4).min(big.scale)).at_scale(2 * (g - 4));
+    let big_arg = big
+        .at_scale(2 * (g - 4).min(big.scale))
+        .at_scale(2 * (g - 4));
     let big_root = kernels::sqrt_fix(&big_arg, g - 4, budget)?;
     if big_root.mant.is_zero() {
         return Some(CFix::zero(s));
@@ -489,10 +497,8 @@ pub fn clog10(z: &CFix, s: i32, budget: &mut Budget) -> Option<CFix> {
     let g = s - 16;
     let ln = cln(z, g, budget)?;
     let ln10 = kernels::const_ln10(g - 8);
-    Some(
-        CFix {
-            re: kernels::div_fix(&ln.re, &ln10, s)?,
-            im: kernels::div_fix(&ln.im, &ln10, s)?,
-        },
-    )
+    Some(CFix {
+        re: kernels::div_fix(&ln.re, &ln10, s)?,
+        im: kernels::div_fix(&ln.im, &ln10, s)?,
+    })
 }

@@ -153,9 +153,9 @@ fn pow_distribution_keeps_mul_flat() {
 
 #[test]
 fn limits_are_scoped_and_effective() {
-    use math_expressions::resource_limits::{self, ResourceLimits};
-    use math_expressions::normalize::expand; // via re-export? use crate path below if needed
-    // Tight expand cap: a modest power-of-sum bails to the unexpanded form.
+    use math_expressions::normalize::expand;
+    use math_expressions::resource_limits::{self, ResourceLimits}; // via re-export? use crate path below if needed
+                                                                   // Tight expand cap: a modest power-of-sum bails to the unexpanded form.
     let e = parse("(a+b)^6");
     let strict = ResourceLimits {
         max_expand_terms: 5,

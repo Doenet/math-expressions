@@ -33,8 +33,10 @@ struct ToleranceCase {
     at_least_one_incorrect_answer: Vec<String>,
 }
 
-const SNAPSHOT: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/tolerance-known-failures.json");
+const SNAPSHOT: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/tolerance-known-failures.json"
+);
 
 fn parse(s: &str) -> Expr {
     TextToAst::new(TextToAstOptions::default())
@@ -79,7 +81,11 @@ fn tolerance_grading_matrix_no_regressions() {
     if std::env::var("BLESS").is_ok() {
         let mut list: Vec<&String> = current.iter().collect();
         list.sort();
-        std::fs::write(SNAPSHOT, serde_json::to_string_pretty(&list).unwrap() + "\n").unwrap();
+        std::fs::write(
+            SNAPSHOT,
+            serde_json::to_string_pretty(&list).unwrap() + "\n",
+        )
+        .unwrap();
         eprintln!("blessed {} known tolerance divergences", list.len());
         return;
     }
@@ -93,7 +99,10 @@ fn tolerance_grading_matrix_no_regressions() {
         new.is_empty(),
         "{} NEW tolerance grading divergence(s) (BLESS=1 if intentional):\n{}",
         new.len(),
-        new.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("\n")
+        new.iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>()
+            .join("\n")
     );
 
     // A shrinking snapshot is fine (Rust improved); surface it so the snapshot

@@ -42,6 +42,7 @@
 
 pub mod assumptions;
 pub mod calculus;
+pub mod constant_policy;
 pub mod equality;
 pub mod equality_structural;
 pub mod eval_exact;
@@ -61,12 +62,16 @@ pub mod resource_limits;
 pub mod special_functions;
 
 pub use assumptions::{
-    is_complex, is_integer, is_negative, is_nonnegative, is_nonpositive, is_nonzero, is_positive,
-    is_real, Assumptions,
+    expand_relations, is_complex, is_integer, is_negative, is_nonnegative, is_nonpositive,
+    is_nonzero, is_positive, is_real, Assumptions, TreeStore,
 };
+pub use calculus::critical::critical_points;
 pub use calculus::diff::derivative;
 pub use calculus::integrate::integrate;
-pub use equality::discrete_infinite::{create_discrete_infinite_set, match_discrete_infinite};
+pub use constant_policy::ConstantPolicy;
+pub use equality::discrete_infinite::{
+    create_discrete_infinite_set, equals_discrete_infinite_sets, match_discrete_infinite,
+};
 pub use equality::{
     contains_blank, equals, equals_syntactic, equals_via_real, finite_field_evaluate, EqOptions,
 };
@@ -78,29 +83,37 @@ pub use eval_numeric::certified_digits::{
     evaluate_to_precision, integrate_analyzed, integrate_to_precision, IntegralVerdict, Precise,
     SingularPoint,
 };
-pub use expr::sym::Sym;
-pub use expr::{Expr, MathConst, RelOp};
+pub use expr::sym::{interner_len, Sym};
+pub use expr::tear_down;
+pub use expr::{Expr, Mat, MathConst, RelOp};
 pub use grade::{
-    equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, solve_linear,
+    equal_specified_sign_errors, equal_with_sign_errors, evaluate_membership, linear_decomposition,
+    solve_linear,
 };
 pub use mathjs_compat::ode::{solve_ode_exprs, solve_ode_with, OdeSolution};
 pub use matrix::{
     char_poly, cross_prod, det, dot_prod, eigenvalues, eigenvectors, matmul, matrix_inverse,
-    nullspace, rank, rref, trace, transpose, vector_add, vector_sub, EigenPair,
+    nullspace, rank, rref, scalar_mul, trace, transpose, vector_add, vector_sub, EigenPair,
 };
 pub use normalize::{
-    canonicalize, desugar_units, expand, simplify, simplify_logical, simplify_with,
+    canonicalize, cmp_default_order, default_order, desugar_units, expand, flatten_logical,
+    normalize_applied_functions, normalize_negative_numbers, push_not, simplify, simplify_logical,
+    simplify_with,
 };
 pub use notation::{Digits, Grouping, NumberNotation};
 pub use num::Number;
 pub use ops::pm::{contains_pm, count_pm, expand_pm_signs, PmOverflow, MAX_PM_COUNT};
 pub use ops::{
-    add_unit, altvectors_to_vectors, constants_to_floats, evaluate, evaluate_numbers,
+    add_unit, altvectors_to_vectors, constants_to_floats, evaluate_fast_f64, evaluate_many,
+    evaluate_numbers, evaluate_numbers_evaluate_functions,
+    evaluate_numbers_evaluate_functions_with_digits, evaluate_numbers_preserve_order,
+    evaluate_numbers_preserve_order_with_digits, evaluate_numbers_with_digits,
     evaluate_to_constant, functions, get_component, is_analytic, normalize_function_names,
-    operators, reduce_rational, remove_scaling_units, remove_units, round_numbers_to_decimals,
-    round_numbers_to_precision, round_numbers_to_precision_plus_decimals, set_small_zero,
-    strings_to_subscripts, subscripts_to_strings, substitute, substitute_component,
-    to_intervals, tuples_to_vectors, variables, AnalyticOpts,
+    operators, perform_vector_matrix_additions_scalar_multiplications, reduce_rational,
+    remove_scaling_units, remove_units, round_numbers_to_decimals, round_numbers_to_precision,
+    round_numbers_to_precision_plus_decimals, set_small_zero, strings_to_subscripts,
+    subscripts_to_strings, subscripts_to_strings_with, substitute, substitute_component,
+    to_intervals, tuples_to_vectors, variables, AnalyticOpts, MaxDigits,
 };
 pub use parse::latex::{LatexToAst, LatexToAstOptions};
 pub use parse::text::{TextToAst, TextToAstOptions};

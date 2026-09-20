@@ -185,11 +185,7 @@ fn digits_of(p: &Precise, d: usize) -> String {
 
 #[test]
 fn d3_improper_values_match_closed_forms() {
-    for (f, closed) in [
-        ("1/sqrt(x)", "2"),
-        ("x^(-1/3)", "3/2"),
-        ("ln(x)", "-1"),
-    ] {
+    for (f, closed) in [("1/sqrt(x)", "2"), ("x^(-1/3)", "3/2"), ("ln(x)", "-1")] {
         let v = expect_value(f, "0", "1", 8);
         let want = evaluate_to_precision(&parse(closed), 12).to_f64().unwrap();
         assert!(

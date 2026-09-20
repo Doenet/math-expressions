@@ -68,14 +68,15 @@
 //! - [`finite_field`]     — the exact ℤ/pℤ rejection filter
 //! - [`discrete_infinite`] — periodic solution sets
 
-pub mod discrete_infinite;
 mod api;
+pub mod discrete_infinite;
 mod finite_field;
 mod fuzzy;
 mod numeric;
 mod options;
 mod plus_minus;
 mod relations;
+mod seedrandom;
 
 pub use api::{contains_blank, equals, equals_syntactic, equals_via_real};
 pub use finite_field::finite_field_evaluate;

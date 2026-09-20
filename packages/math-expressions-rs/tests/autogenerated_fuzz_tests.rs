@@ -70,7 +70,10 @@ fn parse_matches_js() {
     for c in &corpus().parse {
         let got = catch(|| parse(&c.input).map(|e| expr::serde::to_js(&e))).flatten();
         if got.as_ref() != Some(&c.tree) {
-            diffs.push(format!("  {:?}\n    JS:   {}\n    Rust: {:?}", c.input, c.tree, got));
+            diffs.push(format!(
+                "  {:?}\n    JS:   {}\n    Rust: {:?}",
+                c.input, c.tree, got
+            ));
         }
     }
     assert!(
@@ -92,7 +95,10 @@ fn equals_matches_js() {
         })
         .flatten();
         if verdict != Some(c.equal) {
-            diffs.push(format!("  {:?} == {:?}: JS {} vs Rust {:?}", c.a, c.b, c.equal, verdict));
+            diffs.push(format!(
+                "  {:?} == {:?}: JS {} vs Rust {:?}",
+                c.a, c.b, c.equal, verdict
+            ));
         }
     }
     assert!(

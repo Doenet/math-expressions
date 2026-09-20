@@ -3,7 +3,12 @@
 # wasm build — the playground and js-compat call this with different targets
 # rather than carrying their own copies.
 #
-# Usage: build-wasm.sh [target] [out-dir]
+# Usage: build-wasm.sh [--debug] [target] [out-dir]
+#   --debug : also export `debug_panic_selftest()`, which panics on purpose so a
+#             harness can be checked. Panic *reporting* is not a build option —
+#             the hook is compiled into every build (see `panic_report` in
+#             src-rust/lib.rs), so a shipped panic already arrives in the
+#             console with its message, file, and line.
 #   target  : nodejs (default) | web        -- wasm-bindgen --target
 #   out-dir : default pkg                    -- where wasm-bindgen writes.
 #             Relative paths resolve against this script's dir (the package
@@ -18,11 +23,23 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+FEATURES=()
+if [ "${1:-}" = "--debug" ]; then
+  FEATURES=(--features debug-panics)
+  shift
+fi
+
 TARGET="${1:-nodejs}"
 OUT_DIR="${2:-pkg}"
 
 TARGET_DIR="$(cargo metadata --no-deps --format-version 1 | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).target_directory)')"
-cargo build -p math-expressions-wasm --target wasm32-unknown-unknown --release
+# `${FEATURES[@]+…}` rather than a bare `"${FEATURES[@]}"`: expanding an empty
+# array under `set -u` is a fatal "unbound variable" before bash 4.4, and 3.2 is
+# what macOS ships as /bin/bash. Without this the *ordinary* (non-`--debug`)
+# path of this script fails there — which is DoenetML's build path, since
+# `packages/math/scripts/build-wasm.mjs` shells out to exactly this file.
+cargo build -p math-expressions-wasm --target wasm32-unknown-unknown --release \
+  ${FEATURES[@]+"${FEATURES[@]}"}
 wasm-bindgen "$TARGET_DIR/wasm32-unknown-unknown/release/math_expressions_wasm.wasm" \
   --out-dir "$OUT_DIR" --target "$TARGET"
 

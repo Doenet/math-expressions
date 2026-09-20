@@ -76,8 +76,19 @@ fn truncation_sweep_terminates() {
 
 /// Curated alphabet of tokens that drive the parser's loops and delimiter logic.
 const TOKENS: &[&str] = &[
-    "(", ")", "{", "}", "!", "^", "_", "&", r"\\", r"\begin{bmatrix}",
-    r"\end{bmatrix}", "1", "x",
+    "(",
+    ")",
+    "{",
+    "}",
+    "!",
+    "^",
+    "_",
+    "&",
+    r"\\",
+    r"\begin{bmatrix}",
+    r"\end{bmatrix}",
+    "1",
+    "x",
 ];
 const MAX_LEN: usize = 3; // |TOKENS|^1 + ^2 + ^3 = 13 + 169 + 2197 = 2379 inputs
 

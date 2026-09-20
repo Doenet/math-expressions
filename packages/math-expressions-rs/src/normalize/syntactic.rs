@@ -67,8 +67,11 @@ fn pass_function_names(e: &Expr) -> Expr {
             let args = args.iter().map(pass_function_names).collect();
             Expr::Apply(Box::new(head), args)
         }
-        // `e^x` → `exp(x)` (math.define_e defaults to true).
-        Expr::Pow(base, exp) if is_sym(base, "e") => {
+        // `e^x` → `exp(x)`, but only while `e` is declared Euler's number
+        // (`define_e`, on by default): in a document whose points are `(e, f)`,
+        // `e^x` is a coordinate raised to a power and folding it to `exp`
+        // silently changes the expression.
+        Expr::Pow(base, exp) if crate::constant_policy::is_e(base) => {
             Expr::Apply(Box::new(Expr::sym("exp")), vec![pass_function_names(exp)])
         }
         // `binom(n, k)` → `nCr(n, k)`.
@@ -105,7 +108,10 @@ fn normalize_head_name(head: &Expr) -> Expr {
 
 // ---- Pass 2: normalize_applied_functions ----
 
-fn pass_applied_functions(e: &Expr) -> Expr {
+/// Also the whole of `me.normalize_applied_functions`, which is this pass and
+/// nothing else — unlike [`normalize_syntactic`] it does not flatten first, so
+/// it is exported on its own rather than folded into the four-pass sequence.
+pub fn pass_applied_functions(e: &Expr) -> Expr {
     if let Expr::Apply(head, args) = e {
         let args: Vec<Expr> = args.iter().map(pass_applied_functions).collect();
         match head.as_ref() {
@@ -143,7 +149,10 @@ fn strip_primes(mut head: &Expr) -> (Expr, usize) {
 
 // ---- Pass 3: normalize_negative_numbers ----
 
-fn pass_negative_numbers(e: &Expr) -> Expr {
+/// Also the whole of `me.normalize_negative_numbers`. `default_order` carries a
+/// second copy of this rule, but that one arrives after flattening and sorting;
+/// this pass must leave order alone, so the two stay separate.
+pub fn pass_negative_numbers(e: &Expr) -> Expr {
     if let Expr::Neg(inner) = e {
         match inner.as_ref() {
             // `-(3)` → `-3`
@@ -228,10 +237,6 @@ fn one_over(n: Expr) -> Expr {
 
 fn pow(base: Expr, exp: Expr) -> Expr {
     Expr::Pow(Box::new(base), Box::new(exp))
-}
-
-fn is_sym(e: &Expr, name: &str) -> bool {
-    matches!(e, Expr::Sym(s) if s.name() == name)
 }
 
 fn is_int(e: &Expr, v: i64) -> bool {

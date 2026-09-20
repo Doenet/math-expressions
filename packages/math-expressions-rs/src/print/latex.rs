@@ -4,22 +4,60 @@
 //! is otherwise the same precedence comparison as the text formatter.
 //! Correctness is enforced by round-tripping through the LaTeX parser.
 
-use super::{deriv_var, f64_positional_string, pow_suffix, prec, split_sign};
+use super::{deriv_var, pow_suffix, prec, split_sign};
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct LatexOpts {
     /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
+    /// Pad every rendered number to at least this many significant characters
+    /// (`padToDigits`). `None`/`0` = no padding.
+    pub pad_to_digits: Option<u32>,
+    /// Pad every rendered number to at least this many decimal places
+    /// (`padToDecimals`). `None`/`0` = no padding.
+    pub pad_to_decimals: Option<u32>,
+    /// Render blank leaves (`＿`) visibly (`showBlanks`); when false they emit
+    /// as the empty string.
+    pub show_blanks: bool,
+    /// Put an explicit `\cdot` between every pair of factors
+    /// (`explicitMultiplicationSymbols`). Legacy LaTeX had no such option;
+    /// honored here so the flag is not silently dropped.
+    pub explicit_multiplication_symbols: bool,
+    /// Render every float positionally, however large or small
+    /// (`avoidScientificNotation`). Off by default, matching legacy: a float
+    /// outside `0.000001 ..< 1e21` renders as `1.23 \cdot 10^{22}`.
+    pub avoid_scientific_notation: bool,
+    /// The `amsmath` environment a matrix renders into (`matrixEnvironment`) —
+    /// `bmatrix` (square brackets) by default, `pmatrix` for round ones.
+    pub matrix_environment: String,
+}
+
+impl Default for LatexOpts {
+    fn default() -> Self {
+        LatexOpts {
+            notation: crate::notation::NumberNotation::default(),
+            pad_to_digits: None,
+            pad_to_decimals: None,
+            show_blanks: true,
+            explicit_multiplication_symbols: false,
+            avoid_scientific_notation: false,
+            matrix_environment: "bmatrix".to_string(),
+        }
+    }
 }
 
 pub fn convert(expr: &Expr, opts: &LatexOpts) -> String {
-    Writer { opts }.emit(expr, 0)
+    let expr = super::normalize_display_negative_fractions(expr);
+    Writer { opts, pad: true }.emit(&expr, 0)
 }
 
 struct Writer<'a> {
     opts: &'a LatexOpts,
+    /// Whether the `padToDigits`/`padToDecimals` options apply here. Cleared
+    /// inside an `integer^integer` — see [`super::is_integer_power`].
+    pad: bool,
 }
 
 impl Writer<'_> {
@@ -36,6 +74,30 @@ impl Writer<'_> {
     /// delimited, so no parentheses and any expression is allowed.
     fn braced(&self, e: &Expr) -> String {
         format!("{{{}}}", self.emit(e, 0))
+    }
+
+    /// What the bracket notations (`|…|`, `⌊…⌋`, `√…`, `…!`) wrap: the whole
+    /// argument of the application.
+    ///
+    /// In the JS AST an application has exactly one operand, and a
+    /// multi-argument application is an application *to a tuple*
+    /// (`["apply", "abs", ["tuple", "x", "y"]]`), so the tuple is what belongs
+    /// inside the brackets — which is what the legacy library rendered. These
+    /// arms used to be guarded on `args.len() == 1` and fall through to the
+    /// generic `head\left(…\right)` form otherwise, which spelled the head as
+    /// a LaTeX command that does not exist: `abs(x, y)` came out as
+    /// `\abs\left( x, y \right)` and `sqrt(x, y)` as `\sqrt\left( x, y
+    /// \right)`, neither of which MathJax can render.
+    fn sole_argument(&self, args: &[Expr], ctx: u8) -> String {
+        match args {
+            [only] => self.emit(only, ctx),
+            _ => self.render_seq(SeqKind::Tuple, args).0,
+        }
+    }
+
+    /// [`sole_argument`](Self::sole_argument) inside braces — `\sqrt{…}`.
+    fn braced_argument(&self, args: &[Expr]) -> String {
+        format!("{{{}}}", self.sole_argument(args, 0))
     }
 
     fn render(&self, e: &Expr) -> (String, u8) {
@@ -70,11 +132,21 @@ impl Writer<'_> {
                 self.render_const(*c),
                 if *c == MathConst::NegInf { NEG } else { ATOM },
             ),
-            Expr::Blank => ("\u{ff3f}".to_string(), ATOM),
+            // Display only — see the text printer; no LaTeX spelling parses
+            // back to a boolean.
+            Expr::Bool(b) => (format!("\\operatorname{{{b}}}"), ATOM),
+            Expr::Blank => (
+                if self.opts.show_blanks {
+                    "\u{ff3f}".to_string()
+                } else {
+                    String::new()
+                },
+                ATOM,
+            ),
             Expr::Ldots => ("\\ldots".to_string(), ATOM),
 
             Expr::Add(terms) => (self.render_add(terms), ADD),
-            Expr::Mul(factors) => (self.render_mul(factors), MUL),
+            Expr::Mul(factors) => self.render_mul(factors),
             // \frac is self-delimiting: an atom whose arguments need no parens.
             Expr::Div(a, b) => (format!("\\frac{}{}", self.braced(a), self.braced(b)), ATOM),
             Expr::Neg(x) => (format!("-{}", self.emit(x, MUL)), NEG),
@@ -84,12 +156,13 @@ impl Writer<'_> {
             // Other same-precedence bases (`f'` in `f'^a(x)`) stay unwrapped so
             // they round-trip.
             Expr::Pow(b, e) => {
+                let w = self.without_padding_in_integer_power(b, e);
                 let base = if matches!(&**b, Expr::Pow(..)) || is_radical(b) {
-                    format!("\\left({}\\right)", self.emit(b, 0))
+                    format!("\\left({}\\right)", w.emit(b, 0))
                 } else {
-                    self.emit(b, POW)
+                    w.emit(b, POW)
                 };
-                (format!("{}^{}", base, self.braced(e)), POW)
+                (format!("{}^{}", base, w.braced(e)), POW)
             }
 
             Expr::And(xs) => (self.join_logical(xs, " \\land "), AND),
@@ -110,36 +183,100 @@ impl Writer<'_> {
                 (self.render_interval(endpoints, *closed), ATOM)
             }
             Expr::Relation { operands, ops } => (self.render_relation(operands, ops), REL),
-            Expr::Matrix {
-                rows,
-                cols,
-                entries,
-            } => (self.render_matrix(*rows, *cols, entries), ATOM),
+            Expr::Matrix(m) => (self.render_matrix(m.rows(), m.cols(), m.entries()), ATOM),
             Expr::OtherOp(name, args) => self.render_other(&name.name(), args),
         }
     }
 
     fn render_number(&self, n: &Number) -> (String, u8) {
         use prec::{ATOM, NEG};
-        // Terminating decimals (all integers, and every parse-produced
-        // rational) render positionally, so `0.5` round-trips as `Rat(1,2)`
-        // — rendering `\frac{1}{2}` would re-parse to a `Div`.
-        if let Some(dec) = n.terminating_decimal() {
-            let p = if dec.starts_with('-') { NEG } else { ATOM };
-            return (self.decimal(dec), p);
+        // A non-finite *float* has no positional spelling. The shared helper
+        // answers the text word (`Infinity`), which in LaTeX re-parses as a
+        // product of eight letters; spell it the way `Const(Inf)` is spelled
+        // instead. The test is on the variant rather than on `to_f64`, which
+        // overflows to infinity for a perfectly finite big integer.
+        if let Number::Float(f) = n {
+            let v = f.get();
+            if v.is_infinite() {
+                return if v > 0.0 {
+                    ("\\infty".to_string(), ATOM)
+                } else {
+                    ("-\\infty".to_string(), NEG)
+                };
+            }
         }
-        // A non-terminating fraction renders as `\frac` (self-delimiting, so
-        // an atom); only reachable from later normalization, not the parser.
-        if let Some((num, den)) = n.rational_parts() {
-            return match num.strip_prefix('-') {
-                Some(pos) => (format!("-\\frac{{{}}}{{{}}}", pos, den), NEG),
-                None => (format!("\\frac{{{}}}{{{}}}", num, den), ATOM),
-            };
+        let decimal = n.decimal_spelling();
+        // A fraction renders as `\frac` (self-delimiting, so an atom). It is
+        // checked first so `3/6` prints `\frac{1}{2}` rather than `0.5` —
+        // `decimal_spelling` declines it for exactly that reason. Padding is a
+        // decimal-display option and does not apply here.
+        if decimal.is_none() {
+            if let Some((num, den)) = n.rational_parts() {
+                return match num.strip_prefix('-') {
+                    Some(pos) => (format!("-\\frac{{{}}}{{{}}}", pos, den), NEG),
+                    None => (format!("\\frac{{{}}}{{{}}}", num, den), ATOM),
+                };
+            }
         }
-        // Float: numerical-evaluation result, positional (never exponential).
-        let s = f64_positional_string(n.to_f64());
-        let p = if s.starts_with('-') { NEG } else { ATOM };
-        (self.decimal(s), p)
+        // Everything else is positional-or-scientific. Integers and
+        // decimal-spelled rationals supply their own exact digits (so a typed
+        // `0.5` round-trips as `0.5`); a float supplies its shortest
+        // round-trip. Both then face the same ECMAScript magnitude threshold,
+        // rendering as `mantissa \cdot 10^{exponent}` past it unless
+        // `avoid_scientific_notation` is set.
+        let (digits, decimals) = self.pad_bounds();
+        let rendered = match decimal {
+            Some(dec) => super::render_exact_decimal(
+                &dec,
+                self.opts.avoid_scientific_notation,
+                digits,
+                decimals,
+            ),
+            None => super::render_float(
+                n.to_f64(),
+                self.opts.avoid_scientific_notation,
+                digits,
+                decimals,
+            ),
+        };
+        match rendered {
+            super::FloatRender::Positional(s) => {
+                let p = if s.starts_with('-') { NEG } else { ATOM };
+                (self.decimal(s), p)
+            }
+            // The braces delimit the exponent, so a negative one needs no
+            // parens; the product itself still binds like a product, and so
+            // parenthesises as a power's base.
+            super::FloatRender::Scientific { mantissa, exponent } => {
+                let p = if mantissa.starts_with('-') {
+                    NEG
+                } else {
+                    prec::MUL
+                };
+                (
+                    format!("{} \\cdot 10^{{{}}}", self.decimal(mantissa), exponent),
+                    p,
+                )
+            }
+        }
+    }
+
+    /// The padding bounds in force, which an `integer^integer` suppresses.
+    fn pad_bounds(&self) -> (Option<u32>, Option<u32>) {
+        if self.pad {
+            (self.opts.pad_to_digits, self.opts.pad_to_decimals)
+        } else {
+            (None, None)
+        }
+    }
+
+    /// This writer, or a non-padding one for the operands of a power that
+    /// [`super::is_integer_power`] says legacy left alone.
+    fn without_padding_in_integer_power(&self, base: &Expr, exp: &Expr) -> Writer<'_> {
+        Writer {
+            opts: self.opts,
+            pad: self.pad && !super::is_integer_power(base, exp),
+        }
     }
 
     /// The argument/tuple/list separator for the active notation, with a
@@ -176,7 +313,7 @@ impl Writer<'_> {
     /// fully parenthesized (port of the JS ast-to-latex `and`/`or`/`not` rule).
     fn paren_if_spaced(&self, e: &Expr) -> String {
         let s = self.emit(e, 0);
-        if s.contains(' ') && !(s.starts_with("\\left(") && s.ends_with("\\right)")) {
+        if s.contains(' ') && !is_single_delimited_group(&s) {
             format!("\\left({}\\right)", s)
         } else {
             s
@@ -204,46 +341,43 @@ impl Writer<'_> {
             MathConst::Inf => "\\infty".to_string(),
             MathConst::NegInf => "-\\infty".to_string(),
             MathConst::NaN => "NaN".to_string(),
+            // Display only — no LaTeX spelling parses back (see `Expr::Bool`).
+            MathConst::None => "\\operatorname{None}".to_string(),
         }
     }
 
     fn render_add(&self, terms: &[Expr]) -> String {
-        if terms.len() == 1 {
-            return format!("+{}", self.emit(&terms[0], prec::ADD + 1));
-        }
-        let mut out = String::new();
-        for (i, t) in terms.iter().enumerate() {
-            // A `\pm` term carries its own operator, so it is joined with a plain
-            // space rather than ` + ` — `5 + \pm 3` would be wrong.
-            if i > 0 && crate::ops::pm::is_pm(t) {
-                out.push(' ');
-                out.push_str(&self.emit(t, prec::ADD + 1));
-                continue;
-            }
-            let (neg, body) = split_sign(t);
-            if i == 0 {
-                if neg {
-                    out.push('-');
-                }
-            } else if neg {
-                out.push_str(" - ");
-            } else {
-                out.push_str(" + ");
-            }
-            out.push_str(&self.emit(&body, prec::ADD + 1));
-        }
-        out
+        super::render_add_terms(terms, |e, ctx| self.emit(e, ctx))
     }
 
-    fn render_mul(&self, factors: &[Expr]) -> String {
+    /// Returns the product's precedence too: a negative leading factor makes
+    /// the whole product bind like a negation (`NEG`), so it parenthesises as a
+    /// power base but reads `-3 b`, not `\left(-3\right) b`.
+    fn render_mul(&self, factors: &[Expr]) -> (String, u8) {
         let mut out = String::new();
+        let mut p = prec::MUL;
         for (i, f) in factors.iter().enumerate() {
-            let s = self.emit(f, if i == 0 { prec::MUL } else { prec::MUL + 1 });
+            let s = if i == 0 {
+                // The sign of a negative leading factor renders inline, without
+                // parentheses (port of the JS `factor()` at term level); a sum
+                // pulls it into the connective via `split_sign` before here.
+                match split_sign(f) {
+                    (true, body) => {
+                        p = prec::NEG;
+                        format!("-{}", self.emit(&body, prec::MUL))
+                    }
+                    (false, _) => self.emit(f, prec::MUL),
+                }
+            } else {
+                self.emit(f, prec::MUL + 1)
+            };
             if i > 0 {
-                // `\cdot` between adjacent numerals or after a shorthand `\angle A`
-                // (which would otherwise absorb the next factor); space otherwise.
-                if s.starts_with(|c: char| c.is_ascii_digit())
-                    || is_shorthand_angle(&factors[i - 1])
+                // `\cdot` when forced (`explicitMultiplicationSymbols`), between
+                // adjacent numerals, or after a shorthand `\angle A` (which would
+                // otherwise absorb the next factor); a space otherwise.
+                if self.opts.explicit_multiplication_symbols
+                    || s.starts_with(|c: char| c.is_ascii_digit())
+                    || super::is_shorthand_angle(&factors[i - 1])
                 {
                     out.push_str(" \\cdot ");
                 } else {
@@ -252,48 +386,81 @@ impl Writer<'_> {
             }
             out.push_str(&s);
         }
-        out
+        (out, p)
     }
 
     fn render_apply(&self, head: &Expr, args: &[Expr]) -> (String, u8) {
+        // An integral `\int_a^b <integrand>`: keep the `\int` and drop the
+        // parentheses a generic application would put round the integrand (the
+        // `d x` differential is already a `["d", x]` factor). Port of the legacy
+        // `apply` integral branch; DoenetML open item 10.
+        if args.len() == 1 && super::is_integral_head(head) {
+            return (
+                format!(
+                    "{} {}",
+                    self.emit(head, prec::POW),
+                    self.emit(&args[0], prec::MUL)
+                ),
+                prec::MUL,
+            );
+        }
         if let Expr::Sym(s) = head {
             match s.name().as_str() {
-                "abs" if args.len() == 1 => {
+                "abs" => {
                     return (
-                        format!("\\left|{}\\right|", self.emit(&args[0], 0)),
+                        format!("\\left|{}\\right|", self.sole_argument(args, 0)),
                         prec::ATOM,
                     )
                 }
-                "floor" if args.len() == 1 => {
-                    return (
-                        format!("\\left\\lfloor {} \\right\\rfloor", self.emit(&args[0], 0)),
-                        prec::ATOM,
-                    )
-                }
-                "ceil" if args.len() == 1 => {
-                    return (
-                        format!("\\left\\lceil {} \\right\\rceil", self.emit(&args[0], 0)),
-                        prec::ATOM,
-                    )
-                }
-                "sqrt" if args.len() == 1 => {
-                    return (format!("\\sqrt{}", self.braced(&args[0])), prec::ATOM)
-                }
-                "cbrt" if args.len() == 1 => {
-                    return (format!("\\sqrt[3]{}", self.braced(&args[0])), prec::ATOM)
-                }
-                "nthroot" if args.len() == 2 => {
+                "floor" => {
                     return (
                         format!(
-                            "\\sqrt[{}]{}",
-                            self.emit(&args[1], 0),
-                            self.braced(&args[0])
+                            "\\left\\lfloor {} \\right\\rfloor",
+                            self.sole_argument(args, 0)
                         ),
                         prec::ATOM,
                     )
                 }
-                "factorial" if args.len() == 1 => {
-                    return (format!("{}!", self.emit(&args[0], prec::POW)), prec::POW)
+                "ceil" => {
+                    return (
+                        format!(
+                            "\\left\\lceil {} \\right\\rceil",
+                            self.sole_argument(args, 0)
+                        ),
+                        prec::ATOM,
+                    )
+                }
+                "sqrt" => return (format!("\\sqrt{}", self.braced_argument(args)), prec::ATOM),
+                "cbrt" => {
+                    return (
+                        format!("\\sqrt[3]{}", self.braced_argument(args)),
+                        prec::ATOM,
+                    )
+                }
+                // The one genuinely two-argument notation here: the second
+                // argument is the index, not part of what the radical wraps.
+                // At any other arity there is no index to raise, so what is
+                // left is a plain radical over the whole argument — which is
+                // what legacy rendered, and what `normalize::canonicalize`
+                // already assumes when it rewrites `nthroot(x)` to `sqrt(x)`.
+                // Falling through instead would print `\operatorname{nthroot}`
+                // for a tree the rest of the engine treats as a square root.
+                "nthroot" => {
+                    return (
+                        match args {
+                            [radicand, index] => {
+                                format!("\\sqrt[{}]{}", self.emit(index, 0), self.braced(radicand))
+                            }
+                            _ => format!("\\sqrt{}", self.braced_argument(args)),
+                        },
+                        prec::ATOM,
+                    )
+                }
+                "factorial" => {
+                    return (
+                        format!("{}!", self.sole_argument(args, prec::POW)),
+                        prec::POW,
+                    )
                 }
                 _ => {}
             }
@@ -311,6 +478,16 @@ impl Writer<'_> {
             },
             _ => self.emit(head, prec::POW),
         };
+        // A multi-argument application *is* an application to a tuple, so its
+        // parentheses are the tuple's and are padded the way `render_seq` pads
+        // every other delimiter pair. A single argument is not a tuple and
+        // stays tight (`\sin\left(x\right)`).
+        if args.len() > 1 {
+            return (
+                format!("{}\\left( {} \\right)", head_str, args_str),
+                prec::ATOM,
+            );
+        }
         (
             format!("{}\\left({}\\right)", head_str, args_str),
             prec::ATOM,
@@ -353,7 +530,8 @@ impl Writer<'_> {
     }
 
     fn render_matrix(&self, rows: u32, cols: u32, entries: &[Expr]) -> String {
-        let mut out = String::from("\\begin{bmatrix} ");
+        let env = &self.opts.matrix_environment;
+        let mut out = format!("\\begin{{{}}} ", env);
         for r in 0..rows as usize {
             let row: Vec<String> = (0..cols as usize)
                 .map(|c| self.emit(&entries[r * cols as usize + c], prec::LIST + 1))
@@ -363,12 +541,17 @@ impl Writer<'_> {
                 out.push_str(" \\\\ ");
             }
         }
-        out.push_str(" \\end{bmatrix}");
+        out.push_str(&format!(" \\end{{{}}}", env));
         out
     }
 
     fn render_other(&self, name: &str, args: &[Expr]) -> (String, u8) {
         use prec::*;
+        // A head with too few operands to render in its own notation drops to
+        // the generic form; see [`super::other_op_min_arity`].
+        if args.len() < super::other_op_min_arity(name) {
+            return self.render_other_generic(name, args);
+        }
         let one = |w: &Self, ctx| w.emit(&args[0], ctx);
         match name {
             "pm" => (format!("\\pm {}", one(self, MUL)), NEG),
@@ -403,16 +586,23 @@ impl Writer<'_> {
             "unit" => (self.render_unit(args), UNIT),
             "d" => (format!("d{}", one(self, ATOM)), POW),
             "derivative_leibniz" => (self.render_leibniz("d", args), ATOM),
-            "partial_derivative_leibniz" => (self.render_leibniz("\\partial ", args), ATOM),
-            _ => (
-                format!(
-                    "\\operatorname{{{}}}\\left({}\\right)",
-                    name,
-                    self.join(args, &self.arg_sep(), LIST + 1)
-                ),
-                ATOM,
-            ),
+            "partial_derivative_leibniz" => (self.render_leibniz("\\partial", args), ATOM),
+            _ => self.render_other_generic(name, args),
         }
+    }
+
+    /// `\operatorname{name}(args…)` — the form every unrecognized head takes,
+    /// and the fallback for a recognized head whose operand count is too low
+    /// for its notation.
+    fn render_other_generic(&self, name: &str, args: &[Expr]) -> (String, u8) {
+        (
+            format!(
+                "\\operatorname{{{}}}\\left({}\\right)",
+                name,
+                self.join(args, &self.arg_sep(), prec::LIST + 1)
+            ),
+            prec::ATOM,
+        )
     }
 
     fn render_angle(&self, args: &[Expr]) -> String {
@@ -446,21 +636,19 @@ impl Writer<'_> {
 
     fn render_leibniz(&self, sym: &str, args: &[Expr]) -> String {
         let (var1, n_deriv) = deriv_var(&args[0]);
-        // `sym` carries its own trailing space where needed (`\partial `), so no
-        // extra separator: `d` → `dx`, `\partial ` → `\partial x` (not the
-        // double-spaced `\partial  x`).
-        let num = format!(
-            "{}{}{}",
-            sym,
-            pow_suffix(n_deriv),
-            self.render_symbol(&var1)
+        // The separator belongs *after* the order, not after the symbol: a
+        // hard-coded `\partial ` produced `\partial ^{2}x`. `cat` puts a space
+        // in only where a control word would otherwise swallow what follows.
+        let num = cat(
+            &format!("{}{}", sym, pow_suffix(n_deriv)),
+            &self.render_symbol(&var1),
         );
         let den = if let Expr::Seq(SeqKind::Tuple, parts) = &args[1] {
             parts
                 .iter()
                 .map(|part| {
                     let (v, e) = deriv_var(part);
-                    format!("{}{}{}", sym, self.render_symbol(&v), pow_suffix(e))
+                    format!("{}{}", cat(sym, &self.render_symbol(&v)), pow_suffix(e))
                 })
                 .collect::<Vec<_>>()
                 .join(" ")
@@ -471,16 +659,41 @@ impl Writer<'_> {
     }
 }
 
-fn is_shorthand_angle(e: &Expr) -> bool {
-    matches!(e, Expr::OtherOp(name, args) if name.name() == "angle" && args.len() == 1)
+/// Concatenate two LaTeX fragments, inserting a space only where one is needed.
+///
+/// A control word (`\partial`) ends at the first non-letter, so `\partial x`
+/// must keep its space or TeX reads the command `\partialx`. Nothing else does:
+/// `dx`, `\partial^{2}`, `d\tau` are all unambiguous. The space also goes in
+/// before another control word, where it is optional but far more readable.
+fn cat(left: &str, right: &str) -> String {
+    let trailing_letters = left.len()
+        - left
+            .trim_end_matches(|c: char| c.is_ascii_alphabetic())
+            .len();
+    let ends_in_control_word =
+        trailing_letters > 0 && left[..left.len() - trailing_letters].ends_with('\\');
+    let starts_a_name = right.starts_with(|c: char| c.is_ascii_alphabetic() || c == '\\');
+    if ends_in_control_word && starts_a_name {
+        format!("{} {}", left, right)
+    } else {
+        format!("{}{}", left, right)
+    }
 }
 
 /// A radical (`\sqrt`, `\sqrt[3]`, `\sqrt[n]`): self-delimiting, but reads
 /// clearer parenthesized when raised to a power (`\left(\sqrt{2}\right)^{3}`).
+///
+/// This must agree with the `sqrt`/`cbrt`/`nthroot` arms of
+/// [`Writer::render_apply`], which emit a radical at *every* arity — the arity
+/// only chooses whether there is an index. It used to be guarded on
+/// `args.len() == 1`, which stopped matching those arms once they learned to
+/// wrap a multi-argument list, and a disagreement here is silent: the radical
+/// still renders, it just loses the parentheses, so `sqrt(x, y)^3` came out as
+/// `\sqrt{\left( x, y \right)}^{3}` where legacy wrote
+/// `\left(\sqrt{\left( x, y \right)}\right)^{3}`.
 fn is_radical(e: &Expr) -> bool {
-    matches!(e, Expr::Apply(head, args) if matches!(&**head, Expr::Sym(s)
-        if (matches!(s.name().as_str(), "sqrt" | "cbrt") && args.len() == 1)
-            || (s.name() == "nthroot" && args.len() == 2)))
+    matches!(e, Expr::Apply(head, _) if matches!(&**head, Expr::Sym(s)
+        if matches!(s.name().as_str(), "sqrt" | "cbrt" | "nthroot")))
 }
 
 /// Symbol name → LaTeX. Multi-char names in the allowed set become control
@@ -513,6 +726,47 @@ fn string_convert(name: &str) -> String {
     } else {
         name.to_string()
     }
+}
+
+/// Is `s` a *single* `\left(…\right)` group — the opening `\left(` whose
+/// matching `\right)` is the end of the string — rather than several adjacent
+/// groups such as `\left(a\right) or \left(b\right)`?
+///
+/// The old test was `starts_with("\\left(") && ends_with("\\right)")`, which
+/// reads `true` for both and so wrongly suppressed the wrap around a spaced
+/// compound, letting the re-parse bind it differently (see the text-printer
+/// twin `is_single_paren_group`). This counts `\left`/`\right` tokens — bare
+/// parens inside would be wrong, since `\left[`/`\left\{` also nest.
+fn is_single_delimited_group(s: &str) -> bool {
+    if !s.starts_with("\\left(") {
+        return false;
+    }
+    let mut depth: i32 = 0;
+    let mut i = 0;
+    while i < s.len() {
+        let rest = &s[i..];
+        if rest.starts_with("\\left") {
+            depth += 1;
+            i += "\\left".len();
+        } else if rest.starts_with("\\right") {
+            depth -= 1;
+            i += "\\right".len();
+            if depth == 0 {
+                // The outermost close matches the initial `\left(`, so it is a
+                // `\right)`; the whole string is one group only if it ends here.
+                return &s[i..] == ")";
+            }
+        } else {
+            // A whole character, not a byte: `i` has to stay on a UTF-8
+            // boundary or the next `&s[i..]` panics — and this crate is built
+            // `panic = "abort"`, so that takes the module down. The blank glyph
+            // `＿` (U+FF3F) is three bytes and is exactly what DoenetML leaves
+            // in an unfilled slot, so `\left(＿, ＿\right) …` aborted. The text
+            // twin `is_single_paren_group` walks `char_indices` for this reason.
+            i += rest.chars().next().map_or(1, char::len_utf8);
+        }
+    }
+    false
 }
 
 fn rel_symbol(op: RelOp) -> &'static str {

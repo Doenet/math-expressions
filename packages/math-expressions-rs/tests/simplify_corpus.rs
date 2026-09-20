@@ -104,10 +104,7 @@ const CERTIFY_POINTS: [i64; 3] = [3, 5, 11];
 /// Each entry is paired with a rendering of the assignment it used, so a
 /// failure can name the point rather than just asserting one exists.
 fn certified_verdicts(input: &Expr, simplified: &Expr) -> Vec<(String, Option<bool>)> {
-    let diff = Expr::Add(vec![
-        input.clone(),
-        Expr::Neg(Box::new(simplified.clone())),
-    ]);
+    let diff = Expr::Add(vec![input.clone(), Expr::Neg(Box::new(simplified.clone()))]);
     // `variables` reports the named constants (`pi`, `e`, `i`) too; substituting
     // those would destroy the very special values this check exists to certify.
     // Same filter `eval_exact` itself uses to decide what counts as free.
@@ -202,7 +199,8 @@ fn collect_js_gaps(assert_invariants: bool) -> BTreeSet<String> {
                 && !involves_nonfinite(&parsed)
                 && !involves_nonfinite(&simplified);
             if judgeable {
-                let verdicts = catch(|| certified_verdicts(&parsed, &simplified)).unwrap_or_default();
+                let verdicts =
+                    catch(|| certified_verdicts(&parsed, &simplified)).unwrap_or_default();
                 // Proof direction: `input − simplified` is certified *nonzero*
                 // at a point, so the rewrite is wrong however JS spells it.
                 // This is the one check with no snapshot escape, so the message

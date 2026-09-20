@@ -1,31 +1,21 @@
 //! Eager matrix operations: `transpose`, `trace`, `matmul`.
 
-use crate::expr::Expr;
-use crate::normalize::{add, canonicalize};
 use crate::expr::sym::Sym;
+use crate::expr::{Expr, Mat};
+use crate::normalize::{add, canonicalize};
 
 /// Matrix transpose. Literal matrices transpose eagerly; anything else stays
 /// an opaque `transpose(e)` node.
 pub fn transpose(e: &Expr) -> Expr {
     let c = canonicalize(e);
-    if let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    {
-        let (r, k) = (*rows as usize, *cols as usize);
-        let mut out = Vec::with_capacity(r * k);
-        for j in 0..k {
-            for i in 0..r {
-                out.push(entries[i * k + j].clone());
-            }
-        }
-        return Expr::Matrix {
-            rows: *cols,
-            cols: *rows,
-            entries: out,
-        };
+    if let Expr::Matrix(m) = &c {
+        // Transposed shape: the result is cols×rows, and reading (j, i) from
+        // the source is in bounds for every cell of it.
+        let entries = m.entries();
+        let k = m.cols() as usize;
+        return Expr::Matrix(Mat::generate(m.cols(), m.rows(), |j, i| {
+            entries[i as usize * k + j as usize].clone()
+        }));
     }
     Expr::OtherOp(Sym::new("transpose"), vec![c])
 }
@@ -35,14 +25,9 @@ pub fn transpose(e: &Expr) -> Expr {
 /// `trace(e)` node.
 pub fn trace(e: &Expr) -> Expr {
     let c = canonicalize(e);
-    if let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    {
-        if rows == cols {
-            let n = *rows as usize;
+    if let Expr::Matrix(m) = &c {
+        if m.is_square() {
+            let (n, entries) = (m.rows() as usize, m.entries());
             return add((0..n).map(|i| entries[i * n + i].clone()).collect());
         }
     }

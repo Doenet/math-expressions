@@ -271,7 +271,8 @@ fn eval(e: &Expr, bindings: &HashMap<String, i64>, modulus: i64) -> Ff {
             // 0^symbolic as NaN (the prime is skipped; the filter only ever
             // gets *less* aggressive, which is the safe direction for a
             // rejection-only stage).
-            if base.vals.contains(&0) && !matches!(ex.as_ref(), Expr::Num(Number::Int(k)) if *k >= 0)
+            if base.vals.contains(&0)
+                && !matches!(ex.as_ref(), Expr::Num(Number::Int(k)) if *k >= 0)
             {
                 return Ff::nan();
             }
@@ -355,21 +356,28 @@ fn tan(arg: &Expr, bindings: &HashMap<String, i64>, modulus: i64) -> Ff {
     sin(arg, bindings, modulus).div(&cos(arg, bindings, modulus))
 }
 
+/// A number as a field element, or `nan` (skip) when it is not one exactly.
+///
+/// The bound on the denominator is [`Number::simple_rational`]'s, and it is
+/// what keeps a decimal that merely *approximates* a transcendental
+/// (`3.141592653589793`) from being taken at face value and separated from π,
+/// while genuine small fractions stay exact — that is what lets the field
+/// reject `0.33 ≠ 1/3`. Mirrors JS's `rationalApproximation` `approximate` flag.
+///
+/// Floats go through the same bound rather than being skipped outright.
+/// Skipping them cost the stage its whole job on any expression whose constant
+/// had crossed a JSON boundary: `e^(10x)` and `e^(10x) + 0.0000001` were
+/// reported **equal**, because the field is the only stage that can tell them
+/// apart — sampling cannot, since `e^(10x)` ranges over so many orders of
+/// magnitude that a `1e-7` offset is invisible at almost every point. Written
+/// `0.0000001` the pair was correctly unequal; read back as the f64 `1e-7` it
+/// was not, so the same document graded differently depending on whether its
+/// value had made a round trip.
 fn number(n: &Number, modulus: i64) -> Ff {
-    match n {
-        Number::Int(v) => Ff::num(*v, modulus),
-        // A large reduced denominator marks a decimal that is really a float
-        // approximation of a transcendental (e.g. `3.141592653589793` = π); exact
-        // field arithmetic would wrongly separate two such near-equal decimals, so
-        // treat it as unrepresentable (skip). Genuine small fractions stay exact,
-        // which is what lets the field reject `0.33 ≠ 1/3`. Mirrors JS's
-        // `rationalApproximation` `approximate` flag.
-        Number::Rat(num, den) if den.unsigned_abs() <= 1_000_000_000 => {
-            Ff::num(*num, modulus).div(&Ff::num(*den, modulus))
-        }
-        // Big integers/rationals, high-precision decimals, and evaluation floats
-        // are not modelled exactly.
-        _ => Ff::nan(),
+    match n.simple_rational(1_000_000_000) {
+        Some((num, 1)) => Ff::num(num, modulus),
+        Some((num, den)) => Ff::num(num, modulus).div(&Ff::num(den, modulus)),
+        None => Ff::nan(),
     }
 }
 

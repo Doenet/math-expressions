@@ -111,43 +111,120 @@ pub(crate) fn from_apply_args(args: &[Expr]) -> Option<Expr> {
     make_rootof(&coeffs, u32::try_from(*k).ok()?)
 }
 
-/// Dense coefficients of a *canonical* single-variable polynomial tree.
-fn expr_to_upoly(e: &Expr, var: &str) -> Option<UPoly> {
-    fn term(e: &Expr, var: &str) -> Option<(usize, BigRational)> {
-        match e {
-            Expr::Num(n) => Some((0, n.to_bigrational()?)),
-            Expr::Sym(s) if s.name() == var => Some((1, BigRational::one())),
-            Expr::Pow(b, x) => match (&**b, &**x) {
-                (Expr::Sym(s), Expr::Num(Number::Int(k))) if s.name() == var && *k >= 1 => {
-                    Some((*k as usize, BigRational::one()))
-                }
-                _ => None,
-            },
-            Expr::Mul(fs) => {
-                let mut deg = 0usize;
-                let mut coeff = BigRational::one();
-                for f in fs {
-                    let (d, c) = term(f, var)?;
-                    deg += d;
-                    coeff *= c;
-                }
-                Some((deg, coeff))
+/// A single monomial `c·x^d`, or `None` if this subtree is not one.
+///
+/// This is the whole of what [`expr_to_upoly`] used to read, kept as its own
+/// arm because it is the one shape whose cost is *linear* in the degree: no
+/// coefficient ever grows, so no cap applies and `x^70 - x^69` reads exactly as
+/// it always did. Everything else has to multiply polynomials, which is where
+/// the cap in `expr_to_upoly` comes in.
+fn monomial(e: &Expr, var: &str) -> Option<(usize, BigRational)> {
+    match e {
+        Expr::Num(n) => Some((0, n.to_bigrational()?)),
+        Expr::Sym(s) if s.name() == var => Some((1, BigRational::one())),
+        Expr::Pow(b, x) => match (&**b, &**x) {
+            (Expr::Sym(s), Expr::Num(Number::Int(k))) if s.name() == var && *k >= 1 => {
+                Some((usize::try_from(*k).ok()?, BigRational::one()))
             }
             _ => None,
+        },
+        Expr::Mul(fs) => {
+            let mut deg = 0usize;
+            let mut coeff = BigRational::one();
+            for f in fs {
+                let (d, c) = monomial(f, var)?;
+                deg = deg.checked_add(d)?;
+                coeff *= c;
+            }
+            Some((deg, coeff))
         }
+        _ => None,
     }
-    let terms: Vec<&Expr> = match e {
-        Expr::Add(ts) => ts.iter().collect(),
-        other => vec![other],
+}
+
+/// Dense coefficients of a single-variable polynomial tree, or `None` when the
+/// tree is not a polynomial in `var` (or is a product too large to expand).
+///
+/// The recursion multiplies and adds polynomials rather than only recognizing a
+/// sum of monomials, because [`from_apply_args`] is what decides whether a
+/// `rootof(p, k)` *application* becomes the [`Expr::RootOf`] leaf, and a
+/// spelling it declines stays an application of a head with no evaluation —
+/// i.e. an opaque atom. Reading only the expanded spelling therefore made two
+/// spellings of the same number compare unequal: `rootof((x-1)(x-2), 0)` was
+/// neither `1` nor `rootof(x^2-3x+2, 0)`. Canonicalization does not expand
+/// products, so the factored form is what the parsers hand us.
+///
+/// Widening only: every tree the monomial-sum reading accepted still reaches
+/// the same coefficients, through [`monomial`].
+///
+/// **The cap applies to products, and to products only.** Multiplying two
+/// many-term polynomials is quadratic in their degrees *and* grows the
+/// coefficients, so it is the one operation here that can cost more than the
+/// tree it came from: `(x^2+x+1)^200` spends ten seconds building integers
+/// nobody asked for. `max_rootof_degree` is the right ceiling because
+/// [`make_rootof`] refuses anything past it anyway — a product beyond the cap
+/// could still have a small squarefree radical, but declining it costs only the
+/// factored spelling of a polynomial whose expanded spelling is already
+/// unwritable in practice.
+fn expr_to_upoly(e: &Expr, var: &str) -> Option<UPoly> {
+    if let Some((d, c)) = monomial(e, var) {
+        let mut out = vec![BigRational::zero(); d + 1];
+        out[d] = c;
+        univariate::trim(&mut out);
+        return Some(out);
+    }
+    let cap = crate::resource_limits::current().max_rootof_degree;
+    // Checked at every step rather than only at the end, so a product of many
+    // large factors is refused while it is still cheap to refuse.
+    let bounded = |p: UPoly| (univariate::degree(&p) <= cap).then_some(p);
+    let mut out = match e {
+        Expr::Neg(x) => univariate::scale(&expr_to_upoly(x, var)?, &-BigRational::one()),
+        Expr::Add(ts) => {
+            let mut acc = UPoly::new();
+            for t in ts {
+                acc = univariate::add_p(&acc, &expr_to_upoly(t, var)?);
+            }
+            acc
+        }
+        Expr::Mul(fs) => {
+            let mut acc = vec![BigRational::one()];
+            for f in fs {
+                acc = bounded(univariate::mul(&acc, &expr_to_upoly(f, var)?))?;
+            }
+            acc
+        }
+        Expr::Pow(b, x) => {
+            let Expr::Num(Number::Int(k)) = &**x else {
+                return None;
+            };
+            // A negative exponent is not a polynomial, and an exponent past the
+            // cap cannot produce a polynomial within it — the base here is not
+            // a monomial, so its degree is at least 1. Checked before the
+            // repeated multiplication, so a huge `k` costs nothing.
+            let k = usize::try_from(*k).ok()?;
+            if k > cap {
+                return None;
+            }
+            let base = expr_to_upoly(b, var)?;
+            let mut acc = vec![BigRational::one()];
+            for _ in 0..k {
+                acc = bounded(univariate::mul(&acc, &base))?;
+            }
+            acc
+        }
+        // A quotient is a polynomial only when the divisor is a nonzero
+        // constant. (Canonicalization normally folds `x/2` into `(1/2)·x`
+        // first; this arm is what makes the reading independent of that.)
+        Expr::Div(a, b) => {
+            let d = expr_to_upoly(b, var)?;
+            let [c] = d.as_slice() else { return None };
+            if c.is_zero() {
+                return None;
+            }
+            univariate::scale(&expr_to_upoly(a, var)?, &c.recip())
+        }
+        _ => return None,
     };
-    let mut out: UPoly = Vec::new();
-    for t in terms {
-        let (d, c) = term(t, var)?;
-        if out.len() <= d {
-            out.resize(d + 1, BigRational::zero());
-        }
-        out[d] += c;
-    }
     univariate::trim(&mut out);
     Some(out)
 }
@@ -348,10 +425,7 @@ pub(crate) fn refine_real(poly: &[Number], index: u32, target_scale: i32) -> Opt
     for extra_guard in [8i32, 64] {
         // Precision ladder: double the working bits each Newton step.
         let final_scale = target_scale.saturating_sub(extra_guard);
-        let mut x = round_dyadic(
-            &BigRational::from_float(seed).unwrap_or_default(),
-            -52,
-        );
+        let mut x = round_dyadic(&BigRational::from_float(seed).unwrap_or_default(), -52);
         let mut s = -52i32;
         let mut steps = 0;
         loop {
@@ -494,7 +568,11 @@ pub(crate) fn refine_complex(
         if !budget.tick() {
             return None;
         }
-        s = if s <= w { w } else { s.saturating_mul(2).max(w) };
+        s = if s <= w {
+            w
+        } else {
+            s.saturating_mul(2).max(w)
+        };
         let work = s - 8;
         let pz = horner_cfix(poly, &z, work)?;
         let dpz = horner_cfix(&dcoeffs, &z, work)?;

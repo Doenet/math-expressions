@@ -30,7 +30,9 @@ pub enum IntegralVerdict {
     /// Certified digits (proper, or tail-bounded improper).
     Value(Precise),
     /// Certified divergent, with the singular points that prove it.
-    Divergent { at: Vec<SingularPoint> },
+    Divergent {
+        at: Vec<SingularPoint>,
+    },
     Unknown(String),
 }
 
@@ -119,13 +121,21 @@ fn factor_divisor(f: &Expr) -> Option<(Expr, f64, Option<Expr>)> {
                     _ => {}
                 }
             }
-            Some((( **base).clone(), s, None))
+            Some(((**base).clone(), s, None))
         }
         Expr::Apply(..) => {
             let (name, u) = apply_name(f)?;
             match name.as_str() {
-                "tan" => Some((mk_apply("cos", u.clone()), 1.0, Some(mk_apply("sin", u.clone())))),
-                "cot" => Some((mk_apply("sin", u.clone()), 1.0, Some(mk_apply("cos", u.clone())))),
+                "tan" => Some((
+                    mk_apply("cos", u.clone()),
+                    1.0,
+                    Some(mk_apply("sin", u.clone())),
+                )),
+                "cot" => Some((
+                    mk_apply("sin", u.clone()),
+                    1.0,
+                    Some(mk_apply("cos", u.clone())),
+                )),
                 "sec" => Some((mk_apply("cos", u.clone()), 1.0, None)),
                 "csc" => Some((mk_apply("sin", u.clone()), 1.0, None)),
                 _ => None,
@@ -213,7 +223,6 @@ fn cert_sign(tape: &CompiledExpr, x: f64) -> Option<i8> {
     let (v, e) = tape.eval_f64(&[x])?;
     (v.abs() > e).then_some(if v > 0.0 { 1 } else { -1 })
 }
-
 
 fn subst_point(e: &Expr, var: &str, pt: &Expr) -> Expr {
     let subs = HashMap::from([(var.to_string(), pt.clone())]);
@@ -397,13 +406,7 @@ fn mvt_certificate(div: &Divisor, var: &str, cell: &ZeroCell) -> bool {
 /// Exact-point probing: at a closed-form point, decide the zero
 /// order of D exactly; `m·s ≥ 1` with N nonzero ⇒ divergent (Taylor bound,
 /// valid because the lower derivatives vanish *exactly* at the point).
-fn exact_point_certificate(
-    div: &Divisor,
-    var: &str,
-    pt: &Expr,
-    pt_f64: f64,
-    cell_w: f64,
-) -> bool {
+fn exact_point_certificate(div: &Divisor, var: &str, pt: &Expr, pt_f64: f64, cell_w: f64) -> bool {
     if !exactly_zero_at(&div.d, var, pt) {
         return false;
     }
@@ -503,7 +506,10 @@ fn rational_poles(fc: &Expr, var: &str, lo: f64, hi: f64) -> Option<Vec<Singular
     }
     // Interior roots via exact isolation.
     let radical = {
-        let g = crate::polynomials::univariate::gcd(&den, &crate::polynomials::univariate::derivative(&den));
+        let g = crate::polynomials::univariate::gcd(
+            &den,
+            &crate::polynomials::univariate::derivative(&den),
+        );
         if crate::polynomials::univariate::degree(&g) >= 1 {
             crate::polynomials::univariate::divrem(&den, &g).0
         } else {
@@ -580,8 +586,13 @@ fn rational_poles(fc: &Expr, var: &str, lo: f64, hi: f64) -> Option<Vec<Singular
                 break;
             }
         }
-        let location = crate::polynomials::univariate::refine_to_f64(&radical, a.clone(), b.clone())
-            .unwrap_or_else(|| ((&a + &b) / BigRational::from_integer(2.into())).to_f64().unwrap_or(f64::NAN));
+        let location =
+            crate::polynomials::univariate::refine_to_f64(&radical, a.clone(), b.clone())
+                .unwrap_or_else(|| {
+                    ((&a + &b) / BigRational::from_integer(2.into()))
+                        .to_f64()
+                        .unwrap_or(f64::NAN)
+                });
         // Exact form: a low-denominator rational root, else RootOf(radical, idx)
         // (real roots come first in canonical index order, ascending).
         let exact = rational_root_in(&radical, &a, &b)
@@ -758,7 +769,8 @@ fn classify(fc: &Expr, var: &str, lo: f64, hi: f64) -> Result<Classified, String
         }
     }
     // Merge singular cells that share a location.
-    out.singular_cells.sort_by(|a, b| a.center.total_cmp(&b.center));
+    out.singular_cells
+        .sort_by(|a, b| a.center.total_cmp(&b.center));
     let mut merged: Vec<SingularCell> = Vec::new();
     let close = (hi - lo) * 1e-9;
     for c in out.singular_cells.drain(..) {
@@ -871,7 +883,14 @@ pub fn integrate_analyzed(
     improper_value(&fc, var, lo, hi, digits, negate, &classified)
 }
 
-fn plain_value(fc: &Expr, var: &str, lo: f64, hi: f64, digits: usize, negate: bool) -> IntegralVerdict {
+fn plain_value(
+    fc: &Expr,
+    var: &str,
+    lo: f64,
+    hi: f64,
+    digits: usize,
+    negate: bool,
+) -> IntegralVerdict {
     let (tape_f, tape_d4) = match compile_pair(fc, var) {
         Ok(t) => t,
         Err(why) => return IntegralVerdict::Unknown(why.into()),
@@ -910,7 +929,7 @@ fn cell_tail_bound(
 
     let mut beta = 0.0f64;
     let mut coeff = 1.0f64; // A·∏ Kᵢ^{−sᵢ·mᵢ-adjusted}
-    // Vanishing divisors: lower bounds |D| ≥ K·|x−ρ|^m.
+                            // Vanishing divisors: lower bounds |D| ≥ K·|x−ρ|^m.
     for &(di, m) in &cell.vanishing {
         let div = divisors.get(di)?;
         beta += div.s * m as f64;

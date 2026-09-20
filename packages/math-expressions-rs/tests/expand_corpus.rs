@@ -45,7 +45,11 @@ fn collect_failures() -> BTreeSet<String> {
     for c in &cases {
         let ok = catch(|| {
             let got = expand(&parse(&c.input)?);
-            Some(equals(&got, &expr::serde::try_from_js(&c.expanded).expect("fixture tree"), &opts))
+            Some(equals(
+                &got,
+                &expr::serde::try_from_js(&c.expanded).expect("fixture tree"),
+                &opts,
+            ))
         })
         .flatten()
         .unwrap_or(false);
@@ -62,7 +66,10 @@ fn expand_corpus_no_regressions() {
     if std::env::var("UPDATE_KNOWN_FAILURES").is_ok() {
         let list: Vec<&String> = failures.iter().collect();
         std::fs::write(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/expand-known-failures.json"),
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/tests/fixtures/expand-known-failures.json"
+            ),
             serde_json::to_string_pretty(&list).unwrap() + "\n",
         )
         .unwrap();
@@ -78,7 +85,11 @@ fn expand_corpus_no_regressions() {
         new.is_empty(),
         "{} NEW expand divergences from JS:\n{}",
         new.len(),
-        new.iter().take(40).map(|k| format!("  {k}")).collect::<Vec<_>>().join("\n"),
+        new.iter()
+            .take(40)
+            .map(|k| format!("  {k}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
 }
 

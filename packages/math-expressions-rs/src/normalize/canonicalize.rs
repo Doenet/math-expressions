@@ -14,10 +14,24 @@ pub fn canonicalize(e: &Expr) -> Expr {
         // produce). Canonical form uses `Sym` — unifying here means `==` on
         // canonical trees is semantic equality for constants too, and every
         // downstream pass only needs to match one spelling.
-        Expr::Const(crate::expr::MathConst::Pi) => Expr::sym("pi"),
-        Expr::Const(crate::expr::MathConst::E) => Expr::sym("e"),
-        Expr::Const(crate::expr::MathConst::I) => Expr::sym("i"),
-        Expr::Num(_) | Expr::Sym(_) | Expr::Const(_) | Expr::Blank | Expr::Ldots => e.clone(),
+        //
+        // The unification is sound only while the name is *declared* to be the
+        // constant ([`crate::constant_policy`]). In a document where `e` is a
+        // coordinate, `Const(E)` and `Sym("e")` are two different values and
+        // collapsing them would make `equals` answer yes to a false statement,
+        // so the explicit constant is left standing.
+        Expr::Const(c)
+            if c.symbol_name()
+                .is_some_and(crate::expr::sym::is_constant_symbol) =>
+        {
+            Expr::sym(c.symbol_name().expect("guard matched a named constant"))
+        }
+        Expr::Num(_)
+        | Expr::Sym(_)
+        | Expr::Const(_)
+        | Expr::Bool(_)
+        | Expr::Blank
+        | Expr::Ldots => e.clone(),
         // Re-establish the canonical invariant (primitive integer squarefree
         // coefficients) for RootOf leaves built outside the smart
         // constructors, e.g. deserialized trees. An unrepresentable one
@@ -79,15 +93,7 @@ pub fn canonicalize(e: &Expr) -> Expr {
         Expr::Relation { operands, ops } => {
             canon_relation(operands.iter().map(canonicalize).collect(), ops.clone())
         }
-        Expr::Matrix {
-            rows,
-            cols,
-            entries,
-        } => Expr::Matrix {
-            rows: *rows,
-            cols: *cols,
-            entries: entries.iter().map(canonicalize).collect(),
-        },
+        Expr::Matrix(m) => Expr::Matrix(m.map(canonicalize)),
         Expr::OtherOp(name, args) => {
             let mut cargs: Vec<Expr> = args.iter().map(canonicalize).collect();
             // `binom(n,k)` and the applied `nCr(n,k)` denote the same thing;
@@ -237,7 +243,24 @@ fn canon_relation(mut operands: Vec<Expr>, ops: Vec<RelOp>) -> Expr {
         }
     }
     if ops.iter().all(|o| matches!(o, Eq)) || matches!(ops.as_slice(), [Ne]) {
-        operands.sort_by(cmp);
+        // Ordered by the *JS* `default_order` key, with the canonical `cmp` as
+        // the tie-break. Which order canonical form picks is free — equality
+        // only needs both sides sorted the same way — but the order is
+        // *displayed*, and the two keys disagree on where an exact fraction
+        // goes. `cmp` ranks every `Num` ahead of every `Sym`; legacy has no
+        // rational leaf, so `-2/3` is the tree `["/", -2, 3]` there and keys as
+        // a quotient, behind any symbol. Sorting by `cmp` alone turned
+        // `x = -2/3` into `-2/3 = x` while the oracle leaves the variable on
+        // the left, and left the engine holding two spellings of one relation:
+        // `solve_linear` builds `x = -2/3` directly and never re-enters this
+        // sort, so its answer stopped matching the same equation reached
+        // through `simplify`.
+        //
+        // `cmp` stays as the tie-break because the JS key is not a total order
+        // — distinct operands can key alike, and a stable sort would then leave
+        // canonical form dependent on the order they were authored in, which is
+        // exactly what would break `equals`.
+        operands.sort_by(|a, b| super::cmp_default_order(a, b).then_with(|| cmp(a, b)));
     }
     Expr::Relation { operands, ops }
 }

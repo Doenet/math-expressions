@@ -56,7 +56,10 @@ pub(crate) fn expr_to_ratfun(e: &Expr, x: &str) -> Option<(UPoly, UPoly)> {
                 let mut acc = (Vec::new(), one());
                 for t in ts {
                     let (c, d) = conv(t, x, cap)?;
-                    let n = univariate::add_p(&univariate::mul(&acc.0, &d), &univariate::mul(&c, &acc.1));
+                    let n = univariate::add_p(
+                        &univariate::mul(&acc.0, &d),
+                        &univariate::mul(&c, &acc.1),
+                    );
                     let den = univariate::mul(&acc.1, &d);
                     if univariate::degree(&n) > cap || univariate::degree(&den) > cap {
                         return None;
@@ -369,7 +372,11 @@ fn resultant_q(a: &UPoly, b: &UPoly) -> Option<BigRational> {
         }
         let (da, db) = (univariate::degree(&a), univariate::degree(&b));
         let r = univariate::divrem(&a, &b).1;
-        let dr = if univariate::is_zero(&r) { 0 } else { univariate::degree(&r) };
+        let dr = if univariate::is_zero(&r) {
+            0
+        } else {
+            univariate::degree(&r)
+        };
         if univariate::is_zero(&r) {
             return Some(BigRational::zero());
         }
@@ -412,10 +419,7 @@ fn lagrange(points: &[(BigRational, BigRational)]) -> UPoly {
 type Qe = (BigRational, BigRational);
 
 fn qe_mul(a: &Qe, b: &Qe, m: &BigRational) -> Qe {
-    (
-        &a.0 * &b.0 + &a.1 * &b.1 * m,
-        &a.0 * &b.1 + &a.1 * &b.0,
-    )
+    (&a.0 * &b.0 + &a.1 * &b.1 * m, &a.0 * &b.1 + &a.1 * &b.0)
 }
 
 fn qe_inv(a: &Qe, m: &BigRational) -> Option<Qe> {
@@ -482,7 +486,7 @@ fn quadratic_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) ->
     let h = -(c1 / (BigRational::from_integer(2.into()) * c2)); // real part
     let disc = c1 * c1 - BigRational::from_integer(4.into()) * c2 * c0;
     let m = &disc / (BigRational::from_integer(4.into()) * c2 * c2); // α = h ± √m
-    // gcd over ℚ(√m) with α = h + √m  (k = 1 by construction).
+                                                                     // gcd over ℚ(√m) with α = h + √m  (k = 1 by construction).
     let alpha: Qe = (h.clone(), BigRational::one());
     // A − α·q′ as a ℚ(√m)[x] polynomial.
     let mut shifted: QePoly = Vec::new();
@@ -494,10 +498,7 @@ fn quadratic_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) ->
         shifted.push((&ac - &alpha.0 * &dc, -(&alpha.1 * &dc)));
     }
     qep_trim(&mut shifted);
-    let q_qe: QePoly = q
-        .iter()
-        .map(|c| (c.clone(), BigRational::zero()))
-        .collect();
+    let q_qe: QePoly = q.iter().map(|c| (c.clone(), BigRational::zero())).collect();
     let g = qep_gcd(&q_qe, &shifted, &m)?;
     // Split G = U(x) + √m·V(x).
     let u: UPoly = {
@@ -530,10 +531,7 @@ fn quadratic_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) ->
             let (sign, arg) = if univariate::degree(&u) > univariate::degree(&v) {
                 (
                     1,
-                    cmul(vec![
-                        u_e,
-                        cpow(cmul(vec![s.clone(), v_e]), int(-1)),
-                    ]),
+                    cmul(vec![u_e, cpow(cmul(vec![s.clone(), v_e]), int(-1))]),
                 )
             } else {
                 (-1, cmul(vec![s.clone(), v_e, cpow(u_e, int(-1))]))
@@ -551,7 +549,10 @@ fn quadratic_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) ->
         let mut terms = Vec::new();
         for sign in [1i64, -1] {
             let alpha_e = cadd(vec![num(&h), cmul(vec![int(sign), s.clone()])]);
-            let arg = cadd(vec![u_e.clone(), cmul(vec![int(sign), s.clone(), v_e.clone()])]);
+            let arg = cadd(vec![
+                u_e.clone(),
+                cmul(vec![int(sign), s.clone(), v_e.clone()]),
+            ]);
             terms.push(cmul(vec![alpha_e, log_expr(arg)]));
         }
         Some(cadd(terms))
@@ -647,11 +648,14 @@ fn rootof_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) -> Op
         shifted.push(qr_reduce(&c, &f));
     }
     rp_trim(&mut shifted);
-    let q_r: RPoly = q.iter().map(|c| {
-        let mut v = vec![c.clone()];
-        univariate::trim(&mut v);
-        v
-    }).collect();
+    let q_r: RPoly = q
+        .iter()
+        .map(|c| {
+            let mut v = vec![c.clone()];
+            univariate::trim(&mut v);
+            v
+        })
+        .collect();
     match rp_gcd(&q_r, &shifted, &f) {
         Ok(g) => {
             let d = univariate::degree(&f);
@@ -685,7 +689,8 @@ fn rootof_residues(f: &UPoly, a: &UPoly, q: &UPoly, dq: &UPoly, xs: &Expr) -> Op
         Err(gfac) => {
             // Discovered factor: split F = gfac·(F/gfac) and recurse the
             // residue ladder on each part.
-            if univariate::degree(&gfac) < 1 || univariate::degree(&gfac) >= univariate::degree(&f) {
+            if univariate::degree(&gfac) < 1 || univariate::degree(&gfac) >= univariate::degree(&f)
+            {
                 return None;
             }
             let (rest, _) = univariate::divrem(&f, &gfac);

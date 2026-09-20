@@ -342,19 +342,40 @@ fn exact_div_coeffs(a: &Rep, c: &Rep, depth: usize) -> Option<Rep> {
     }
 }
 
+/// The innermost leading ground coefficient — the one whose sign stands for the
+/// polynomial's, by the convention [`make_lc_positive`] fixes.
+fn leading_ground(a: &Rep) -> Option<&BigRational> {
+    match a {
+        Rep::Ground(g) => Some(g),
+        Rep::Nested(cs) => cs.last().and_then(leading_ground),
+    }
+}
+
 /// Flip the overall sign so the innermost leading ground coefficient is
 /// positive (fixes the gcd's unit ambiguity deterministically).
 fn make_lc_positive(a: Rep) -> Rep {
-    fn leading_ground(a: &Rep) -> Option<&BigRational> {
-        match a {
-            Rep::Ground(g) => Some(g),
-            Rep::Nested(cs) => cs.last().and_then(leading_ground),
-        }
-    }
     if matches!(leading_ground(&a), Some(g) if g.is_negative()) {
         neg(&a)
     } else {
         a
+    }
+}
+
+/// Move a negative sign out of a reduced fraction's denominator, negating both
+/// halves.
+///
+/// The gcd is only defined up to a unit, and [`make_lc_positive`] picks one by
+/// the *main* variable's leading sign — so which variable happens to sort first
+/// decides whether the leftover unit lands in the numerator or the denominator.
+/// `(y²−x²)/(y−x)` sorts on `x`, whose leading coefficient is negative on both
+/// sides, and comes back as `−(−x−y)`: correct, and not something to show
+/// anyone. Kernels make this the common case rather than the odd one, since
+/// `$k…` sorts ahead of every ordinary variable.
+pub(crate) fn normalize_fraction_sign(num: Rep, den: Rep) -> (Rep, Rep) {
+    if matches!(leading_ground(&den), Some(g) if g.is_negative()) {
+        (neg(&num), neg(&den))
+    } else {
+        (num, den)
     }
 }
 

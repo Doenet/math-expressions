@@ -43,14 +43,22 @@ fn variables_match_js_exactly() {
         let Some(e) = parse(&c.input) else { continue };
         let got = catch(|| variables(&e));
         if got.as_ref() != Some(&c.vars) {
-            diffs.push(format!("  {:?}: JS {:?} vs Rust {:?}", c.input, c.vars, got));
+            diffs.push(format!(
+                "  {:?}: JS {:?} vs Rust {:?}",
+                c.input, c.vars, got
+            ));
         }
     }
     assert!(
         diffs.is_empty(),
         "{} variables divergence(s):\n{}",
         diffs.len(),
-        diffs.iter().take(30).cloned().collect::<Vec<_>>().join("\n"),
+        diffs
+            .iter()
+            .take(30)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
 }
 
@@ -63,7 +71,9 @@ fn substitute_matches_js() {
         let (Some(sub), Some(e)) = (&c.sub, parse(&c.input)) else {
             continue;
         };
-        let Some(repl) = parse(&sub.repl) else { continue };
+        let Some(repl) = parse(&sub.repl) else {
+            continue;
+        };
         let map = HashMap::from([(sub.var.clone(), repl)]);
         let want = expr::serde::try_from_js(&sub.tree).expect("fixture tree");
         let ok = catch(|| equals(&substitute(&e, &map), &want, &opts)).unwrap_or(false);
@@ -75,6 +85,11 @@ fn substitute_matches_js() {
         diffs.is_empty(),
         "{} substitute divergence(s):\n{}",
         diffs.len(),
-        diffs.iter().take(30).cloned().collect::<Vec<_>>().join("\n"),
+        diffs
+            .iter()
+            .take(30)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
 }

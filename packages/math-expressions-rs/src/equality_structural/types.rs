@@ -55,7 +55,10 @@ pub struct StructuralComparisonResult {
 
 impl StructuralComparisonResult {
     pub(super) fn pass() -> Self {
-        StructuralComparisonResult { ok: true, why: None }
+        StructuralComparisonResult {
+            ok: true,
+            why: None,
+        }
     }
     pub(super) fn fail(why: &str) -> Self {
         StructuralComparisonResult {

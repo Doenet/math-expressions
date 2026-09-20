@@ -57,6 +57,16 @@ pub struct ResourceLimits {
     /// Bit-size cap on exact integer powers (`2^(10^12)` is not a number to
     /// materialize).
     pub max_pow_bits: u64,
+    /// Bit-size cap on the *result* of a Gaussian-rational power fold
+    /// (`simplify`'s Q(i) cluster). Far below [`Self::max_pow_bits`] because
+    /// the two pay very different prices for the same result size: an integer
+    /// power is one shift, while `(a+bi)^k` is `k` big-rational multiplies,
+    /// each of which renormalizes by a gcd — quadratic in the operand.
+    ///
+    /// The bound is on the result rather than on `k` because `simplify`
+    /// rewrites bottom-up, so a per-node exponent cap compounds under nesting:
+    /// `(((2+i)^64+1)^64+1)^64` is about thirty typeable characters.
+    pub max_gaussian_pow_bits: u64,
     /// Largest matrix dimension for elimination-based operations
     /// (det/inverse/rref).
     pub max_matrix_dim: usize,
@@ -127,6 +137,7 @@ impl Default for ResourceLimits {
             max_residues: 10_000,
             max_round_decimals: 4_000,
             max_pow_bits: 1_000_000,
+            max_gaussian_pow_bits: 16_384,
             max_matrix_dim: 64,
             max_symbolic_det_dim: 6,
             max_eval_precision_bits: 17_000,

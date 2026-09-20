@@ -5,6 +5,13 @@
 
 use crate::expr::Expr;
 use num_complex::Complex64;
+use num_rational::BigRational;
+
+/// Complex evaluation of a variadic function (the aggregates).
+pub type EvalN = fn(&[Complex64]) -> Option<Complex64>;
+
+/// Exact rational folding of an application whose arguments are all exact.
+pub type FoldExact = fn(&[BigRational]) -> Option<BigRational>;
 
 /// Everything the crate knows about one named math function.
 ///
@@ -47,6 +54,27 @@ pub struct FnDef {
     pub eval1: Option<fn(Complex64) -> Option<Complex64>>,
     /// Complex evaluation with two arguments (`atan2`, `mod`, …).
     pub eval2: Option<fn(Complex64, Complex64) -> Option<Complex64>>,
+    /// Complex evaluation at *any* arity — the aggregates (`sum`, `mean`,
+    /// `max`, …), which take as many arguments as they are given. Tried
+    /// before `eval1`/`eval2`, so a function defines this or those, never
+    /// both. Matched on the canonical spelling, like the other two.
+    pub evaln: Option<EvalN>,
+    /// Exact folding for `simplify`: the value of an application whose
+    /// arguments are all exact rationals, *when that value is itself an exact
+    /// rational*.
+    ///
+    /// Returning `None` — from the function, or from the facet being absent —
+    /// leaves the application unfolded, and that is the whole design: it is
+    /// what keeps `sqrt(2)`, `log10(3)` and `asin(1)` symbolic instead of
+    /// collapsing them to a float. Contrast the legacy library, which folded
+    /// through floating point and then tried to *recover* a fraction from the
+    /// result; that is why its `log(1000, 10)` is `2.9999999999999996`.
+    /// Working in `BigRational` throughout means the question "is this exactly
+    /// 3?" is decided, not estimated.
+    ///
+    /// Arity is the implementation's business: it receives the whole argument
+    /// list and returns `None` for a shape it does not handle.
+    pub fold_exact: Option<FoldExact>,
     /// LaTeX control-word rendering, per spelling: `("asin", "arcsin")`
     /// renders the symbol `asin` as `\arcsin`. Spellings not listed fall
     /// back to `\operatorname{…}`. Per-spelling (like
@@ -75,6 +103,8 @@ pub const DEFAULTS: FnDef = FnDef {
     antiderivative: None,
     eval1: None,
     eval2: None,
+    evaln: None,
+    fold_exact: None,
     latex_commands: &[],
     latex_head: None,
     kernel: None,

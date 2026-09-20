@@ -24,18 +24,29 @@ pub enum Tier0Outcome {
 }
 
 /// Run the tape; `record[i]` receives op i's value (NaN past an escalation).
-pub fn run(
+pub fn run(tape: &CompiledExpr, bindings: &[f64], record: &mut Vec<f64>) -> Tier0Outcome {
+    let mut stack: Vec<Approx64> = Vec::with_capacity(tape.max_stack);
+    run_with(tape, bindings, record, &mut stack)
+}
+
+/// [`run`] with a caller-owned value stack. Sampling the same tape at thousands
+/// of points is the loop this exists for: `record` and `stack` are the only
+/// allocations a Tier-0 sweep makes, and hoisting them out of the point loop
+/// leaves it allocation-free.
+pub fn run_with(
     tape: &CompiledExpr,
     bindings: &[f64],
     record: &mut Vec<f64>,
+    stack: &mut Vec<Approx64>,
 ) -> Tier0Outcome {
     record.clear();
     record.reserve(tape.ops.len());
-    let mut stack: Vec<Approx64> = Vec::with_capacity(tape.max_stack);
+    stack.clear();
+    stack.reserve(tape.max_stack);
     let mut failure: Option<&'static str> = None;
 
     for op in &tape.ops {
-        let out = eval_op(op, tape, bindings, &mut stack);
+        let out = eval_op(op, tape, bindings, stack);
         let out = match out {
             Ok(v) => v,
             Err(why) => {
@@ -130,8 +141,14 @@ fn eval_op(
             if x.val == 0.0 && *k < 0 {
                 return Err("0^negative");
             }
-            let p = x.val.powi(i32::try_from(*k).map_err(|_| "exponent overflow")?);
-            let rel_in = if x.val != 0.0 { x.err / x.val.abs() } else { 0.0 };
+            let p = x
+                .val
+                .powi(i32::try_from(*k).map_err(|_| "exponent overflow")?);
+            let rel_in = if x.val != 0.0 {
+                x.err / x.val.abs()
+            } else {
+                0.0
+            };
             let rel = (k.unsigned_abs() as f64) * (rel_in + U);
             Approx64 {
                 val: p,
@@ -229,7 +246,10 @@ pub fn run_complex(
     let result = stack.pop().expect("tape leaves one value");
     match failure {
         Some(why) => CTier0Outcome::Escalate(why),
-        None if result.val.re.is_finite() && result.val.im.is_finite() && result.err.is_finite() => {
+        None if result.val.re.is_finite()
+            && result.val.im.is_finite()
+            && result.err.is_finite() =>
+        {
             CTier0Outcome::Ok(result)
         }
         None => CTier0Outcome::Escalate("non-finite complex result"),
@@ -338,7 +358,9 @@ fn ceval_op(
             if x.val.norm() == 0.0 && *k < 0 {
                 return Err("0^negative");
             }
-            let p = x.val.powi(i32::try_from(*k).map_err(|_| "exponent overflow")?);
+            let p = x
+                .val
+                .powi(i32::try_from(*k).map_err(|_| "exponent overflow")?);
             let rel_in = if x.val.norm() != 0.0 {
                 x.err / x.val.norm()
             } else {
@@ -357,9 +379,7 @@ fn ceval_op(
                 return Err("0 base of a general power");
             }
             let p = a.val.powc(b.val);
-            let rel = b.val.norm() * (a.err / a.val.norm())
-                + a.val.ln().norm() * b.err
-                + 4.0 * U;
+            let rel = b.val.norm() * (a.err / a.val.norm()) + a.val.ln().norm() * b.err + 4.0 * U;
             CApprox64 {
                 val: p,
                 err: p.norm() * rel + p.norm() * U,

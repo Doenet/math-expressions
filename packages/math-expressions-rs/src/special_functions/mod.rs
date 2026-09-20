@@ -29,6 +29,7 @@
 //!   per-function pointer into it.
 //! - Non-function notation (greek letters, relations, units).
 
+pub mod aggregate;
 pub mod exp_log;
 pub mod hyperbolic;
 pub mod hyperbolic_inverse;
@@ -42,11 +43,11 @@ mod def;
 mod query;
 mod registry;
 
-pub use def::{FnDef, DEFAULTS};
+pub use def::{EvalN, FnDef, FoldExact, DEFAULTS};
 pub use query::{
     antiderivative_builder, applied_latex_names, applied_text_names, canonical_name,
-    derivative_template, eval1, eval2, inverse_of, latex_apply_head, latex_command,
-    moves_exponent_outside,
+    derivative_template, eval1, eval2, evaln, fold_exact, inverse_of, latex_apply_head,
+    latex_command, moves_exponent_outside,
 };
 pub use registry::{lookup, ALL};
 

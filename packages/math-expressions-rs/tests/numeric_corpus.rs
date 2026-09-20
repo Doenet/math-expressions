@@ -49,7 +49,12 @@ fn statistics_match_mathjs() {
     for case in corpus()["stats"].as_array().unwrap() {
         let data = fs(&case["data"]);
         assert_close(mathjs_compat::mean(&data), f(&case["mean"]), 1e-12, "mean");
-        assert_close(mathjs_compat::median(&data), f(&case["median"]), 1e-12, "median");
+        assert_close(
+            mathjs_compat::median(&data),
+            f(&case["median"]),
+            1e-12,
+            "median",
+        );
         assert_close(
             mathjs_compat::variance(&data),
             f(&case["variance"]),
@@ -132,28 +137,19 @@ fn combined_rounding_matches_js() {
             inf(&case["decimals"]),
         );
         let got = expr::serde::to_js(&rounded);
+        // Exactly, not within a tolerance like the numerical routines above.
+        // Both sides round the float's exact binary value and then take the
+        // nearest f64 to the decimal that produces, so there is no room for the
+        // two to disagree — and while there was (`(v · 10^d).round() / 10^d`),
+        // the disagreement was large, not last-ulp: `2e21` came back as
+        // `1.9999999999999997e21`. A tolerance here would hide the next one.
         assert!(
-            trees_close(&got, &case["expected"]),
+            got == case["expected"],
             "round({}, {}, {}): got {got}, JS {}",
             case["tree"],
             case["digits"],
             case["decimals"],
             case["expected"]
         );
-    }
-}
-
-/// Structural equality with a tiny numeric tolerance on number leaves (JS
-/// float rounding vs. our exact-rational rounding can differ in the last ulp).
-fn trees_close(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Number(x), Value::Number(y)) => {
-            let (x, y) = (x.as_f64().unwrap(), y.as_f64().unwrap());
-            (x - y).abs() <= 1e-12 * 1.0f64.max(y.abs())
-        }
-        (Value::Array(x), Value::Array(y)) => {
-            x.len() == y.len() && x.iter().zip(y).all(|(p, q)| trees_close(p, q))
-        }
-        _ => a == b,
     }
 }

@@ -12,6 +12,34 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
+    rust-lint:
+        name: Lint Rust Code
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout sources
+              uses: actions/checkout@v6
+
+            # Modeled on DoenetML's "Lint Rust Code" job: install a minimal
+            # stable toolchain with the rustfmt + clippy components, then gate
+            # on formatting and a warning-free clippy. Uses rustup directly
+            # (not the devcontainer) so the lint job stays fast and independent
+            # of the wasm/Node toolchain the build/test jobs need.
+            - name: Install toolchain
+              run: |
+                  rustup set profile minimal
+                  rustup toolchain install stable --component rustfmt --component clippy
+                  rustup default stable
+
+            # `--all` covers the whole workspace (the wasm crate is not a
+            # default member; see rust-test).
+            - name: Cargo fmt
+              run: cargo fmt --all -- --check
+
+            # `--workspace --all-targets` lints the wasm crate and the test /
+            # example targets too, not just the default-member library.
+            - name: Cargo clippy
+              run: cargo clippy --workspace --all-targets -- -D warnings
+
     rust-build:
         name: Rust build
         runs-on: ubuntu-latest
@@ -78,20 +106,54 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            # Builds the nodejs-target wasm (build-wasm.sh), then runs the legacy
-            # JS suite (converted to TS) against the js-compat drop-in (published
-            # to npm as `math-expressions`). Not all tests pass yet — see
-            # active-plans/JS_TEST_COVERAGE_AUDIT.md — so this job is informational
-            # until the compat layer is finished; `|| true` keeps a partial suite
-            # from failing CI. Drop that once it is green.
-            - name: Build wasm and run the js-compat suite
+            # Builds everything the published tarball contains (`build:package` —
+            # both wasm targets, the rs-wasm bindings, the Vite lib build), then
+            # runs the legacy JS suite (converted to TS) against the js-compat
+            # drop-in (published to npm as `math-expressions`). The full build
+            # rather than just the wasm, because `spec/build_{esm,umd}.spec.ts`
+            # exercise `dist/` — the artifact a consumer actually installs — and
+            # skip themselves when it is absent.
+            #
+            # This job gates. It used to end in `|| true`, from when the suite
+            # was hundreds of failures deep and the number was still falling;
+            # that made it incapable of reporting a regression, which is the
+            # only thing it is for now that the suite is green. The one test
+            # that cannot pass soundly is `it.skip`ped at its site with the
+            # reason, rather than left red — see `COMPAT_TEST_FAILURE_SUMMARY.md`.
+            - name: Build the package and run the js-compat suite
               uses: devcontainers/ci@v0.3
               with:
                   runCmd: |
                       npm ci
                       cd packages/math-expressions-js-compat
-                      ./build-wasm.sh
-                      npm test || true
+                      npm run build:package
+                      npm run typecheck
+                      npm test
+
+    package-publishability:
+        name: package publishability
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            # The only job that sees this package the way npm consumers will.
+            # Everything else here resolves through workspace symlinks and finds
+            # build outputs already present, which hides exactly the failures
+            # that matter at publish time: an unpublished `dependencies` entry,
+            # an `exports` target inside a git-ignored directory nothing built,
+            # a runtime asset missing from `files`. `verify:package` packs the
+            # tarball, installs it into a throwaway project outside the
+            # workspace, and drives it through both supported loading paths —
+            # Node's self-loading fallback and a browser/Web-Worker host
+            # injecting the `--target web` build. It gates: this one is not
+            # informational.
+            - name: Pack, install and consume the tarball
+              uses: devcontainers/ci@v0.3
+              with:
+                  runCmd: |
+                      npm ci
+                      cd packages/math-expressions-js-compat
+                      npm run verify:package
 
     # ---- GitHub Pages: the playground at the site root, Rust API docs at /docs ----
     # Deploys only on pushes to main. Requires the repo's Pages source to be set to

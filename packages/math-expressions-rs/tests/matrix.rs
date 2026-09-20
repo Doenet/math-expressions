@@ -2,8 +2,8 @@
 //! Written test-first: these specify the M1 contract from §0/§1a of the plan.
 
 use math_expressions::{
-    canonicalize, equals, matmul, to_text, trace, transpose, EqOptions, Expr, TextOpts, TextToAst,
-    TextToAstOptions,
+    canonicalize, equals, matmul, to_text, trace, transpose, EqOptions, Expr, Mat, TextOpts,
+    TextToAst, TextToAstOptions,
 };
 
 fn parse(s: &str) -> Expr {
@@ -15,11 +15,10 @@ fn parse(s: &str) -> Expr {
 /// Build a literal matrix from entry strings (row-major).
 fn mat(rows: u32, cols: u32, entries: &[&str]) -> Expr {
     assert_eq!(entries.len() as u32, rows * cols);
-    Expr::Matrix {
-        rows,
-        cols,
-        entries: entries.iter().map(|s| parse(s)).collect(),
-    }
+    Expr::Matrix(
+        Mat::new(rows, cols, entries.iter().map(|s| parse(s)).collect())
+            .expect("test matrix shape"),
+    )
 }
 
 /// Canonicalize both and require identical trees.
@@ -108,18 +107,11 @@ fn scalar_multiple_distributes_into_entries() {
 fn scalar_matrix_like_terms_combine() {
     let a = mat(2, 2, &["1", "0", "0", "1"]);
     // 2A + 3A = 5A
-    let sum = add2(
-        mul2(Expr::int(2), a.clone()),
-        mul2(Expr::int(3), a.clone()),
-    );
+    let sum = add2(mul2(Expr::int(2), a.clone()), mul2(Expr::int(3), a.clone()));
     assert_canon_eq(&sum, &mat(2, 2, &["5", "0", "0", "5"]), "2A+3A");
     // xA + yA = (x+y)A entrywise
     let sum = add2(mul2(parse("x"), a.clone()), mul2(parse("y"), a));
-    assert_canon_eq(
-        &sum,
-        &mat(2, 2, &["x + y", "0", "0", "x + y"]),
-        "xA+yA",
-    );
+    assert_canon_eq(&sum, &mat(2, 2, &["x + y", "0", "0", "x + y"]), "xA+yA");
 }
 
 #[test]
@@ -304,7 +296,10 @@ fn equals_uses_folded_form() {
     let b = mat(2, 2, &["5", "6", "7", "8"]);
     let folded = mat(2, 2, &["19", "22", "43", "50"]);
     assert!(eq(&mul2(a.clone(), b.clone()), &folded));
-    assert!(!eq(&mul2(a.clone(), b.clone()), &mat(2, 2, &["1", "0", "0", "1"])));
+    assert!(!eq(
+        &mul2(a.clone(), b.clone()),
+        &mat(2, 2, &["1", "0", "0", "1"])
+    ));
     // simplify is idempotent on matrix expressions.
     let s = math_expressions::simplify(&mul2(a, b));
     assert_eq!(math_expressions::simplify(&s), s);
@@ -341,9 +336,21 @@ fn det_rational() {
         &parse("25"),
         "3x3",
     );
-    assert_canon_eq(&det(&mat(2, 2, &["1", "2", "2", "4"])), &parse("0"), "singular");
-    assert_canon_eq(&det(&mat(3, 3, &["1", "0", "0", "0", "1", "0", "0", "0", "1"])), &parse("1"), "I");
-    assert_canon_eq(&det(&mat(2, 2, &["1/2", "1/3", "1/4", "1/5"])), &parse("1/60"), "rational entries");
+    assert_canon_eq(
+        &det(&mat(2, 2, &["1", "2", "2", "4"])),
+        &parse("0"),
+        "singular",
+    );
+    assert_canon_eq(
+        &det(&mat(3, 3, &["1", "0", "0", "0", "1", "0", "0", "0", "1"])),
+        &parse("1"),
+        "I",
+    );
+    assert_canon_eq(
+        &det(&mat(2, 2, &["1/2", "1/3", "1/4", "1/5"])),
+        &parse("1/60"),
+        "rational entries",
+    );
 }
 
 #[test]
@@ -369,7 +376,13 @@ fn det_polynomial_tier_beyond_symbolic_cap() {
     // the polynomial tier must still produce x^8.
     let n = 8u32;
     let entries: Vec<String> = (0..n * n)
-        .map(|i| if i % (n as u64 as u32 + 1) == 0 { "x".to_string() } else { "0".to_string() })
+        .map(|i| {
+            if i % (n as u64 as u32 + 1) == 0 {
+                "x".to_string()
+            } else {
+                "0".to_string()
+            }
+        })
         .collect();
     let refs: Vec<&str> = entries.iter().map(String::as_str).collect();
     let d = det(&mat(n, n, &refs));
@@ -379,7 +392,10 @@ fn det_polynomial_tier_beyond_symbolic_cap() {
 #[test]
 fn det_opacity() {
     // Non-matrix and non-square arguments stay opaque.
-    for e in [det(&parse("x")), det(&mat(2, 3, &["1", "2", "3", "4", "5", "6"]))] {
+    for e in [
+        det(&parse("x")),
+        det(&mat(2, 3, &["1", "2", "3", "4", "5", "6"])),
+    ] {
         assert!(
             matches!(&e, Expr::OtherOp(name, _) if name.name() == "det"),
             "expected opaque det node, got {e:?}"
@@ -391,9 +407,17 @@ fn det_opacity() {
 fn inverse_rational() {
     let a = mat(2, 2, &["1", "2", "3", "4"]);
     let inv = matrix_inverse(&a, &Assumptions::new());
-    assert_canon_eq(&inv, &mat(2, 2, &["-2", "1", "3/2", "-1/2"]), "known inverse");
+    assert_canon_eq(
+        &inv,
+        &mat(2, 2, &["-2", "1", "3/2", "-1/2"]),
+        "known inverse",
+    );
     // A · A⁻¹ = I
-    assert_canon_eq(&matmul(&a, &inv), &mat(2, 2, &["1", "0", "0", "1"]), "A A^-1 = I");
+    assert_canon_eq(
+        &matmul(&a, &inv),
+        &mat(2, 2, &["1", "0", "0", "1"]),
+        "A A^-1 = I",
+    );
     // Singular → opaque.
     let s = matrix_inverse(&mat(2, 2, &["1", "2", "2", "4"]), &Assumptions::new());
     assert!(
@@ -416,7 +440,10 @@ fn inverse_symbolic_gated_on_assumptions() {
     asm.add(&parse("a != 0"));
     asm.add(&parse("b != 0"));
     let inv = matrix_inverse(&a, &asm);
-    assert!(eq(&inv, &mat(2, 2, &["1/a", "0", "0", "1/b"])), "diag inverse, got {inv:?}");
+    assert!(
+        eq(&inv, &mat(2, 2, &["1/a", "0", "0", "1/b"])),
+        "diag inverse, got {inv:?}"
+    );
 }
 
 #[test]
@@ -430,12 +457,18 @@ fn negative_matrix_powers_fold_for_rational_matrices() {
     );
     // …so A⁻¹·A = I and A⁻² = (A⁻¹)².
     assert_canon_eq(
-        &mul2(Expr::Pow(Box::new(a.clone()), Box::new(Expr::int(-1))), a.clone()),
+        &mul2(
+            Expr::Pow(Box::new(a.clone()), Box::new(Expr::int(-1))),
+            a.clone(),
+        ),
         &mat(2, 2, &["1", "0", "0", "1"]),
         "A^-1 A = I",
     );
     let want = canonicalize(&Expr::Pow(
-        Box::new(canonicalize(&Expr::Pow(Box::new(a.clone()), Box::new(Expr::int(-1))))),
+        Box::new(canonicalize(&Expr::Pow(
+            Box::new(a.clone()),
+            Box::new(Expr::int(-1)),
+        ))),
         Box::new(Expr::int(2)),
     ));
     assert_canon_eq(
@@ -446,7 +479,10 @@ fn negative_matrix_powers_fold_for_rational_matrices() {
     // Singular matrices keep the unevaluated Pow.
     let s = mat(2, 2, &["1", "2", "2", "4"]);
     let p = canonicalize(&Expr::Pow(Box::new(s), Box::new(Expr::int(-1))));
-    assert!(matches!(&p, Expr::Pow(..)), "singular A^-1 stays Pow, got {p:?}");
+    assert!(
+        matches!(&p, Expr::Pow(..)),
+        "singular A^-1 stays Pow, got {p:?}"
+    );
 }
 
 #[test]
@@ -464,7 +500,10 @@ fn rref_and_rank_rational() {
     );
     assert_eq!(rank(&mat(2, 2, &["1", "2", "2", "4"]), &asm), Some(1));
     assert_eq!(rank(&mat(2, 2, &["0", "1", "1", "0"]), &asm), Some(2));
-    assert_eq!(rank(&mat(2, 3, &["1", "2", "3", "2", "4", "6"]), &asm), Some(1));
+    assert_eq!(
+        rank(&mat(2, 3, &["1", "2", "3", "2", "4", "6"]), &asm),
+        Some(1)
+    );
 }
 
 #[test]
@@ -474,11 +513,17 @@ fn nullspace_rational() {
     let basis = nullspace(&a, &asm).unwrap();
     assert_eq!(basis.len(), 1, "n - rank = 1");
     // Normalized: first nonzero component 1 → (1, -1/2).
-    assert_canon_eq(&basis[0], &mat(2, 1, &["1", "-1/2"]), "normalized null vector");
+    assert_canon_eq(
+        &basis[0],
+        &mat(2, 1, &["1", "-1/2"]),
+        "normalized null vector",
+    );
     // A·v = 0 (the zero 2×1 matrix).
     assert_canon_eq(&matmul(&a, &basis[0]), &mat(2, 1, &["0", "0"]), "A v = 0");
     // Full-rank matrix → empty basis.
-    assert!(nullspace(&mat(2, 2, &["0", "1", "1", "0"]), &asm).unwrap().is_empty());
+    assert!(nullspace(&mat(2, 2, &["0", "1", "1", "0"]), &asm)
+        .unwrap()
+        .is_empty());
 }
 
 #[test]
@@ -493,6 +538,74 @@ fn symbolic_pivots_are_assumption_gated() {
     assert_eq!(rank(&a, &Assumptions::new()), None);
     // With x ≠ 0 the elimination completes: rref = I, rank 2.
     let asm = assume("x != 0");
-    assert_canon_eq(&rref(&a, &asm), &mat(2, 2, &["1", "0", "0", "1"]), "gated rref");
+    assert_canon_eq(
+        &rref(&a, &asm),
+        &mat(2, 2, &["1", "0", "0", "1"]),
+        "gated rref",
+    );
     assert_eq!(rank(&a, &asm), Some(2));
+}
+
+// ---- grading: `det`/`trace` compared against their own value ----
+
+/// `equals` samples through `eval_numeric/complex.rs`, which is neither of the
+/// evaluation paths a `det`/`trace` application otherwise takes. It used to ask
+/// only `special_functions::eval1` whether a head was evaluable; `det` had no
+/// kernel and `trace`'s could not see inside a `Matrix`, so the whole
+/// application was classified as an *unknown* and sampled as a fresh variable.
+/// It then agreed with its own value at no point:
+/// `det([[1,2],[3,4]])` simplified to `-2` and compared **unequal** to `-2`.
+/// The JS library answered `true` to every case below, so this was a
+/// regression, on a grading path — `<answer>` calls `equals`.
+///
+/// `matrix::scalar_reduction` is now consulted by the sampler and by
+/// `normalize::fold_apply` alike, so the fold `simplify` performs and the value
+/// `equals` samples come from one place.
+#[test]
+fn det_and_trace_compare_equal_to_their_own_value() {
+    let m = mat(2, 2, &["1", "2", "3", "4"]);
+    let det_m = Expr::Apply(Box::new(Expr::sym("det")), vec![m.clone()]);
+    let trace_m = Expr::Apply(Box::new(Expr::sym("trace")), vec![m]);
+
+    assert!(eq(&det_m, &parse("-2")), "det([[1,2],[3,4]]) == -2");
+    assert!(eq(&trace_m, &parse("5")), "trace([[1,2],[3,4]]) == 5");
+    // Still discriminating — the fix must not make everything compare equal.
+    assert!(!eq(&det_m, &parse("-3")));
+    assert!(!eq(&trace_m, &parse("6")));
+
+    // The same value has to come back from `evaluate_to_constant`, which reads
+    // the same evaluator: `<number>` renders through it, and it answered
+    // nothing here while `simplify` answered `-2`.
+    let c = math_expressions::evaluate_to_constant(&det_m).expect("det evaluates to a constant");
+    assert_eq!((c.re, c.im), (-2.0, 0.0));
+
+    // Symbolic entries: the reduction is symbolic, so `simplify` leaves the
+    // application alone (as the JS library also does) and only the sampler
+    // decides. Both of these were `false`.
+    let sym_det = Expr::Apply(
+        Box::new(Expr::sym("det")),
+        vec![mat(2, 2, &["x", "2", "3", "4"])],
+    );
+    assert!(eq(&sym_det, &parse("4x - 6")), "det([[x,2],[3,4]]) == 4x-6");
+    assert!(!eq(&sym_det, &parse("4x + 6")));
+    let sym_trace = Expr::Apply(
+        Box::new(Expr::sym("trace")),
+        vec![mat(2, 2, &["x", "2", "3", "y"])],
+    );
+    assert!(eq(&sym_trace, &parse("x + y")), "trace == x+y");
+
+    // A matrix the reducers decline stays opaque rather than reducing wrongly:
+    // `det` of a non-square matrix has no value, so it must not compare equal
+    // to a number. (The JS library also answers `false` here.)
+    let oblong = Expr::Apply(
+        Box::new(Expr::sym("det")),
+        vec![mat(2, 3, &["1", "2", "3", "4", "5", "6"])],
+    );
+    assert!(!eq(&oblong, &parse("0")));
+
+    // A *non*-matrix argument is mathjs's scalar convention, `det(2) = 2`,
+    // which is what the identity `eval1` kernels are for. Legacy agreed.
+    assert!(eq(&parse("det(x)"), &parse("x")));
+    assert!(eq(&parse("trace(x)"), &parse("x")));
+    assert!(!eq(&parse("det(x)"), &parse("2x")));
 }

@@ -125,6 +125,21 @@ fn apply_rule(head: &Expr, args: &[Expr], var: &str) -> Expr {
         }
     }
 
+    // `nthroot(u, k)` denotes `u^(1/k)`. The canonical layer rewrites it that
+    // way, but `derivative` runs on the faithful layer where it is still an
+    // applied symbol, and it has no derivative-table entry (unlike `sqrt`/`cbrt`,
+    // which do). Differentiate the power form so the power + chain rules apply —
+    // matching what `d/dx x^(1/k)` produces, since that is the same tree.
+    if let (Expr::Sym(f), [u, k]) = (head, args) {
+        if f.name() == "nthroot" {
+            let power = Expr::Pow(
+                Box::new(u.clone()),
+                Box::new(Expr::Div(Box::new(Expr::int(1)), Box::new(k.clone()))),
+            );
+            return diff(&power, var);
+        }
+    }
+
     // Only bare single-argument function symbols are handled specially.
     if let (Expr::Sym(f), [arg]) = (head, args) {
         let inner = diff(arg, var);
@@ -133,7 +148,10 @@ fn apply_rule(head: &Expr, args: &[Expr], var: &str) -> Expr {
         }
         // Unknown single-arg function → prime notation: f'(u)·u'. Matches the
         // upstream "story" fallback for functions with no known derivative.
-        let fprime = Expr::Apply(Box::new(Expr::Prime(Box::new(Expr::Sym(*f)))), vec![arg.clone()]);
+        let fprime = Expr::Apply(
+            Box::new(Expr::Prime(Box::new(Expr::Sym(*f)))),
+            vec![arg.clone()],
+        );
         return mul2(fprime, inner);
     }
     // Multi-argument or non-symbol heads are not differentiated (rare; e.g.
@@ -195,11 +213,7 @@ fn log_of(a: Expr) -> Expr {
     Expr::Apply(Box::new(Expr::sym("log")), vec![a])
 }
 
-/// Is `e` the constant `e` (either spelling: the `e` symbol or `MathConst::E`)?
-fn is_e(e: &Expr) -> bool {
-    matches!(e, Expr::Sym(s) if s.name() == "e")
-        || matches!(e, Expr::Const(crate::expr::MathConst::E))
-}
+use crate::constant_policy::is_e;
 
 /// Is `base` a function whose exponent moves outside, so `base^n(x)` means
 /// `(base(x))^n` (trig / hyperbolic / log)? Mirrors `normalize::syntactic`.

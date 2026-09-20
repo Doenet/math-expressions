@@ -1,31 +1,44 @@
 {
   "name": "math-expressions",
-  "version": "3.0.0-alpha1",
+  "version": "3.0.0-alpha.1",
   "description": "Parse and perform symbolic computation on mathematical expressions. A drop-in replacement for the original math-expressions JavaScript API, backed by the Rust core (math-expressions-rs) compiled to wasm — same `me.fromText(...).equals(...)` surface, no math of its own.",
   "license": "(GPL-3.0 OR Apache-2.0)",
   "type": "module",
   "main": "./dist/math-expressions.js",
   "module": "./dist/math-expressions.js",
+  "types": "./types/math-expressions.d.ts",
   "exports": {
-    ".": "./dist/math-expressions.js",
-    "./lib/*": "./lib/*"
+    ".": {
+      "types": "./types/math-expressions.d.ts",
+      "default": "./dist/math-expressions.js"
+    },
+    "./lib/*": "./lib/*",
+    "./wasm-web/*": "./vendor/wasm-web/*",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "lib",
+    "types/math-expressions.d.ts",
     "vendor"
   ],
   "scripts": {
     "build:wasm": "./build-wasm.sh",
+    "build:deps": "npm --prefix ../math-expressions-rs-wasm run build",
     "build": "vite build",
+    "build:package": "npm run build:wasm && npm run build:deps && npm run build",
+    "prepack": "npm run build:package",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:package": "node scripts/verify-package.mjs",
+    "typecheck": "tsc -p tsconfig.lib.json && tsc -p types/tsconfig.json"
   },
   "dependencies": {
-    "math-expressions-rs-wasm": "*",
     "mathjs": "^15.2.0"
   },
   "devDependencies": {
+    "math-expressions-rs-wasm": "*",
+    "typescript": "^5.9.3",
     "underscore": "^1.13.6",
     "vite": "^8.0.16",
     "vitest": "^4.1.8"

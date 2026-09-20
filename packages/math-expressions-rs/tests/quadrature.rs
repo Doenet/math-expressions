@@ -3,7 +3,9 @@
 //! checked digit-for-digit against `evaluate_to_precision` of the closed
 //! form — an independent code path (symbolic + MpFix vs f64 quadrature).
 
-use math_expressions::eval_numeric::certified_digits::{evaluate_to_precision, integrate_to_precision, Precise};
+use math_expressions::eval_numeric::certified_digits::{
+    evaluate_to_precision, integrate_to_precision, Precise,
+};
 use math_expressions::{Expr, TextToAst, TextToAstOptions};
 
 fn parse(s: &str) -> Expr {
@@ -106,10 +108,7 @@ fn accuracy_is_guaranteed_at_every_requested_digit_count() {
         let p = quad("4/(1+x^2)", "0", "1", d);
         let v = p.to_f64().unwrap_or_else(|| panic!("digits {d}: {p:?}"));
         let tol = truth.abs() * 10f64.powi(1 - d as i32);
-        assert!(
-            (v - truth).abs() <= tol,
-            "digits {d}: |{v} − π| > {tol}"
-        );
+        assert!((v - truth).abs() <= tol, "digits {d}: |{v} − π| > {tol}");
     }
 }
 

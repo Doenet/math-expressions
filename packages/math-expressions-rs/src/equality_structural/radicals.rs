@@ -32,11 +32,19 @@ fn root_of(e: &Expr) -> Option<Root<'_>> {
                 },
                 _ => return None,
             };
-            Some(Root { radicand, index, in_denominator: false })
+            Some(Root {
+                radicand,
+                index,
+                in_denominator: false,
+            })
         }
         Expr::Pow(b, exp) => {
             let (index, negative) = unit_root_exponent(exp)?;
-            Some(Root { radicand: b, index, in_denominator: negative })
+            Some(Root {
+                radicand: b,
+                index,
+                in_denominator: negative,
+            })
         }
         _ => None,
     }
@@ -47,7 +55,7 @@ fn root_of(e: &Expr) -> Option<Root<'_>> {
 fn unit_root_exponent(exp: &Expr) -> Option<(u32, bool)> {
     match exp {
         Expr::Neg(x) => unit_root_exponent(x).map(|(m, neg)| (m, !neg)),
-        Expr::Num(crate::num::Number::Rat(n, d)) => unit_from(*n, *d),
+        Expr::Num(crate::num::Number::Rat(n, d, _)) => unit_from(*n, *d),
         Expr::Div(a, b) => unit_from(as_int(a)?, as_int(b)?),
         _ => None,
     }
@@ -81,9 +89,7 @@ pub(super) fn denom_has_radical(e: &Expr) -> bool {
     match e {
         Expr::Div(_, d) => contains_radical(d) || denom_has_radical(d),
         // `base^(negative)` = 1/base^|·|: a surd there if the base has one.
-        Expr::Pow(b, exp) if is_negative_sign(exp) => {
-            contains_radical(b) || denom_has_radical(b)
-        }
+        Expr::Pow(b, exp) if is_negative_sign(exp) => contains_radical(b) || denom_has_radical(b),
         _ => e.children().iter().any(|c| denom_has_radical(c)),
     }
 }

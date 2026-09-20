@@ -14,8 +14,8 @@
 //! a structurally identical one (`equals` cannot see through the `±` there).
 //! Callers should not place `±` inside matrices or intervals.
 
-use crate::expr::Expr;
 use crate::expr::map_children;
+use crate::expr::Expr;
 
 /// Maximum number of `pm` operators allowed for sign-expansion.
 /// `expand_pm_signs` produces `2^n` variants, so this caps the work at 1024.
@@ -85,7 +85,9 @@ pub fn expand_pm_signs(e: &Expr) -> Result<Vec<Expr>, PmOverflow> {
 /// bit `k` of `mask` controls the `k`-th `pm`.
 fn replace_pm(e: &Expr, mask: usize, idx: &mut usize) -> Expr {
     if is_pm(e) {
-        let Expr::OtherOp(_, args) = e else { unreachable!() };
+        let Expr::OtherOp(_, args) = e else {
+            unreachable!()
+        };
         let bit = (mask >> *idx) & 1;
         *idx += 1;
         let inner = replace_pm(&args[0], mask, idx);
@@ -104,7 +106,9 @@ mod tests {
     use crate::{Expr, TextToAst, TextToAstOptions};
 
     fn parse(s: &str) -> Expr {
-        TextToAst::new(TextToAstOptions::default()).convert(s).unwrap()
+        TextToAst::new(TextToAstOptions::default())
+            .convert(s)
+            .unwrap()
     }
 
     #[test]

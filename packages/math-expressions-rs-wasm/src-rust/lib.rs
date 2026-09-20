@@ -24,6 +24,9 @@
 //! - [`ode`]         — ODE solving (numeric and expression-RHS)
 //! - [`numeric`]     — f64 numeric utilities (the `me.math` replacements)
 //! - [`interop`]     — JS-tree AST boundary (Doenet interop)
+//! - [`tree_ops`]    — JS-tree operations the compat layer needs without an
+//!   `Expression`'s normalization (default order, not-pushdown, linear solving)
+//! - [`poly_ops`]    — the compat polynomial / Gröbner engine (JSON in, JSON out)
 //! - [`js_match`]    — the JS-tree template-match / flatten-unflatten engine
 //!   backing [`interop`] (JS-shape only, so it lives here rather than in the
 //!   core crate)
@@ -39,6 +42,7 @@ use wasm_bindgen::prelude::*;
 
 mod assumptions;
 mod calculus;
+mod constants;
 mod core_ops;
 mod grading;
 mod interop;
@@ -48,7 +52,9 @@ mod matrix_ops;
 mod numeric;
 mod ode;
 mod parse;
+mod poly_ops;
 mod transform;
+mod tree_ops;
 
 /// An opaque handle to a parsed math expression.
 ///
@@ -84,6 +90,80 @@ impl Expression {
             },
         )
     }
+}
+
+/// Report a Rust panic to the JS console before the module traps
+/// (DOENET_INTEGRATION item 2).
+///
+/// A panic in wasm reaches the browser as `RuntimeError: unreachable executed`
+/// and nothing else, which makes a failing `assert_eq!` unreadable — you can
+/// see *that* something tripped, never *which* thing or with what values. That
+/// was long blamed on `panic = "abort"` in the release profile. It is not the
+/// cause: std runs the panic hook before aborting, and the payload survives the
+/// size-oriented profile intact. What was missing is a hook at all — the
+/// default one writes to stderr, which on `wasm32-unknown-unknown` goes
+/// nowhere.
+///
+/// So this is unconditional rather than gated behind a diagnostic build: it
+/// measured 1,958 bytes (0.14%) on the shipped binary, which is not a price
+/// worth making anyone opt into. It does not change *behaviour* — the trap
+/// still happens, right after — only whether the trap says anything. Written
+/// against `wasm-bindgen` directly rather than pulling in
+/// `console_error_panic_hook`, to leave the dependency set alone.
+mod panic_report {
+    use wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen]
+    extern "C" {
+        #[wasm_bindgen(js_namespace = console)]
+        fn error(msg: String);
+    }
+
+    /// Installed automatically at module instantiation.
+    #[wasm_bindgen(start)]
+    pub fn install() {
+        // `PanicHookInfo`'s Display already carries the location and the
+        // payload — the same text the native runtime prints — so this only
+        // labels which module it came from.
+        std::panic::set_hook(Box::new(|info| {
+            error(format!("[math-expressions wasm] {info}"));
+        }));
+    }
+
+    /// Panic on purpose, to check that a harness actually surfaces the message.
+    /// Worth running first when a trap reports nothing: that looks identical
+    /// whether the hook is missing or the console output is being swallowed
+    /// somewhere upstream, and this tells the two apart before anyone starts
+    /// hunting a real panic.
+    ///
+    /// Behind the `debug-panics` feature (`build-wasm.sh --debug`) so a call
+    /// that kills the worker cannot be made against a shipped build.
+    #[cfg(feature = "debug-panics")]
+    #[wasm_bindgen]
+    pub fn debug_panic_selftest() {
+        assert_eq!(2 + 2, 5, "the panic hook reports assertion messages");
+    }
+}
+
+/// Free the handle's tree iteratively (STACK_SAFETY_PLAN item 21). A handle can
+/// hold an adversarially deep tree — `((((…))))` from student input — whose
+/// ordinary recursive `Drop` would blow the ~1 MB wasm shadow stack and, under
+/// `panic = "abort"`, kill the worker. `tear_down` dismantles it with a heap
+/// worklist first, leaving `self.0` a shallow shell for the ordinary drop.
+impl Drop for Expression {
+    fn drop(&mut self) {
+        math_expressions::tear_down(&mut self.0);
+    }
+}
+
+/// The number of distinct symbol names interned this session — a memory gauge
+/// for the long-lived worker (item 8). The interner is append-only (a `Sym` is
+/// a raw index into it), so this only grows; it lets the host measure symbol
+/// growth before committing to the generational-`Sym` redesign true eviction
+/// would need.
+#[wasm_bindgen]
+pub fn interner_size() -> usize {
+    math_expressions::interner_len()
 }
 
 #[cfg(test)]

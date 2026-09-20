@@ -13,8 +13,9 @@
 //! Read-only traversal ([`Expr::children`], [`Expr::any_subexpr`]) and n-ary
 //! flattening ([`flatten`](super::flatten)) live in [`visit`](super::visit).
 
-use crate::num::Number;
+use crate::expr::matrix::Mat;
 use crate::expr::sym::Sym;
+use crate::num::Number;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
@@ -22,6 +23,24 @@ pub enum Expr {
     Num(Number),
     Sym(Sym),
     Const(MathConst),
+    /// A boolean literal — `["and", true, false]` in the JS AST.
+    ///
+    /// Deliberately *not* a [`MathConst`]: every other `MathConst` serializes
+    /// to a JSON string (`"pi"`) or a tagged object, whereas a boolean must
+    /// serialize to a JSON boolean or it comes back as the symbol `"true"`.
+    /// It is also not a mathematical constant.
+    ///
+    /// No parser produces this — there is no text or LaTeX spelling for a
+    /// boolean literal — so it only ever enters a tree through
+    /// [`serde::try_from_js`](super::serde::try_from_js) or by hand. The
+    /// printers spell it `true`/`false`, which reads back as a symbol; that
+    /// asymmetry is accepted, since the AST round-trip is the one DoenetML
+    /// relies on.
+    ///
+    /// Interval closures and chained-inequality strictness are *not* booleans
+    /// here — they are metadata on [`Expr::Interval`] / [`Expr::Relation`],
+    /// which is what keeps their invariants structural. See `ops::components`.
+    Bool(bool),
     /// The `index`-th root of the univariate polynomial with the given dense
     /// coefficients (low → high). A *leaf*: the
     /// coefficients are `Number`s, not subexpressions, so traversal and
@@ -30,7 +49,10 @@ pub enum Expr {
     /// `index` follows the canonical root order (real roots ascending, then
     /// conjugate pairs, negative imaginary part first). Text form
     /// `rootof(t^3 - t - 1, 2)`.
-    RootOf { poly: Box<[Number]>, index: u32 },
+    RootOf {
+        poly: Box<[Number]>,
+        index: u32,
+    },
     /// Missing operand "＿" — a real variant, not a magic symbol.
     Blank,
     /// "..." inside lists — ["ldots"] in the JS AST.
@@ -79,12 +101,10 @@ pub enum Expr {
         ops: Vec<RelOp>,
     },
 
-    /// Row-major; invariant: entries.len() == rows * cols.
-    Matrix {
-        rows: u32,
-        cols: u32,
-        entries: Vec<Expr>,
-    },
+    /// Row-major. The shape invariant `entries.len() == rows * cols` is carried
+    /// by [`Mat`](crate::expr::Mat) itself, whose fields are private, so no
+    /// tree can hold a mis-shaped matrix.
+    Matrix(Mat),
 
     /// Escape hatch for the long tail of faithful-layer notation operators
     /// that only parsers and printers touch: angle, unit, pm, d,
@@ -113,6 +133,37 @@ pub enum MathConst {
     Inf,
     NegInf,
     NaN,
+    /// The `{"$":"None"}` special — DoenetML's "no value here". A sibling of the
+    /// other `{"$":…}` specials in *shape* (they are the four JSON values that
+    /// have no bare literal), which is why it lives here rather than as its own
+    /// leaf: it serializes to a tagged object, exactly like `Inf`/`NaN`, not to
+    /// a string or a JSON scalar. It is not a mathematical constant, but neither
+    /// is `NaN`; the grouping is by serde shape, not by meaning.
+    ///
+    /// No parser produces it and it is non-numeric, so — like [`Expr::Bool`] —
+    /// only the AST round-trip through [`serde`](super::serde) is faithful; the
+    /// printers spell it `None` for display and it does not read back.
+    None,
+}
+
+impl MathConst {
+    /// The bare-string spelling this constant has in the JS tree, for the three
+    /// that have one. `Inf`/`NegInf`/`NaN`/`None` serialize as tagged objects
+    /// rather than strings and answer `None` here.
+    ///
+    /// This is the *spelling*, not a claim about meaning: whether the name it
+    /// returns denotes the constant or an ordinary variable is
+    /// [`crate::constant_policy`]'s question. Comparators want the spelling
+    /// (so both forms of one constant sort together); semantics wants the
+    /// policy.
+    pub fn symbol_name(self) -> Option<&'static str> {
+        match self {
+            MathConst::Pi => Some("pi"),
+            MathConst::E => Some("e"),
+            MathConst::I => Some("i"),
+            MathConst::Inf | MathConst::NegInf | MathConst::NaN | MathConst::None => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

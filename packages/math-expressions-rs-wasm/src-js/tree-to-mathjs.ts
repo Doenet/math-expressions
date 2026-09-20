@@ -59,6 +59,18 @@ function asTreeArray(tree: Tree, message = "Badly formed ast"): TreeArray {
   return tree;
 }
 
+/**
+ * True when `tree` is an operator application of `operator`.
+ *
+ * Legacy tested `tree[0] !== "interval"` directly, which on a bare string like
+ * `"A"` reads the first *character* — so a non-interval operand fell through to
+ * the "not implemented" branch rather than a narrowing failure. Callers that
+ * want that ordering ask this first and only narrow afterwards.
+ */
+function isOperator(tree: Tree, operator: string): boolean {
+  return Array.isArray(tree) && tree[0] === operator;
+}
+
 /** True when `node` is a math.js `ArrayNode` (avoids `instanceof` on the ctor). */
 function isArrayNode(node: MathNode): boolean {
   return (node as { isArrayNode?: boolean }).isArrayNode === true;
@@ -96,11 +108,26 @@ function conjoin(math: MathJsInstance, comparisons: MathNode[]): MathNode {
   return result;
 }
 
-/** AST function names that map onto a different math.js function name. */
+/**
+ * AST function names that map onto a different math.js function name.
+ *
+ * A name missing from this map and absent from math.js compiles to a
+ * `FunctionNode` over an undefined symbol, which does not fail at compile time
+ * — it throws `Undefined function <name>` on the first `evaluate`, i.e. per
+ * sample, from inside a caller that is plotting. `nthroot` was exactly that:
+ * math.js spells it `nthRoot`, so every `nthroot(x, n)` an author wrote was
+ * unevaluable through `f()`, at every input, not only the interesting ones.
+ *
+ * `nthRoot` also takes the real branch for an odd root of a negative
+ * (`nthRoot(-8, 3) === -2`), which is what the rest of the engine now does, and
+ * throws for an even root of a negative — where there is no real value to plot,
+ * so the caller's `catch` producing `NaN` is the wanted answer.
+ */
 const functionConversions: Record<string, string> = {
   nCr: "combinations",
   nPr: "permutations",
   binom: "combinations",
+  nthroot: "nthRoot",
 };
 
 // ---------------------------------------------------------------------------
@@ -266,11 +293,14 @@ export class TreeToMathjs {
       );
     const x = this.convert(rawX);
 
-    const interval = asTreeArray(rawInterval);
-    if (interval[0] !== "interval")
+    // The non-interval check comes *before* the narrowing: an operand of any
+    // shape (a bare set name like `"A"` included) is "not implemented", not
+    // "badly formed".
+    if (!isOperator(rawInterval, "interval"))
       throw new Error(
         "Set membership in non-intervals not implemented for conversion to mathjs",
       );
+    const interval = asTreeArray(rawInterval);
 
     const args = asTreeArray(interval[1]);
     const closed = asTreeArray(interval[2]);
@@ -303,13 +333,18 @@ export class TreeToMathjs {
   private convertContainment(operator: string, operands: Tree[]): MathNode {
     const math = this.math;
     const flipped = operator === "superset" || operator === "notsuperset";
-    const small = asTreeArray(flipped ? operands[1] : operands[0]);
-    const big = asTreeArray(flipped ? operands[0] : operands[1]);
+    const rawSmall = flipped ? operands[1] : operands[0];
+    const rawBig = flipped ? operands[0] : operands[1];
 
-    if (small[0] !== "interval" || big[0] !== "interval")
+    // As in `convertMembership`: reject non-intervals before narrowing, so a
+    // bare set name reports "not implemented" rather than "Badly formed ast".
+    if (!isOperator(rawSmall, "interval") || !isOperator(rawBig, "interval"))
       throw new Error(
         "Set containment of non-intervals not implemented for conversion to mathjs",
       );
+
+    const small = asTreeArray(rawSmall);
+    const big = asTreeArray(rawBig);
 
     const smallArgs = asTreeArray(small[1]);
     const smallClosed = asTreeArray(small[2]);
@@ -507,6 +542,37 @@ function freeHandle(h: RustExprLike): void {
  * @param normalize  set `false` if `expr` is already normalized, to skip the
  *                   extra WASM round-trip and handle allocation.
  */
+/**
+ * The non-finite wire tags, as JS scalars. JSON cannot carry `Infinity` or
+ * `NaN`, so `tree_json()` spells them `{"$":"Inf"}`, `{"$":"-Inf"}` and
+ * `{"$":"NaN"}` — and {@link TreeToMathjs.convert} takes all three as *numbers*
+ * (it has branches for each). Parsing without decoding them therefore handed it
+ * a plain object, which it rejected as `Invalid ast`: compiling `x + infinity`,
+ * or anything `simplify` had folded to `NaN`, threw instead of evaluating.
+ *
+ * Null-prototype so a tag spelled `constructor` cannot match an inherited
+ * property. `{"$":"None"}` is deliberately absent — it has no numeric value, so
+ * it stays tagged and is still rejected, which is the right answer for it.
+ *
+ * A duplicate of `math-expressions-js-compat`'s `untagNonFinite`; this package
+ * is the one that package is built on, so it cannot import from it.
+ */
+const NON_FINITE_TAGS: Record<string, number> = Object.assign(
+  Object.create(null),
+  { Inf: Infinity, "-Inf": -Infinity, NaN: NaN },
+);
+
+/** `JSON.parse` reviver decoding {@link NON_FINITE_TAGS}. */
+function untagNonFinite(_key: string, value: unknown): unknown {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const tag = (value as { $?: unknown }).$;
+    if (typeof tag === "string" && tag in NON_FINITE_TAGS) {
+      return NON_FINITE_TAGS[tag];
+    }
+  }
+  return value;
+}
+
 export function rustExprToMathNode(
   math: MathJsInstance,
   expr: RustExprLike,
@@ -514,7 +580,7 @@ export function rustExprToMathNode(
 ): MathNode {
   const source = normalize ? expr.normalize_function_names() : expr;
   try {
-    const tree = JSON.parse(source.tree_json()) as Tree;
+    const tree = JSON.parse(source.tree_json(), untagNonFinite) as Tree;
     return treeToMathNode(math, tree);
   } finally {
     if (source !== expr) freeHandle(source);

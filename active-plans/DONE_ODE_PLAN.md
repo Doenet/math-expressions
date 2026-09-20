@@ -64,9 +64,15 @@ extracted from the component:
 New module `src/mathjs_compat/ode.rs` (f64-only, like `src/mathjs_compat/`), wasm-exposed.
 
 - **Method**: Dormand–Prince RK45 (the same tableau as `numeric.dopri` and
-  scipy's `RK45`) with the standard PI step-size controller and the free
-  4th-order dense-output interpolant (the DP "b*" polynomial — gives `at(t)`
-  without extra function evaluations).
+  scipy's `RK45`) with the free 4th-order dense-output interpolant (the DP
+  "b*" polynomial — gives `at(t)` without extra function evaluations).
+  - **Step control amended (2026-08-07).** This said "the standard PI step-size
+    controller", and it was built that way. That is a different *accuracy
+    request* than numeric's — relative rather than absolute local error — and
+    on a growing solution it takes a third of the steps and misses the caller's
+    tolerance. `tolerance` and `maxIterations` are authored `<odeSystem>`
+    attributes whose meaning is numeric's, so the controller is now numeric's
+    too, step for step. See `upstream_requests/18` in the DoenetML repo.
 - **Vector field evaluation**: two constructors —
   1. `solve_ode(f: js_callback, …)` taking a JS closure across the wasm
      boundary (drop-in for Doenet's current usage; one boundary call per

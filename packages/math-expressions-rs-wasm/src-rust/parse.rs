@@ -43,9 +43,17 @@ pub fn parse_text_with_options(s: &str, options_json: &str) -> Result<Expression
         &mut o.allow_simplified_function_application,
     );
     read_opt_bool(&v, "parseLeibnizNotation", &mut o.parse_leibniz_notation);
-    read_opt_bool(&v, "parseScientificNotation", &mut o.parse_scientific_notation);
+    read_opt_bool(
+        &v,
+        "parseScientificNotation",
+        &mut o.parse_scientific_notation,
+    );
     read_opt_strings(&v, "unsplitSymbols", &mut o.unsplit_symbols);
-    read_opt_strings(&v, "appliedFunctionSymbols", &mut o.applied_function_symbols);
+    read_opt_strings(
+        &v,
+        "appliedFunctionSymbols",
+        &mut o.applied_function_symbols,
+    );
     read_opt_strings(&v, "functionSymbols", &mut o.function_symbols);
     read_opt_strings(&v, "operatorSymbols", &mut o.operator_symbols);
     read_notation(&v, &mut o.notation).map_err(|e| JsError::new(&e))?;
@@ -71,9 +79,17 @@ pub fn parse_latex_with_options(s: &str, options_json: &str) -> Result<Expressio
         &mut o.allow_simplified_function_application,
     );
     read_opt_bool(&v, "parseLeibnizNotation", &mut o.parse_leibniz_notation);
-    read_opt_bool(&v, "parseScientificNotation", &mut o.parse_scientific_notation);
+    read_opt_bool(
+        &v,
+        "parseScientificNotation",
+        &mut o.parse_scientific_notation,
+    );
     read_opt_strings(&v, "allowedLatexSymbols", &mut o.allowed_latex_symbols);
-    read_opt_strings(&v, "appliedFunctionSymbols", &mut o.applied_function_symbols);
+    read_opt_strings(
+        &v,
+        "appliedFunctionSymbols",
+        &mut o.applied_function_symbols,
+    );
     read_opt_strings(&v, "functionSymbols", &mut o.function_symbols);
     read_notation(&v, &mut o.notation).map_err(|e| JsError::new(&e))?;
     let notation = o.notation.clone();
@@ -95,6 +111,64 @@ pub(super) fn read_opt_bool(v: &serde_json::Value, key: &str, target: &mut bool)
     }
 }
 
+/// Read an optional count-valued render option (`padToDigits` /
+/// `padToDecimals`). JS `null` and an absent key leave the target untouched.
+///
+/// Any JSON number is accepted and **floored**, matching the legacy
+/// `Math.floor(padToDigits)` — `3.5` means 3, not "no padding". A value that
+/// floors to zero or below disables padding, which is legacy's `> 0` gate.
+/// Restricting this to `as_u64` silently dropped both cases.
+pub(super) fn read_opt_u32(v: &serde_json::Value, key: &str, target: &mut Option<u32>) {
+    match v.get(key) {
+        Some(serde_json::Value::Null) | None => {}
+        Some(x) => {
+            if let Some(n) = x.as_f64() {
+                // NaN floors to NaN and fails the `>= 1.0` test, so it disables
+                // padding like any other non-positive value.
+                *target = (n.floor() >= 1.0).then(|| n.floor().min(f64::from(u32::MAX)) as u32);
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod read_opt_u32_tests {
+    use super::read_opt_u32;
+    use serde_json::json;
+
+    fn read(v: serde_json::Value) -> Option<u32> {
+        let mut target = None;
+        read_opt_u32(&v, "padToDigits", &mut target);
+        target
+    }
+
+    #[test]
+    fn floors_like_math_floor_instead_of_dropping_non_integers() {
+        assert_eq!(read(json!({"padToDigits": 3})), Some(3));
+        assert_eq!(read(json!({"padToDigits": 3.5})), Some(3)); // was None
+        assert_eq!(read(json!({"padToDigits": 1.999})), Some(1));
+    }
+
+    #[test]
+    fn non_positive_values_disable_padding() {
+        assert_eq!(read(json!({"padToDigits": 0})), None);
+        assert_eq!(read(json!({"padToDigits": -2})), None);
+        assert_eq!(read(json!({"padToDigits": 0.5})), None); // floors to 0
+    }
+
+    #[test]
+    fn absent_null_and_non_numeric_leave_the_default() {
+        assert_eq!(read(json!({})), None);
+        assert_eq!(read(json!({"padToDigits": null})), None);
+        assert_eq!(read(json!({"padToDigits": "4"})), None);
+    }
+
+    #[test]
+    fn an_absurd_value_saturates_rather_than_wrapping() {
+        assert_eq!(read(json!({"padToDigits": 1e30})), Some(u32::MAX));
+    }
+}
+
 pub(super) fn read_opt_strings(v: &serde_json::Value, key: &str, target: &mut Vec<String>) {
     if let Some(arr) = v.get(key).and_then(serde_json::Value::as_array) {
         *target = arr
@@ -106,7 +180,9 @@ pub(super) fn read_opt_strings(v: &serde_json::Value, key: &str, target: &mut Ve
 
 /// First char of a string option, if present.
 fn opt_char(v: &serde_json::Value, key: &str) -> Option<char> {
-    v.get(key).and_then(|x| x.as_str()).and_then(|s| s.chars().next())
+    v.get(key)
+        .and_then(|x| x.as_str())
+        .and_then(|s| s.chars().next())
 }
 
 /// Read the `notation` sub-object (I18N_MATH_NOTATION_PLAN) into `n`. Keys:
@@ -123,14 +199,14 @@ fn opt_char(v: &serde_json::Value, key: &str) -> Option<char> {
 /// Validation is built in (an explicit ambiguous pair, e.g. decimal and
 /// argument both `,`, is `Err`, not a silent misparse) so that a future
 /// notation-accepting entry point cannot forget it.
-pub(super) fn read_notation(
-    v: &serde_json::Value,
-    n: &mut NumberNotation,
-) -> Result<(), String> {
+pub(super) fn read_notation(v: &serde_json::Value, n: &mut NumberNotation) -> Result<(), String> {
     let Some(o) = v.get("notation") else {
         return Ok(());
     };
-    let (dec, arg) = (opt_char(o, "decimalSeparator"), opt_char(o, "argumentSeparator"));
+    let (dec, arg) = (
+        opt_char(o, "decimalSeparator"),
+        opt_char(o, "argumentSeparator"),
+    );
     if let Some(d) = dec {
         n.decimal_separator = d;
     }
@@ -214,7 +290,8 @@ mod tests {
     #[test]
     fn explicit_pair_is_respected_and_overrides_convention() {
         // Both given explicitly (even the unconventional '.'/';' combo).
-        let n = resolve(r#"{"notation":{"decimalSeparator":".","argumentSeparator":";"}}"#).unwrap();
+        let n =
+            resolve(r#"{"notation":{"decimalSeparator":".","argumentSeparator":";"}}"#).unwrap();
         assert_eq!((n.decimal_separator, n.argument_separator), ('.', ';'));
     }
 
@@ -238,7 +315,10 @@ mod tests {
             r#"{"notation":{"grouping":"western"}}"#,
             r#"{"notation":{"digits":"arabic"}}"#,
         ] {
-            assert!(resolve(json).is_err(), "{json} must be rejected until Phase 2");
+            assert!(
+                resolve(json).is_err(),
+                "{json} must be rejected until Phase 2"
+            );
         }
         // Explicit no-op values of the stub keys are fine.
         assert!(resolve(r#"{"notation":{"grouping":"none","digits":"latin"}}"#).is_ok());

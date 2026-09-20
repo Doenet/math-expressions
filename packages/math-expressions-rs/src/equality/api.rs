@@ -2,11 +2,12 @@
 //! coercion they share.
 
 use super::fuzzy::fuzzy_tree_eq;
-use super::numeric::equals_numerical;
+use super::numeric::{close_numeric_fuzzy, equals_numerical};
 use super::relations::{as_comparison, relations_equal};
 use super::{discrete_infinite, finite_field, plus_minus, EqOptions};
 use crate::expr::{Expr, SeqKind};
 use crate::normalize::{canonicalize, desugar_units, normalize_syntactic, simplify_canonical};
+use num_complex::Complex64;
 
 /// Are `a` and `b` mathematically equal?
 pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
@@ -21,6 +22,21 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     // `$` survives as a free factor. `equals_syntactic` deliberately skips this.
     let a = desugar_units(a);
     let b = desugar_units(b);
+
+    // Union equality is a set match on the *raw* members: each candidate pair is
+    // coerced in isolation by the recursive `equals`, which is what reproduces
+    // the legacy coercion graph's non-transitivity. A single per-side interval
+    // rewrite would force a tuple to an interval whenever *any* member on the
+    // other side is one — wrongly, when that tuple should have paired with a
+    // vector. Accept-only: a missing matching falls through to the canonical
+    // path below (which already handles the deduped/sorted cases).
+    if let (Expr::Union(xa), Expr::Union(xb)) = (&a, &b) {
+        if xa.len() == xb.len() && union_set_equal(xa, xb, opts) {
+            return true;
+        }
+    }
+
+    let (a, b) = coerce_intervals(a, b, opts);
 
     // Sequence-kind coercion runs BEFORE simplification so the tuple/vector
     // rewrite clusters see unified kinds: `[1,2]+(3,4)` must combine
@@ -52,16 +68,63 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     // leaves within tolerance instead of exactly (port of the JS
     // `equalsViaSyntax` + `trees/basic.js equal` fuzzy path). Exponents stay
     // exact unless `include_error_in_number_exponents`.
-    if opts.allowed_error_in_numbers > 0.0 && fuzzy_tree_eq(&ca, &cb, opts) {
-        return true;
+    if opts.allowed_error_in_numbers > 0.0 {
+        if fuzzy_tree_eq(&ca, &cb, opts) {
+            return true;
+        }
+        // Retry once on the *syntactically* normalized forms. A tolerance can
+        // only forgive a difference in a number leaf; it cannot forgive the two
+        // sides having chosen different spellings for the same operation. That
+        // matters here because the spelling is chosen BY the numbers the
+        // tolerance is meant to blur: `sqrt(q)` and `q^(1/2)` are distinct
+        // canonical trees (deliberately — `ops::transforms`), and they meet at
+        // stage 3 only because sampling agrees. Perturb the exponent and it is
+        // no longer exactly ½, so the response is pinned to `Pow` while the
+        // key stays `Apply` and the walk dies on a variant tag with every
+        // number inside tolerance.
+        //
+        // `normalize_syntactic`'s first pass rewrites roots to explicit powers,
+        // which is exactly the reconciliation needed, and is what the JS
+        // `equals` chain does before *its* `equalsViaSyntax` stage. Re-
+        // canonicalized because that pass emits `Div(1, n)` exponents for
+        // `cbrt`/`nthroot` that must fold to a `Num` before a number-leaf
+        // comparison can see them.
+        //
+        // Gated on a tolerance being set: without one, stage 3 already decides
+        // these pairs correctly, and this would be pure cost.
+        let na = canonicalize(&normalize_syntactic(&ca));
+        let nb = canonicalize(&normalize_syntactic(&cb));
+        if (na != ca || nb != cb) && fuzzy_tree_eq(&na, &nb, opts) {
+            return true;
+        }
     }
 
-    // When both sides fold to a bare exact number, stage 1 is *definitive*:
-    // they are unequal, and the numerical stage must not override with f64
-    // slop (this is the §3a exactness win — `10^20+1` ≠ `10^20+2`). Structure
+    // When both sides fold to a bare number, stage 1 is *definitive*. Structure
     // that did not fully evaluate (roots, functions) still needs sampling.
-    if matches!(ca, Expr::Num(_)) && matches!(cb, Expr::Num(_)) {
-        return false;
+    //
+    // Exact against exact is decided exactly — the §3a exactness win, and the
+    // reason `10^20+1` ≠ `10^20+2` and `0.3` ≠ `0.30000000000000004` when both
+    // were *written* that way (decimal literals parse to rationals).
+    //
+    // A `Float` operand is different in kind: it is the mark of an inexact
+    // evaluation, and its low digits are an artifact of the route taken, not a
+    // claim about the value. `0.1 + 2·0.1` is `0.30000000000000004` in f64 and
+    // `3/10` exactly, and the JS library — which had no exact numbers at all —
+    // called both equal, comparing every numeric pair against a relative
+    // epsilon (`equality/numerical.js`, `1e-12`). Callers depend on that: a
+    // Doenet `<sequence type="math" from=".1" step=".1">` excludes `.3` by
+    // comparing generated terms to it. So when either side carries a float,
+    // compare within `relative_tolerance` rather than bit-for-bit.
+    if let (Expr::Num(na), Expr::Num(nb)) = (&ca, &cb) {
+        if !na.is_inexact() && !nb.is_inexact() {
+            return false;
+        }
+        return close_numeric_fuzzy(
+            Complex64::new(na.to_f64(), 0.0),
+            Complex64::new(nb.to_f64(), 0.0),
+            opts,
+            0.0,
+        );
     }
 
     // Plus-minus (±): a `pm` node denotes a two-element value set that the
@@ -93,7 +156,16 @@ pub fn equals(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     if discrete_infinite::is_discrete_infinite_set(&ca)
         || discrete_infinite::is_discrete_infinite_set(&cb)
     {
-        return discrete_infinite::equals_discrete_infinite(&ca, &cb, opts);
+        // No assumptions: `equals` is assumption-free by construction. A caller
+        // holding an assumption store (the JS `Context`) reaches the same stage
+        // through `equals_discrete_infinite_sets`, which is the only way a
+        // symbolic period can be known nonzero.
+        return discrete_infinite::equals_discrete_infinite(
+            &ca,
+            &cb,
+            opts,
+            &crate::Assumptions::new(),
+        );
     }
 
     // Stage 1c: certified exact equality (accept-only, sound). When the
@@ -195,9 +267,29 @@ pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
     if !opts.allow_blanks && (contains_blank(a) || contains_blank(b)) {
         return false;
     }
-    let na = coerce_seqs(normalize_syntactic(a), opts);
-    let nb = coerce_seqs(normalize_syntactic(b), opts);
-    na == nb
+    // Same interval reading as `equals`. The form check already coerces tuple,
+    // array and vector spellings of a pair, so leaving the interval out made
+    // it the one notational difference a *form* check refused — and it is not
+    // even a difference the author wrote, but which parse built the tree.
+    let (a, b) = coerce_intervals(normalize_syntactic(a), normalize_syntactic(b), opts);
+    let na = coerce_seqs(a, opts);
+    let nb = coerce_seqs(b, opts);
+    // `allowed_error_in_numbers` compares number *leaves* within the allowed
+    // error while the structure still has to match exactly — the same
+    // primitive [`equals`] uses for it, so a tolerance means the same thing on
+    // both paths.
+    //
+    // The comparison stays fuzzy even with *no* tolerance set, because "no
+    // allowance" was never bit-identical in JS: `trees/basic.js equal` floors
+    // its tolerance at a 1e-14 *relative* difference before `allowed_error_in_
+    // numbers` is consulted at all, so two floats a few ULPs apart have always
+    // compared equal here. That floor is load-bearing rather than incidental:
+    // an author's `x²−x²/3` and `2x²/3` are the same number, but the grading
+    // path floats each *before* like terms are collected, so one arrives as
+    // `1−0.3333333333333333 = 0.6666666666666667` and the other as
+    // `2/3 = 0.6666666666666666`. Exact tree equality reads the last ULP as a
+    // wrong answer.
+    super::fuzzy::fuzzy_tree_eq(&na, &nb, opts)
 }
 
 /// Does the tree contain a `Blank` (missing operand)? A variant check, not a
@@ -205,6 +297,56 @@ pub fn equals_syntactic(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
 /// whether `equals`'s stage-0 blank guard will reject a tree.
 pub fn contains_blank(e: &Expr) -> bool {
     e.any_subexpr(&|c| matches!(c, Expr::Blank))
+}
+
+/// Does the tree contain an interval anywhere? The trigger for reading
+/// 2-element tuples and arrays on the *other* side as intervals too.
+fn has_interval(e: &Expr) -> bool {
+    e.any_subexpr(&|c| matches!(c, Expr::Interval { .. }))
+}
+
+/// Two unions are equal iff their members admit a perfect pairing under
+/// `equals` — a set match, since a union denotes a set (canonicalization already
+/// sorts and dedups them). Matching, not greedy: pairwise equality here is not
+/// transitive (a tuple equals a vector and a closed-interval-spelled array in
+/// *different* pairs), so a first-fit could miss a pairing that exists. Reuses
+/// the augmenting-path matcher from `fuzzy`.
+fn union_set_equal(xa: &[Expr], xb: &[Expr], opts: &EqOptions) -> bool {
+    const MAX_MEMBERS: usize = 32;
+    let n = xa.len();
+    if n == 0 || n > MAX_MEMBERS {
+        return false;
+    }
+    let edges: Vec<Vec<usize>> = xa
+        .iter()
+        .map(|x| (0..n).filter(|&j| equals(x, &xb[j], opts)).collect())
+        .collect();
+    let mut paired: Vec<Option<usize>> = vec![None; n];
+    (0..n).all(|i| super::fuzzy::augment(i, &edges, &mut vec![false; n], &mut paired))
+}
+
+/// Read a 2-element tuple or array as an interval — `(1,2)` open, `[3,4]`
+/// closed — on both sides, when either side has an interval in it. It is the
+/// same notation: `(1,2) union (3,4)` and the same text parsed with intervals
+/// built *are* the same set, each written the only way its parse can write it.
+///
+/// Nothing happens when neither side mentions an interval, so an ordinary
+/// point or pair is never silently reinterpreted — it takes an interval across
+/// from it to make interval the reading in play.
+///
+/// Rides on `coerce_tuples_arrays` because it is the same notational coercion,
+/// and because that is the flag the JS spec pins it to
+/// (`slow_math-expressions.spec.ts`, "tuples, vectors, intervals, altvectors"
+/// and "arrays, intervals"). Runs before [`coerce_seqs`], which would
+/// otherwise unify Tuple and Array first and lose the open/closed distinction;
+/// and it reads Seq kinds directly, so a *vector* never becomes an interval,
+/// however `coerce_vectors` is set.
+fn coerce_intervals(a: Expr, b: Expr, opts: &EqOptions) -> (Expr, Expr) {
+    if opts.coerce_tuples_arrays && (has_interval(&a) || has_interval(&b)) {
+        (crate::ops::to_intervals(&a), crate::ops::to_intervals(&b))
+    } else {
+        (a, b)
+    }
 }
 
 /// Map coerced sequence kinds to a common kind so `(1,2)`, `[1,2]`, and vector
@@ -216,10 +358,20 @@ fn coerce_seqs(e: Expr, opts: &EqOptions) -> Expr {
         // One variant-specific rewrite (the Seq kind); child recursion is the
         // blessed traversal, so new `Expr` variants need no edit here.
         if let Expr::Seq(k, xs) = e {
-            let mapped = match k {
-                SeqKind::Array if opts.coerce_tuples_arrays => SeqKind::Tuple,
-                SeqKind::Vector | SeqKind::AltVector if opts.coerce_vectors => SeqKind::Tuple,
+            // The legacy coercion graph is non-transitive: `coerce_vectors`
+            // governs *only* vector↔altvector, while `coerce_tuples_arrays`
+            // governs tuple↔array and tuple↔vector. Applied as two gated steps so
+            // that turning one flag off does not drag the other's edges with it —
+            // `{coerce_tuples_arrays:false}` must keep a vector distinct from a
+            // tuple even while `coerce_vectors` still unifies vector and
+            // altvector.
+            let k1 = match k {
+                SeqKind::AltVector if opts.coerce_vectors => SeqKind::Vector,
                 other => *other,
+            };
+            let mapped = match k1 {
+                SeqKind::Array | SeqKind::Vector if opts.coerce_tuples_arrays => SeqKind::Tuple,
+                other => other,
             };
             return Expr::Seq(mapped, xs.iter().map(|x| recur(x, opts)).collect());
         }

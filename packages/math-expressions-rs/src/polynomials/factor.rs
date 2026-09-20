@@ -70,7 +70,8 @@ fn factor_univariate(e: &Expr) -> Option<Expr> {
     };
 
     // Safety gate: never hand back a factorization that isn't equal.
-    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default()).then_some(factored)
+    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default())
+        .then_some(factored)
 }
 
 /// `x - r`, as a raw two-term sum (`x` alone when `r = 0`).
@@ -101,8 +102,8 @@ fn upoly_to_expr(coeffs: &[BigRational], var: &str) -> Expr {
         .map(|(i, c)| {
             let num = Expr::Num(Number::from_bigrational(c.clone()));
             match (mono(i), c.is_one()) {
-                (None, _) => num,        // constant term
-                (Some(m), true) => m,    // coefficient 1
+                (None, _) => num,     // constant term
+                (Some(m), true) => m, // coefficient 1
                 (Some(m), false) => Expr::Mul(vec![num, m]),
             }
         })
@@ -127,7 +128,7 @@ fn with_exponent(base: Expr, n: u32) -> Expr {
 /// of those). `None` if any term is not a monomial in `var`, or if the degree
 /// exceeds `max_factor_degree` (the dense vector below allocates one entry per
 /// degree, so an adversarial `x^10^9` must be refused, not sized).
-fn extract_upoly(e: &Expr, var: &str) -> Option<univariate::UPoly> {
+pub(crate) fn extract_upoly(e: &Expr, var: &str) -> Option<univariate::UPoly> {
     let cap = crate::resource_limits::current().max_factor_degree;
     fn monomial(e: &Expr, var: &str, cap: usize) -> Option<(usize, BigRational)> {
         match e {
@@ -440,7 +441,8 @@ fn factor_terms_opt(e: &Expr) -> Option<Expr> {
     } else {
         Expr::Mul(pulled)
     };
-    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default()).then_some(factored)
+    crate::equality::equals(&factored, e, &crate::equality::EqOptions::default())
+        .then_some(factored)
 }
 
 /// Split a term into `(rational coefficient, {base → integer exponent})`.

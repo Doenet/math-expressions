@@ -3,25 +3,21 @@
 //! [`together`] / [`cancel`] put an expression over a single common
 //! denominator and reduce numerator and denominator to lowest terms with the
 //! multivariate polynomial GCD ([`super::multivariate`]). Non-rational subtrees —
-//! `sin x`, `√x`, `π`, `RootOf` leaves, … — are treated as **opaque kernels**:
-//! each distinct one is replaced by a fresh indeterminate before the polynomial
-//! arithmetic and restored afterwards. This is the SymPy trick that lets
-//! rational normalization apply *underneath* any function, so
-//! `1/sin(x) + 1/sin(x)` becomes `2/sin(x)` without the simplifier ever needing
-//! to understand `sin`.
+//! `sin x`, `√x`, `π`, `RootOf` leaves, … — are held fixed as opaque
+//! [`kernel`](super::kernel)s, which is what lets rational normalization apply
+//! *underneath* any function: `1/sin(x) + 1/sin(x)` becomes `2/sin(x)` without
+//! the simplifier ever needing to understand `sin`.
 //!
-//! Soundness of kernelization: distinct kernels become independent
-//! indeterminates, so any identity we prove holds for *all* kernel values — a
-//! sufficient (never necessary) condition for the real identity. Hence
-//! [`is_identically_zero`] only ever yields `true` for a genuine zero.
-
-use std::collections::{BTreeSet, HashMap};
+//! Kernelization is sound but incomplete (see [`kernel`](super::kernel)), which
+//! is the right direction for [`is_identically_zero`]: it can only ever fail to
+//! recognize a zero, never claim one.
 
 use num_traits::One;
 
 use crate::expr::Expr;
 use crate::num::Number;
 use crate::polynomials;
+use crate::polynomials::kernel::{indeterminates, kernelize, Kernels};
 
 /// Maximum distinct indeterminates (real variables + kernels) the dense
 /// recursive polynomial model will accept before we bail to the unchanged
@@ -35,7 +31,9 @@ const MAX_INDETERMINATES: usize = 6;
 pub fn together(e: &Expr) -> Expr {
     match rational_normal(e) {
         Some((num, den)) if is_one_expr(&den) => num,
-        Some((num, den)) => crate::normalize::canonicalize(&Expr::Div(Box::new(num), Box::new(den))),
+        Some((num, den)) => {
+            crate::normalize::canonicalize(&Expr::Div(Box::new(num), Box::new(den)))
+        }
         None => crate::normalize::canonicalize(e),
     }
 }
@@ -57,7 +55,7 @@ pub(crate) fn is_identically_zero(e: &Expr) -> bool {
 
 /// The reduced `(numerator, denominator)` pair as canonical, kernel-restored
 /// expressions, or `None` when the input is outside the caps.
-fn rational_normal(e: &Expr) -> Option<(Expr, Expr)> {
+pub(crate) fn rational_normal(e: &Expr) -> Option<(Expr, Expr)> {
     let canon = crate::normalize::canonicalize(e);
 
     // Replace opaque (non-rational) subtrees with fresh kernel symbols.
@@ -142,7 +140,10 @@ fn rational_parts(e: &Expr) -> Option<(Expr, Expr)> {
         Expr::Div(a, b) => {
             let (na, da) = rational_parts(a)?;
             let (nb, db) = rational_parts(b)?;
-            (crate::normalize::mul(vec![na, db]), crate::normalize::mul(vec![da, nb]))
+            (
+                crate::normalize::mul(vec![na, db]),
+                crate::normalize::mul(vec![da, nb]),
+            )
         }
         Expr::Pow(b, k) => {
             let Expr::Num(Number::Int(k)) = &**k else {
@@ -173,76 +174,4 @@ fn is_zero_expr(e: &Expr) -> bool {
 
 fn is_one_expr(e: &Expr) -> bool {
     matches!(crate::normalize::canonicalize(e), Expr::Num(n) if n.to_bigrational().is_some_and(|q| q.is_one()))
-}
-
-// ---------------- opaque kernels ----------------
-
-/// Distinct opaque subtrees, each assigned a fresh symbol name `$k{n}` (the `$`
-/// prefix cannot appear in parsed input, so there is no collision with a real
-/// variable). Deduplicated by canonical structural equality.
-#[derive(Default)]
-struct Kernels {
-    map: Vec<(String, Expr)>, // name → original subtree
-}
-
-impl Kernels {
-    fn intern(&mut self, e: &Expr) -> Expr {
-        if let Some((name, _)) = self.map.iter().find(|(_, k)| k == e) {
-            return Expr::sym(name);
-        }
-        let name = format!("$k{}", self.map.len());
-        self.map.push((name.clone(), e.clone()));
-        Expr::sym(&name)
-    }
-
-    fn restore(&self, e: &Expr) -> Expr {
-        if self.map.is_empty() {
-            return e.clone();
-        }
-        let subs: HashMap<String, Expr> = self.map.iter().cloned().collect();
-        crate::ops::substitute(e, &subs)
-    }
-}
-
-/// Replace every maximal non-rational subtree of a *canonical* expression with
-/// a fresh kernel symbol. The rational skeleton (`+ − · / ^ℤ`, numbers, and
-/// ordinary variables) is preserved; constants (`π`, `e`) and every function
-/// application or non-integer power become kernels.
-fn kernelize(e: &Expr, kernels: &mut Kernels) -> Expr {
-    match e {
-        Expr::Num(_) => e.clone(),
-        Expr::Sym(s) if !crate::expr::sym::is_constant_symbol(&s.name()) => e.clone(),
-        Expr::Add(ts) => Expr::Add(ts.iter().map(|t| kernelize(t, kernels)).collect()),
-        Expr::Mul(fs) => Expr::Mul(fs.iter().map(|f| kernelize(f, kernels)).collect()),
-        Expr::Neg(a) => Expr::Neg(Box::new(kernelize(a, kernels))),
-        Expr::Div(a, b) => Expr::Div(
-            Box::new(kernelize(a, kernels)),
-            Box::new(kernelize(b, kernels)),
-        ),
-        Expr::Pow(b, k) if matches!(&**k, Expr::Num(Number::Int(_))) => {
-            Expr::Pow(Box::new(kernelize(b, kernels)), k.clone())
-        }
-        // Constants, functions, non-integer powers, RootOf, relations, … are
-        // opaque.
-        _ => kernels.intern(e),
-    }
-}
-
-/// The distinct indeterminate names (real variables + kernels) in a kernelized
-/// expression, in a fixed (sorted) order.
-fn indeterminates(e: &Expr) -> Vec<String> {
-    let mut set = BTreeSet::new();
-    fn walk(e: &Expr, set: &mut BTreeSet<String>) {
-        if let Expr::Sym(s) = e {
-            let name = s.name();
-            if !crate::expr::sym::is_constant_symbol(&name) {
-                set.insert(name);
-            }
-        }
-        for c in e.children() {
-            walk(c, set);
-        }
-    }
-    walk(e, &mut set);
-    set.into_iter().collect()
 }

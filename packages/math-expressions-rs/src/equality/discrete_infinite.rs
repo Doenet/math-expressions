@@ -15,17 +15,24 @@
 //! numbers, which our canonical like-term/like-power combining does exactly
 //! (`(π/4)/π → 1/4`, `(a+3)/3 − a/3 → 1`).
 //!
-//! Divergence (documented): the JS requires an explicit `c ≠ 0` assumption to
-//! fold `2c/c`; our assumption-free canonicalizer folds it unconditionally, so
-//! such pairs compare equal without assumptions (consistent with the crate's
-//! `x/x → 1` divergence class). Bound (JS has none): normalized period
-//! numerators are capped at 10 000 — beyond that we conservatively report
-//! not-contained rather than loop over enormous residue classes.
+//! Everything here divides by the period, which is only sound for a *nonzero*
+//! period — so a symbolic one (`c`) must be known nonzero before its ratios
+//! mean anything. The crate's canonicalizer folds `2c/c → 2` unconditionally
+//! (the `x/x → 1` class), which would silently assume it, so the period is
+//! gated on [`crate::is_nonzero`] against the caller's assumptions instead.
+//! That is why the entry points take an `Assumptions`: `{a + kc}` and
+//! `{a + 2kc} ∪ {a+c + 2kc}` are indistinguishable here until `c ≠ 0` is
+//! stated, matching the JS.
+//!
+//! Bound (JS has none): normalized period numerators are capped at 10 000 —
+//! beyond that we conservatively report not-contained rather than loop over
+//! enormous residue classes.
 
+use crate::assumptions::Assumptions;
 use crate::expr::{Expr, MathConst, SeqKind};
 // Canonical-shape variants: this module pattern-matches `Expr::Num` etc. on
 // the results, so it must not receive the display (`present`) form.
-use crate::normalize::{expand_core, simplify_core};
+use crate::normalize::{canonicalize, expand_core, simplify_core};
 use crate::num::Number;
 
 use super::EqOptions;
@@ -36,30 +43,67 @@ const MIN_ELEMENTS_MATCH: usize = 3;
 /// Boolean stage-4 entry for the `equals` chain. Symmetric: tries both
 /// orientations (the JS method is receiver-oriented; a set compared with a
 /// listed sequence works whichever side the set is on).
-pub(super) fn equals_discrete_infinite(a: &Expr, b: &Expr, opts: &EqOptions) -> bool {
-    match_discrete_infinite(a, b, opts, false) >= 1.0
-        || match_discrete_infinite(b, a, opts, false) >= 1.0
+pub(super) fn equals_discrete_infinite(
+    a: &Expr,
+    b: &Expr,
+    opts: &EqOptions,
+    assumptions: &Assumptions,
+) -> bool {
+    match_discrete_infinite(a, b, opts, false, assumptions) >= 1.0
+        || match_discrete_infinite(b, a, opts, false, assumptions) >= 1.0
+}
+
+/// [`equals_discrete_infinite`] for callers outside the `equals` chain — the JS
+/// `Context`, which holds the assumption store the chain has no room for, and
+/// so is the only caller that can establish a symbolic period is nonzero.
+///
+/// Takes raw expressions and canonicalizes them itself, since it runs *before*
+/// the chain rather than partway through it. `None` when neither side is a
+/// discrete infinite set: that is the overwhelmingly common case on this path,
+/// and it lets the caller fall through to the full chain without having paid
+/// for a canonicalization the chain is about to redo.
+pub fn equals_discrete_infinite_sets(
+    a: &Expr,
+    b: &Expr,
+    opts: &EqOptions,
+    assumptions: &Assumptions,
+) -> Option<bool> {
+    if !is_discrete_infinite_set(a) && !is_discrete_infinite_set(b) {
+        return None;
+    }
+    Some(equals_discrete_infinite(
+        &canonicalize(a),
+        &canonicalize(b),
+        opts,
+        assumptions,
+    ))
 }
 
 /// Full/partial match score in `[0, 1]` (1 = equal; fractions arise only with
 /// `match_partial`, mirroring the JS partial-credit API). `a` must be a
 /// discrete infinite set; `b` is another set or a list ending in `…`.
-pub fn match_discrete_infinite(a: &Expr, b: &Expr, opts: &EqOptions, match_partial: bool) -> f64 {
+pub fn match_discrete_infinite(
+    a: &Expr,
+    b: &Expr,
+    opts: &EqOptions,
+    match_partial: bool,
+    assumptions: &Assumptions,
+) -> f64 {
     let Some(a_tuples) = as_discrete_infinite_set(a) else {
         return 0.0;
     };
 
     if let Some(b_tuples) = as_discrete_infinite_set(b) {
         if match_partial {
-            let m1 = contained_in_set(&a_tuples, &b_tuples, true);
-            let m2 = contained_in_set(&b_tuples, &a_tuples, true);
+            let m1 = contained_in_set(&a_tuples, &b_tuples, true, assumptions);
+            let m2 = contained_in_set(&b_tuples, &a_tuples, true, assumptions);
             if m1 == 0.0 || m2 == 0.0 {
                 return 0.0;
             }
             return m1.min(m2);
         }
-        let both = contained_in_set(&a_tuples, &b_tuples, false) >= 1.0
-            && contained_in_set(&b_tuples, &a_tuples, false) >= 1.0;
+        let both = contained_in_set(&a_tuples, &b_tuples, false, assumptions) >= 1.0
+            && contained_in_set(&b_tuples, &a_tuples, false, assumptions) >= 1.0;
         return if both { 1.0 } else { 0.0 };
     }
 
@@ -113,10 +157,15 @@ fn as_discrete_infinite_set(e: &Expr) -> Option<Vec<Progression<'_>>> {
 /// With `match_partial`, a partially-covered progression contributes its
 /// covered fraction (JS: `num_matches += match`); without it, any piece
 /// short of full containment fails the whole set.
-fn contained_in_set(a: &[Progression], b: &[Progression], match_partial: bool) -> f64 {
+fn contained_in_set(
+    a: &[Progression],
+    b: &[Progression],
+    match_partial: bool,
+    assumptions: &Assumptions,
+) -> f64 {
     let mut matched = 0.0f64;
     for piece in a {
-        let m = progression_contained(piece, b, match_partial);
+        let m = progression_contained(piece, b, match_partial, assumptions);
         if m < 1.0 && !match_partial {
             return 0.0;
         }
@@ -131,9 +180,22 @@ fn contained_in_set(a: &[Progression], b: &[Progression], match_partial: bool) -
 /// period; then `a` is the integer lattice `r0 + ℤ` and each `b` progression
 /// covers the residue classes `j (mod p_i)` whose offset difference is a
 /// multiple of its normalized period `p_i/q_i`.
-fn progression_contained(a: &Progression, b: &[Progression], match_partial: bool) -> f64 {
+fn progression_contained(
+    a: &Progression,
+    b: &[Progression],
+    match_partial: bool,
+    assumptions: &Assumptions,
+) -> f64 {
     // Implemented (like the JS) only for full-ℤ progressions.
     if !is_neg_inf(a.min_index) || !is_pos_inf(a.max_index) {
+        return 0.0;
+    }
+
+    // Every ratio below divides by `a.period`. A period that is not known
+    // nonzero makes those ratios meaningless — and worse, silently plausible,
+    // since the canonicalizer folds `2c/c → 2` on its own. Refuse rather than
+    // answer from an assumption nobody made.
+    if crate::is_nonzero(a.period, assumptions) != Some(true) {
         return 0.0;
     }
 
@@ -240,7 +302,7 @@ fn ratio(e: &Expr, period: &Expr) -> Expr {
 fn frac_parts(n: &Number) -> Option<(i64, i64)> {
     match n {
         Number::Int(i) => Some((i.abs(), 1)),
-        Number::Rat(num, den) => Some((num.abs(), *den)),
+        Number::Rat(num, den, _) => Some((num.abs(), *den)),
         _ => None, // Big/Float periods: conservatively unsupported
     }
 }
@@ -306,9 +368,7 @@ pub fn create_discrete_infinite_set(
     min_index: Option<&Expr>,
     max_index: Option<&Expr>,
 ) -> Option<Expr> {
-    let min = min_index
-        .cloned()
-        .unwrap_or(Expr::Const(MathConst::NegInf));
+    let min = min_index.cloned().unwrap_or(Expr::Const(MathConst::NegInf));
     let max = max_index.cloned().unwrap_or(Expr::Const(MathConst::Inf));
 
     let offsets_list: Vec<&Expr> = match offsets {

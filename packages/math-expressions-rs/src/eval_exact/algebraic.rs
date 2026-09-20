@@ -70,7 +70,10 @@ fn fold_rootof(e: &Expr, p: &[BigRational], budget: &mut i64) -> Option<Vec<BigR
         Expr::Mul(fs) => {
             let mut acc = vec![BigRational::one()];
             for f in fs {
-                acc = reduce(crate::polynomials::univariate::mul(&acc, &fold_rootof(f, p, budget)?));
+                acc = reduce(crate::polynomials::univariate::mul(
+                    &acc,
+                    &fold_rootof(f, p, budget)?,
+                ));
             }
             acc
         }

@@ -55,10 +55,9 @@ impl Precise {
         match self {
             Precise::Exact(n) => Some((n.to_f64(), 0.0)),
             Precise::Bounded(m) => kernels::to_f64_checked(m).map(|v| (v, 0.0)),
-            Precise::Complex { re, im } => Some((
-                kernels::to_f64_checked(re)?,
-                kernels::to_f64_checked(im)?,
-            )),
+            Precise::Complex { re, im } => {
+                Some((kernels::to_f64_checked(re)?, kernels::to_f64_checked(im)?))
+            }
             Precise::Unknown(_) => None,
         }
     }
@@ -77,18 +76,14 @@ impl Precise {
 
     /// Like [`Self::to_decimal_string`], but `format` selects plain decimal vs
     /// normalized scientific form. Still display-only (see the note above).
-    pub fn to_decimal_string_fmt(
-        &self,
-        digits: usize,
-        format: DecimalFormat,
-    ) -> Option<String> {
+    pub fn to_decimal_string_fmt(&self, digits: usize, format: DecimalFormat) -> Option<String> {
         match self {
             Precise::Exact(n) => {
                 // Route through MpFix so formatting is uniform.
                 let bits = needed_bits(digits) + 16;
                 let msb = n.magnitude_log10().unwrap_or(0) as f64 * std::f64::consts::LOG2_10;
-                let scale =
-                    i32::try_from((msb as i64 - i64::from(bits) - 8).min(0)).unwrap_or(i32::MIN / 2);
+                let scale = i32::try_from((msb as i64 - i64::from(bits) - 8).min(0))
+                    .unwrap_or(i32::MIN / 2);
                 Some(MpFix::from_number(n, scale)?.to_decimal_string_fmt(digits, format))
             }
             Precise::Bounded(m) => Some(m.to_decimal_string_fmt(digits, format)),
@@ -250,8 +245,8 @@ fn complex_path(tape: &CompiledExpr, bindings: &[f64], digits: usize) -> Precise
                     if z.re.mant.is_zero() && z.im.mant.is_zero() {
                         target_scale -= need + 32;
                     } else {
-                        let msb = i64::from(z.re.scale)
-                            + z.re.mant.bits().max(z.im.mant.bits()) as i64;
+                        let msb =
+                            i64::from(z.re.scale) + z.re.mant.bits().max(z.im.mant.bits()) as i64;
                         target_scale = msb - need - 24;
                     }
                     continue;
@@ -349,8 +344,7 @@ fn tier2_run(
             }
             Op::PowInt(k) => {
                 let c = child_starts[i];
-                let child_req =
-                    req - (mag(i) - mag(c)).ceil() as i64 - i64::from(bits_of(*k)) - 2;
+                let child_req = req - (mag(i) - mag(c)).ceil() as i64 - i64::from(bits_of(*k)) - 2;
                 req_stack.push(child_req);
             }
             Op::Pow => {
@@ -407,9 +401,7 @@ fn tier2_run(
                 let (poly, idx) = &tape.roots[*ri as usize];
                 match crate::polynomials::rootof::refine_real(poly, *idx, s) {
                     Some(m) => m,
-                    None => {
-                        return Tier2Outcome::Unknown("root not refinable in the real tier")
-                    }
+                    None => return Tier2Outcome::Unknown("root not refinable in the real tier"),
                 }
             }
             Op::Add(k) => {
@@ -570,7 +562,11 @@ fn mul_round(a: &MpFix, b: &MpFix, target: i32) -> Option<MpFix> {
         mant: &a.mant * &b.mant,
         scale: i32::try_from(scale).ok()?,
     };
-    Some(if m.scale >= target { m } else { m.rescale(target) })
+    Some(if m.scale >= target {
+        m
+    } else {
+        m.rescale(target)
+    })
 }
 
 /// 1/v at scale `s` (one rounded division).
@@ -699,8 +695,7 @@ fn tier2_run_complex(
             }
             Op::PowInt(k) => {
                 let c = child_starts[i];
-                req_stack
-                    .push(req - (mag(i) - mag(c)).ceil() as i64 - i64::from(bits_of(*k)) - 2);
+                req_stack.push(req - (mag(i) - mag(c)).ceil() as i64 - i64::from(bits_of(*k)) - 2);
             }
             Op::Pow => {
                 let kids = child_indices(&child_starts, tape, i);
@@ -741,9 +736,7 @@ fn tier2_run_complex(
     for (i, op) in tape.ops.iter().enumerate() {
         let s = plan[i];
         let v: Option<CFix> = match op {
-            Op::Const(ci) => {
-                MpFix::from_number(&tape.consts[*ci as usize], s).map(CFix::real)
-            }
+            Op::Const(ci) => MpFix::from_number(&tape.consts[*ci as usize], s).map(CFix::real),
             Op::Var(vi) => bindings
                 .get(*vi as usize)
                 .and_then(|v| MpFix::from_f64(*v, s))
@@ -836,6 +829,31 @@ impl CompiledExpr {
         match float_bounds::run(self, bindings, &mut record) {
             float_bounds::Tier0Outcome::Ok(a) => Some((a.val, a.err)),
             float_bounds::Tier0Outcome::Escalate(_) => None,
+        }
+    }
+
+    /// The Tier-0 fast path at many points of a single variable, allocation-
+    /// free after the first: `out[i]` is `Some(value)` where the f64 tier
+    /// certified a finite result and `None` where it escalated (domain edge,
+    /// overflow, unbound slot) and a caller must decide what to do.
+    ///
+    /// This is [`Self::eval_f64`] hoisted for sampling. It does **not**
+    /// escalate to the bignum tiers — a sampler wants a value or a gap, not a
+    /// certified digit — which is what separates it from [`Self::eval_batch`].
+    pub fn eval_f64_many(&self, points: &[f64], out: &mut Vec<Option<f64>>) {
+        out.clear();
+        out.reserve(points.len());
+        let mut record = Vec::with_capacity(self.ops.len());
+        let mut stack = Vec::with_capacity(self.max_stack);
+        let mut binding = [0.0f64; 1];
+        for &x in points {
+            binding[0] = x;
+            out.push(
+                match float_bounds::run_with(self, &binding, &mut record, &mut stack) {
+                    float_bounds::Tier0Outcome::Ok(a) => Some(a.val),
+                    float_bounds::Tier0Outcome::Escalate(_) => None,
+                },
+            );
         }
     }
 

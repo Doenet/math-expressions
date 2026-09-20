@@ -27,7 +27,11 @@ fn trig_power_integral(fname: &str, u: &Expr, b: &Expr, n: i64, x: &str) -> Expr
     }
     // Boundary term ∓ f(u)^(n−1)·g(u)/(n·b): cofunction `g` and sign differ for
     // sin (−, g=cos) vs cos (+, g=sin).
-    let (cofn, sign): (&str, i64) = if fname == "sin" { ("cos", -1) } else { ("sin", 1) };
+    let (cofn, sign): (&str, i64) = if fname == "sin" {
+        ("cos", -1)
+    } else {
+        ("sin", 1)
+    };
     let boundary = over(
         mul(vec![
             int(sign),
@@ -101,16 +105,11 @@ fn power_rows(e: &Expr, base: &Expr, exp: &Expr, x: &str) -> Option<Expr> {
     // Exponential: c^u, x-free base.
     if !depends_on(base, x) {
         if let Some(b) = linear_coeff(exp, x) {
-            let is_e = matches!(base, Expr::Const(crate::expr::MathConst::E))
-                || matches!(base, Expr::Sym(s) if s.name() == "e");
-            if is_e {
+            if crate::constant_policy::is_e(base) {
                 return Some(over(e.clone(), &b));
             }
             if matches!(base, Expr::Num(n) if n.is_positive() && !n.is_one()) {
-                let f = mul(vec![
-                    e.clone(),
-                    pow(apply("log", base.clone()), int(-1)),
-                ]);
+                let f = mul(vec![e.clone(), pow(apply("log", base.clone()), int(-1))]);
                 return Some(over(f, &b));
             }
         }
@@ -122,10 +121,7 @@ fn power_rows(e: &Expr, base: &Expr, exp: &Expr, x: &str) -> Option<Expr> {
             let ratio = &b_coef / &c;
             let s = super::rational::sqrt_expr(&ratio);
             let inv_sqrt_b = pow(super::rational::sqrt_expr(&b_coef), int(-1));
-            let f = mul(vec![
-                inv_sqrt_b,
-                apply("asin", mul(vec![u, s])),
-            ]);
+            let f = mul(vec![inv_sqrt_b, apply("asin", mul(vec![u, s]))]);
             return Some(over(f, &ub));
         }
     }
@@ -152,9 +148,7 @@ fn power_rows(e: &Expr, base: &Expr, exp: &Expr, x: &str) -> Option<Expr> {
         // `sin²x + cos²x` used to fail entirely. Bounded at 16 because the
         // reduction expands to ~n/2 terms in one shot (outside the step-fuel
         // loop), so an absurd exponent must be refused rather than built.
-        ("sin" | "cos", n) if (2..=16).contains(&n) => {
-            Some(trig_power_integral(&f, u, &b, n, x))
-        }
+        ("sin" | "cos", n) if (2..=16).contains(&n) => Some(trig_power_integral(&f, u, &b, n, x)),
         _ => None,
     }
 }

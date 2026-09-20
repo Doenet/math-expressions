@@ -16,7 +16,10 @@ pub const ASIN: FnDef = FnDef {
     antiderivative: Some(|u| {
         add(vec![
             mul(vec![u.clone(), apply("asin", u.clone())]),
-            apply("sqrt", add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])])),
+            apply(
+                "sqrt",
+                add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])]),
+            ),
         ])
     }),
     eval1: Some(|z| Some(z.asin())),
@@ -50,7 +53,10 @@ pub const ACOS: FnDef = FnDef {
             mul(vec![u.clone(), apply("acos", u.clone())]),
             mul(vec![
                 int(-1),
-                apply("sqrt", add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])])),
+                apply(
+                    "sqrt",
+                    add(vec![int(1), mul(vec![int(-1), pow(u, int(2))])]),
+                ),
             ]),
         ])
     }),
@@ -101,7 +107,11 @@ pub(crate) const ATAN_KERNEL: FnKernel = FnKernel {
     domain: |_| true,
     fix: Some(FixId::Atan),
     cf: |z| z.atan(),
-    cdfm: |z| 1.0 / (Complex64::new(1.0, 0.0) + z * z).norm().max(f64::MIN_POSITIVE),
+    cdfm: |z| {
+        1.0 / (Complex64::new(1.0, 0.0) + z * z)
+            .norm()
+            .max(f64::MIN_POSITIVE)
+    },
 };
 
 pub const ASEC: FnDef = FnDef {

@@ -65,10 +65,7 @@ fn reciprocal_and_logs() {
 fn arctangent_cluster() {
     assert_integrates_to("1/(x^2+1)", "atan(x)");
     // Completing the square: 1/(x²+x+1).
-    assert_integrates_to(
-        "1/(x^2+x+1)",
-        "2/sqrt(3) * atan((2x+1)/sqrt(3))",
-    );
+    assert_integrates_to("1/(x^2+x+1)", "2/sqrt(3) * atan((2x+1)/sqrt(3))");
 }
 
 #[test]
@@ -89,10 +86,7 @@ fn hermite_rational_part() {
 
 #[test]
 fn mixed_rational() {
-    assert_integrates_to(
-        "x^5/(x^2+1)",
-        "x^4/4 - x^2/2 + ln(x^2+1)/2",
-    );
+    assert_integrates_to("x^5/(x^2+1)", "x^4/4 - x^2/2 + ln(x^2+1)/2");
     assert_integrates_to("(x^2+1)/(x(x+1))", "x + ln(x) - 2 ln(x+1)");
 }
 
@@ -104,7 +98,10 @@ fn rootof_log_sum() {
     let result = integrate(&f, "x", &Assumptions::new()).expect("integrable");
     assert!(eq(&derivative(&result, "x"), &f), "gate on RootOf log sum");
     let text = math_expressions::to_text(&canonicalize(&result), &Default::default());
-    assert!(text.contains("rootof"), "abstract residues expected: {text}");
+    assert!(
+        text.contains("rootof"),
+        "abstract residues expected: {text}"
+    );
 }
 
 #[test]

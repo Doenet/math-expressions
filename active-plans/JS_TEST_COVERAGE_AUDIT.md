@@ -47,9 +47,9 @@ Rust tests live in `packages/math-expressions-rs/tests/` (+ inline `src/`).
 | `quick_mml-to-latex` | 1 | none | ⛔ |
 | `slow_math-expressions` | ~900 pairs + 14 | `equality_corpus.rs` (824-pair `equality-corpus.json`) + `equality.rs` (22 hand) | ✅ |
 | `slow_simplify` | 74 (474 expects) | `simplify_corpus.rs` (342) + `norm.rs` / `display.rs` / `expand.rs` / `matrix.rs` | ✅ |
-| `slow_assumptions` | 44 (420 expects) | `assumptions_corpus.rs` (546) + `assumptions.rs` + `doenet_utils.rs` | ✅ |
+| `slow_assumptions` | **845 run** (45 `it(` sites, 420 literal expects — most tests are generated from tables inside a loop, so the source count badly understates it) | `assumptions_corpus.rs` (546) + `assumptions.rs` + `doenet_utils.rs` | ✅ |
 | `slow_matrix` | 12 (~30) | `matrix.rs` (31) | ✅ |
-| `slow_polynomial` | 23 | no public Rust polynomial/Groebner API (`src/polynomials` internal only) | ⛔ |
+| `slow_polynomial` | 23 | `polynomial_compat.rs` (12) over `polynomials/compat/`, exported through `lib/polynomial/polynomial.ts` | ✅ |
 | `slow_rational` | 2 | `reduce_rational.rs` (5) | ✅ |
 | `slow_check-equality-numerical-errors` | 26 objs | `equality.rs` + **`tolerance.rs`** (fixture-driven, `equals`) | ✅ (16 sampling divergences snapshotted) |
 | `slow_check-symbolic-equality-numerical-errors` | 26 objs | Rust `equals_syntactic` is exact — ignores `allowed_error_in_numbers` | ⛔ behavioral divergence / 🔜 drop-in |
@@ -92,7 +92,7 @@ not forgotten. Cross-referenced to [WHATS_LEFT.md](WHATS_LEFT.md) §A.
 | mathjs→ast | `quick_mathjs-to-ast` (28) | Not needed for Doenet — unused internally (WHATS_LEFT A.1 #5). |
 | ast→guppy | `quick_ast-to-guppy` (4) | Not needed for Doenet — legacy Guppy-editor XML (WHATS_LEFT A.1 #4). |
 | MathML (mml→latex) | `quick_mml-to-latex` (1) | No MathML parser/emitter in Rust (WHATS_LEFT A.1 #1–2). |
-| polynomial / Groebner | `slow_polynomial` (23) | No public Rust polynomial API; `src/polynomials` is internal (JS_RUST_DIFF §4.2). |
+| ~~polynomial / Groebner~~ | `slow_polynomial` (23) | **Now covered.** `polynomials/compat/` ports the legacy engine and `lib/polynomial/polynomial.ts` exports it; `tests/polynomial_compat.rs` pins the AST spellings. |
 | `expand_relations` | `quick_transformation` (few) | Op absent in Rust (JS_RUST_DIFF §3.1). |
 | emitter options | `quick_ast-to-latex` standalone (8) | `LatexOpts`/`TextOpts` fixed-behavior: matrix env, pad-to-digits/decimals, avoid-scientific-notation, `showBlanks` (JS_RUST_DIFF §2.2). |
 | syntactic tolerance | `slow_check-symbolic-equality-numerical-errors` (26) | Rust `equals_syntactic` does exact structural comparison (`na == nb`) and does **not** apply `allowed_error_in_numbers`; JS `equalsViaSyntax` does. Number-tolerance lives only on the numeric `equals` path in Rust. |

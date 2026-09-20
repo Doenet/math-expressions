@@ -9,8 +9,7 @@
 //! `tests/roundtrip.rs` (`parse(to_text(e))` is structurally equal to `e`).
 
 use super::{
-    deriv_var, f64_positional_string, greek_unicode, number_is_negative as is_negative, pow_suffix,
-    prec, split_sign,
+    deriv_var, greek_unicode, number_is_negative as is_negative, pow_suffix, prec, split_sign,
 };
 use crate::expr::{Expr, MathConst, RelOp, SeqKind};
 use crate::num::Number;
@@ -21,6 +20,22 @@ pub struct TextOpts {
     pub unicode: bool,
     /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
+    /// Pad every rendered number to at least this many significant characters
+    /// (`padToDigits`). `None`/`0` = no padding.
+    pub pad_to_digits: Option<u32>,
+    /// Pad every rendered number to at least this many decimal places
+    /// (`padToDecimals`). `None`/`0` = no padding.
+    pub pad_to_decimals: Option<u32>,
+    /// Render blank leaves (`＿`) visibly (`showBlanks`); when false they emit
+    /// as the empty string.
+    pub show_blanks: bool,
+    /// Put an explicit `*` between every pair of factors instead of the usual
+    /// juxtaposition (`explicitMultiplicationSymbols`).
+    pub explicit_multiplication_symbols: bool,
+    /// Render every float positionally, however large or small
+    /// (`avoidScientificNotation`). Off by default, matching legacy: a float
+    /// outside `0.000001 ..< 1e21` renders as `1.23 * 10^22`.
+    pub avoid_scientific_notation: bool,
 }
 
 impl Default for TextOpts {
@@ -28,16 +43,25 @@ impl Default for TextOpts {
         TextOpts {
             unicode: true,
             notation: crate::notation::NumberNotation::default(),
+            pad_to_digits: None,
+            pad_to_decimals: None,
+            show_blanks: true,
+            explicit_multiplication_symbols: false,
+            avoid_scientific_notation: false,
         }
     }
 }
 
 pub fn convert(expr: &Expr, opts: &TextOpts) -> String {
-    Writer { opts }.emit(expr, 0)
+    let expr = super::normalize_display_negative_fractions(expr);
+    Writer { opts, pad: true }.emit(&expr, 0)
 }
 
 struct Writer<'a> {
     opts: &'a TextOpts,
+    /// Whether the `padToDigits`/`padToDecimals` options apply here. Cleared
+    /// inside an `integer^integer` — see [`super::is_integer_power`].
+    pad: bool,
 }
 
 impl Writer<'_> {
@@ -48,6 +72,21 @@ impl Writer<'_> {
             format!("({})", s)
         } else {
             s
+        }
+    }
+
+    /// What the bracket notations (`|…|`, `…!`) wrap: the whole argument of
+    /// the application. The text twin of
+    /// [`latex::Writer::sole_argument`](super::latex) — see the long note
+    /// there. In the JS AST an application has exactly one operand and a
+    /// multi-argument application is an application *to a tuple*, so at any
+    /// arity but one the tuple is what belongs inside the brackets. Guarding
+    /// these arms on `args.len() == 1` instead dropped the notation entirely
+    /// and printed `abs(x, y)` where legacy wrote `|(x, y)|`.
+    fn sole_argument(&self, args: &[Expr], ctx: u8) -> String {
+        match args {
+            [only] => self.emit(only, ctx),
+            _ => self.render_seq(SeqKind::Tuple, args).0,
         }
     }
 
@@ -76,11 +115,23 @@ impl Writer<'_> {
                 self.render_const(*c),
                 if *c == MathConst::NegInf { NEG } else { ATOM },
             ),
-            Expr::Blank => ("\u{ff3f}".to_string(), ATOM),
+            // Display only. The parsers cannot produce `Expr::Bool` at all, and
+            // `true` is not even a symbol to them — implicit multiplication
+            // lexes it as `t*r*u*e`. So this does not round-trip through text
+            // in any form; the AST round-trip is the faithful one.
+            Expr::Bool(b) => (b.to_string(), ATOM),
+            Expr::Blank => (
+                if self.opts.show_blanks {
+                    "\u{ff3f}".to_string()
+                } else {
+                    String::new()
+                },
+                ATOM,
+            ),
             Expr::Ldots => ("...".to_string(), ATOM),
 
             Expr::Add(terms) => (self.render_add(terms), ADD),
-            Expr::Mul(factors) => (self.render_mul(factors), MUL),
+            Expr::Mul(factors) => self.render_mul(factors),
             Expr::Div(a, b) => (
                 format!("{}/{}", self.emit(a, MUL), self.emit(b, MUL + 1)),
                 MUL,
@@ -93,11 +144,13 @@ impl Writer<'_> {
                 // `(x^y)^z` must parenthesize the inner power; only a power base
                 // needs it — other same-precedence bases (`f'` in `f'^a(x)`) stay
                 // unwrapped to round-trip.
-                let base_ctx = if matches!(&**b, Expr::Pow(..)) { POW + 1 } else { POW };
-                (
-                    format!("{}^{}", self.emit(b, base_ctx), self.superscript(e)),
-                    POW,
-                )
+                let base_ctx = if matches!(&**b, Expr::Pow(..)) {
+                    POW + 1
+                } else {
+                    POW
+                };
+                let w = self.without_padding_in_integer_power(b, e);
+                (format!("{}^{}", w.emit(b, base_ctx), w.superscript(e)), POW)
             }
 
             Expr::And(xs) => (self.join_logical(xs, " and "), AND),
@@ -149,11 +202,7 @@ impl Writer<'_> {
                 (self.render_interval(endpoints, *closed), ATOM)
             }
             Expr::Relation { operands, ops } => (self.render_relation(operands, ops), REL),
-            Expr::Matrix {
-                rows,
-                cols,
-                entries,
-            } => (self.render_matrix(*rows, *cols, entries), ATOM),
+            Expr::Matrix(m) => (self.render_matrix(m.rows(), m.cols(), m.entries()), ATOM),
             Expr::OtherOp(name, args) => self.render_other(&name.name(), args),
         }
     }
@@ -188,7 +237,7 @@ impl Writer<'_> {
     /// JS ast-to-text `and`/`or`/`not` rule.
     fn paren_if_spaced(&self, e: &Expr) -> String {
         let s = self.emit(e, 0);
-        if s.contains(' ') && !(s.starts_with('(') && s.ends_with(')')) {
+        if s.contains(' ') && !is_single_paren_group(&s) {
             format!("({})", s)
         } else {
             s
@@ -203,34 +252,89 @@ impl Writer<'_> {
     }
 
     fn render_number(&self, n: &Number) -> (String, u8) {
-        // Terminating decimals (all integers, and every parse-produced
-        // rational — denominator 2^a·5^b) render positionally, as atoms.
-        if let Some(dec) = n.terminating_decimal() {
-            let p = if dec.starts_with('-') {
-                prec::NEG
-            } else {
-                prec::ATOM
-            };
-            return (self.decimal(dec), p);
+        let decimal = n.decimal_spelling();
+        // A *fraction*-spelled rational renders as `a/b`, binding like the
+        // division it re-parses to. It is checked first so `3/6` prints `1/2`
+        // rather than `0.5` — `decimal_spelling` declines it for exactly that
+        // reason. Padding is a decimal-display option and does not apply here.
+        if decimal.is_none() {
+            if let Some((num, den)) = n.rational_parts() {
+                let p = if num.starts_with('-') {
+                    prec::NEG
+                } else {
+                    prec::MUL
+                };
+                return (format!("{}/{}", num, den), p);
+            }
         }
-        // A non-terminating fraction (only from later normalization) renders
-        // as `a/b`, binding like the division it re-parses to.
-        if let Some((num, den)) = n.rational_parts() {
-            let p = if num.starts_with('-') {
-                prec::NEG
-            } else {
-                prec::MUL
-            };
-            return (format!("{}/{}", num, den), p);
-        }
-        // Float: numerical-evaluation result, positional (never exponential).
-        let s = f64_positional_string(n.to_f64());
-        let p = if s.starts_with('-') {
-            prec::NEG
-        } else {
-            prec::ATOM
+        // Everything else is positional-or-scientific. Integers and
+        // decimal-spelled rationals supply their own exact digits; a float
+        // supplies its shortest round-trip. Both then face the same ECMAScript
+        // magnitude threshold, so a typed `5.252E-13` reads `5.252 * 10^(-13)`
+        // just as a computed one does — unless `avoid_scientific_notation` is
+        // set.
+        let (pad_digits, pad_decimals) = self.pad_bounds();
+        let rendered = match decimal {
+            Some(dec) => super::render_exact_decimal(
+                &dec,
+                self.opts.avoid_scientific_notation,
+                pad_digits,
+                pad_decimals,
+            ),
+            None => self.render_float(n.to_f64()),
         };
-        (self.decimal(s), p)
+        match rendered {
+            super::FloatRender::Positional(s) => {
+                let p = if s.starts_with('-') {
+                    prec::NEG
+                } else {
+                    prec::ATOM
+                };
+                (self.decimal(s), p)
+            }
+            // `* 10^…` re-parses as the product it is spelled as, so it binds
+            // like one: parenthesised as a power's base (`(1.23 * 10^(-11))^5`)
+            // but not inside a sum. A negative exponent needs its own parens —
+            // `10^-11` is not text-grammar.
+            super::FloatRender::Scientific { mantissa, exponent } => {
+                let e = if exponent < 0 {
+                    format!("({exponent})")
+                } else {
+                    exponent.to_string()
+                };
+                let p = if mantissa.starts_with('-') {
+                    prec::NEG
+                } else {
+                    prec::MUL
+                };
+                (format!("{} * 10^{}", self.decimal(mantissa), e), p)
+            }
+        }
+    }
+
+    /// The padding bounds in force, which an `integer^integer` suppresses.
+    fn pad_bounds(&self) -> (Option<u32>, Option<u32>) {
+        if self.pad {
+            (self.opts.pad_to_digits, self.opts.pad_to_decimals)
+        } else {
+            (None, None)
+        }
+    }
+
+    /// This writer, or a non-padding one for the operands of a power that
+    /// [`super::is_integer_power`] says legacy left alone.
+    fn without_padding_in_integer_power(&self, base: &Expr, exp: &Expr) -> Writer<'_> {
+        Writer {
+            opts: self.opts,
+            pad: self.pad && !super::is_integer_power(base, exp),
+        }
+    }
+
+    /// Apply the notation threshold and the `padToDigits`/`padToDecimals`
+    /// render options to a float (before the decimal separator is localized).
+    fn render_float(&self, v: f64) -> super::FloatRender {
+        let (digits, decimals) = self.pad_bounds();
+        super::render_float(v, self.opts.avoid_scientific_notation, digits, decimals)
     }
 
     fn render_symbol(&self, name: &str) -> String {
@@ -255,6 +359,8 @@ impl Writer<'_> {
             }
             .to_string(),
             MathConst::NaN => "NaN".to_string(),
+            // Display only — no text spelling parses back (see `Expr::Bool`).
+            MathConst::None => "None".to_string(),
         }
     }
 
@@ -263,44 +369,42 @@ impl Writer<'_> {
     /// never by string-matching, and never pulling a sign out of a Mul (which
     /// would not round-trip).
     fn render_add(&self, terms: &[Expr]) -> String {
-        // A single-element Add is the parser's unary-plus form (`+x`).
-        if terms.len() == 1 {
-            return format!("+{}", self.emit(&terms[0], prec::ADD + 1));
-        }
-        let mut out = String::new();
-        for (i, t) in terms.iter().enumerate() {
-            // A `±` term carries its own operator (`± …`), so it is joined with a
-            // plain space rather than ` + ` — `5 + ±3` would be wrong.
-            if i > 0 && crate::ops::pm::is_pm(t) {
-                out.push(' ');
-                out.push_str(&self.emit(t, prec::ADD + 1));
-                continue;
-            }
-            let (neg, body) = split_sign(t);
-            if i == 0 {
-                if neg {
-                    out.push('-');
-                }
-            } else if neg {
-                out.push_str(" - ");
-            } else {
-                out.push_str(" + ");
-            }
-            out.push_str(&self.emit(&body, prec::ADD + 1));
-        }
-        out
+        super::render_add_terms(terms, |e, ctx| self.emit(e, ctx))
     }
 
-    fn render_mul(&self, factors: &[Expr]) -> String {
+    /// Returns the product's precedence too: a negative leading factor makes
+    /// the whole product bind like a negation (`NEG`), so it parenthesises as a
+    /// fraction numerator / power base but reads `-3 b`, not `(-3) b`.
+    fn render_mul(&self, factors: &[Expr]) -> (String, u8) {
         let mut out = String::new();
+        let mut p = prec::MUL;
         for (i, f) in factors.iter().enumerate() {
-            let s = self.emit(f, if i == 0 { prec::MUL } else { prec::MUL + 1 });
+            let s = if i == 0 {
+                // The sign of a negative leading factor renders inline, without
+                // parentheses (port of the JS `factor()` at term level); a sum
+                // pulls it into the connective via `split_sign` before reaching
+                // here, so this branch is only hit standalone / as a factor.
+                match split_sign(f) {
+                    (true, body) => {
+                        p = prec::NEG;
+                        format!("-{}", self.emit(&body, prec::MUL))
+                    }
+                    (false, _) => self.emit(f, prec::MUL),
+                }
+            } else {
+                self.emit(f, prec::MUL + 1)
+            };
             if i > 0 {
-                // A space disambiguates tokens; use ` * ` when the right factor
-                // begins with a digit (so two numbers don't merge) or the left
-                // factor is a shorthand `∠A` (which would otherwise absorb it).
-                if s.starts_with(|c: char| c.is_ascii_digit())
-                    || is_shorthand_angle(&factors[i - 1])
+                // `explicitMultiplicationSymbols`: a bare `*` between every pair
+                // (port of the legacy `termFactors.join("*")`).
+                if self.opts.explicit_multiplication_symbols {
+                    out.push('*');
+                }
+                // Otherwise a space disambiguates tokens; use ` * ` when the
+                // right factor begins with a digit (so two numbers don't merge)
+                // or the left factor is a shorthand `∠A` (which would absorb it).
+                else if s.starts_with(|c: char| c.is_ascii_digit())
+                    || super::is_shorthand_angle(&factors[i - 1])
                 {
                     out.push_str(" * ");
                 } else {
@@ -309,19 +413,35 @@ impl Writer<'_> {
             }
             out.push_str(&s);
         }
-        out
+        (out, p)
     }
 
     fn render_apply(&self, head: &Expr, args: &[Expr]) -> (String, u8) {
+        // An integral `∫_a^b <integrand>`: keep the `∫` glyph (a `d x`
+        // differential was already split into a `["d", x]` factor at parse
+        // time, so it renders as `dx`) and drop the parentheses a generic
+        // application would put round the integrand. Port of the legacy `apply`
+        // integral branch; DoenetML open item 10.
+        if args.len() == 1 && super::is_integral_head(head) {
+            return (
+                format!(
+                    "{} {}",
+                    self.emit(head, prec::POW),
+                    self.emit(&args[0], prec::MUL)
+                ),
+                prec::MUL,
+            );
+        }
         // Special notations for particular function heads.
         if let Expr::Sym(s) = head {
             match s.name().as_str() {
-                "abs" if args.len() == 1 => {
-                    return (format!("|{}|", self.emit(&args[0], 0)), prec::ATOM)
-                }
+                "abs" => return (format!("|{}|", self.sole_argument(args, 0)), prec::ATOM),
                 // factorial is postfix `!`, so it prints at POW precedence.
-                "factorial" if args.len() == 1 => {
-                    return (format!("{}!", self.emit(&args[0], prec::POW)), prec::POW)
+                "factorial" => {
+                    return (
+                        format!("{}!", self.sole_argument(args, prec::POW)),
+                        prec::POW,
+                    )
                 }
                 _ => {}
             }
@@ -523,12 +643,20 @@ impl Writer<'_> {
     /// The long tail of notation operators carried as `OtherOp`.
     fn render_other(&self, name: &str, args: &[Expr]) -> (String, u8) {
         use prec::*;
+        // A head with too few operands to render in its own notation drops to
+        // the generic form; see [`super::other_op_min_arity`].
+        if args.len() < super::other_op_min_arity(name) {
+            return self.render_other_generic(name, args);
+        }
         let one = |w: &Self, ctx| w.emit(&args[0], ctx);
         match name {
+            // ASCII spells it as the word the lexer keyword-matches. `+-` would
+            // re-lex as two sign operators (`+- 3` parses as `+(-3)`), so it is
+            // not a spelling this printer may emit.
             "pm" => (
                 format!(
                     "{} {}",
-                    if self.opts.unicode { "±" } else { "+-" },
+                    if self.opts.unicode { "±" } else { "plusminus" },
                     one(self, MUL)
                 ),
                 NEG,
@@ -649,7 +777,10 @@ impl Writer<'_> {
             ),
             "vec" => (format!("vec({})", one(self, LIST + 1)), ATOM),
             "linesegment" => (
-                format!("linesegment({})", self.join(args, &self.arg_sep(), LIST + 1)),
+                format!(
+                    "linesegment({})",
+                    self.join(args, &self.arg_sep(), LIST + 1)
+                ),
                 ATOM,
             ),
             "angle" => (self.render_angle(args), ATOM),
@@ -657,11 +788,21 @@ impl Writer<'_> {
             "d" => (format!("d{}", one(self, ATOM)), POW),
             "derivative_leibniz" => (self.render_leibniz("d", args), MUL),
             "partial_derivative_leibniz" => (self.render_leibniz("∂", args), MUL),
-            _ => (
-                format!("{}({})", name, self.join(args, &self.arg_sep(), LIST + 1)),
-                ATOM,
-            ),
+            _ => self.render_other_generic(name, args),
         }
+    }
+
+    /// `name(args…)` — the form every unrecognized head takes, and the fallback
+    /// for a recognized head whose operand count is too low for its notation.
+    fn render_other_generic(&self, name: &str, args: &[Expr]) -> (String, u8) {
+        (
+            format!(
+                "{}({})",
+                name,
+                self.join(args, &self.arg_sep(), prec::LIST + 1)
+            ),
+            prec::ATOM,
+        )
     }
 
     fn render_angle(&self, args: &[Expr]) -> String {
@@ -672,7 +813,11 @@ impl Writer<'_> {
         if args.len() == 1 {
             format!("{}{}", a, self.emit(&args[0], prec::POW))
         } else {
-            format!("{}({})", a, self.join(args, &self.arg_sep(), prec::LIST + 1))
+            format!(
+                "{}({})",
+                a,
+                self.join(args, &self.arg_sep(), prec::LIST + 1)
+            )
         }
     }
 
@@ -692,35 +837,69 @@ impl Writer<'_> {
 
     fn render_leibniz(&self, sym: &str, args: &[Expr]) -> String {
         // args: [ var1 | (var1, n) ,  tuple-of-denominator-vars ].
-        // Spaces after each differential symbol let multi-character variables
-        // re-lex as their own tokens (`d hello`, not the single symbol `dhello`).
         let (var1, n_deriv) = deriv_var(&args[0]);
-        let num = format!(
-            "{}{} {}",
-            sym,
-            pow_suffix(n_deriv),
-            self.render_symbol(&var1)
-        );
-
-        let den = if let Expr::Seq(SeqKind::Tuple, parts) = &args[1] {
-            parts
+        let den_parts: Vec<(String, i64)> = match &args[1] {
+            Expr::Seq(SeqKind::Tuple, parts) => parts
                 .iter()
                 .map(|part| {
                     let (v, e) = deriv_var(part);
-                    format!("{} {}{}", sym, self.render_symbol(&v), pow_suffix(e))
+                    (self.render_symbol(&v), e)
                 })
-                .collect::<Vec<_>>()
-                .join(" ")
-        } else {
-            String::new()
+                .collect(),
+            _ => Vec::new(),
         };
+        let var1 = self.render_symbol(&var1);
+
+        // `dx/dt` is how the notation is written, and it re-parses: the lexer
+        // reads `dx` as the differential `d` plus the one-character variable.
+        // A *multi*-character variable would be swallowed whole (`dhello` is one
+        // symbol), so those — and only those — need a separating space.
+        let sep = if std::iter::once(&var1)
+            .chain(den_parts.iter().map(|(v, _)| v))
+            .all(|v| v.chars().count() == 1)
+        {
+            ""
+        } else {
+            " "
+        };
+
+        let num = format!("{}{}{}{}", sym, pow_suffix(n_deriv), sep, var1);
+        let den = den_parts
+            .iter()
+            .map(|(v, e)| format!("{}{}{}{}", sym, sep, v, pow_suffix(*e)))
+            .collect::<Vec<_>>()
+            .join(sep);
         format!("{}/{}", num, den)
     }
 }
 
-/// A single-argument `angle` renders as the greedy shorthand `∠A`.
-fn is_shorthand_angle(e: &Expr) -> bool {
-    matches!(e, Expr::OtherOp(name, args) if name.name() == "angle" && args.len() == 1)
+/// Is `s` a *single* parenthesized group — an opening `(` whose matching `)`
+/// is the final character — rather than several adjacent groups such as
+/// `(a) or (b)`?
+///
+/// The old test was `starts_with('(') && ends_with(')')`, which reads `true`
+/// for both and so wrongly suppressed the wrap around a spaced compound like
+/// `(a) or (b)`. Once un-wrapped it re-parses with the wrong binding — e.g. a
+/// nested `or` under `not` escapes its scope. A balance scan tells one group
+/// from many: the first return to depth 0 must be the last char.
+fn is_single_paren_group(s: &str) -> bool {
+    if !s.starts_with('(') {
+        return false;
+    }
+    let mut depth: i32 = 0;
+    for (i, c) in s.char_indices() {
+        match c {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth == 0 {
+                    return i + c.len_utf8() == s.len();
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }
 
 /// Can this expression appear bare in a sub/superscript slot (a single tight

@@ -2,6 +2,7 @@
 //! that the rest of the crate calls instead of the old per-subsystem tables in
 //! `parse/`, `normalize/`, `calculus/diff.rs`, and `calculus/integrate/`.
 
+use super::def::{EvalN, FoldExact};
 use super::registry::{lookup, ALL};
 use crate::expr::Expr;
 use num_complex::Complex64;
@@ -103,4 +104,19 @@ pub fn applied_latex_names() -> Vec<String> {
     // parenthesized tuple already applies).
     names.push("rootof".to_string());
     names
+}
+
+/// N-ary complex evaluation for the canonical spelling `name` — the
+/// aggregates. Tried before [`eval1`]/[`eval2`], since a variadic function
+/// must handle its one- and two-argument cases itself.
+pub fn evaln(name: &str) -> Option<EvalN> {
+    let def = lookup(name)?;
+    (def.name == name).then_some(def.evaln).flatten()
+}
+
+/// The exact folder for the canonical spelling `name`
+/// (see [`FnDef::fold_exact`](super::FnDef::fold_exact)).
+pub fn fold_exact(name: &str) -> Option<FoldExact> {
+    let def = lookup(name)?;
+    (def.name == name).then_some(def.fold_exact).flatten()
 }

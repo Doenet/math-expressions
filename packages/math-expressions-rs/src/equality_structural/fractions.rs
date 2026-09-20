@@ -11,7 +11,7 @@ fn is_decimal_literal(n: &Number) -> bool {
     // In the faithful tree a decimal parses to Rat (fractional part) or Float
     // (huge). Integers are `Int`; typed fractions are `Div`, not `Rat`.
     matches!(n, Number::Rat(..) | Number::Float(_))
-        || matches!(n, Number::Big(b) if matches!(**b, crate::num::BigNumber::Rat(_)))
+        || matches!(n, Number::Big(b) if matches!(**b, crate::num::BigNumber::Rat(..)))
 }
 
 pub(super) fn contains_decimal(e: &Expr) -> bool {
@@ -74,9 +74,7 @@ pub(super) fn is_mixed_number(e: &Expr) -> bool {
     // Same sign, proper (|n| < |d|), reduced.
     let int_positive = int_part > 0;
     let frac_positive = (n > 0) == (d > 0);
-    int_positive == frac_positive
-        && n.unsigned_abs() < d.unsigned_abs()
-        && gcd(n, d) == 1
+    int_positive == frac_positive && n.unsigned_abs() < d.unsigned_abs() && gcd(n, d) == 1
 }
 
 pub(super) fn is_improper_fraction(e: &Expr) -> bool {

@@ -24,5 +24,5 @@ pub use value::Exact;
 pub use zero_testing::is_zero;
 
 // Crate-internal entry points (used qualified as `crate::eval_exact::…`).
-pub(crate) use eval::trig_special_value;
+pub(crate) use eval::{inverse_trig_special_value, trig_special_value};
 pub(crate) use zero_testing::certified_zero;

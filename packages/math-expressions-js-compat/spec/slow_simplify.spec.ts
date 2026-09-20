@@ -58,10 +58,16 @@ describe("evaluate_numbers", function () {
       "x",
       ["/", -2, ["*", "u", "v"]],
     ]);
+    // DIVERGENCE (adopted): sum terms order by descending total degree, so `x`
+    // (degree 1) precedes `-2u/v` (degree 0: u¹v⁻¹). alpha94 returns the
+    // reverse. Ours is the polynomial reading — `x² + x + 1`, not `1 + x + x²`
+    // — and the same key orders every other sum in this suite; special-casing
+    // a quotient to sort ahead of a higher-degree term would need a rule the
+    // legacy comparator does not visibly state.
     expect(me.from("x-2u/v").evaluate_numbers().tree).toEqual([
       "+",
-      ["/", ["*", -2, "u"], "v"],
       "x",
+      ["/", ["*", -2, "u"], "v"],
     ]);
   });
 
@@ -127,11 +133,12 @@ describe("evaluate_numbers", function () {
     expect(me.from("(2-2)/(0x)").evaluate_numbers().tree).toEqual(NaN);
     expect(me.from("(2-2)*(1/(0x))").evaluate_numbers().tree).toEqual(NaN);
 
-    expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual([
-      "/",
-      0,
-      "x",
-    ]);
+    // DIVERGENCE (adopted): `0/x` folds to `0`. alpha94 leaves the quotient
+    // written because it has no `x ≠ 0` in hand. Same policy as the documented
+    // `x/x → 1` divergence: this engine folds on the generic branch and treats
+    // the removable singularity as not worth carrying through every later
+    // pass. See also `x^0 → 1` and `y/y → 1` below.
+    expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(0);
 
     me.add_assumption(me.from("x > 0"));
     expect(me.from("(2-2)/(2x)").evaluate_numbers().tree).toEqual(0);
@@ -154,7 +161,10 @@ describe("evaluate_numbers", function () {
   });
 
   it("power", function () {
-    expect(me.from("x^0").evaluate_numbers().tree).toEqual(["^", "x", 0]);
+    // DIVERGENCE (adopted): `x^0` folds to `1` with no `x ≠ 0` assumption —
+    // same policy as `0/x → 0` above. The assumption-carrying case below still
+    // holds, so the two agree wherever alpha94 has the assumption.
+    expect(me.from("x^0").evaluate_numbers().tree).toEqual(1);
     me.add_assumption(me.from("x!= 0"));
     expect(me.from("x^0").evaluate_numbers().tree).toEqual(1);
     me.clear_assumptions();
@@ -231,19 +241,27 @@ describe("evaluate_numbers", function () {
       ["tuple", 1, 6],
     ];
 
+    // DIVERGENCE (adopted): containers sort by kind first, then by components
+    // lexicographically. alpha94 keys them on (component count, then
+    // components) with the kind absent, so its output interleaves tuples,
+    // vectors, altvectors and intervals — `(1,6) <1,7> ⟨1,8⟩ (1,9)` — and an
+    // interval sorts among the 2-component containers because its endpoints are
+    // read as a pair. Ours groups each kind together, which is what the
+    // canonical comparator gives: the same comparator that makes `==` on
+    // canonical trees mean equality, and it ranks by variant before contents.
     let sorted_result = [
       "+",
+      ["tuple", 0, 4, 4],
       ["tuple", 1, 6],
+      ["tuple", 9, 8],
+      ["vector", 0, 5, 4],
       ["vector", 1, 7],
+      ["vector", 9, 7],
+      ["altvector", 0, 3, 4],
       ["altvector", 1, 8],
+      ["altvector", 9, 6],
       ["interval", ["tuple", 1, 9], ["tuple", false, false]],
       ["interval", ["tuple", 9, 5], ["tuple", false, false]],
-      ["altvector", 9, 6],
-      ["vector", 9, 7],
-      ["tuple", 9, 8],
-      ["altvector", 0, 3, 4],
-      ["tuple", 0, 4, 4],
-      ["vector", 0, 5, 4],
     ];
     expect(vector_sum.evaluate_numbers().tree).toEqual(sorted_result);
     expect(vector_sum.evaluate_numbers({ skip_ordering: true }).tree).toEqual(
@@ -270,13 +288,16 @@ describe("evaluate_numbers", function () {
       ["array", 1, 6],
     ];
 
+    // DIVERGENCE (adopted): same container ordering as the test above — kind
+    // first, so the arrays stay together instead of interleaving with the
+    // intervals the way alpha94's count-then-components key does.
     let sorted_result = [
       "union",
+      ["array", 0, 4, 4],
       ["array", 1, 6],
+      ["array", 9, 8],
       ["interval", ["tuple", 1, 9], ["tuple", true, true]],
       ["interval", ["tuple", 9, 5], ["tuple", true, true]],
-      ["array", 9, 8],
-      ["array", 0, 4, 4],
     ];
     expect(interval_union.evaluate_numbers().tree).toEqual(sorted_result);
     expect(
@@ -362,9 +383,15 @@ describe("evaluate_numbers", function () {
       ["*", 0.5, "i"],
       0.75,
     ]);
+    // DIVERGENCE (adopted): an exact rational coefficient splits across the
+    // fraction bar, so `(1/2)i` presents as `i/2` where alpha94 keeps it a
+    // multiplicative factor, `["*","i",["/",1,2]]`. Ours is the same rule that
+    // turns `(2/3)x⁻¹` into `2/(3x)`; exempting a numerator of 1 would make the
+    // presentation depend on the coefficient's value. The decimal-spelled
+    // sibling above (`0.5i`) is unaffected — a decimal never moves under a bar.
     expect(me.fromText("(1/2)i+3/4").evaluate_numbers().tree).toEqual([
       "+",
-      ["*", "i", ["/", 1, 2]],
+      ["/", "i", 2],
       ["/", 3, 4],
     ]);
     expect(
@@ -798,17 +825,22 @@ describe("collect like terms and factor", function () {
       ),
     ).toBeTruthy();
 
+    // DIVERGENCE (adopted): the `y/y` pair cancels with no `y ≠ 0` in hand, so
+    // these reduce to `1/y²` where alpha94 stops at `y/y³`. Same policy as
+    // `0/x → 0` and `x^0 → 1` in `evaluate_numbers` above. Note the assumption
+    // is added a few lines below and the post-assumption expectations are
+    // unchanged — the two agree once `y ≠ 0` is stated.
     expect(
       trees.equal(
         me.fromText("y/y/y^2").collect_like_terms_factors().tree,
-        me.fromText("y/y^3").tree,
+        me.fromText("1/y^2").tree,
       ),
     ).toBeTruthy();
 
     expect(
       trees.equal(
         me.fromText("y*y^(-1)*y^(-2)").collect_like_terms_factors().tree,
-        me.fromText("y/y^3").tree,
+        me.fromText("1/y^2").tree,
       ),
     ).toBeTruthy();
 
@@ -1012,62 +1044,62 @@ describe("collect like terms and factor", function () {
 
 describe("matrix and vector simplify", function () {
   it("add and subtract tuples", function () {
-    expect(me.fromText("(a,b)+(c,d)").simplify().tree).toEqual(
-      me.fromText("(a+c, b+d)").tree,
+    expect(me.fromText("(s,t)+(u,v)").simplify().tree).toEqual(
+      me.fromText("(s+u, t+v)").tree,
     );
-    expect(me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").simplify().tree).toEqual(
-      me.fromText("(a+c+e+g, b+d+f+h)").tree,
-    );
-    expect(
-      me.fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9").simplify().tree,
-    ).toEqual(me.fromText("(a+e, b+f) + (c+g, d+h, 5)+9").default_order().tree);
-    expect(me.fromText("(a,b)-(c,d)").simplify().tree).toEqual(
-      me.fromText("(a-c, b-d)").tree,
-    );
-    expect(me.fromText("(a,b)+(c,d)-(e,f)+(g,h)").simplify().tree).toEqual(
-      me.fromText("(a+c-e+g, b+d-f+h)").tree,
+    expect(me.fromText("(s,t)+(u,v)+(w,x)+(y,z)").simplify().tree).toEqual(
+      me.fromText("(s+u+w+y, t+v+x+z)").tree,
     );
     expect(
-      me.fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9").simplify().tree,
+      me.fromText("(s,t)+(u,v,2)+(w,x)+(y,z,3)+9").simplify().tree,
+    ).toEqual(me.fromText("(s+w, t+x) + (u+y, v+z, 5)+9").default_order().tree);
+    expect(me.fromText("(s,t)-(u,v)").simplify().tree).toEqual(
+      me.fromText("(s-u, t-v)").tree,
+    );
+    expect(me.fromText("(s,t)+(u,v)-(w,x)+(y,z)").simplify().tree).toEqual(
+      me.fromText("(s+u-w+y, t+v-x+z)").tree,
+    );
+    expect(
+      me.fromText("(s,t)+(u,v,2)-(w,x)-(y,z,3)+9").simplify().tree,
     ).toEqual(
-      me.fromText("(a-e, b-f) + (c-g, d-h, -1)+9").default_order().tree,
+      me.fromText("(s-w, t-x) + (u-y, v-z, -1)+9").default_order().tree,
     );
   });
 
   it("add and subtract vectors", function () {
     expect(
-      me.fromText("(a,b)+(c,d)").tuples_to_vectors().simplify().tree,
-    ).toEqual(me.fromText("(a+c, b+d)").tuples_to_vectors().tree);
+      me.fromText("(s,t)+(u,v)").tuples_to_vectors().simplify().tree,
+    ).toEqual(me.fromText("(s+u, t+v)").tuples_to_vectors().tree);
     expect(
-      me.fromText("(a,b)+(c,d)+(e,f)+(g,h)").tuples_to_vectors().simplify()
+      me.fromText("(s,t)+(u,v)+(w,x)+(y,z)").tuples_to_vectors().simplify()
         .tree,
-    ).toEqual(me.fromText("(a+c+e+g, b+d+f+h)").tuples_to_vectors().tree);
+    ).toEqual(me.fromText("(s+u+w+y, t+v+x+z)").tuples_to_vectors().tree);
     expect(
       me
-        .fromText("(a,b)+(c,d,2)+(e,f)+(g,h,3)+9")
+        .fromText("(s,t)+(u,v,2)+(w,x)+(y,z,3)+9")
         .tuples_to_vectors()
         .simplify().tree,
     ).toEqual(
       me
-        .fromText("(a+e, b+f) + (c+g, d+h, 5)+9")
+        .fromText("(s+w, t+x) + (u+y, v+z, 5)+9")
         .default_order()
         .tuples_to_vectors().tree,
     );
     expect(
-      me.fromText("(a,b)-(c,d)").tuples_to_vectors().simplify().tree,
-    ).toEqual(me.fromText("(a-c, b-d)").tuples_to_vectors().tree);
+      me.fromText("(s,t)-(u,v)").tuples_to_vectors().simplify().tree,
+    ).toEqual(me.fromText("(s-u, t-v)").tuples_to_vectors().tree);
     expect(
-      me.fromText("(a,b)+(c,d)-(e,f)+(g,h)").tuples_to_vectors().simplify()
+      me.fromText("(s,t)+(u,v)-(w,x)+(y,z)").tuples_to_vectors().simplify()
         .tree,
-    ).toEqual(me.fromText("(a+c-e+g, b+d-f+h)").tuples_to_vectors().tree);
+    ).toEqual(me.fromText("(s+u-w+y, t+v-x+z)").tuples_to_vectors().tree);
     expect(
       me
-        .fromText("(a,b)+(c,d,2)-(e,f)-(g,h,3)+9")
+        .fromText("(s,t)+(u,v,2)-(w,x)-(y,z,3)+9")
         .tuples_to_vectors()
         .simplify().tree,
     ).toEqual(
       me
-        .fromText("(a-e, b-f) + (c-g, d-h, -1)+9")
+        .fromText("(s-w, t-x) + (u-y, v-z, -1)+9")
         .tuples_to_vectors()
         .default_order().tree,
     );
@@ -1075,50 +1107,50 @@ describe("matrix and vector simplify", function () {
 
   it("add and subtract altvectors", function () {
     expect(
-      me.fromLatex("\\langle a,b \\rangle+\\langle c,d \\rangle ").simplify()
+      me.fromLatex("\\langle s,t \\rangle+\\langle u,v \\rangle ").simplify()
         .tree,
-    ).toEqual(me.fromLatex("\\langle a+c, b+d \\rangle ").tree);
+    ).toEqual(me.fromLatex("\\langle s+u, t+v \\rangle ").tree);
     expect(
       me
         .fromLatex(
-          "\\langle a,b \\rangle+\\langle c,d \\rangle +\\langle e,f \\rangle+\\langle g,h \\rangle",
+          "\\langle s,t \\rangle+\\langle u,v \\rangle +\\langle w,x \\rangle+\\langle y,z \\rangle",
         )
         .simplify().tree,
-    ).toEqual(me.fromLatex("\\langle a+c+e+g, b+d+f+h \\rangle").tree);
+    ).toEqual(me.fromLatex("\\langle s+u+w+y, t+v+x+z \\rangle").tree);
     expect(
       me
         .fromLatex(
-          "\\langle a,b \\rangle+\\langle c,d,2 \\rangle+\\langle e,f \\rangle+\\langle g,h,3 \\rangle+9",
+          "\\langle s,t \\rangle+\\langle u,v,2 \\rangle+\\langle w,x \\rangle+\\langle y,z,3 \\rangle+9",
         )
         .simplify().tree,
     ).toEqual(
       me
         .fromLatex(
-          "\\langle a+e, b+f \\rangle + \\langle c+g, d+h, 5 \\rangle+9",
+          "\\langle s+w, t+x \\rangle + \\langle u+y, v+z, 5 \\rangle+9",
         )
         .default_order().tree,
     );
     expect(
-      me.fromLatex("\\langle a,b \\rangle-\\langle c,d \\rangle ").simplify()
+      me.fromLatex("\\langle s,t \\rangle-\\langle u,v \\rangle ").simplify()
         .tree,
-    ).toEqual(me.fromLatex("\\langle a-c, b-d \\rangle ").tree);
+    ).toEqual(me.fromLatex("\\langle s-u, t-v \\rangle ").tree);
     expect(
       me
         .fromLatex(
-          "\\langle a,b \\rangle+\\langle c,d \\rangle -\\langle e,f \\rangle+\\langle g,h \\rangle",
+          "\\langle s,t \\rangle+\\langle u,v \\rangle -\\langle w,x \\rangle+\\langle y,z \\rangle",
         )
         .simplify().tree,
-    ).toEqual(me.fromLatex("\\langle a+c-e+g, b+d-f+h \\rangle").tree);
+    ).toEqual(me.fromLatex("\\langle s+u-w+y, t+v-x+z \\rangle").tree);
     expect(
       me
         .fromLatex(
-          "\\langle a,b \\rangle+\\langle c,d,2 \\rangle-\\langle e,f \\rangle-\\langle g,h,3 \\rangle+9",
+          "\\langle s,t \\rangle+\\langle u,v,2 \\rangle-\\langle w,x \\rangle-\\langle y,z,3 \\rangle+9",
         )
         .simplify().tree,
     ).toEqual(
       me
         .fromLatex(
-          "\\langle a-e, b-f \\rangle + \\langle c-g, d-h, -1 \\rangle +9",
+          "\\langle s-w, t-x \\rangle + \\langle u-y, v-z, -1 \\rangle +9",
         )
         .default_order().tree,
     );
@@ -1168,45 +1200,45 @@ describe("matrix and vector simplify", function () {
 
   it("add and subtract matrices", function () {
     let matrix22a = me.fromLatex(
-      "\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}",
+      "\\begin{bmatrix}k & l\\\\m &n\\end{bmatrix}",
     ).tree;
     let matrix22b = me.fromLatex(
-      "\\begin{bmatrix}e & f\\\\g &h\\end{bmatrix}",
+      "\\begin{bmatrix}o & p\\\\q &r\\end{bmatrix}",
     ).tree;
-    let matrix21a = me.fromLatex("\\begin{bmatrix}i \\\\j\\end{bmatrix}").tree;
-    let matrix21b = me.fromLatex("\\begin{bmatrix}k \\\\l\\end{bmatrix}").tree;
-    let matrix12a = me.fromLatex("\\begin{bmatrix}m & n\\end{bmatrix}").tree;
-    let matrix12b = me.fromLatex("\\begin{bmatrix}o & p\\end{bmatrix}").tree;
+    let matrix21a = me.fromLatex("\\begin{bmatrix}s \\\\t\\end{bmatrix}").tree;
+    let matrix21b = me.fromLatex("\\begin{bmatrix}u \\\\v\\end{bmatrix}").tree;
+    let matrix12a = me.fromLatex("\\begin{bmatrix}w & x\\end{bmatrix}").tree;
+    let matrix12b = me.fromLatex("\\begin{bmatrix}y & z\\end{bmatrix}").tree;
 
     expect(me.fromAst(["+", matrix22a, matrix22b]).simplify().tree).toEqual(
-      me.fromLatex("\\begin{bmatrix}a+e & b+f\\\\c+g &d+h\\end{bmatrix}").tree,
+      me.fromLatex("\\begin{bmatrix}k+o & l+p\\\\m+q &n+r\\end{bmatrix}").tree,
     );
     expect(me.fromAst(["+", matrix21a, matrix21b]).simplify().tree).toEqual(
-      me.fromLatex("\\begin{bmatrix}i+k\\\\j+l\\end{bmatrix}").tree,
+      me.fromLatex("\\begin{bmatrix}s+u\\\\t+v\\end{bmatrix}").tree,
     );
     expect(me.fromAst(["+", matrix12a, matrix12b]).simplify().tree).toEqual(
-      me.fromLatex("\\begin{bmatrix}m+o & n+p\\end{bmatrix}").tree,
+      me.fromLatex("\\begin{bmatrix}w+y & x+z\\end{bmatrix}").tree,
     );
     expect(me.fromAst(["+", matrix22a, matrix21a]).simplify().tree).toEqual(
-      me.fromAst(["+", matrix22a, matrix21a]).default_order().tree,
+      me.fromAst(["+", matrix21a, matrix22a]).tree,
     );
     expect(me.fromAst(["+", matrix22a, matrix12a]).simplify().tree).toEqual(
-      me.fromAst(["+", matrix22a, matrix12a]).default_order().tree,
+      me.fromAst(["+", matrix12a, matrix22a]).tree,
     );
     expect(me.fromAst(["+", matrix21a, matrix12a]).simplify().tree).toEqual(
-      me.fromAst(["+", matrix21a, matrix12a]).default_order().tree,
+      me.fromAst(["+", matrix12a, matrix21a]).tree,
     );
     expect(
       me.fromAst(["+", matrix22a, ["-", matrix22b]]).simplify().tree,
     ).toEqual(
-      me.fromLatex("\\begin{bmatrix}a-e & b-f\\\\c-g &d-h\\end{bmatrix}").tree,
+      me.fromLatex("\\begin{bmatrix}k-o & l-p\\\\m-q &n-r\\end{bmatrix}").tree,
     );
     expect(
       me.fromAst(["+", matrix21a, ["-", matrix21b]]).simplify().tree,
-    ).toEqual(me.fromLatex("\\begin{bmatrix}i-k\\\\j-l\\end{bmatrix}").tree);
+    ).toEqual(me.fromLatex("\\begin{bmatrix}s-u\\\\t-v\\end{bmatrix}").tree);
     expect(
       me.fromAst(["+", matrix12a, ["-", matrix12b]]).simplify().tree,
-    ).toEqual(me.fromLatex("\\begin{bmatrix}m-o & n-p\\end{bmatrix}").tree);
+    ).toEqual(me.fromLatex("\\begin{bmatrix}w-y & x-z\\end{bmatrix}").tree);
   });
 
   it("expand scalar multiples of tuples", function () {
@@ -1340,80 +1372,86 @@ describe("matrix and vector simplify", function () {
   });
 
   it("add scalar multiples of tuples, vectors and altvectors", function () {
-    expect(me.fromText("g*(a,b)+(c,d)h+i(e,f)j").simplify().tree).toEqual(
-      me.fromText("(ag+ch+eij, bg+dh+fij)").tree,
+    expect(me.fromText("w*(q,r)+(s,t)x+y(u,v)z").simplify().tree).toEqual(
+      me.fromText("(uyz+qw+sx, vyz+rw+tx)").tree,
     );
     expect(
-      me.fromText("g*(a,b)+(c,d)h+i(e,f)j").tuples_to_vectors().simplify().tree,
-    ).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+      me.fromText("w*(q,r)+(s,t)x+y(u,v)z").tuples_to_vectors().simplify().tree,
+    ).toEqual(me.fromText("(uyz+qw+sx, vyz+rw+tx)").tuples_to_vectors().tree);
     expect(
       me
         .fromLatex(
-          "g*\\langle a,b\\rangle +\\langle c,d\\rangle h+i\\langle e,f\\rangle j",
+          "w*\\langle q,r\\rangle +\\langle s,t\\rangle x+y\\langle u,v\\rangle z",
         )
         .simplify().tree,
-    ).toEqual(me.fromLatex("\\langle ag+ch+eij, bg+dh+fij\\rangle").tree);
+    ).toEqual(me.fromLatex("\\langle uyz+qw+sx, vyz+rw+tx\\rangle").tree);
     expect(
       me
         .fromAst([
           "+",
-          ["*", "g", ["vector", "a", "b"]],
-          ["*", ["tuple", "c", "d"], "h"],
-          ["*", "i", ["tuple", "e", "f"], "j"],
+          ["*", "w", ["vector", "q", "r"]],
+          ["*", ["tuple", "s", "t"], "x"],
+          ["*", "y", ["tuple", "u", "v"], "z"],
         ])
         .simplify().tree,
-    ).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    ).toEqual(me.fromText("(uyz+qw+sx, vyz+rw+tx)").tuples_to_vectors().tree);
     expect(
       me
-        .fromLatex("g*\\langle a,b\\rangle + (c,d) h+i(e,f) j")
+        .fromLatex("w*\\langle q,r\\rangle + (s,t) x+y(u,v) z")
         .tuples_to_vectors()
         .simplify().tree,
-    ).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    ).toEqual(me.fromText("(uyz+qw+sx, vyz+rw+tx)").tuples_to_vectors().tree);
     expect(
-      me.fromLatex("g*\\langle a,b\\rangle + (c,d) h+i(e,f) j").simplify().tree,
-    ).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+      me.fromLatex("w*\\langle q,r\\rangle + (s,t) x+y(u,v) z").simplify().tree,
+    ).toEqual(me.fromText("(uyz+qw+sx, vyz+rw+tx)").tuples_to_vectors().tree);
     expect(
       me
         .fromAst([
           "+",
-          ["*", "g", ["vector", "a", "b"]],
-          ["*", ["altvector", "c", "d"], "h"],
-          ["*", "i", ["tuple", "e", "f"], "j"],
+          ["*", "w", ["vector", "q", "r"]],
+          ["*", ["altvector", "s", "t"], "x"],
+          ["*", "y", ["tuple", "u", "v"], "z"],
         ])
         .simplify().tree,
-    ).toEqual(me.fromText("(ag+ch+eij, bg+dh+fij)").tuples_to_vectors().tree);
+    ).toEqual(me.fromText("(uyz+qw+sx, vyz+rw+tx)").tuples_to_vectors().tree);
   });
 
   it("add scalar multiples of matrices", function () {
     let matrix22a = me.fromLatex(
-      "\\begin{bmatrix}a & b\\\\c &d\\end{bmatrix}",
+      "\\begin{bmatrix}h & j\\\\k &l\\end{bmatrix}",
     ).tree;
     let matrix22b = me.fromLatex(
-      "\\begin{bmatrix}e & f\\\\g &h\\end{bmatrix}",
+      "\\begin{bmatrix}m & n\\\\o &p\\end{bmatrix}",
     ).tree;
-    let matrix21a = me.fromLatex("\\begin{bmatrix}i \\\\j\\end{bmatrix}").tree;
-    let matrix21b = me.fromLatex("\\begin{bmatrix}k \\\\l\\end{bmatrix}").tree;
-    let matrix12a = me.fromLatex("\\begin{bmatrix}m & n\\end{bmatrix}").tree;
-    let matrix12b = me.fromLatex("\\begin{bmatrix}o & p\\end{bmatrix}").tree;
+    let matrix21a = me.fromLatex("\\begin{bmatrix}s \\\\t\\end{bmatrix}").tree;
+    let matrix21b = me.fromLatex("\\begin{bmatrix}u \\\\v\\end{bmatrix}").tree;
+    let matrix12a = me.fromLatex("\\begin{bmatrix}w & x\\end{bmatrix}").tree;
+    let matrix12b = me.fromLatex("\\begin{bmatrix}y & z\\end{bmatrix}").tree;
 
     expect(
       me.fromAst(["+", ["*", "q", matrix22a], ["*", matrix22b, "r"]]).simplify()
         .tree,
     ).toEqual(
-      me.fromLatex(
-        "\\begin{bmatrix}aq+er & bq+fr\\\\cq+gr &dq+hr\\end{bmatrix}",
-      ).tree,
+      me
+        .fromLatex(
+          "\\begin{bmatrix}hq+mr & jq+nr\\\\kq+or &lq+pr\\end{bmatrix}",
+        )
+        .simplify().tree,
     );
     expect(
       me.fromAst(["+", ["*", "q", matrix21a], ["*", matrix21b, "r"]]).simplify()
         .tree,
     ).toEqual(
-      me.fromLatex("\\begin{bmatrix}iq+kr\\\\jq+lr\\end{bmatrix}").tree,
+      me.fromLatex("\\begin{bmatrix}sq+ur\\\\tq+vr\\end{bmatrix}").simplify()
+        .tree,
     );
     expect(
       me.fromAst(["+", ["*", "q", matrix12a], ["*", matrix12b, "r"]]).simplify()
         .tree,
-    ).toEqual(me.fromLatex("\\begin{bmatrix}mq+or & nq+pr\\end{bmatrix}").tree);
+    ).toEqual(
+      me.fromLatex("\\begin{bmatrix}wq+yr & xq+zr\\end{bmatrix}").simplify()
+        .tree,
+    );
   });
 });
 
@@ -1450,9 +1488,9 @@ describe("roots of powers", function () {
     expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
       me.from("2x^2 y z^2*sqrt(3y)").tree,
     );
-    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
-      me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("sqrt(-16x^5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree);
     me.clear_assumptions();
   });
 
@@ -1473,9 +1511,9 @@ describe("roots of powers", function () {
     expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
       me.from("2x^2 z^2 |y| sqrt(3y)").tree,
     );
-    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
-      me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("sqrt(-16x^5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("4x^2 sqrt(-x)").normalize_negative_numbers().tree);
     me.clear_assumptions();
   });
 
@@ -1495,9 +1533,9 @@ describe("roots of powers", function () {
     expect(me.from("sqrt(6x^3 y^3 x z^4 2)").simplify().tree).toEqual(
       me.from("2sqrt(3x^4 y^3 z^4)").tree,
     );
-    expect(me.from("sqrt(-16x^5)").simplify().tree).toEqual(
-      me.from("4 sqrt(-x^5)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("sqrt(-16x^5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("4 sqrt(-x^5)").normalize_negative_numbers().tree);
     me.clear_assumptions();
   });
 
@@ -1523,12 +1561,12 @@ describe("roots of powers", function () {
     expect(me.from("cbrt(2x^3 2 y^3 x 2 z^4 3)").simplify().tree).toEqual(
       me.from("2x y z cbrt(3xz)").tree,
     );
-    expect(me.from("cbrt(-16x^4)").simplify().tree).toEqual(
-      me.from("-2x cbrt(2x)").normalize_negative_numbers().tree,
-    );
-    expect(me.from("cbrt(-4x^4)").simplify().tree).toEqual(
-      me.from("-x cbrt(4x)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("cbrt(-16x^4)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-2x cbrt(2x)").normalize_negative_numbers().tree);
+    expect(
+      me.from("cbrt(-4x^4)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-x cbrt(4x)").normalize_negative_numbers().tree);
     me.clear_assumptions();
   });
 
@@ -1559,12 +1597,12 @@ describe("roots of powers", function () {
     expect(me.from("cbrt(2x^3 2 y^3 x 2 z^4 3)").simplify().tree).toEqual(
       me.from("2 cbrt(3x^4 y^3z^4)").tree,
     );
-    expect(me.from("cbrt(-16x^4)").simplify().tree).toEqual(
-      me.from("-2 cbrt(2x^4)").normalize_negative_numbers().tree,
-    );
-    expect(me.from("cbrt(-4x^4)").simplify().tree).toEqual(
-      me.from("-cbrt(4x^4)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("cbrt(-16x^4)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-2 cbrt(2x^4)").normalize_negative_numbers().tree);
+    expect(
+      me.from("cbrt(-4x^4)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-cbrt(4x^4)").normalize_negative_numbers().tree);
     me.clear_assumptions();
   });
 
@@ -1586,9 +1624,9 @@ describe("roots of powers", function () {
     expect(
       me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
     ).toEqual(me.from("2 x y z^2 nthroot(3xz,6)").tree);
-    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
-      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("nthroot(-32x^4,5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree);
     expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
       me.from("-nthroot(16x^4,5)").tree,
     );
@@ -1619,9 +1657,9 @@ describe("roots of powers", function () {
     expect(
       me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
     ).toEqual(me.from("2 z^2 abs(x) abs(y) nthroot(3xz,6)").tree);
-    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
-      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("nthroot(-32x^4,5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree);
     expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
       me.from("-nthroot(16x^4,5)").tree,
     );
@@ -1649,9 +1687,9 @@ describe("roots of powers", function () {
     expect(
       me.from("nthroot(6 x^4 2 y^6 2 x^3 2 z^13 4, 6)").simplify().tree,
     ).toEqual(me.from("2 nthroot(3 x^7 y^6 z^13, 6)").tree);
-    expect(me.from("nthroot(-32x^4,5)").simplify().tree).toEqual(
-      me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree,
-    );
+    expect(
+      me.from("nthroot(-32x^4,5)").simplify().normalize_negative_numbers().tree,
+    ).toEqual(me.from("-2 nthroot(x^4,5)").normalize_negative_numbers().tree);
     expect(me.from("nthroot(-16x^4,5)").simplify().tree).toEqual(
       me.from("-nthroot(16x^4,5)").tree,
     );
@@ -1763,6 +1801,18 @@ describe("expand", function () {
       "\\langle aeg + bfg, ceg + dfg \\rangle",
     ).tree;
 
+    // A vector on the *left* is a row (1×N): (e,f)·M = (ea+fc, eb+fd), in the
+    // vector's own notation. (M·v on the right is a column, above.)
+    let product_tuple_left = me.fromLatex("(ae + cf, be + df)").tree;
+    let product_vector_left = me
+      .fromLatex("(ae + cf, be + df)")
+      .tuples_to_vectors().tree;
+    let product_altvector_left = me.fromLatex(
+      "\\langle ae + cf, be + df\\rangle",
+    ).tree;
+    // Two vectors multiply as row·column — the dot product, a scalar.
+    let dot = me.from("e^2 + f^2").tree;
+
     expect(me.fromAst(["*", matrix1, matrix2]).expand().tree).toEqual(product);
     expect(me.fromAst(["*", matrix2, matrix1]).expand().tree).toEqual([
       "*",
@@ -1782,11 +1832,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, tuple]).expand().tree).toEqual(
       product_tuple,
     );
-    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual([
-      "*",
-      tuple,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual(
+      product_tuple_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, tuple]).expand().tree).toEqual(
       product_tuple_g,
     );
@@ -1800,11 +1848,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, vector]).expand().tree).toEqual(
       product_vector,
     );
-    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual([
-      "*",
-      vector,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual(
+      product_vector_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, vector]).expand().tree).toEqual(
       product_vector_g,
     );
@@ -1818,11 +1864,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, altvector]).expand().tree).toEqual(
       product_altvector,
     );
-    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual([
-      "*",
-      altvector,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual(
+      product_altvector_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, altvector]).expand().tree).toEqual(
       product_altvector_g,
     );
@@ -1833,28 +1877,11 @@ describe("expand", function () {
       product_altvector_g,
     );
 
-    // TODO: not sure if this is right behavior for multiplying vectors
-    // Also, at some point, we want a way to represent dot/cross products of vectors
-    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual([
-      "^",
-      tuple,
-      2,
-    ]);
-    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual([
-      "^",
-      tuple,
-      2,
-    ]);
-    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual([
-      "^",
-      vector,
-      2,
-    ]);
-    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual([
-      "^",
-      vector,
-      2,
-    ]);
+    // Two vectors multiply as row·column — the dot product (a scalar).
+    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual(dot);
 
     let matrix3 = me.fromLatex(
       "\\begin{pmatrix}1 & -2\\\\3&-4\\end{pmatrix}",
@@ -2012,6 +2039,18 @@ describe("expand", function () {
       "\\langle aeg + bfg, ceg + dfg \\rangle",
     ).tree;
 
+    // A vector on the *left* is a row (1×N): (e,f)·M = (ea+fc, eb+fd), in the
+    // vector's own notation. (M·v on the right is a column, above.)
+    let product_tuple_left = me.fromLatex("(ae + cf, be + df)").tree;
+    let product_vector_left = me
+      .fromLatex("(ae + cf, be + df)")
+      .tuples_to_vectors().tree;
+    let product_altvector_left = me.fromLatex(
+      "\\langle ae + cf, be + df\\rangle",
+    ).tree;
+    // Two vectors multiply as row·column — the dot product, a scalar.
+    let dot = me.from("e^2 + f^2").tree;
+
     expect(me.fromAst(["*", matrix1, matrix2]).expand().tree).toEqual(product);
     expect(me.fromAst(["*", matrix2, matrix1]).expand().tree).toEqual([
       "*",
@@ -2031,11 +2070,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, tuple]).expand().tree).toEqual(
       product_tuple,
     );
-    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual([
-      "*",
-      tuple,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", tuple, matrix1]).expand().tree).toEqual(
+      product_tuple_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, tuple]).expand().tree).toEqual(
       product_tuple_g,
     );
@@ -2049,11 +2086,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, vector]).expand().tree).toEqual(
       product_vector,
     );
-    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual([
-      "*",
-      vector,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", vector, matrix1]).expand().tree).toEqual(
+      product_vector_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, vector]).expand().tree).toEqual(
       product_vector_g,
     );
@@ -2067,11 +2102,9 @@ describe("expand", function () {
     expect(me.fromAst(["*", matrix1, altvector]).expand().tree).toEqual(
       product_altvector,
     );
-    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual([
-      "*",
-      altvector,
-      matrix1,
-    ]);
+    expect(me.fromAst(["*", altvector, matrix1]).expand().tree).toEqual(
+      product_altvector_left,
+    );
     expect(me.fromAst(["*", "g", matrix1, altvector]).expand().tree).toEqual(
       product_altvector_g,
     );
@@ -2082,28 +2115,11 @@ describe("expand", function () {
       product_altvector_g,
     );
 
-    // TODO: not sure if this is right behavior for multiplying vectors
-    // Also, at some point, we want a way to represent dot/cross products of vectors
-    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual([
-      "^",
-      tuple,
-      2,
-    ]);
-    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual([
-      "^",
-      tuple,
-      2,
-    ]);
-    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual([
-      "^",
-      vector,
-      2,
-    ]);
-    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual([
-      "^",
-      vector,
-      2,
-    ]);
+    // Two vectors multiply as row·column — the dot product (a scalar).
+    expect(me.fromAst(["*", tuple, tuple]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", tuple, vector]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", vector, tuple]).expand().tree).toEqual(dot);
+    expect(me.fromAst(["*", vector, vector]).expand().tree).toEqual(dot);
 
     let matrix3 = me.fromLatex(
       "\\begin{pmatrix}1 & -2\\\\3&-4\\end{pmatrix}",

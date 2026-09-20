@@ -296,9 +296,7 @@ fn null_vector(a: &[f64], n: usize, lambda: Complex64) -> Vec<Complex64> {
     }
     // Free column: first column not used as a pivot (guaranteed since
     // A − λI is singular up to roundoff; fall back to the last column).
-    let free = (0..n)
-        .find(|c| !pivot_cols.contains(c))
-        .unwrap_or(n - 1);
+    let free = (0..n).find(|c| !pivot_cols.contains(c)).unwrap_or(n - 1);
     let mut x = vec![Complex64::new(0.0, 0.0); n];
     x[free] = Complex64::new(1.0, 0.0);
     // Back-substitute pivot rows in reverse.

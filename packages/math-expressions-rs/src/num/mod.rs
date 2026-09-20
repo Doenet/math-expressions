@@ -7,7 +7,9 @@ mod decimal;
 mod gcd;
 mod number;
 
-pub use number::{BigNumber, Number, F64};
+pub use number::{BigNumber, Number, Spelling, F64};
 
 // Used by the printer's f64 shortest-round-trip rendering.
-pub(crate) use decimal::shortest_digits;
+pub(crate) use decimal::{
+    js_exponential_parts, js_f64_to_string, positional_from_digits, shortest_digits,
+};

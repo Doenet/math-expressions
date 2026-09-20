@@ -14,7 +14,7 @@
 //!   (x^a)*b).
 
 use super::common::{
-    atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string,
+    apply, atom_string, is_positive_number, negate_number, other_op, parse_js_float, sign_string,
     MAX_PARSE_DEPTH, P,
 };
 use super::error::ParseError;
@@ -34,6 +34,15 @@ pub struct TextToAstOptions {
     pub function_symbols: Vec<String>,
     pub operator_symbols: Vec<String>,
     pub parse_leibniz_notation: bool,
+    /// Read `3.2E-12` as a single number rather than `3.2·E − 12`.
+    ///
+    /// **Uppercase `E` only, and only at the end of the expression or before
+    /// `, | ) } ]`.** Both restrictions are load-bearing rather than
+    /// oversights: `e` is Euler's number in this grammar, so `1.2e-3` is
+    /// `1.2·e − 3` whatever this flag says, and the delimiter rule keeps
+    /// `3.1E-3 + 2` from swallowing the `+ 2`. Legacy pinned both
+    /// (`spec/quick_text-to-ast.spec.js`), and DoenetML reported the option as
+    /// having no effect after testing it with a lowercase `e`.
     pub parse_scientific_notation: bool,
     /// Decimal / argument-separator notation.
     pub notation: crate::notation::NumberNotation,
@@ -236,7 +245,12 @@ impl TextToAst {
 
         if self.token.ttype == Tok::Number {
             // Decimals parse to exact rationals, never floats (§3a).
-            result = Some(Expr::Num(Number::from_decimal_str(self.opts.notation.normalize_number(&self.token.text).as_ref())));
+            result = Some(Expr::Num(Number::from_decimal_str(
+                self.opts
+                    .notation
+                    .normalize_number(&self.token.text)
+                    .as_ref(),
+            )));
             self.advance()?;
         } else if self.token.ttype == Tok::Infinity {
             result = Some(Expr::Const(MathConst::Inf));
@@ -331,7 +345,7 @@ impl TextToAst {
                 return Err(self.err("Expecting |"));
             }
             self.advance()?;
-            result = Some(Expr::Apply(Box::new(Expr::sym("abs")), vec![st]));
+            result = Some(apply(Expr::sym("abs"), vec![st]));
         } else if self.token.ttype == Tok::Angle {
             result = self.angle_factor(p)?;
         } else if self.token.ttype == Tok::Int {
@@ -369,17 +383,30 @@ impl TextToAst {
 
         if p.in_subsuperscript {
             if must_apply {
-                result = Expr::Apply(Box::new(result), vec![Expr::Blank]);
+                result = apply(result, vec![Expr::Blank]);
             }
         } else {
+            // Prime/caret runs each wrap `result` one level deeper; charge that
+            // growth against `MAX_PARSE_DEPTH` (as the shared postfix loop does)
+            // so a long run errors cleanly instead of building a spine a later
+            // recursive pass overflows on — trapping the wasm instance.
+            let mut nesting = 0usize;
             while self.token.ttype == Tok::Prime {
                 self.tick()?;
+                nesting += 1;
+                if self.depth + nesting > MAX_PARSE_DEPTH {
+                    return Err(self.err("Expression too deeply nested"));
+                }
                 result = Expr::Prime(Box::new(result));
                 self.advance()?;
             }
 
             while self.token.ttype == Tok::Caret {
                 self.tick()?;
+                nesting += 1;
+                if self.depth + nesting > MAX_PARSE_DEPTH {
+                    return Err(self.err("Expression too deeply nested"));
+                }
                 self.advance()?;
                 let superscript = self.get_subsuperscript(P {
                     parse_absolute_value: p.parse_absolute_value,
@@ -401,7 +428,7 @@ impl TextToAst {
                     Expr::Seq(SeqKind::List, xs) => xs,
                     other => vec![other],
                 };
-                result = Expr::Apply(Box::new(result), args);
+                result = apply(result, args);
             } else if must_apply {
                 // an applied function symbol cannot omit its argument
                 if !self.opts.allow_simplified_function_application {
@@ -414,7 +441,7 @@ impl TextToAst {
                         ..P::default()
                     })?
                     .unwrap_or(Expr::Blank);
-                result = Expr::Apply(Box::new(result), vec![arg]);
+                result = apply(result, vec![arg]);
             }
         }
 
@@ -561,7 +588,7 @@ impl TextToAst {
             ops.extend(ds);
         }
 
-        Ok(Expr::Apply(Box::new(head), vec![integrand]))
+        Ok(apply(head, vec![integrand]))
     }
 
     /// Attempt to parse a derivative in Leibniz notation (dy/dx, ∂²f/∂x∂y…).
@@ -600,7 +627,12 @@ impl TextToAst {
                 if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
-                n_deriv = parse_js_float(self.opts.notation.normalize_number(&self.token.text).as_ref());
+                n_deriv = parse_js_float(
+                    self.opts
+                        .notation
+                        .normalize_number(&self.token.text)
+                        .as_ref(),
+                );
                 if n_deriv.fract() != 0.0 {
                     return Ok(None);
                 }
@@ -672,7 +704,12 @@ impl TextToAst {
                 if self.token.ttype != Tok::Number {
                     return Ok(None);
                 }
-                this_exponent = parse_js_float(self.opts.notation.normalize_number(&self.token.text).as_ref());
+                this_exponent = parse_js_float(
+                    self.opts
+                        .notation
+                        .normalize_number(&self.token.text)
+                        .as_ref(),
+                );
                 if this_exponent.fract() != 0.0 {
                     return Ok(None);
                 }

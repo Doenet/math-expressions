@@ -11,7 +11,10 @@ impl Expression {
 
     /// Logical simplification: De Morgan / not-pushdown (JS `simplify_logical`).
     pub fn simplify_logical(&self) -> Expression {
-        self.derive(math_expressions::simplify_logical(&self.0, &math_expressions::Assumptions::new()))
+        self.derive(math_expressions::simplify_logical(
+            &self.0,
+            &math_expressions::Assumptions::new(),
+        ))
     }
 
     /// Collect like terms and factors. Backed by the canonical simplifier
@@ -65,6 +68,26 @@ impl Expression {
         self.derive(math_expressions::normalize_function_names(&self.0))
     }
 
+    /// Move an applied function's exponent or primes outside the application:
+    /// `sin^2(x)` → `(sin x)^2`, `f'(x)` → `(f x)'` (JS
+    /// `normalize_applied_functions`).
+    pub fn normalize_applied_functions(&self) -> Expression {
+        self.derive(math_expressions::normalize_applied_functions(&self.0))
+    }
+
+    /// Push a negation into the leading number of what it negates: `-(3)` → `-3`,
+    /// `-(3 x)` → `(-3) x` (JS `normalize_negative_numbers`).
+    pub fn normalize_negative_numbers(&self) -> Expression {
+        self.derive(math_expressions::normalize_negative_numbers(&self.0))
+    }
+
+    /// Rewrite every relation carrying more than one fact into the `and`/`or`
+    /// of two-sided comparisons it abbreviates: `a < b < c` → `a < b and b < c`,
+    /// `x ∈ (a,b]` → `x > a and x ≤ b` (JS `expand_relations`).
+    pub fn expand_relations(&self) -> Expression {
+        self.derive(math_expressions::expand_relations(&self.0))
+    }
+
     /// Reinterpret tuples as vectors (JS `tuples_to_vectors`).
     pub fn tuples_to_vectors(&self) -> Expression {
         self.derive(math_expressions::tuples_to_vectors(&self.0))
@@ -76,8 +99,10 @@ impl Expression {
     }
 
     /// Collapse subscripts into string symbols: `x_1` → the symbol `x_1`.
-    pub fn subscripts_to_strings(&self) -> Expression {
-        self.derive(math_expressions::subscripts_to_strings(&self.0))
+    /// With `force`, a compound subscript collapses too, via its text spelling
+    /// (`(x^3)_2`).
+    pub fn subscripts_to_strings(&self, force: bool) -> Expression {
+        self.derive(math_expressions::subscripts_to_strings_with(&self.0, force))
     }
 
     /// Inverse of [`Self::subscripts_to_strings`].
@@ -88,5 +113,14 @@ impl Expression {
     /// Convert 2-element tuples/arrays into interval notation (JS `to_intervals`).
     pub fn to_intervals(&self) -> Expression {
         self.derive(math_expressions::to_intervals(&self.0))
+    }
+
+    /// Move `+`/scalar-`*` inside vector and matrix containers — the shape pass
+    /// answer grading runs before slicing an expression into components (JS
+    /// `perform_vector_matrix_additions_scalar_multiplications`).
+    pub fn perform_vector_matrix_additions_scalar_multiplications(&self) -> Expression {
+        self.derive(
+            math_expressions::perform_vector_matrix_additions_scalar_multiplications(&self.0),
+        )
     }
 }

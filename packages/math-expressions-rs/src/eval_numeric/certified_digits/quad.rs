@@ -20,9 +20,9 @@
 
 use super::tape::{compile, CompiledExpr, Op};
 use super::{kernels::registry, kernels::FixId, needed_bits, Precise};
+use crate::eval_numeric::certified_digits::fix::MpFix;
 use crate::expr::Expr;
 use crate::num::Number;
-use crate::eval_numeric::certified_digits::fix::MpFix;
 use std::collections::BinaryHeap;
 
 const EPS: f64 = f64::EPSILON;
@@ -115,12 +115,7 @@ pub(crate) fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
                 let (head, rest) = stack.split_at(start + 1);
                 let mut acc = head[start];
                 for &t in rest {
-                    let cs = [
-                        acc.lo * t.lo,
-                        acc.lo * t.hi,
-                        acc.hi * t.lo,
-                        acc.hi * t.hi,
-                    ];
+                    let cs = [acc.lo * t.lo, acc.lo * t.hi, acc.hi * t.lo, acc.hi * t.hi];
                     acc = Iv {
                         lo: cs.iter().cloned().fold(f64::INFINITY, f64::min),
                         hi: cs.iter().cloned().fold(f64::NEG_INFINITY, f64::max),
@@ -139,7 +134,11 @@ pub(crate) fn interval_eval(tape: &CompiledExpr, x: Iv) -> Option<Iv> {
                 let f = |v: f64| v.powi(k.clamp(i64::from(i32::MIN), i64::from(i32::MAX)) as i32);
                 if k >= 0 && k % 2 == 0 {
                     let hi = f(b.lo.abs().max(b.hi.abs()));
-                    let lo = if b.contains_zero() { 0.0 } else { f(b.lo.abs().min(b.hi.abs())) };
+                    let lo = if b.contains_zero() {
+                        0.0
+                    } else {
+                        f(b.lo.abs().min(b.hi.abs()))
+                    };
                     Iv { lo, hi }.widen()
                 } else {
                     // Odd power, or negative power on a sign-definite
@@ -220,7 +219,11 @@ fn interval_call(fix: FixId, a: Iv) -> Option<Iv> {
             if a.hi - a.lo >= 2.0 * PI {
                 Iv { lo: -1.0, hi: 1.0 }
             } else {
-                let f: fn(f64) -> f64 = if fix == FixId::Sin { f64::sin } else { f64::cos };
+                let f: fn(f64) -> f64 = if fix == FixId::Sin {
+                    f64::sin
+                } else {
+                    f64::cos
+                };
                 let mut lo = f(a.lo).min(f(a.hi));
                 let mut hi = f(a.lo).max(f(a.hi));
                 // Critical points: sin at π/2 + kπ, cos at kπ (padded k-range
@@ -328,8 +331,8 @@ fn eval_segment(f: &CompiledExpr, d4: &CompiledExpr, lo: f64, hi: f64, depth: u3
     let (fm, em) = f.eval_f64(&[m])?;
     let (fr, er) = f.eval_f64(&[hi])?;
     let val = w / 6.0 * (fl + 4.0 * fm + fr);
-    let node_err = w / 6.0 * (el + 4.0 * em + er)
-        + 8.0 * EPS * w * (fl.abs() + 4.0 * fm.abs() + fr.abs());
+    let node_err =
+        w / 6.0 * (el + 4.0 * em + er) + 8.0 * EPS * w * (fl.abs() + 4.0 * fm.abs() + fr.abs());
     let d4iv = interval_eval(d4, Iv { lo, hi })?;
     let rem_err = w.powi(5) / 2880.0 * d4iv.mag() * (1.0 + 32.0 * EPS);
     if !val.is_finite() || !node_err.is_finite() || !rem_err.is_finite() {
@@ -348,13 +351,7 @@ fn eval_segment(f: &CompiledExpr, d4: &CompiledExpr, lo: f64, hi: f64, depth: u3
 /// Definite integral of `f` in `var` over `[a, b]` to `digits` significant
 /// digits, certified ("or better": the returned `Bounded` value is within
 /// ±1 ulp at its scale, and that ulp is at or below the digit target).
-pub fn integrate_to_precision(
-    f: &Expr,
-    var: &str,
-    a: &Expr,
-    b: &Expr,
-    digits: usize,
-) -> Precise {
+pub fn integrate_to_precision(f: &Expr, var: &str, a: &Expr, b: &Expr, digits: usize) -> Precise {
     let digits = digits.max(1);
     if digits > 13 {
         return Precise::Unknown("quadrature is certified through f64 nodes (≤ 13 digits)");
@@ -365,7 +362,11 @@ pub fn integrate_to_precision(
     if lo == hi {
         return Precise::Exact(Number::Int(0));
     }
-    let (lo, hi, negate) = if lo < hi { (lo, hi, false) } else { (hi, lo, true) };
+    let (lo, hi, negate) = if lo < hi {
+        (lo, hi, false)
+    } else {
+        (hi, lo, true)
+    };
 
     let fc = crate::normalize::simplify_core(f);
     if crate::ops::variables(&fc)
@@ -443,10 +444,7 @@ pub(crate) fn adaptive_quadrature(
     let mut pending: Vec<(f64, f64, u32)> = vec![(lo, hi, 0)];
     let mut segs = 0usize;
     let (mut sum_val, mut sum_err) = (0.0f64, 0.0f64);
-    let push = |seg: Seg,
-                heap: &mut BinaryHeap<Seg>,
-                sum_val: &mut f64,
-                sum_err: &mut f64| {
+    let push = |seg: Seg, heap: &mut BinaryHeap<Seg>, sum_val: &mut f64, sum_err: &mut f64| {
         *sum_val += seg.val;
         *sum_err += seg.err();
         heap.push(seg);

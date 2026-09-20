@@ -25,7 +25,11 @@ fn add_get_remove() {
     a.add(&parse("x > 0"));
     // Stored canonically; compare via syntactic equality on the canonical form.
     let got = a.get("x").unwrap();
-    assert!(equals_syntactic(&got, &parse("0 < x"), &EqOptions::default()));
+    assert!(equals_syntactic(
+        &got,
+        &parse("0 < x"),
+        &EqOptions::default()
+    ));
     a.remove(&parse("x > 0"));
     assert!(a.get("x").is_none());
     // And-splitting files each conjunct.

@@ -65,17 +65,17 @@ Draft — designed but **not started** (§B.4–B.6): LIMITS, FULL_SIMPLIFY,
 SINGULARITY_TRANSFORM. These are greenfield design docs with zero
 implementation; none is a partial port.
 
-### B.1 STACK_SAFETY_PLAN — item 22 done; 21, 23–26 open (highest risk)
+### B.1 STACK_SAFETY_PLAN — 21, 22 done, 26 partial; 23–25 open (highest risk)
 
 Recursive traversals can overflow the ~1 MB wasm32 shadow stack on deep
 expressions (including on `Drop` — freeing a deep tree crashes). Sequenced:
 
-- [ ] 21. Iterative `Drop` for `Expr` (kills the "freeing the tree crashes" class)
+- [x] 21. Iterative `Drop` for `Expr` (kills the "freeing the tree crashes" class) — `expr/teardown.rs`, a `Vec<Expr>` worklist called from `impl Drop for Expression` in the wasm crate; a free function rather than `impl Drop for Expr`, which would make by-value `match` destructuring an E0509 error
 - [x] 22. Parser depth cap at the ~4 self-nesting entry points (`MAX_PARSE_DEPTH = 64`, `enter`/`leave` in both parsers, `tests/stack_safety.rs`); `from_js` documents its reliance on serde_json's 128-depth limit rather than a bespoke check
-- [ ] 23. `children(&Expr)` helper + iterative post-order `fold` driver in `expr/tree.rs`
+- [ ] 23. `children(&Expr)` helper + iterative post-order `fold` driver in `expr/tree.rs` — *half done*: `Expr::children()` and `map_children` exist in `expr/visit.rs` (27 files use them); the `fold`/`Step`/`Prune` driver does not, and neither does a by-value `drain_children`
 - [ ] 24. Port the ~8 passes to the driver, in dependency order: `flatten` → `canonicalize` → `cmp` → `eval_complex`/`free_symbols`/`contains_blank`/`coerce_seqs` → `to_js`/`from_js` → formatters → `convert_units_in_term`
 - [ ] 25. Replace `opaque_key`; decide whether to replace derived `PartialEq` with an iterative version (per frame-size measurement)
-- [ ] 26. Verification: small-stack CI test (128 KiB threads), 10⁵-deep-paren inputs, document `-zstack-size`
+- [ ] 26. Verification: small-stack CI test (128 KiB threads), 10⁵-deep-paren inputs, document `-zstack-size` — *partial*: `tests/stack_safety.rs` has the 10⁵-deep-paren test and a 256 KB small-stack test; the `-zstack-size` flag is still nowhere in the build config
 
 > Note: shares a `children()`/`for_each_child` primitive with IMPROVEMENT
 > Phase 3/4 (items 30, 32) — build it once.

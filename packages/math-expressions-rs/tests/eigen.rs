@@ -10,7 +10,7 @@
 use math_expressions::eval_numeric::complex::{eval_complex, Env};
 use math_expressions::matrix::{char_poly, eigenvalues, eigenvectors};
 use math_expressions::{
-    canonicalize, equals, expand, simplify, Assumptions, EqOptions, Expr, TextToAst,
+    canonicalize, equals, expand, simplify, Assumptions, EqOptions, Expr, Mat, TextToAst,
     TextToAstOptions,
 };
 
@@ -32,19 +32,14 @@ fn subst_t(p: &Expr, v: &Expr) -> Expr {
 /// Build a literal matrix from entry strings (row-major).
 fn mat(rows: u32, cols: u32, entries: &[&str]) -> Expr {
     assert_eq!(entries.len() as u32, rows * cols);
-    Expr::Matrix {
-        rows,
-        cols,
-        entries: entries.iter().map(|s| parse(s)).collect(),
-    }
+    Expr::Matrix(
+        Mat::new(rows, cols, entries.iter().map(|s| parse(s)).collect())
+            .expect("test matrix shape"),
+    )
 }
 
 fn column(entries: &[Expr]) -> Expr {
-    Expr::Matrix {
-        rows: entries.len() as u32,
-        cols: 1,
-        entries: entries.to_vec(),
-    }
+    Expr::Matrix(Mat::new(entries.len() as u32, 1, entries.to_vec()).expect("test matrix shape"))
 }
 
 fn zero_column(n: usize) -> Expr {
@@ -109,11 +104,7 @@ fn companion(cs: &[&str]) -> Expr {
             }
         }
     }
-    Expr::Matrix {
-        rows: n as u32,
-        cols: n as u32,
-        entries,
-    }
+    Expr::Matrix(Mat::new(n as u32, n as u32, entries).expect("test matrix shape"))
 }
 
 // ================= M3: characteristic polynomial =================
@@ -129,10 +120,7 @@ fn char_poly_rational_2x2() {
 fn char_poly_symbolic_2x2() {
     let a = mat(2, 2, &["a", "b", "c", "d"]);
     let p = char_poly(&a, "x").expect("char poly");
-    assert!(
-        eq(&p, &parse("x^2 - (a+d)x + (a d - b c)")),
-        "got {p:?}"
-    );
+    assert!(eq(&p, &parse("x^2 - (a+d)x + (a d - b c)")), "got {p:?}");
 }
 
 #[test]
@@ -259,7 +247,10 @@ fn eigenvalues_degree4_index_ordering() {
         .collect();
     assert!(zs[0].im.abs() < 1e-12 && zs[1].im.abs() < 1e-12);
     assert!(zs[0].re < zs[1].re, "real roots ascending");
-    assert!(zs[2].im < 0.0 && zs[3].im > 0.0, "conjugates, negative first");
+    assert!(
+        zs[2].im < 0.0 && zs[3].im > 0.0,
+        "conjugates, negative first"
+    );
     assert!((zs[2].re - zs[3].re).abs() < 1e-9);
 }
 
@@ -338,7 +329,11 @@ fn eigenvectors_defective_matrix_shows_multiplicity_gap() {
     assert_eq!(pairs.len(), 1);
     assert!(eq(&pairs[0].value, &parse("0")));
     assert_eq!(pairs[0].alg_mult, 2);
-    assert_eq!(pairs[0].basis.len(), 1, "defective: geometric 1 < algebraic 2");
+    assert_eq!(
+        pairs[0].basis.len(),
+        1,
+        "defective: geometric 1 < algebraic 2"
+    );
     assert_eigen_pair(&a, &pairs[0].value, &pairs[0].basis[0], "defective");
 }
 
@@ -406,11 +401,7 @@ fn eigenvectors_block_diagonal_discovers_factors() {
             entries.push(parse(&s));
         }
     }
-    let a = Expr::Matrix {
-        rows: 6,
-        cols: 6,
-        entries,
-    };
+    let a = Expr::Matrix(Mat::new(6, 6, entries).expect("test matrix shape"));
     let pairs = eigenvectors(&a, &Assumptions::new()).expect("eigenvectors");
     let total: u32 = pairs.iter().map(|p| p.alg_mult).sum();
     assert_eq!(total, 6);
@@ -425,9 +416,18 @@ fn eigenvectors_block_diagonal_discovers_factors() {
 #[test]
 fn eigen_self_verification_sweep() {
     let cases: Vec<(&str, Expr)> = vec![
-        ("triangular", mat(3, 3, &["1", "2", "3", "0", "4", "5", "0", "0", "6"])),
-        ("singular", mat(3, 3, &["1", "2", "3", "4", "5", "6", "7", "8", "9"])),
-        ("symmetric", mat(3, 3, &["2", "1", "0", "1", "2", "1", "0", "1", "2"])),
+        (
+            "triangular",
+            mat(3, 3, &["1", "2", "3", "0", "4", "5", "0", "0", "6"]),
+        ),
+        (
+            "singular",
+            mat(3, 3, &["1", "2", "3", "4", "5", "6", "7", "8", "9"]),
+        ),
+        (
+            "symmetric",
+            mat(3, 3, &["2", "1", "0", "1", "2", "1", "0", "1", "2"]),
+        ),
         (
             "integer 4×4",
             mat(
@@ -444,12 +444,13 @@ fn eigen_self_verification_sweep() {
         let p = char_poly(a, "t").unwrap_or_else(|| panic!("{name}: char poly"));
         let vals = eigenvalues(a, &Assumptions::new()).unwrap_or_else(|| panic!("{name}: values"));
         let n: u32 = vals.iter().map(|(_, m)| m).sum();
-        let Expr::Matrix { rows, .. } = a else { unreachable!() };
-        assert_eq!(n, *rows, "{name}: multiplicities sum to n");
+        let Expr::Matrix(m) = a else { unreachable!() };
+        assert_eq!(n, m.rows(), "{name}: multiplicities sum to n");
         for (v, _) in &vals {
             assert_annihilates(&p, v, name);
         }
-        let pairs = eigenvectors(a, &Assumptions::new()).unwrap_or_else(|| panic!("{name}: vectors"));
+        let pairs =
+            eigenvectors(a, &Assumptions::new()).unwrap_or_else(|| panic!("{name}: vectors"));
         for pair in &pairs {
             assert!(!pair.basis.is_empty(), "{name}: at least one eigenvector");
             for v in &pair.basis {
@@ -486,7 +487,11 @@ fn symbolic_larger_matrices_return_none() {
 #[test]
 fn eigen_caps_are_honest_refusals() {
     use math_expressions::resource_limits::{self, ResourceLimits};
-    assert!(eigenvalues(&mat(2, 3, &["1", "2", "3", "4", "5", "6"]), &Assumptions::new()).is_none());
+    assert!(eigenvalues(
+        &mat(2, 3, &["1", "2", "3", "4", "5", "6"]),
+        &Assumptions::new()
+    )
+    .is_none());
     assert!(eigenvalues(&parse("x"), &Assumptions::new()).is_none());
     // Degree cap: a cubic RootOf is refused under max_rootof_degree = 2.
     let a = companion(&["1", "1", "0"]);

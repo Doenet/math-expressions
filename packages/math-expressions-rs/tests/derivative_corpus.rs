@@ -86,7 +86,11 @@ fn derivative_corpus_no_regressions() {
         new.is_empty(),
         "{} NEW derivative divergences from JS:\n{}",
         new.len(),
-        new.iter().take(40).map(|k| format!("  {k}")).collect::<Vec<_>>().join("\n"),
+        new.iter()
+            .take(40)
+            .map(|k| format!("  {k}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
 }
 

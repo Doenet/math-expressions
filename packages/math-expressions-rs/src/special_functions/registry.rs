@@ -3,7 +3,7 @@
 //! built from that list.
 
 use super::def::FnDef;
-use super::{exp_log, hyperbolic, hyperbolic_inverse, misc, powers, trig, trig_inverse};
+use super::{aggregate, exp_log, hyperbolic, hyperbolic_inverse, misc, powers, trig, trig_inverse};
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -39,6 +39,7 @@ pub static ALL: &[&FnDef] = &[
     &exp_log::EXP,
     &exp_log::LOG,
     &exp_log::LOG10,
+    &exp_log::LOG2,
     &powers::SQRT,
     &powers::CBRT,
     &powers::NTHROOT,
@@ -59,6 +60,15 @@ pub static ALL: &[&FnDef] = &[
     &misc::ROUND,
     &misc::ROOTOF,
     &misc::FACTORIAL,
+    &aggregate::SUM,
+    &aggregate::PROD,
+    &aggregate::COUNT,
+    &aggregate::MEAN,
+    &aggregate::MEDIAN,
+    &aggregate::MAX,
+    &aggregate::MIN,
+    &aggregate::VARIANCE,
+    &aggregate::STD,
 ];
 
 /// Name/alias → definition, built once. Duplicate names or aliases are a

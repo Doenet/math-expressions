@@ -1111,7 +1111,8 @@ impl Lexer {
         }
 
         // Number rules come first (they are prepended to the table in JS).
-        if let Some(len) = scan_number(self.rest(), self.sci_notation, self.flavor, &self.notation) {
+        if let Some(len) = scan_number(self.rest(), self.sci_notation, self.flavor, &self.notation)
+        {
             let text = self.consume(len);
             return Token::simple(Tok::Number, &text);
         }

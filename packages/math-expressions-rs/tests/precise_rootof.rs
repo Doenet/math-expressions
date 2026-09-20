@@ -3,7 +3,7 @@
 //! Newton with the rigorous n·|p(z)/p′(z)| bound for complex ones.
 
 use math_expressions::eval_numeric::certified_digits::{evaluate_to_precision, Precise};
-use math_expressions::{Expr, TextToAst, TextToAstOptions};
+use math_expressions::{Expr, Mat, TextToAst, TextToAstOptions};
 
 fn parse(s: &str) -> Expr {
     TextToAst::new(TextToAstOptions::default())
@@ -85,13 +85,14 @@ fn complex_rootof_components() {
     let Precise::Complex { re: re2, im: im2 } = &p2 else {
         panic!("expected complex")
     };
-    let take = |m: &math_expressions::eval_numeric::certified_digits::fix::MpFix, d: usize| -> String {
-        m.to_decimal_string(d)
-            .chars()
-            .filter(|c| c.is_ascii_digit())
-            .take(d)
-            .collect()
-    };
+    let take =
+        |m: &math_expressions::eval_numeric::certified_digits::fix::MpFix, d: usize| -> String {
+            m.to_decimal_string(d)
+                .chars()
+                .filter(|c| c.is_ascii_digit())
+                .take(d)
+                .collect()
+        };
     assert_eq!(take(re, 39), take(re2, 39));
     assert_eq!(take(im, 39), take(im2, 39));
     // And both components match the f64 seed to ~1e-12.
@@ -121,14 +122,17 @@ fn conjugate_pair_sum_is_real() {
 fn eigenvalue_end_to_end_precision() {
     use math_expressions::{eigenvalues, Assumptions};
     // Companion of t³ − t − 1 → its real eigenvalue is the plastic number.
-    let a = Expr::Matrix {
-        rows: 3,
-        cols: 3,
-        entries: ["0", "0", "1", "1", "0", "1", "0", "1", "0"]
-            .iter()
-            .map(|s| parse(s))
-            .collect(),
-    };
+    let a = Expr::Matrix(
+        Mat::new(
+            3,
+            3,
+            ["0", "0", "1", "1", "0", "1", "0", "1", "0"]
+                .iter()
+                .map(|s| parse(s))
+                .collect(),
+        )
+        .expect("3x3 has 9 entries"),
+    );
     let vals = eigenvalues(&a, &Assumptions::new()).expect("eigenvalues");
     let p = evaluate_to_precision(&vals[0].0, 50);
     assert_digits_eq(&digits_of(&p, 50), PLASTIC, 50);

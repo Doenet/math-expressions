@@ -275,12 +275,7 @@ thread_local! {
 fn cached(name: &'static str, scale: i32, compute: impl Fn(i32) -> MpFix) -> MpFix {
     // The borrow must not span `compute` — `const_e` computes through
     // `exp_fix`, which itself asks the cache for ln 2 (re-borrow).
-    let hit = CONSTS.with(|c| {
-        c.borrow()
-            .get(name)
-            .filter(|v| v.scale <= scale)
-            .cloned()
-    });
+    let hit = CONSTS.with(|c| c.borrow().get(name).filter(|v| v.scale <= scale).cloned());
     if let Some(v) = hit {
         return v.rescale(scale);
     }
@@ -511,10 +506,7 @@ fn sin_cos_reduced(r: &MpFix, p: i32, budget: &mut Budget) -> Option<(MpFix, MpF
     let arg = r.at_scale(op_prec.min(r.scale)).at_scale(op_prec);
     let s = sin_series(&arg.mant, op_prec, p, budget)?;
     let c = cos_series(&arg.mant, op_prec, p, budget)?;
-    Some((
-        MpFix { mant: s, scale: p },
-        MpFix { mant: c, scale: p },
-    ))
+    Some((MpFix { mant: s, scale: p }, MpFix { mant: c, scale: p }))
 }
 
 pub fn sin_fix(x: &MpFix, s: i32, budget: &mut Budget) -> Option<MpFix> {
@@ -748,4 +740,3 @@ pub fn log10_fix(x: &MpFix, s: i32, budget: &mut Budget) -> Option<MpFix> {
     let ln10 = const_ln10(g - 8);
     div_fix(&ln, &ln10, s)
 }
-

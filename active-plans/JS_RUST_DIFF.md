@@ -202,21 +202,23 @@ Rust adds a `MAX_PARSE_DEPTH = 64` recursion guard (no JS counterpart).
 
 | JS `astToLatex` option | Rust `LatexOpts` |
 |---|---|
-| `padToDigits`, `padToDecimals` | ❌ |
-| `avoidScientificNotation` | ❌ |
-| `showBlanks` (default true) | ❌ |
+| `padToDigits`, `padToDecimals` | ✅ `pad_to_digits`, `pad_to_decimals` |
+| `avoidScientificNotation` | ✅ `avoid_scientific_notation` |
+| `showBlanks` (default true) | ✅ `show_blanks` |
 | `matrixEnvironment` | ❌ |
 | `convertLatexSymbols` / `allowedLatexSymbols` | ❌ |
-
-`LatexOpts` is an **empty struct**.
 
 | JS `astToText` option | Rust `TextOpts` |
 |---|---|
 | `output_unicode` | ✅ `unicode` |
-| `padToDigits`, `padToDecimals` | ❌ |
-| `avoidScientificNotation` | ❌ |
-| `showBlanks` | ❌ |
-| `explicitMultiplicationSymbols` | ❌ |
+| `padToDigits`, `padToDecimals` | ✅ `pad_to_digits`, `pad_to_decimals` |
+| `avoidScientificNotation` | ✅ `avoid_scientific_notation` |
+| `showBlanks` | ✅ `show_blanks` |
+| `explicitMultiplicationSymbols` | ✅ `explicit_multiplication_symbols` |
+
+The js-compat `astToText`/`astToLatex` classes forward these from their
+constructor params (`converters/render-options.ts`); `Expression.toString`/
+`toLatex` forward whatever options object they are handed.
 
 Also: JS `ast→mathjs` deliberately **throws** on unsupported input (booleans,
 malformed AST, non-integer matrix dims) and asserts it — no Rust analog.

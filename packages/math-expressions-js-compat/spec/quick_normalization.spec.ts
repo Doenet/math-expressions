@@ -1,17 +1,25 @@
 import me from "../lib/math-expressions";
 import _ from "underscore";
 
+// Two of these expectations point the opposite way from the original JS, which
+// folded `e^x → exp(x)` and `sqrt(x) → x^0.5`. The Rust core folds `exp(x)` into
+// `e^x` instead, and leaves `sqrt` alone — both deliberate, and documented at
+// `ops::transforms::normalize_function_names`. The short version: this engine
+// canonicalizes powers, so powers are where the spellings have to meet
+// (`e^(-t)` simplifies to `1/e^t` while `exp(-t)` stays applied, so folding the
+// JS way left the two apart), and `sqrt` vs `x^(1/2)` is reconciled by `equals`
+// rather than by rewriting.
 describe("normalize function names", function () {
   var trees = {
     "ln(x)": ["apply", "log", "x"],
-    "e^x": ["apply", "exp", "x"],
+    "e^x": ["^", "e", "x"],
     "arccsc(x)": ["apply", "acsc", "x"],
     "arctan^2(x)": ["apply", ["^", "atan", 2], "x"],
-    "1-e^(x/y)": ["+", 1, ["-", ["apply", "exp", ["/", "x", "y"]]]],
-    "5/sqrt(2y)": ["/", 5, ["^", ["*", 2, "y"], 0.5]],
-    "ln(e^x)": ["apply", "log", ["apply", "exp", "x"]],
-    "e^(ln(x))": ["apply", "exp", ["apply", "log", "x"]],
-    "sqrt(sqrt(x))": ["^", ["^", "x", 0.5], 0.5],
+    "1-e^(x/y)": ["+", 1, ["-", ["^", "e", ["/", "x", "y"]]]],
+    "5/sqrt(2y)": ["/", 5, ["apply", "sqrt", ["*", 2, "y"]]],
+    "ln(e^x)": ["apply", "log", ["^", "e", "x"]],
+    "e^(ln(x))": ["^", "e", ["apply", "log", "x"]],
+    "sqrt(sqrt(x))": ["apply", "sqrt", ["apply", "sqrt", "x"]],
   };
 
   _.each(_.keys(trees), function (string) {

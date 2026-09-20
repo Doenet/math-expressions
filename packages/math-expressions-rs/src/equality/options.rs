@@ -18,14 +18,28 @@ pub struct EqOptions {
     /// Interpret `allowed_error_in_numbers` as an absolute error instead of
     /// relative to the numbers' magnitude.
     pub allowed_error_is_absolute: bool,
-    pub allow_blanks: bool,
+    /// Coerce tuple, array **and interval** spellings of the same thing to a
+    /// common form: `(a,b) == [a,b]`, and — when the other side has an
+    /// interval in it — `(a,b)` as the open interval and `[a,b]` as the closed
+    /// one. Intervals ride on this flag rather than one of their own because
+    /// they are the same notation, and because that is the contract the JS
+    /// library's spec pins (`slow_math-expressions.spec.ts`, "tuples, vectors,
+    /// intervals, altvectors"): a *vector* stays distinct from an interval
+    /// either way.
     pub coerce_tuples_arrays: bool,
     pub coerce_vectors: bool,
+    pub allow_blanks: bool,
     /// Number of random complex sample points for the numerical stage.
     pub num_samples: usize,
     /// Sample only real points in the numerical stage (the `equals_via_real`
     /// mode). Off by default — full `equals` samples the complex plane.
     pub real_only: bool,
+    /// Assumptions in force, consulted by the numerical stage to constrain how
+    /// free variables are sampled: a variable known to be an integer is drawn
+    /// over the integers rather than the complex disk, so `(-1)^n·(-1)^n` equals
+    /// `1` under `n ∈ Z`. Empty by default — `equals` is assumption-free unless
+    /// a caller (the `Assumptions` wasm handle) supplies its store.
+    pub assumptions: crate::Assumptions,
 }
 
 impl Default for EqOptions {
@@ -42,6 +56,7 @@ impl Default for EqOptions {
             coerce_vectors: true,
             num_samples: 20,
             real_only: false,
+            assumptions: crate::Assumptions::new(),
         }
     }
 }

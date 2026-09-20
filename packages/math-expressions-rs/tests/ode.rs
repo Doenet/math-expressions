@@ -131,6 +131,73 @@ fn blow_up_terminates_cleanly() {
 }
 
 #[test]
+fn global_error_meets_the_requested_tolerance() {
+    // The accuracy contract callers actually rely on: `tol` bounds the error
+    // in the *answer*, not merely the local error of a step. `y′ = y` to
+    // t = 10 is the case that exposes the difference — the solution grows to
+    // 2·10⁴, so a controller that scales its error bound by the solution's own
+    // magnitude buys a budget 2·10⁴ times looser and drifts to ~1.4e-6 while
+    // still reporting success at tol = 1e-6. This assertion is DoenetML's,
+    // from `odesystem.test.ts`.
+    let sol = solve_ode_with(
+        |_t, y, out| {
+            out[0] = y[0];
+            true
+        },
+        0.0,
+        10.0,
+        &[1.0],
+        TOL,
+        10_000,
+    );
+    assert!(!sol.terminated_early);
+    for i in 0..=100 {
+        let t = 10.0 * i as f64 / 100.0;
+        let want = t.exp();
+        let got = sol.at(t)[0];
+        assert!(
+            (got - want).abs() <= TOL * want.max(1.0),
+            "at t={t}: {got} vs {want}, off by {:e} of a {:e} budget",
+            (got - want).abs(),
+            TOL * want.max(1.0)
+        );
+    }
+}
+
+#[test]
+fn step_control_tracks_numeric_dopri() {
+    // Deliberately brittle: these counts are `numeric.dopri`'s, measured on
+    // the same three runs `<odeSystem>` performs, and drift in them is the
+    // thing this test exists to catch. `tolerance` and `maxIterations` are
+    // authored DoenetML attributes, so a controller that is merely "as good"
+    // but differently paced silently changes what an existing document does.
+    //
+    // `times()` counts abscissas, so it is accepted steps + 1 for t₀.
+    let f = |_t: f64, y: &[f64], out: &mut [f64]| {
+        out[0] = y[0];
+        true
+    };
+
+    let first = solve_ode_with(f, 0.0, 10.0, &[1.0], TOL, 1000);
+    assert!(!first.terminated_early);
+    assert_eq!(first.times().len(), 145, "numeric.dopri takes 145 here");
+
+    // The second chunk, [10,20], continuing from the first — the run whose
+    // budget DoenetML documents. numeric exhausts 1000 iterations partway and
+    // completes on 1078.
+    let y10 = first.last_y();
+    let starved = solve_ode_with(f, 10.0, 20.0, &y10, TOL, 1000);
+    assert!(starved.terminated_early, "1000 steps must not be enough");
+    assert!(starved.last_t() < 20.0);
+    assert_eq!(starved.times().len(), 999);
+
+    let funded = solve_ode_with(f, 10.0, 20.0, &y10, TOL, 2000);
+    assert!(!funded.terminated_early, "2000 steps must be enough");
+    assert!((funded.last_t() - 20.0).abs() < 1e-12);
+    assert_eq!(funded.times().len(), 1077);
+}
+
+#[test]
 fn step_budget_is_honest() {
     let sol = solve_ode_with(
         |_t, y, out| {

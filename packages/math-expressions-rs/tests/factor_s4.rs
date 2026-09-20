@@ -81,7 +81,10 @@ fn irreducibles_stay_put() {
     assert_eq!(factor_degrees(&factor(&parse("x^2 + 1")), "x"), vec![2]);
     assert_eq!(factor_degrees(&factor(&parse("x^4 + 1")), "x"), vec![4]);
     // x⁸−1: the x⁴+1 piece must remain irreducible.
-    assert_eq!(factor_degrees(&factor(&parse("x^8 - 1")), "x"), vec![1, 1, 2, 4]);
+    assert_eq!(
+        factor_degrees(&factor(&parse("x^8 - 1")), "x"),
+        vec![1, 1, 2, 4]
+    );
 }
 
 // ---------- factor_terms ----------
@@ -122,5 +125,8 @@ fn factor_terms_kernel_aware() {
 fn factor_terms_nothing_common_unchanged() {
     // x + y has no common factor: returned unchanged (not a product).
     let f = factor_terms(&parse("x + y"));
-    assert!(!matches!(&f, Expr::Mul(_)), "must not invent a factor: {f:?}");
+    assert!(
+        !matches!(&f, Expr::Mul(_)),
+        "must not invent a factor: {f:?}"
+    );
 }

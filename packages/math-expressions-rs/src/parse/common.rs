@@ -2,8 +2,8 @@
 //! source files (`text-to-ast.js`, `latex-to-ast.js`) duplicate these exact
 //! routines; here they live once. Everything is pure — no parser state.
 
-use crate::expr::{Expr, MathConst};
 use crate::expr::sym::Sym;
+use crate::expr::{Expr, MathConst, SeqKind};
 
 // `statement` must be among the counted frames: its bar-fallback catches
 // errors, rewinds, and re-descends, so budget freed by the failed descent's
@@ -108,4 +108,31 @@ pub fn parse_js_float(text: &str) -> f64 {
 /// Build a generic `OtherOp` node from a string operator name.
 pub fn other_op(name: &str, args: Vec<Expr>) -> Expr {
     Expr::OtherOp(Sym::new(name), args)
+}
+
+/// Build an `Expr::Apply`, flattening a lone `Tuple` argument into the
+/// argument list, so that `f((x, y))` is the same tree as `f(x, y)`.
+///
+/// This is not a convenience: it is what keeps the tree in the image of the
+/// JS AST. [`to_js`](crate::expr::serde::to_js) writes a multi-argument
+/// `Apply` as a single `"tuple"` operand — `["apply", "f", ["tuple", …]]` —
+/// which is exactly what it writes for a one-argument `Apply` whose argument
+/// *is* a tuple, and [`try_from_js`](crate::expr::serde::try_from_js) reads
+/// that JSON back as the multi-argument form. Without this flattening the
+/// parsers can build a tree the JS AST cannot express, and since the JS AST
+/// is the contract with every consumer, `f((x, y))` would not be `equal` to
+/// itself after a round trip through `.tree`, and would print differently
+/// before and after one. The legacy JS library had one tree for both
+/// spellings; this keeps that.
+///
+/// Only a *lone* tuple flattens, matching `try_from_js`: in `f((x, y), z)`
+/// the inner tuple is one of two arguments and survives the round trip
+/// intact, so it must survive parsing too.
+pub fn apply(head: Expr, args: Vec<Expr>) -> Expr {
+    let args = match <[Expr; 1]>::try_from(args) {
+        Ok([Expr::Seq(SeqKind::Tuple, xs)]) => xs,
+        Ok([other]) => vec![other],
+        Err(args) => args,
+    };
+    Expr::Apply(Box::new(head), args)
 }

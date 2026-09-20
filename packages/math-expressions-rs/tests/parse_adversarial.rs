@@ -18,10 +18,14 @@ use std::thread;
 use std::time::Duration;
 
 fn text_ok(s: &str) -> bool {
-    TextToAst::new(TextToAstOptions::default()).convert(s).is_ok()
+    TextToAst::new(TextToAstOptions::default())
+        .convert(s)
+        .is_ok()
 }
 fn latex_ok(s: &str) -> bool {
-    LatexToAst::new(LatexToAstOptions::default()).convert(s).is_ok()
+    LatexToAst::new(LatexToAstOptions::default())
+        .convert(s)
+        .is_ok()
 }
 
 /// Run `f` on a worker thread; fail if it panics or does not finish in time.
@@ -114,36 +118,57 @@ fn adversarial_corpus_terminates() {
     assert_terminates(&r"\frac{".repeat(2_000)); // deep recursion → depth cap
     assert_terminates(&r"\sqrt{".repeat(2_000));
     assert_terminates(&"!".repeat(20_000)); // postfix run → depth cap errors
-    // Unclosed matrix with many entries: without the EOF exit this looped
-    // forever; now it breaks at EOF (and fuel would catch it regardless).
+                                            // Unclosed matrix with many entries: without the EOF exit this looped
+                                            // forever; now it breaks at EOF (and fuel would catch it regardless).
     assert_terminates(&(r"\begin{bmatrix}".to_string() + &"1 & ".repeat(20_000)));
-    // NOTE: `"^".repeat(N)` for large N is deliberately NOT here — it exposes a
-    // SEPARATE, pre-existing bug (deep `Pow` AST from the loop-based caret
-    // handler is not counted against the depth cap, so later recursive tree
-    // processing overflows the stack ~N≥4000). Captured by the ignored
-    // `superscript_nesting_overflows_known_bug` below; unrelated to the loop
-    // hang this suite guards.
-    assert_terminates(&"^".repeat(200)); // safe depth; still exercises the caret loop
+    // Deep caret runs: the loop-based caret handler now charges each `Pow`
+    // level against `MAX_PARSE_DEPTH`, so these error at the cap instead of
+    // building a spine a later recursive pass overflows on. See
+    // `superscript_nesting_is_charged_against_depth_cap` for the assertion.
+    assert_terminates(&"^".repeat(200));
+    assert_terminates(&"^".repeat(50_000));
 }
 
-/// KNOWN PRE-EXISTING BUG (found by this adversarial suite, not introduced by
-/// the parse-fuel work): the caret handler builds an arbitrarily deep `Pow`
-/// tree in a loop without charging the recursion-depth budget, so a very deep
-/// superscript chain (`^^^^…`) parses "successfully" into a tree whose later
-/// recursive processing (Drop / normalize / output) overflows the stack. The
-/// fix is to count loop-built nesting against `MAX_PARSE_DEPTH` (or bound AST
-/// depth) — a separate change from the loop-fuel backstop. Un-ignore once
-/// fixed; it should then return `Err` ("too deeply nested") like `!`×N does.
+/// Regression: loop-built postfix nesting (`^^^…`, `!!!…`, `'''…`) is charged
+/// against `MAX_PARSE_DEPTH`, exactly like the recursive-descent depth cap.
+///
+/// Before the fix, the caret/factorial/prime handlers wrapped `result` one
+/// level deeper per loop iteration WITHOUT touching the depth budget, so a deep
+/// chain parsed "successfully" into a `Pow`/`factorial`/`Prime` spine whose
+/// later recursive processing (Drop / normalize / output) overflowed the stack
+/// — and on wasm32 a stack-overflow trap kills the whole module instance, so
+/// one adversarial answer bricks the engine for the session. Now the chain is
+/// refused with a clean `ParseError`, in BOTH parsers, like `((…))` already was.
 #[test]
-#[ignore = "pre-existing deep-Pow AST overflow; needs depth accounting for loop-built nesting"]
-fn superscript_nesting_overflows_known_bug() {
-    let deep = "^".repeat(50_000);
-    assert!(
-        LatexToAst::new(LatexToAstOptions::default())
-            .convert(&deep)
-            .is_err(),
-        "a 50000-deep superscript chain should be refused at the depth cap"
-    );
+fn superscript_nesting_is_charged_against_depth_cap() {
+    // A chain far past the cap must be a clean error, never a would-be trap.
+    let chains = [
+        "^".repeat(50_000),                 // \blank^\blank^… (Pow spine)
+        format!("x{}", "!".repeat(50_000)), // x!!!… (factorial spine)
+        format!("x{}", "'".repeat(50_000)), // x'''… (prime spine)
+    ];
+    for deep in &chains {
+        assert!(
+            LatexToAst::new(LatexToAstOptions::default())
+                .convert(deep)
+                .is_err(),
+            "a 50000-deep postfix chain must be refused at the depth cap (latex): {:?}",
+            &deep[..deep.len().min(12)]
+        );
+        assert!(
+            TextToAst::new(TextToAstOptions::default())
+                .convert(deep)
+                .is_err(),
+            "a 50000-deep postfix chain must be refused at the depth cap (text): {:?}",
+            &deep[..deep.len().min(12)]
+        );
+    }
+
+    // Real educational input — a handful of levels — still parses fine.
+    assert!(text_ok("sin^2(x) + cos^2(x)"));
+    assert!(latex_ok(r"\sin^2 x"));
+    assert!(text_ok("x^2^3"));
+    assert!(text_ok("f''(x)"));
 }
 
 /// The exact reported freeze: an opened-but-unclosed matrix environment must be
@@ -152,7 +177,10 @@ fn superscript_nesting_overflows_known_bug() {
 fn begin_bmatrix_is_an_error_not_a_hang() {
     must_terminate(r"\begin{bmatrix}".to_string(), || {
         let r = LatexToAst::new(LatexToAstOptions::default()).convert(r"\begin{bmatrix}");
-        assert!(r.is_err(), "unclosed \\begin{{bmatrix}} must be a parse error");
+        assert!(
+            r.is_err(),
+            "unclosed \\begin{{bmatrix}} must be a parse error"
+        );
     });
 }
 

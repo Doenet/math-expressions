@@ -2,10 +2,10 @@
 //! that dispatch to the [`super::elimination`] elimination kernels.
 
 use crate::assumptions::{is_nonzero, Assumptions};
-use crate::expr::Expr;
+use crate::expr::sym::Sym;
+use crate::expr::{Expr, Mat};
 use crate::normalize::{canonicalize, mul, pow};
 use crate::num::Number;
-use crate::expr::sym::Sym;
 
 use super::elimination::{
     as_numbers, det_bareiss, det_cofactor, det_rational, is_polynomial, is_zero, rref_core,
@@ -19,14 +19,10 @@ use super::elimination::{
 /// caps — stays an opaque `det(e)` node.
 pub fn det(e: &Expr) -> Expr {
     let c = canonicalize(e);
-    if let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    {
-        if rows == cols {
-            let n = *rows as usize;
+    if let Expr::Matrix(m) = &c {
+        if m.is_square() {
+            let n = m.rows() as usize;
+            let entries = m.entries();
             let lim = crate::resource_limits::current();
             if n <= lim.max_matrix_dim {
                 if let Some(nums) = as_numbers(entries) {
@@ -52,14 +48,10 @@ pub fn det(e: &Expr) -> Expr {
 /// case-guessing).
 pub fn matrix_inverse(e: &Expr, assumptions: &Assumptions) -> Expr {
     let c = canonicalize(e);
-    if let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    {
-        if rows == cols {
-            let n = *rows as usize;
+    if let Expr::Matrix(m) = &c {
+        if m.is_square() {
+            let n = m.rows() as usize;
+            let entries = m.entries();
             let lim = crate::resource_limits::current();
             if n <= lim.max_matrix_dim && as_numbers(entries).is_some() {
                 if let Some(inv) = invert_rational_literal(&c) {
@@ -70,19 +62,11 @@ pub fn matrix_inverse(e: &Expr, assumptions: &Assumptions) -> Expr {
                 let d = det(&c);
                 if is_nonzero(&d, assumptions) == Some(true) {
                     let dinv = pow(d, Expr::int(-1));
-                    let mut out = Vec::with_capacity(n * n);
-                    for i in 0..n {
-                        for j in 0..n {
-                            // Adjugate: cofactor C(j, i) (transposed).
-                            let cof = super::elimination::cofactor(entries, n, j, i);
-                            out.push(mul(vec![dinv.clone(), cof]));
-                        }
-                    }
-                    return Expr::Matrix {
-                        rows: *rows,
-                        cols: *cols,
-                        entries: out,
-                    };
+                    return Expr::Matrix(Mat::generate(m.rows(), m.cols(), |i, j| {
+                        // Adjugate: cofactor C(j, i) (transposed).
+                        let cof = super::elimination::cofactor(entries, n, j as usize, i as usize);
+                        mul(vec![dinv.clone(), cof])
+                    }));
                 }
             }
         }
@@ -96,19 +80,18 @@ pub fn matrix_inverse(e: &Expr, assumptions: &Assumptions) -> Expr {
 /// elimination). Returns the rref matrix or an opaque `rref(e)` node.
 pub fn rref(e: &Expr, assumptions: &Assumptions) -> Expr {
     let c = canonicalize(e);
-    if let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    {
-        if let Some((reduced, _)) = rref_core(entries, *rows as usize, *cols as usize, assumptions)
-        {
-            return Expr::Matrix {
-                rows: *rows,
-                cols: *cols,
-                entries: reduced,
-            };
+    if let Expr::Matrix(m) = &c {
+        if let Some((reduced, _)) = rref_core(
+            m.entries(),
+            m.rows() as usize,
+            m.cols() as usize,
+            assumptions,
+        ) {
+            // `rref_core` returns a same-shape matrix; if it ever did not, the
+            // opaque `rref(e)` node below is the graceful answer.
+            if let Some(out) = Mat::new(m.rows(), m.cols(), reduced) {
+                return Expr::Matrix(out);
+            }
         }
     }
     Expr::OtherOp(Sym::new("rref"), vec![c])
@@ -118,15 +101,15 @@ pub fn rref(e: &Expr, assumptions: &Assumptions) -> Expr {
 /// input is not a literal matrix or a pivot decision is undecidable.
 pub fn rank(e: &Expr, assumptions: &Assumptions) -> Option<u32> {
     let c = canonicalize(e);
-    let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    else {
+    let Expr::Matrix(m) = &c else {
         return None;
     };
-    let (_, pivots) = rref_core(entries, *rows as usize, *cols as usize, assumptions)?;
+    let (_, pivots) = rref_core(
+        m.entries(),
+        m.rows() as usize,
+        m.cols() as usize,
+        assumptions,
+    )?;
     Some(pivots.len() as u32)
 }
 
@@ -135,16 +118,11 @@ pub fn rank(e: &Expr, assumptions: &Assumptions) -> Option<u32> {
 /// same conditions as [`rank`].
 pub fn nullspace(e: &Expr, assumptions: &Assumptions) -> Option<Vec<Expr>> {
     let c = canonicalize(e);
-    let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = &c
-    else {
+    let Expr::Matrix(m) = &c else {
         return None;
     };
-    let (rows, cols) = (*rows as usize, *cols as usize);
-    let (reduced, pivots) = rref_core(entries, rows, cols, assumptions)?;
+    let (rows, cols) = (m.rows() as usize, m.cols() as usize);
+    let (reduced, pivots) = rref_core(m.entries(), rows, cols, assumptions)?;
     let mut basis = Vec::new();
     for free in (0..cols).filter(|c| !pivots.contains(c)) {
         let mut v = vec![Expr::int(0); cols];
@@ -160,11 +138,11 @@ pub fn nullspace(e: &Expr, assumptions: &Assumptions) -> Option<Vec<Expr>> {
                 v = v.into_iter().map(|e| mul(vec![scale.clone(), e])).collect();
             }
         }
-        basis.push(Expr::Matrix {
-            rows: cols as u32,
-            cols: 1,
-            entries: v,
-        });
+        // `v` is built with exactly `cols` entries just above, which is the
+        // entry count an n×1 column needs.
+        if let Some(col) = Mat::new(cols as u32, 1, v) {
+            basis.push(Expr::Matrix(col));
+        }
     }
     Some(basis)
 }
@@ -173,18 +151,14 @@ pub fn nullspace(e: &Expr, assumptions: &Assumptions) -> Option<Vec<Expr>> {
 /// `Number`s. `None` if not such a matrix or singular. Also used by the
 /// canonical `pow` to fold `A^(-k)`.
 pub(crate) fn invert_rational_literal(e: &Expr) -> Option<Expr> {
-    let Expr::Matrix {
-        rows,
-        cols,
-        entries,
-    } = e
-    else {
+    let Expr::Matrix(m) = e else {
         return None;
     };
-    if rows != cols {
+    if !m.is_square() {
         return None;
     }
-    let n = *rows as usize;
+    let entries = m.entries();
+    let n = m.rows() as usize;
     if n > crate::resource_limits::current().max_matrix_dim {
         return None;
     }
@@ -216,9 +190,6 @@ pub(crate) fn invert_rational_literal(e: &Expr) -> Option<Expr> {
             }
         }
     }
-    Some(Expr::Matrix {
-        rows: *rows,
-        cols: *cols,
-        entries: inv.into_iter().map(Expr::Num).collect(),
-    })
+    // Square, so `n` is both dimensions; `inv` was built with `n * n` entries.
+    Mat::new(n as u32, n as u32, inv.into_iter().map(Expr::Num).collect()).map(Expr::Matrix)
 }

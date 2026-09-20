@@ -1,0 +1,30 @@
+{
+  // Half of `npm run typecheck` (the other half is `tsconfig.lib.json`).
+  // Type-checks the published declarations against
+  // `usage.ts`, which writes out the call shapes consumers actually use.
+  //
+  // This is what stands between `exports["."].types` and silent rot: the
+  // declarations are hand-written (see the header of `math-expressions.d.ts`),
+  // so nothing else would notice if one drifted from the implementation. It
+  // cannot catch a declaration that is merely *wrong* — only one that is
+  // internally inconsistent or that stops admitting a documented call — which
+  // is why `usage.ts` is written as usage rather than as assertions.
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": false,
+    // The declarations must stand on their own: no ambient `@types/*` from
+    // whatever node_modules happens to be above this directory.
+    "types": [],
+    // Resolve the bare `math-expressions` specifier to these declarations
+    // without needing the package installed into its own node_modules.
+    "paths": {
+      "math-expressions": ["./math-expressions.d.ts"]
+    }
+  },
+  "include": ["math-expressions.d.ts", "usage.ts"]
+}

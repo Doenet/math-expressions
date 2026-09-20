@@ -4,8 +4,8 @@
 //! chain, exactly as the JS `set1.equals(set2)` does.
 
 use math_expressions::{
-    create_discrete_infinite_set, equals, match_discrete_infinite, EqOptions, Expr, TextToAst,
-    TextToAstOptions,
+    create_discrete_infinite_set, equals, equals_discrete_infinite_sets, match_discrete_infinite,
+    Assumptions, EqOptions, Expr, TextToAst, TextToAstOptions,
 };
 
 fn parse(s: &str) -> Expr {
@@ -34,7 +34,7 @@ fn eq(a: &Expr, b: &Expr) -> bool {
 }
 
 fn partial(a: &Expr, b: &Expr) -> f64 {
-    match_discrete_infinite(a, b, &EqOptions::default(), true)
+    match_discrete_infinite(a, b, &EqOptions::default(), true, &Assumptions::new())
 }
 
 #[test]
@@ -88,11 +88,33 @@ fn symbolic_offsets() {
 }
 
 #[test]
-fn symbolic_period_folds_without_assumptions() {
-    // JS needs an explicit `c != 0` assumption to fold 2c/c; our
-    // assumption-free canonicalizer folds it unconditionally (documented
-    // divergence, same class as x/x → 1).
-    assert!(eq(&set("a", "c"), &set("a, a+c", "2c")));
+fn symbolic_period_needs_a_nonzero_assumption() {
+    // Comparing these means dividing by `c`, so `c != 0` has to be *stated*:
+    // the canonicalizer would fold `2c/c → 2` on its own, which is exactly the
+    // unstated assumption this stage must not make. `equals` has no assumption
+    // store, so it can only ever say "not verified" here.
+    let (a, b) = (set("a", "c"), set("a, a+c", "2c"));
+    assert!(!eq(&a, &b));
+
+    let opts = EqOptions::default();
+    assert_eq!(
+        equals_discrete_infinite_sets(&a, &b, &opts, &Assumptions::new()),
+        Some(false)
+    );
+
+    let mut assumptions = Assumptions::new();
+    assumptions.add(&parse("c != 0"));
+    assert_eq!(
+        equals_discrete_infinite_sets(&a, &b, &opts, &assumptions),
+        Some(true)
+    );
+
+    // Not a set on either side ⇒ the stage does not apply and says so, so the
+    // caller can fall through to the full chain.
+    assert_eq!(
+        equals_discrete_infinite_sets(&parse("x"), &parse("x"), &opts, &assumptions),
+        None
+    );
 }
 
 #[test]

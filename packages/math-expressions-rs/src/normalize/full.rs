@@ -41,9 +41,7 @@ pub(crate) fn full_simplify(e: &Expr, a: &Assumptions) -> Expr {
     // guaranteed to reach a fixpoint on adversarial input, and a run that exits
     // on the counter simply returns the last tree it produced (still canonical,
     // still equal to the input, just possibly not idempotent).
-    let max_rounds = crate::resource_limits::current()
-        .max_simplify_rounds
-        .max(1);
+    let max_rounds = crate::resource_limits::current().max_simplify_rounds.max(1);
     let mut cur = crate::normalize::simplify_base_with(e, a);
     for _ in 0..max_rounds {
         // Each pass is sound and canonical-in/out; re-run the *base* simplify
@@ -51,6 +49,16 @@ pub(crate) fn full_simplify(e: &Expr, a: &Assumptions) -> Expr {
         // the base, not the public `simplify`/`simplify_with`, which are this
         // function.)
         let folded = crate::normalize::fold_special_values(&cur);
+        // Exact numeric applications (`floor(55.33)`, `sum(3,17,1)`,
+        // `log10(1000)`) fold here rather than in the base rounds, so `equals`
+        // — which goes through `simplify_canonical` — stays byte-stable.
+        let folded = crate::normalize::fold_numeric_applications(&folded);
+        // Scaling-unit arithmetic (`$3 + $2 → $5`). Here rather than in the
+        // base rounds for the same reason as the line above: `equals` goes
+        // through `simplify_canonical` and desugars units to plain arithmetic
+        // before it ever compares, so folding them there would only churn the
+        // byte-stable canonical form.
+        let folded = crate::normalize::fold_units(&folded);
         let reduced = crate::ops::reduce_rational(&folded);
         let next = crate::normalize::simplify_base_with(&reduced, a);
         if next == cur {

@@ -183,21 +183,26 @@ describe("round to decimals", function () {
     let expr = me.fromText(
       "exp(1.234567890123456789x+9876.543210987654321)/(5+8520203156.435345956432x)",
     );
+    // Rounding to 100 places has nothing to do, so the expression comes back
+    // as typed. The target here used to be the *f64* reading of those literals
+    // (`1.234567890123456789` → `1.2345678901234567`), because in the JS
+    // library a decimal became a double the moment it was parsed and the digits
+    // past the 17th were gone before rounding ever saw them. Decimals parse to
+    // exact rationals here, so all the digits the author typed survive a no-op
+    // rounding — the assertion is now against the input itself.
     expect(
-      expr
-        .round_numbers_to_decimals(100)
-        .equals(
-          me.fromText(
-            "exp(1.2345678901234567 x + 9876.543210987654)/(5 + 8520203156.435346 x)",
-          ),
-        ),
+      expr.round_numbers_to_decimals(100).equals(expr),
     ).toBeTruthy();
+    // Same correction below: the constants keep every digit that was typed, so
+    // asking for 13 places leaves 13 (`9876.5432109876543`, where the f64 the
+    // JS library held could only offer 12), and a literal with fewer places
+    // than requested is returned untouched rather than snapped to a double.
     expect(
       expr
         .round_numbers_to_decimals(13)
         .equals(
           me.fromText(
-            "exp(1.2345678901235 x + 9876.543210987654)/(5 + 8520203156.435346 x)",
+            "exp(1.2345678901235 x + 9876.5432109876543)/(5 + 8520203156.435345956432 x)",
           ),
         ),
     ).toBeTruthy();
@@ -206,7 +211,7 @@ describe("round to decimals", function () {
         .round_numbers_to_decimals(9)
         .equals(
           me.fromText(
-            "exp(1.23456789 x + 9876.543210988)/(5 + 8520203156.435346 x)",
+            "exp(1.23456789 x + 9876.543210988)/(5 + 8520203156.435345956 x)",
           ),
         ),
     ).toBeTruthy();

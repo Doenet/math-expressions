@@ -35,6 +35,12 @@ fn trig_at_rational_pi_lattice() {
     assert_eq!(z("tan(pi/6) - sqrt(3)/3"), Some(true));
     // kπ/12 lattice (nested surds):
     assert_eq!(z("sin(pi/12) - (sqrt(6) - sqrt(2))/4"), Some(true));
+    // kπ/10 — the pentagonal lattice, whose representable half is the golden
+    // ratio's family:
+    assert_eq!(z("cos(pi/5) - (1 + sqrt(5))/4"), Some(true));
+    assert_eq!(z("sin(pi/10) - (sqrt(5) - 1)/4"), Some(true));
+    assert_eq!(z("cos(2*pi/5) - (sqrt(5) - 1)/4"), Some(true));
+    assert_eq!(z("sec(pi/5) - (sqrt(5) - 1)"), Some(true));
     // periodicity reduction:
     assert_eq!(z("sin(13*pi/6) - 1/2"), Some(true));
     assert_eq!(z("cos(7*pi/3) - 1/2"), Some(true));
@@ -48,6 +54,54 @@ fn surd_arithmetic() {
     assert_eq!(z("sqrt(2)*sqrt(3) - sqrt(6)"), Some(true));
     assert_eq!(z("sqrt(1/2) - sqrt(2)/2"), Some(true));
     assert_eq!(z("(sqrt(2) + 1)*(sqrt(2) - 1) - 1"), Some(true));
+}
+
+/// Reciprocals of multi-term surds. The ring is a field, and inversion now
+/// realizes that by conjugate rationalization — one prime at a time, so a
+/// denominator over several independent surds still comes out.
+#[test]
+fn reciprocals_of_surd_sums() {
+    assert_eq!(z("1/(1 + sqrt(2)) - (sqrt(2) - 1)"), Some(true));
+    assert_eq!(z("4/(sqrt(6) + sqrt(2)) - (sqrt(6) - sqrt(2))"), Some(true));
+    assert_eq!(
+        z("1/(sqrt(2) + sqrt(3) + sqrt(5)) * (sqrt(2) + sqrt(3) + sqrt(5)) - 1"),
+        Some(true)
+    );
+    assert_eq!(z("(1 + sqrt(2))^(-3) * (1 + sqrt(2))^3 - 1"), Some(true));
+    // Still certified *nonzero* where it should be — inversion widens what is
+    // decidable, it does not soften the verdict.
+    assert_eq!(z("1/(1 + sqrt(2)) - (sqrt(2) + 1)"), Some(false));
+}
+
+/// Inversion rationalizes a sum of `k` surds by multiplying out `2^k` terms,
+/// so whatever each of those multiplications costs, it is paid `2^k` times.
+/// Radicand renormalization has to stay cheap: `mul_surd` reduces `√r₁·√r₂` by
+/// gcd, and if it went back to trial-dividing the product these declines would
+/// take the better part of a second apiece instead of under a millisecond.
+///
+/// Timed rather than asserted on value, because the answer is the boring part —
+/// declining is fine, declining slowly is not.
+#[test]
+fn deep_inversion_declines_promptly() {
+    let surds = |k: usize| {
+        [999983, 999979, 999961, 999959, 887, 883, 881, 877][..k]
+            .iter()
+            .map(|p| format!("sqrt({p})"))
+            .collect::<Vec<_>>()
+            .join(" + ")
+    };
+    let start = std::time::Instant::now();
+    for k in 2..=8 {
+        let s = surds(k);
+        // Whatever the verdict, it must not be reached by brute force.
+        let _ = z(&format!("({s})^(-1) - 1"));
+        let _ = z(&format!("1/({s}) * ({s}) - 1"));
+    }
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "deep inversion took {elapsed:?}; radicand renormalization is factoring again"
+    );
 }
 
 #[test]
@@ -109,7 +163,10 @@ fn rootof_algebraic_identities() {
     // ∛2 cubed is 2.
     assert_eq!(z("rootof(z^3 - 2, 0)^3 - 2"), Some(true));
     // The defining relation itself: α³ = α + 1 for the plastic-number root.
-    assert_eq!(z("rootof(z^3 - z - 1, 0)^3 - rootof(z^3 - z - 1, 0) - 1"), Some(true));
+    assert_eq!(
+        z("rootof(z^3 - z - 1, 0)^3 - rootof(z^3 - z - 1, 0) - 1"),
+        Some(true)
+    );
     // Honest limitation: a nonzero algebraic is Unknown, never a wrong No.
     assert_eq!(z("rootof(z^2 - 2, 1) - 1"), None);
 }
@@ -147,10 +204,10 @@ fn integer_powers_of_e() {
     assert_eq!(z("exp(3) - e^3"), Some(true)); // (was None)
     assert_eq!(z("e^2 - 7"), Some(false)); // certified nonzero (was None)
     assert_eq!(z("e^2"), Some(false)); // certified nonzero (was None)
-    // A negative power of e is outside the representable ring, so with no
-    // structural partner to cancel against it stays undecided (never wrong).
-    // (`e^(-2) - 1/(e*e)` would instead be *structurally* zero — both sides
-    // canonicalize to the same reciprocal tree — so it is not a ring test.)
+                                       // A negative power of e is outside the representable ring, so with no
+                                       // structural partner to cancel against it stays undecided (never wrong).
+                                       // (`e^(-2) - 1/(e*e)` would instead be *structurally* zero — both sides
+                                       // canonicalize to the same reciprocal tree — so it is not a ring test.)
     assert_eq!(z("e^(-2) - 7"), None);
 }
 

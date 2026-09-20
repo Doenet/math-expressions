@@ -82,7 +82,10 @@ pub(super) fn is_power_free_int(n: i64, k: u32) -> bool {
 pub(super) fn content(e: &Expr) -> i64 {
     match split_sign(e).1 {
         Expr::Num(Number::Int(n)) => *n,
-        Expr::Mul(fs) => fs.iter().map(content).fold(1i64, |a, b| a.saturating_mul(b)),
+        Expr::Mul(fs) => fs
+            .iter()
+            .map(content)
+            .fold(1i64, |a, b| a.saturating_mul(b)),
         Expr::Add(ts) => ts.iter().map(content).fold(0i64, gcd),
         _ => 1,
     }

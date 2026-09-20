@@ -23,8 +23,7 @@ pub(super) fn usub(e: &Expr, x: &str, fuel: &mut i64) -> Option<Expr> {
     // would leave them in, and each one would then eat one of the
     // `max_integration_candidates` slots that bound the search.
     let mut seen = std::collections::HashSet::new();
-    candidates
-        .retain(|u| depends_on(u, x) && !matches!(u, Expr::Sym(_)) && seen.insert(u.clone()));
+    candidates.retain(|u| depends_on(u, x) && !matches!(u, Expr::Sym(_)) && seen.insert(u.clone()));
     candidates.truncate(crate::resource_limits::current().max_integration_candidates);
     for u in candidates {
         let du = canonicalize(&crate::calculus::diff::derivative(&u, x));

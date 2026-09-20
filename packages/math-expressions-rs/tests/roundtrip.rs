@@ -76,6 +76,37 @@ const KNOWN_AMBIGUOUS: &[&str] = &[
     "\\sin^^",
 ];
 
+/// Whether a re-parse that is not *structurally* identical is nonetheless an
+/// acceptable round-trip.
+///
+/// Exactly one rendering choice has this property, and it is deliberate:
+/// scientific notation. Both printers spell a number below `0.000001` as
+/// `3 * 10^(-12)` / `3 \cdot 10^{-12}`, because a wall of leading zeros is
+/// unreadable and because DoenetML's `avoidScientificNotation` attribute exists
+/// to switch that off — an attribute that would do nothing if the threshold
+/// were never applied. Parsing does not evaluate, so the spelling comes back as
+/// the product it is written as rather than as a single number.
+///
+/// This is not new with exact decimals — `to_text(Float(3e-12))` has always had
+/// it — it was simply unreachable from this corpus, in which every number is
+/// exact because that is what the parsers produce. Making it explicit here is
+/// better than letting a future exact/float change silently trip a test whose
+/// message would point at the formatter.
+///
+/// The two conditions together are what keep this from being a blanket excuse:
+/// the value must be unchanged, and rendering the re-parse must reproduce the
+/// *identical* string — so the printer is a fixpoint and nothing drifts on a
+/// second trip. A formatter bug fails one or the other.
+fn is_display_only_divergence(
+    expr: &Expr,
+    reparsed: &Expr,
+    rendered: &str,
+    render: impl Fn(&Expr) -> String,
+) -> bool {
+    math_expressions::equals(expr, reparsed, &math_expressions::EqOptions::default())
+        && render(reparsed) == rendered
+}
+
 #[test]
 fn text_roundtrip() {
     let opts = text::TextOpts::default();
@@ -93,6 +124,10 @@ fn text_roundtrip() {
         let rendered = text::convert(&expr, &opts);
         match parse_text(&rendered) {
             Ok(reparsed) if reparsed == expr => {}
+            Ok(reparsed)
+                if is_display_only_divergence(&expr, &reparsed, &rendered, |e| {
+                    text::convert(e, &opts)
+                }) => {}
             Ok(reparsed) => failures.push(format!(
                 "input   {:?}\n  render  {:?}\n  expr    {:?}\n  reparse {:?}",
                 input, rendered, expr, reparsed
@@ -136,6 +171,10 @@ fn latex_roundtrip() {
         let rendered = latex::convert(&expr, &opts);
         match parse_latex(&rendered) {
             Ok(reparsed) if reparsed == expr => {}
+            Ok(reparsed)
+                if is_display_only_divergence(&expr, &reparsed, &rendered, |e| {
+                    latex::convert(e, &opts)
+                }) => {}
             Ok(reparsed) => failures.push(format!(
                 "input   {:?}\n  render  {:?}\n  expr    {:?}\n  reparse {:?}",
                 input, rendered, expr, reparsed
@@ -163,9 +202,15 @@ fn latex_roundtrip() {
 }
 
 /// Round-trip expressions that the fixture corpus doesn't reach: negative
-/// infinity in tight positions, floats whose JS rendering would be
-/// exponential (we render positional decimal so they re-parse), and huge
-/// exact rationals in tight positions.
+/// infinity in tight positions, tiny decimals in every syntactic position that
+/// could mis-bind, and huge exact rationals in tight positions.
+///
+/// The tiny decimals used to be here to pin *positional* rendering: rendering
+/// them exponentially was avoided precisely so they would re-parse. They now
+/// render exponentially — see [`is_display_only_divergence`] for why that
+/// changed — so what they pin is the position handling: a `3 * 10^(-12)` in a
+/// sum, a product, or an exponent must still come back binding the same way,
+/// which is the part a formatter can plausibly get wrong.
 #[test]
 fn constructed_roundtrip() {
     use math_expressions::expr::MathConst;
@@ -191,18 +236,18 @@ fn constructed_roundtrip() {
     let lopts = latex::LatexOpts::default();
     for expr in cases {
         let t = text::convert(&expr, &topts);
-        assert_eq!(
-            parse_text(&t).as_ref(),
-            Ok(&expr),
-            "text round-trip via {:?}",
-            t
+        let t_back = parse_text(&t).unwrap_or_else(|e| panic!("text {t:?} did not parse: {e}"));
+        assert!(
+            t_back == expr
+                || is_display_only_divergence(&expr, &t_back, &t, |e| text::convert(e, &topts)),
+            "text round-trip via {t:?}\n  expr    {expr:?}\n  reparse {t_back:?}"
         );
         let l = latex::convert(&expr, &lopts);
-        assert_eq!(
-            parse_latex(&l).as_ref(),
-            Ok(&expr),
-            "latex round-trip via {:?}",
-            l
+        let l_back = parse_latex(&l).unwrap_or_else(|e| panic!("latex {l:?} did not parse: {e}"));
+        assert!(
+            l_back == expr
+                || is_display_only_divergence(&expr, &l_back, &l, |e| latex::convert(e, &lopts)),
+            "latex round-trip via {l:?}\n  expr    {expr:?}\n  reparse {l_back:?}"
         );
     }
 }
@@ -231,10 +276,20 @@ fn decimals_are_exact() {
         Expr::Num(Number::Float(_))
     ));
 
-    // "Overflow" literal is exact, not Infinity.
+    // "Overflow" literal is exact, not Infinity. It *displays* in scientific
+    // notation (past 1e21, the JS threshold that exact values honour too), so
+    // exactness is checked against the digits themselves rather than against a
+    // positional rendering — and `avoidScientificNotation` shows all thirty.
     let big = parse_text("1E30").unwrap();
+    assert_eq!(text::convert(&big, &text::TextOpts::default()), "1 * 10^30");
     assert_eq!(
-        text::convert(&big, &text::TextOpts::default()),
+        text::convert(
+            &big,
+            &text::TextOpts {
+                avoid_scientific_notation: true,
+                ..Default::default()
+            }
+        ),
         "1".to_string() + &"0".repeat(30)
     );
 }

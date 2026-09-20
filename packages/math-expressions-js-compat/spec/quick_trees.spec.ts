@@ -185,7 +185,24 @@ describe("tree matching", function () {
     ).toBeFalsy();
   });
 
-  it("matching with function conditions", function () {
+  // ---------------------------------------------------------------------
+  // Deprecated / wontfix: predicate-function and `RegExp` conditions
+  //
+  // Legacy let `variables` map a parameter to any predicate or regex. The port
+  // takes a closed vocabulary instead (`"number"` / `"variable"` / `"any"` /
+  // `true`) and will not support the open forms — see `js_match.rs`'s module
+  // docs for why, in short: the matcher backtracks, so a predicate means a JS
+  // callback per *candidate* binding, and the only real consumer
+  // (DoenetML's `<matchesPattern>`) passes exactly the two closures the
+  // vocabulary already spells.
+  //
+  // These are kept, not deleted: they are the record of what legacy accepted,
+  // and they are the specification a bridge would have to satisfy if the
+  // decision is ever revisited. `allow_permutations` and
+  // `allow_implicit_identities` — the two options Doenet does use — are covered
+  // by the declared-kind tests that follow this block.
+  // ---------------------------------------------------------------------
+  it.skip("[wontfix: predicate conditions] matching with function conditions", function () {
     var pattern = TREE("a+b");
     function isString(s) {
       return typeof s === "string";
@@ -219,7 +236,7 @@ describe("tree matching", function () {
     ).toBeFalsy();
   });
 
-  it("matching with regular expression conditions", function () {
+  it.skip("[wontfix: regex conditions] matching with regular expression conditions", function () {
     var pattern = TREE("a+b");
 
     expect(trees.match(TREE("2x+3y"), pattern)).toBeTruthy();
@@ -264,7 +281,7 @@ describe("tree matching", function () {
     ).toBeFalsy();
   });
 
-  it("match with permutation", function () {
+  it.skip("[wontfix: predicate conditions] match with permutation", function () {
     var pattern = TREE("e^(ax^2+bx+c)");
     function isNumber(s) {
       return typeof s === "number";
@@ -339,7 +356,7 @@ describe("tree matching", function () {
     ).toBeTruthy();
   });
 
-  it("match with implicit identity", function () {
+  it.skip("[wontfix: predicate conditions] match with implicit identity", function () {
     var pattern = TREE("ax^2+bx+c");
 
     function isNumber(s) {
@@ -438,7 +455,7 @@ describe("tree matching", function () {
     expect(match["b"]).toEqual(1);
   });
 
-  it("consistency with with implicit identity", function () {
+  it.skip("[wontfix: predicate conditions] consistency with with implicit identity", function () {
     var pattern = TREE("bx^2+bx+c");
 
     function isNumber(s) {
@@ -486,7 +503,7 @@ describe("tree matching", function () {
     ).toBeTruthy();
   });
 
-  it("match chunks", function () {
+  it.skip("[wontfix: predicate conditions] match chunks", function () {
     function isNumber(s) {
       if (typeof s === "number") return true;
       if (Array.isArray(s) && s[0] === "-" && typeof s[1] === "number")
@@ -548,7 +565,7 @@ describe("tree matching", function () {
     expect(match).toBeTruthy();
   });
 
-  it("extended match", function () {
+  it.skip("[wontfix: predicate conditions; also needs allow_extended_match] extended match", function () {
     function isNumber(s) {
       if (typeof s === "number") return true;
       if (Array.isArray(s) && s[0] === "-" && typeof s[1] === "number")
@@ -616,7 +633,7 @@ describe("tree matching", function () {
     expect(match["_skipped"]).toEqual(["x", TREE("z/2")]);
   });
 
-  it("trig extended match", function () {
+  it.skip("[wontfix: predicate conditions; also needs allow_extended_match] trig extended match", function () {
     function isNumber(s) {
       if (typeof s === "number") return true;
       if (Array.isArray(s) && s[0] === "-" && typeof s[1] === "number")
@@ -756,6 +773,89 @@ describe("tree matching", function () {
     );
 
     expect(match).toEqual(false);
+  });
+
+  // The replacements for the skipped block above. `allow_permutations` and
+  // `allow_implicit_identities` are supported and are what DoenetML's
+  // `<matchesPattern>` passes, but every legacy test that exercised them also
+  // declared its parameters with predicates — so skipping those as wontfix
+  // would have left both options with no coverage anywhere in the suite. These
+  // are the same scenarios with the conditions written as declared kinds.
+
+  it("permutations, with parameters declared by kind", function () {
+    // `a: "number"` and `x: "variable"` are what the legacy spec expressed as
+    // `isNumber` and `/^[a-zA-Z]$/`.
+    const pattern = TREE("e^(ax^2+bx+c)");
+    const vars = {
+      variables: {
+        a: "number",
+        b: "number",
+        c: "number",
+        x: "variable",
+      },
+    };
+
+    expect(trees.match(TREE("e^(0.3s^2+3s+7)"), pattern, vars)).toBeTruthy();
+    // Same terms, written in another order: no match until permutations are on.
+    expect(trees.match(TREE("e^(7+3s+s^2*0.3)"), pattern, vars)).toBeFalsy();
+    expect(
+      trees.match(TREE("e^(7+3s+s^2*0.3)"), pattern, {
+        ...vars,
+        allow_permutations: true,
+      }),
+    ).toBeTruthy();
+
+    // The `expr.match` entry point honors the same params as `trees.match`.
+    expect(me.fromText("e^(0.3s^2+3s+7)").match(pattern, vars)).toBeTruthy();
+    expect(me.fromText("e^(7+3s+s^2*0.3)").match(pattern, vars)).toBeFalsy();
+    expect(
+      me
+        .fromText("e^(7+3s+s^2*0.3)")
+        .match(pattern, { ...vars, allow_permutations: true }),
+    ).toBeTruthy();
+
+    // A kind is a real constraint, not decoration: `x` must be a bare variable
+    // and the coefficients must be numbers.
+    expect(trees.match(TREE("e^(0.3s^2+3s+q)"), pattern, vars)).toBeFalsy();
+  });
+
+  it("implicit identities, with parameters declared by kind", function () {
+    const pattern = TREE("ax^2+bx+c");
+    const vars = {
+      variables: {
+        a: "number",
+        b: "number",
+        c: "number",
+        x: "variable",
+      },
+      allow_permutations: true,
+    };
+
+    // A negated coefficient binds as the number `-3`, not as `["-",3]` — the
+    // consumers read these bindings as coefficients.
+    const m = trees.match(TREE("0.3s^2-3s+7"), pattern, vars);
+    expect(m).toBeTruthy();
+    expect([m["a"], m["b"], m["c"]]).toEqual([0.3, -3, 7]);
+
+    // With no coefficient written there is no operand for `a`, so the match
+    // fails until `a` is allowed to take the multiplicative identity.
+    expect(trees.match(TREE("s^2-3s+7"), pattern, vars)).toBeFalsy();
+    const implicit = trees.match(TREE("s^2-3s+7"), pattern, {
+      ...vars,
+      allow_implicit_identities: ["a"],
+    });
+    expect(implicit).toBeTruthy();
+    expect([implicit["a"], implicit["b"], implicit["c"]]).toEqual([1, -3, 7]);
+
+    // `c` takes the *additive* identity, since it stands alone in a sum.
+    const noConstant = trees.match(TREE("s^2-3s"), pattern, {
+      ...vars,
+      allow_implicit_identities: ["a", "c"],
+    });
+    expect(noConstant).toBeTruthy();
+    expect([noConstant["a"], noConstant["b"], noConstant["c"]]).toEqual([
+      1, -3, 0,
+    ]);
   });
 });
 
@@ -957,7 +1057,7 @@ describe("tree transformations", function () {
     expect(default_order(result)).toEqual(default_order(TREE("q*t+y/2+1")));
   });
 
-  it("combine like terms", function () {
+  it.skip("[wontfix: predicate conditions] combine like terms", function () {
     function isNumber(s) {
       if (typeof s === "number") return true;
       if (Array.isArray(s) && s[0] === "-" && typeof s[1] === "number")

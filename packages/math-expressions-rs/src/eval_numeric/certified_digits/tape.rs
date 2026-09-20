@@ -206,7 +206,9 @@ fn emit(
             _ => ops.push(Op::Pow),
         },
         Expr::Apply(head, _) => {
-            let Expr::Sym(f) = &**head else { unreachable!() };
+            let Expr::Sym(f) = &**head else {
+                unreachable!()
+            };
             let Some(id) = kernels::lookup(&f.name()) else {
                 return Err(CompileError::NotNumeric("unknown function"));
             };

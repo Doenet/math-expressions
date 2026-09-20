@@ -33,20 +33,7 @@ impl Expression {
         other: &Expression,
         options_json: &str,
     ) -> Result<bool, JsError> {
-        let v: serde_json::Value =
-            serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
-        let mut o = EqOptions::default();
-        read_opt_f64(&v, "relativeTolerance", &mut o.relative_tolerance);
-        read_opt_f64(&v, "absoluteTolerance", &mut o.absolute_tolerance);
-        read_opt_f64(&v, "toleranceForZero", &mut o.tolerance_for_zero);
-        read_opt_f64(&v, "allowedErrorInNumbers", &mut o.allowed_error_in_numbers);
-        read_opt_bool(
-            &v,
-            "includeErrorInNumberExponents",
-            &mut o.include_error_in_number_exponents,
-        );
-        read_opt_bool(&v, "allowedErrorIsAbsolute", &mut o.allowed_error_is_absolute);
-        read_opt_bool(&v, "allowBlanks", &mut o.allow_blanks);
+        let o = eq_options_from_json(options_json)?;
         Ok(math_expressions::equals(&self.0, &other.0, &o))
     }
 
@@ -80,9 +67,34 @@ impl Expression {
         let v: serde_json::Value =
             serde_json::from_str(comparison).unwrap_or(serde_json::Value::Null);
         match structural_comparison_from_json(&v) {
-            Some(c) => math_expressions::structural_equality(&self.0, &key.0, &c, &EqOptions::default()),
+            Some(c) => {
+                math_expressions::structural_equality(&self.0, &key.0, &c, &EqOptions::default())
+            }
             None => false,
         }
+    }
+
+    /// [`Self::structural_equality`] with grading options, the syntactic
+    /// sibling of [`Self::equals_with_options`]. `options_json` uses the same
+    /// keys, so `allowBlanks` / `allowedErrorInNumbers` reach the syntactic
+    /// path instead of being silently dropped by the caller.
+    ///
+    /// Malformed JSON is an error for the same reason it is on
+    /// [`Self::equals_with_options`]: a typo'd grading config must not grade
+    /// with the wrong tolerances.
+    pub fn structural_equality_with_options(
+        &self,
+        key: &Expression,
+        comparison: &str,
+        options_json: &str,
+    ) -> Result<bool, JsError> {
+        let o = eq_options_from_json(options_json)?;
+        let v: serde_json::Value =
+            serde_json::from_str(comparison).unwrap_or(serde_json::Value::Null);
+        Ok(match structural_comparison_from_json(&v) {
+            Some(c) => math_expressions::structural_equality(&self.0, &key.0, &c, &o),
+            None => false,
+        })
     }
 
     // ---- certified zero-equivalence (FULL_SIMPLIFY S1) ----
@@ -111,10 +123,47 @@ impl Expression {
     }
 }
 
+/// Decode `EqOptions` from the grading-options JSON shared by every equality
+/// entry point. Keys (all optional): numbers — `relativeTolerance`,
+/// `absoluteTolerance`, `toleranceForZero`, `allowedErrorInNumbers`; bools —
+/// `includeErrorInNumberExponents`, `allowedErrorIsAbsolute`, `allowBlanks`.
+///
+/// Malformed JSON is an error rather than a silent default, so one decoder
+/// keeps the numeric and syntactic paths from drifting apart.
+pub(super) fn eq_options_from_json(options_json: &str) -> Result<EqOptions, JsError> {
+    let v: serde_json::Value =
+        serde_json::from_str(options_json).map_err(|e| JsError::new(&e.to_string()))?;
+    let mut o = EqOptions::default();
+    read_opt_f64(&v, "relativeTolerance", &mut o.relative_tolerance);
+    read_opt_f64(&v, "absoluteTolerance", &mut o.absolute_tolerance);
+    read_opt_f64(&v, "toleranceForZero", &mut o.tolerance_for_zero);
+    read_opt_f64(&v, "allowedErrorInNumbers", &mut o.allowed_error_in_numbers);
+    read_opt_bool(
+        &v,
+        "includeErrorInNumberExponents",
+        &mut o.include_error_in_number_exponents,
+    );
+    read_opt_bool(
+        &v,
+        "allowedErrorIsAbsolute",
+        &mut o.allowed_error_is_absolute,
+    );
+    read_opt_bool(&v, "allowBlanks", &mut o.allow_blanks);
+    // The coercion flags. Without these the JS `equals(other, {
+    // coerce_tuples_arrays: false })` was accepted and ignored, so a caller
+    // asking to tell `(a,b)` from `[a,b]` — or from the interval — got the
+    // coerced answer anyway.
+    read_opt_bool(&v, "coerceTuplesArrays", &mut o.coerce_tuples_arrays);
+    read_opt_bool(&v, "coerceVectors", &mut o.coerce_vectors);
+    Ok(o)
+}
+
 /// Decode a `StructuralComparison` from either a bare name string or a
 /// `{"type": …}` object (STRUCTURAL_COMPARISON F3). Returns `None` for an unknown name.
 fn structural_comparison_from_json(v: &serde_json::Value) -> Option<StructuralComparison> {
-    let name = v.as_str().or_else(|| v.get("type").and_then(|t| t.as_str()))?;
+    let name = v
+        .as_str()
+        .or_else(|| v.get("type").and_then(|t| t.as_str()))?;
     Some(match name {
         "reducedFraction" => StructuralComparison::ReducedFraction,
         "mixedNumber" => StructuralComparison::MixedNumber,

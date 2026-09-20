@@ -6,8 +6,8 @@
 //! edits that would silently change parser defaults or normalization behavior
 //! fail loudly. When a change is intentional, update the literals here.
 
-use math_expressions::special_functions;
 use math_expressions::eval_numeric::certified_digits::kernels;
+use math_expressions::special_functions;
 
 /// The text parser's default `applied_function_symbols` exactly as it stood
 /// before the registry migration (parse/text.rs history).
@@ -115,11 +115,23 @@ fn canonical_name_matches_historical_normalizations() {
 #[test]
 fn inverse_of_matches_historical_table() {
     for (name, inv) in OLD_INVERSES {
-        assert_eq!(special_functions::inverse_of(name), Some(*inv), "inverse of {name:?}");
+        assert_eq!(
+            special_functions::inverse_of(name),
+            Some(*inv),
+            "inverse of {name:?}"
+        );
     }
     // Only the 12 canonical trig/hyperbolic spellings have notated inverses;
     // aliases (cosec) and inverse names themselves do not.
-    for name in ["cosec", "asin", "arcsin", "log", "exp", "abs", "notafunction"] {
+    for name in [
+        "cosec",
+        "asin",
+        "arcsin",
+        "log",
+        "exp",
+        "abs",
+        "notafunction",
+    ] {
         assert_eq!(special_functions::inverse_of(name), None, "{name:?}");
     }
 }
@@ -134,7 +146,15 @@ fn move_exponent_matches_historical_set() {
     }
     // Spellings deliberately NOT in the historical set: `cosec` (alias of
     // csc but never listed), the inverse functions, and non-trig functions.
-    for name in ["cosec", "asin", "arcsin", "exp", "sqrt", "abs", "notafunction"] {
+    for name in [
+        "cosec",
+        "asin",
+        "arcsin",
+        "exp",
+        "sqrt",
+        "abs",
+        "notafunction",
+    ] {
         assert!(!special_functions::moves_exponent_outside(name), "{name:?}");
     }
 }
@@ -145,15 +165,23 @@ fn precise_kernels_cover_historical_registry() {
     // listed, alias spellings included, all resolve — and to the same id as
     // their canonical spelling.
     for name in [
-        "sqrt", "exp", "ln", "log", "abs", "sin", "cos", "tan", "asin", "arcsin", "acos",
-        "arccos", "atan", "arctan", "sinh", "cosh", "tanh", "log10",
+        "sqrt", "exp", "ln", "log", "abs", "sin", "cos", "tan", "asin", "arcsin", "acos", "arccos",
+        "atan", "arctan", "sinh", "cosh", "tanh", "log10",
     ] {
         assert!(kernels::lookup(name).is_some(), "{name:?} lost its kernel");
     }
     assert_eq!(kernels::lookup("ln"), kernels::lookup("log"));
     assert_eq!(kernels::lookup("arcsin"), kernels::lookup("asin"));
     // Functions that never had precise kernels.
-    for name in ["sec", "csc", "cosec", "sign", "floor", "atan2", "notafunction"] {
+    for name in [
+        "sec",
+        "csc",
+        "cosec",
+        "sign",
+        "floor",
+        "atan2",
+        "notafunction",
+    ] {
         assert!(kernels::lookup(name).is_none(), "{name:?}");
     }
     // Every registered kernel id must be a valid index into the runtime
@@ -197,7 +225,10 @@ fn parse_spellings_are_name_or_alias() {
 #[test]
 fn derivative_templates_are_alias_aware() {
     // Spot checks against the historical calculus/diff.rs table, both spellings.
-    assert_eq!(special_functions::derivative_template("sin"), Some("cos(x)"));
+    assert_eq!(
+        special_functions::derivative_template("sin"),
+        Some("cos(x)")
+    );
     assert_eq!(
         special_functions::derivative_template("arcsin"),
         special_functions::derivative_template("asin")
@@ -240,8 +271,14 @@ fn latex_commands_match_historical_tables() {
     }
     // Never had control words: inverse hyperbolics, lowercase re/im, cosec,
     // shape-rendered functions (floor renders \lfloor, not \floor).
-    for spelling in ["asinh", "arcsinh", "re", "im", "cosec", "floor", "conj", "trace"] {
-        assert_eq!(special_functions::latex_command(spelling), None, "{spelling:?}");
+    for spelling in [
+        "asinh", "arcsinh", "re", "im", "cosec", "floor", "conj", "trace",
+    ] {
+        assert_eq!(
+            special_functions::latex_command(spelling),
+            None,
+            "{spelling:?}"
+        );
     }
 }
 
@@ -249,20 +286,77 @@ fn latex_commands_match_historical_tables() {
 fn eval_coverage_matches_historical_known_function() {
     // The historical eval_numeric/complex.rs `known_function` arity-1 list…
     for name in [
-        "sin", "cos", "tan", "sinh", "cosh", "tanh", "asin", "acos", "atan", "asinh", "acosh",
-        "atanh", "sec", "csc", "cot", "sech", "csch", "coth", "asec", "acsc", "acot", "asech",
-        "acsch", "acoth", "exp", "log", "log10", "sqrt", "cbrt", "abs", "sign", "conj", "re",
-        "im", "arg", "floor", "ceil", "round", "trace", "factorial",
+        "sin",
+        "cos",
+        "tan",
+        "sinh",
+        "cosh",
+        "tanh",
+        "asin",
+        "acos",
+        "atan",
+        "asinh",
+        "acosh",
+        "atanh",
+        "sec",
+        "csc",
+        "cot",
+        "sech",
+        "csch",
+        "coth",
+        "asec",
+        "acsc",
+        "acot",
+        "asech",
+        "acsch",
+        "acoth",
+        "exp",
+        "log",
+        "log10",
+        "sqrt",
+        "cbrt",
+        "abs",
+        "sign",
+        "conj",
+        "re",
+        "im",
+        "arg",
+        "floor",
+        "ceil",
+        "round",
+        "trace",
+        "factorial",
+        "erf",
+        // `det` joined the list in review: like `trace` its kernel is mathjs's
+        // scalar identity (`det(2) = 2`), and without one `det(x)` was sampled
+        // as an unknown, so it compared unequal to `x` where legacy said equal.
+        // A `Matrix` argument does not come here at all — see
+        // `matrix::scalar_reduction`, and `matrix.rs`'s equality tests.
+        "det",
     ] {
-        assert!(special_functions::eval1(name).is_some(), "{name:?} must evaluate");
+        assert!(
+            special_functions::eval1(name).is_some(),
+            "{name:?} must evaluate"
+        );
     }
     // …the arity-2 list…
     for name in ["atan2", "nthroot", "nCr", "nPr", "mod"] {
-        assert!(special_functions::eval2(name).is_some(), "{name:?} must evaluate");
+        assert!(
+            special_functions::eval2(name).is_some(),
+            "{name:?} must evaluate"
+        );
     }
     // …and names deliberately NOT evaluable: aliases (evaluation runs on
-    // canonicalized trees), det, erf, rootof.
-    for name in ["arcsin", "ln", "cosec", "det", "erf", "rootof", "notafunction"] {
+    // canonicalized trees) and `rootof`, whose `Apply` spelling `canonicalize`
+    // turns back into the `Expr::RootOf` leaf before any evaluator sees it.
+    //
+    // This half of the test pins a *decision*, not a fact about the outside
+    // world, so it cannot notice a head that ought to evaluate and does not —
+    // which is how `erf` and then `det` sat here while legacy evaluated both.
+    // The check with outside authority is
+    // `math-expressions-js-compat/spec/quick_doenet_compat_pr84.spec.ts`,
+    // which runs the same expressions the JS library answered.
+    for name in ["arcsin", "ln", "cosec", "rootof", "notafunction"] {
         assert!(special_functions::eval1(name).is_none(), "{name:?}");
     }
 }
@@ -281,6 +375,9 @@ fn antiderivative_builders_cover_historical_table() {
         );
     }
     for name in ["sec", "csc", "asec", "abs", "cbrt", "notafunction"] {
-        assert!(special_functions::antiderivative_builder(name).is_none(), "{name:?}");
+        assert!(
+            special_functions::antiderivative_builder(name).is_none(),
+            "{name:?}"
+        );
     }
 }

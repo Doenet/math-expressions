@@ -20,6 +20,27 @@ pub type Env = HashMap<String, Complex64>;
 /// keyed by their structure, so `f(a)` takes the same value on both sides of a
 /// comparison. This lets `(f(a)-f(b))·x` and `(f(b)-f(a))·(-x)` agree.
 pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
+    Some(real_axis_from_above(eval_complex_inner(e, env)?))
+}
+
+/// Force a zero imaginary part to `+0.0`.
+///
+/// Negating a real produces `im = -0.0` (`-(0.25 + 0i)` is `-0.25 - 0i`), which
+/// puts the value on the *underside* of the branch cut: `arg` comes back `-π`
+/// instead of `+π`, so `sqrt(-1/4)` evaluated as `sqrt(-(1/4))` gave `-i/2`
+/// while the same number spelled `sqrt(-0.25)` gave `+i/2`. Every root and log
+/// rule here assumes the principal branch, where a negative real is approached
+/// from above. The *real* part keeps its sign — that one is load-bearing, since
+/// `1/(-0)` is `-∞` while `1/0` is `+∞` (see `Number::NegZero`).
+fn real_axis_from_above(z: Complex64) -> Complex64 {
+    if z.im == 0.0 {
+        Complex64::new(z.re, 0.0)
+    } else {
+        z
+    }
+}
+
+fn eval_complex_inner(e: &Expr, env: &Env) -> Option<Complex64> {
     if is_opaque_atom(e) {
         return env.get(&opaque_key(e)).copied();
     }
@@ -27,12 +48,14 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
         Expr::Num(n) => number_to_complex(n),
         // A numeric constant: the k-th root of its polynomial, isolation
         // cached per polynomial (MATRIX_PLAN §2d).
-        Expr::RootOf { poly, index } => return crate::polynomials::rootof::numeric_root(poly, *index),
+        Expr::RootOf { poly, index } => {
+            return crate::polynomials::rootof::numeric_root(poly, *index)
+        }
         Expr::Const(c) => match c {
             MathConst::Pi => Complex64::new(std::f64::consts::PI, 0.0),
             MathConst::E => Complex64::new(std::f64::consts::E, 0.0),
             MathConst::I => Complex64::I,
-            MathConst::Inf | MathConst::NegInf | MathConst::NaN => return None,
+            MathConst::Inf | MathConst::NegInf | MathConst::NaN | MathConst::None => return None,
         },
         // `pi`, `e`, `i` are number-symbols (constants), not free variables —
         // the parser emits them as plain symbols (matching JS convention).
@@ -40,7 +63,12 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
             "pi" => Complex64::new(std::f64::consts::PI, 0.0),
             "e" => Complex64::new(std::f64::consts::E, 0.0),
             "i" => Complex64::I,
-            name => *env.get(name)?,
+            // A binding wins; mathjs's named constants stand in when there is
+            // none, which is the scope the JS library evaluated in.
+            name => match env.get(name) {
+                Some(v) => *v,
+                None => Complex64::new(crate::expr::sym::mathjs_constant(name)?, 0.0),
+            },
         },
 
         Expr::Add(xs) => xs
@@ -54,16 +82,47 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
         Expr::Pow(b, e) => {
             let base = eval_complex(b, env)?;
             let exp = eval_complex(e, env)?;
-            // Real base with a small integer exponent: exact real powi —
-            // `powc` goes through exp/ln and yields 3² = 9.000000000000002,
-            // which mathjs (real pow) does not. Matches mathjs fidelity and
-            // removes float noise from the sampler.
-            if base.im == 0.0
-                && exp.im == 0.0
-                && exp.re.fract() == 0.0
-                && exp.re.abs() <= i32::MAX as f64
-            {
-                Complex64::new(base.re.powi(exp.re as i32), 0.0)
+            // An integer exponent is repeated multiplication, so compute it
+            // that way rather than through `powc`'s exp/ln round trip.
+            //
+            // For a *real* base that is mathjs fidelity: `powc` yields
+            // 3² = 9.000000000000002, which mathjs (real pow) does not.
+            //
+            // For a base off the real axis it is a soundness matter. `powc`
+            // returns i² = -1 + 1.2246e-16i and i⁴ = 1 - 2.449e-16i, and the
+            // assumptions layer classifies a constant by testing `im != 0.0`
+            // exactly (`assumptions::facts::Facts::of_constant`) — so `i^2`
+            // came back not-real, not-integer, not-negative, while `simplify`
+            // folded the same expression to `-1`. Killing the residue here
+            // fixes it at the source; the alternative, an epsilon in
+            // `of_constant`, would let a genuinely tiny imaginary part claim
+            // to be real, which is the unsound direction. Exponentiation by
+            // squaring over exact complex multiplication introduces no residue
+            // of its own: every Gaussian-integer power lands exactly.
+            if exp.im == 0.0 && exp.re.fract() == 0.0 && exp.re.abs() <= i32::MAX as f64 {
+                if base.im == 0.0 {
+                    Complex64::new(base.re.powi(exp.re as i32), 0.0)
+                } else {
+                    base.powi(exp.re as i32)
+                }
+            } else if base.im == 0.0 && base.re < 0.0 {
+                // A negative real base under an odd root takes the *real*
+                // branch: `(-8)^(1/3)` is `-2`, not the principal `1 + i√3`.
+                // This is the branch `simplify` already commits to (its
+                // radical cluster folds `(-8)^(1/3) → -2` and pulls
+                // `(-2)^(1/3) → -2^(1/3)`), and `cbrt`/`nthroot` follow it in
+                // their `eval1`/`eval2` — leaving *this* arm principal split
+                // `x^(1/3)` from `cbrt(x)` at negative samples. The gate is
+                // structural (an exact rational exponent with an odd
+                // denominator), so `(-8)^(1/2)` and `(-8)^0.3333` — which is
+                // `3333/10000`, an even denominator — stay principal.
+                match odd_root_exponent(e) {
+                    Some(p) => {
+                        let mag = (-base.re).powf(exp.re);
+                        Complex64::new(if p % 2 == 0 { mag } else { -mag }, 0.0)
+                    }
+                    None => base.powc(exp),
+                }
             } else {
                 base.powc(exp)
             }
@@ -80,29 +139,53 @@ pub fn eval_complex(e: &Expr, env: &Env) -> Option<Complex64> {
 /// unknown function, a subscript, a prime, or an `OtherOp` (`vec`, `angle`, …).
 pub(crate) fn is_opaque_atom(e: &Expr) -> bool {
     match e {
-        Expr::Apply(head, args) => !head_evaluable(head, args.len()),
+        Expr::Apply(head, args) => !head_evaluable(head, args),
         Expr::Index(..) | Expr::Prime(_) | Expr::OtherOp(..) => true,
         _ => false,
     }
 }
 
-/// Can `eval_apply` handle this head/arity? (A `Pow` head is `sin^2`-style; an
-/// `Index` head is a subscripted log `log_b`.)
-fn head_evaluable(head: &Expr, nargs: usize) -> bool {
+/// Can `eval_apply` handle this head and these arguments? (A `Pow` head is
+/// `sin^2`-style; an `Index` head is a subscripted log `log_b`.)
+///
+/// Takes the arguments rather than just their count because one decision needs
+/// to look at them: `det`/`trace` of a literal `Matrix` reduce to a scalar
+/// (`matrix::scalar_reduction`) while the same heads applied to anything else
+/// go through their scalar `eval1`.
+fn head_evaluable(head: &Expr, args: &[Expr]) -> bool {
     match head {
-        Expr::Pow(inner, _) => head_evaluable(inner, nargs),
-        Expr::Sym(s) => known_function(&s.name(), nargs),
+        Expr::Pow(inner, _) => head_evaluable(inner, args),
+        Expr::Sym(s) => {
+            let nargs = crate::normalize::spread_list_argument(head, args)
+                .map_or(args.len(), |spread| spread.len());
+            known_function(&s.name(), nargs)
+                || crate::matrix::scalar_reduction(head, args).is_some()
+        }
         Expr::Index(inner, _) => {
-            nargs == 1 && matches!(inner.as_ref(), Expr::Sym(s) if s.name() == "log")
+            args.len() == 1 && matches!(inner.as_ref(), Expr::Sym(s) if s.name() == "log")
         }
         _ => false,
     }
 }
 
 /// Can the registry evaluate this head at this arity? (`FnDef::eval1`/
-/// `eval2` in `crate::special_functions` — canonical spellings only, matching the
-/// historical hardcoded list.)
+/// `eval2`/`evaln` in `crate::special_functions`.)
+///
+/// Alias spellings resolve to their canonical definition, exactly as
+/// [`eval_apply`] does — and they must, because this runs *first*: it is what
+/// [`is_opaque_atom`] consults, so a head judged unknown here is sampled as an
+/// opaque variable and never reaches the evaluator at all. Leaving the two out
+/// of step is what made `ln(x)` a variable named `Apply(ln, …)` rather than a
+/// logarithm. [`free_symbols`] mirrors the same decision through this function.
 fn known_function(name: &str, nargs: usize) -> bool {
+    let name = crate::special_functions::canonical_name(name).unwrap_or(name);
+    // A variadic aggregate is evaluable at every arity, so it is checked
+    // before the arity split. Without this an application like `sum(1,2,3)`
+    // would be classified as an opaque atom and *sampled as a variable*,
+    // which is why it used to make `evaluate_to_constant` return `None`.
+    if crate::special_functions::evaln(name).is_some() {
+        return true;
+    }
     match nargs {
         1 => crate::special_functions::eval1(name).is_some(),
         2 => crate::special_functions::eval2(name).is_some(),
@@ -117,6 +200,36 @@ pub(crate) fn opaque_key(e: &Expr) -> String {
 
 fn number_to_complex(n: &Number) -> Complex64 {
     Complex64::new(n.to_f64(), 0.0)
+}
+
+/// The exponent of a `Pow`, read as an exact reduced rational with an **odd**
+/// denominator — the gate for the real-branch rule in the `Pow` arm above.
+/// Returns the reduced numerator, whose parity decides the result's sign.
+///
+/// `Number::Rat`'s lowest-terms invariant makes "odd denominator" a property
+/// of the *value*: `(-8)^(2/6)` lands with `(-8)^(1/3)` while `(-8)^0.3333` —
+/// exactly `3333/10000` — does not. The `Div` and `Neg` shapes are matched
+/// too, because this evaluator is also `evaluate_many`'s per-point fallback,
+/// which hands it the *raw* tree — there `1/3` is still a quotient node
+/// rather than a folded rational, and missing it would make the fallback
+/// disagree with the canonical-tree walk `evaluate_fast_f64` runs.
+fn odd_root_exponent(e: &Expr) -> Option<i64> {
+    match e {
+        Expr::Num(Number::Rat(p, q, _)) => (q % 2 != 0).then_some(*p),
+        Expr::Div(a, b) => match (&**a, &**b) {
+            (Expr::Num(Number::Int(p)), Expr::Num(Number::Int(q))) if *q != 0 => {
+                match Number::rat(*p, *q) {
+                    Number::Rat(p, q, _) => (q % 2 != 0).then_some(p),
+                    // Reduced to an integer — an integer exponent, which the
+                    // arm above has already handled by value.
+                    _ => None,
+                }
+            }
+            _ => None,
+        },
+        Expr::Neg(x) => odd_root_exponent(x)?.checked_neg(),
+        _ => None,
+    }
 }
 
 fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
@@ -136,18 +249,52 @@ fn eval_apply(head: &Expr, args: &[Expr], env: &Env) -> Option<Complex64> {
             }
         }
     }
+    // `det`/`trace` of a literal matrix: reduce to the scalar expression it
+    // denotes and evaluate that. This runs *before* the registry dispatch
+    // because both heads also carry a scalar `eval1` (mathjs's `det(2) = 2`),
+    // which would be handed an `Expr::Matrix` it cannot evaluate.
+    if let Some(reduced) = crate::matrix::scalar_reduction(head, args) {
+        return eval_complex(&reduced, env);
+    }
+    // `f([a, b])` is `f(a, b)`, as it was in legacy — and the fold in
+    // `normalize::fold_apply` reads it that way, so this has to as well or the
+    // two disagree about whether the application has a value. (The
+    // parenthesized `f((a, b))` is already flattened by the parsers.) See
+    // `normalize::spread_list_argument`.
+    if let Some(spread) = crate::normalize::spread_list_argument(head, args) {
+        return eval_apply(head, &spread, env);
+    }
     let Expr::Sym(s) = head else { return None };
-    let name = s.name();
+    let spelling = s.name();
+    // Route alias spellings to their canonical definition. `eval1`/`eval2`
+    // match the canonical name only, on the premise that evaluation runs on
+    // canonicalized trees — but `ops::evaluate` is a public entry point taking
+    // whatever tree a caller parsed, so that premise does not hold here and
+    // `ln(2)` used to come back `None` while `log(2)` evaluated. Every alias in
+    // the registry is a pure spelling variant of the same function (`ln`/`log`,
+    // `arcsin`/`asin`, `cosec`/`csc`), so resolving one cannot change a value.
+    let name: &str = crate::special_functions::canonical_name(&spelling).unwrap_or(&spelling);
 
-    // The per-function evaluation rules are `FnDef::eval1`/`eval2` in
+    // The per-function evaluation rules are `FnDef::eval1`/`eval2`/`evaln` in
     // `crate::special_functions`; this dispatch only routes by arity.
+    //
+    // The variadic rule comes first: an aggregate (`sum`, `mean`, `max`) is
+    // the same function at every arity, so `mean(1,2)` must not be routed to
+    // a two-argument rule it does not have.
+    if let Some(f) = crate::special_functions::evaln(name) {
+        let zs: Vec<Complex64> = args
+            .iter()
+            .map(|a| eval_complex(a, env))
+            .collect::<Option<_>>()?;
+        return f(&zs);
+    }
     if let [arg] = args {
-        let f = crate::special_functions::eval1(&name)?;
+        let f = crate::special_functions::eval1(name)?;
         let z = eval_complex(arg, env)?;
         return f(z);
     }
     if let [a, b] = args {
-        let f = crate::special_functions::eval2(&name)?;
+        let f = crate::special_functions::eval2(name)?;
         let (za, zb) = (eval_complex(a, env)?, eval_complex(b, env)?);
         return f(za, zb);
     }
@@ -172,7 +319,12 @@ pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
                 out.insert(name);
             }
         }
-        Expr::Num(_) | Expr::Const(_) | Expr::RootOf { .. } | Expr::Blank | Expr::Ldots => {}
+        Expr::Num(_)
+        | Expr::Const(_)
+        | Expr::Bool(_)
+        | Expr::RootOf { .. }
+        | Expr::Blank
+        | Expr::Ldots => {}
         Expr::Neg(x) | Expr::Not(x) => free_symbols(x, out),
         Expr::Pow(a, b) | Expr::Div(a, b) => {
             free_symbols(a, out);
@@ -199,7 +351,7 @@ pub fn free_symbols(e: &Expr, out: &mut std::collections::BTreeSet<String>) {
             free_symbols(&endpoints.1, out);
         }
         Expr::Relation { operands, .. } => operands.iter().for_each(|x| free_symbols(x, out)),
-        Expr::Matrix { entries, .. } => entries.iter().for_each(|x| free_symbols(x, out)),
+        Expr::Matrix(m) => m.entries().iter().for_each(|x| free_symbols(x, out)),
         // Opaque nodes (Index, Prime, OtherOp) are handled above.
         Expr::Index(..) | Expr::Prime(_) | Expr::OtherOp(..) => {}
     }

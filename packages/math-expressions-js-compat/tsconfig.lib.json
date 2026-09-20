@@ -1,0 +1,16 @@
+{
+  // `npm run typecheck`. The compat layer only — not `spec/`.
+  //
+  // `spec/` is the legacy JS suite renamed to `.spec.ts`; it has thousands of
+  // type errors (Jasmine globals, untyped fixtures, `me.fromText(…)` results
+  // indexed as records) and typing it is a separate piece of work. Including it
+  // would mean the gate could never be turned on, and a gate that is off is
+  // what let `math-expressions-rs-wasm`'s `src-js/wasm.ts` — the declared
+  // single source of truth for the wasm surface — drift ten members and one
+  // arity away from what `lib/**` actually calls.
+  //
+  // Keep this at zero errors. `tsconfig.json` stays as it is, describing the
+  // whole package for editors.
+  "extends": "./tsconfig.json",
+  "include": ["lib"]
+}

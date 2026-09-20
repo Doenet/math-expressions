@@ -82,14 +82,7 @@ fn free_vars(c: &Expr) -> Vec<String> {
 
 /// Deterministic "random" rational sample points, chosen to dodge common
 /// removable structure (small integers, halves) and singularities at 0.
-const SAMPLE_POINTS: &[(i64, i64)] = &[
-    (7, 3),
-    (-11, 5),
-    (13, 4),
-    (2, 7),
-    (-17, 6),
-    (23, 8),
-];
+const SAMPLE_POINTS: &[(i64, i64)] = &[(7, 3), (-11, 5), (13, 4), (2, 7), (-17, 6), (23, 8)];
 
 fn refute_by_sampling(e: &Expr, vars: &[String]) -> MaybeBool {
     use std::collections::HashMap;
@@ -99,13 +92,23 @@ fn refute_by_sampling(e: &Expr, vars: &[String]) -> MaybeBool {
             .enumerate()
             .map(|(i, v)| {
                 let (n, d) = SAMPLE_POINTS[(round + i) % SAMPLE_POINTS.len()];
-                (v.clone(), Expr::Num(Number::from_bigrational(BigRational::new(n.into(), d.into()))))
+                (
+                    v.clone(),
+                    Expr::Num(Number::from_bigrational(BigRational::new(
+                        n.into(),
+                        d.into(),
+                    ))),
+                )
             })
             .collect();
         let at = crate::ops::substitute(e, &subs);
         match crate::eval_numeric::certified_digits::evaluate_to_precision(&at, 15) {
-            crate::eval_numeric::certified_digits::Precise::Exact(n) if !n.is_zero() => return Some(false),
-            crate::eval_numeric::certified_digits::Precise::Bounded(m) if certified_nonzero(&m) => return Some(false),
+            crate::eval_numeric::certified_digits::Precise::Exact(n) if !n.is_zero() => {
+                return Some(false)
+            }
+            crate::eval_numeric::certified_digits::Precise::Bounded(m) if certified_nonzero(&m) => {
+                return Some(false)
+            }
             _ => {}
         }
     }

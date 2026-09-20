@@ -44,9 +44,7 @@ pub fn char_poly(e: &Expr, var: &str) -> Option<Expr> {
 /// cₖ = −tr Mₖ / k`. Only ring ops and division by integers — exact over ℚ.
 /// Returns dense monic coefficients, low → high.
 pub(super) fn charpoly_rational(a: &[BigRational], n: usize) -> UPoly {
-    let tr = |m: &[BigRational]| -> BigRational {
-        (0..n).map(|i| m[i * n + i].clone()).sum()
-    };
+    let tr = |m: &[BigRational]| -> BigRational { (0..n).map(|i| m[i * n + i].clone()).sum() };
     let matmul_r = |x: &[BigRational], y: &[BigRational]| -> Vec<BigRational> {
         let mut out = vec![BigRational::zero(); n * n];
         for i in 0..n {
@@ -94,10 +92,7 @@ fn upoly_in_var(p: &UPoly, var: &str) -> Expr {
             let num = Expr::Num(Number::from_bigrational(c.clone()));
             match i {
                 0 => num,
-                _ => mul(vec![
-                    num,
-                    pow(Expr::sym(var), Expr::int(i as i64)),
-                ]),
+                _ => mul(vec![num, pow(Expr::sym(var), Expr::int(i as i64))]),
             }
         })
         .collect();
@@ -196,10 +191,7 @@ pub(super) fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>>
                     for sign in [-1i64, 1] {
                         let value = mul(vec![
                             half_inv.clone(),
-                            add(vec![
-                                neg_b.clone(),
-                                mul(vec![Expr::int(sign), sq.clone()]),
-                            ]),
+                            add(vec![neg_b.clone(), mul(vec![Expr::int(sign), sq.clone()])]),
                         ]);
                         let z = numeric_of(&value)?;
                         items.push(EigenItem {
@@ -247,7 +239,10 @@ pub(super) fn eigen_items(p: &UPoly, splits: &[UPoly]) -> Option<Vec<EigenItem>>
 /// 2×2 only (`RootOf` carries ℚ coefficients, so it cannot represent roots
 /// of a symbolic polynomial). `None` = honest refusal (shape, caps, or
 /// uncertifiable ordering).
-pub fn eigenvalues(e: &Expr, _assumptions: &crate::assumptions::Assumptions) -> Option<Vec<(Expr, u32)>> {
+pub fn eigenvalues(
+    e: &Expr,
+    _assumptions: &crate::assumptions::Assumptions,
+) -> Option<Vec<(Expr, u32)>> {
     let c = canonicalize(e);
     let (n, entries) = square_literal(&c)?;
     if let Some(rats) = as_rationals(entries) {
@@ -264,10 +259,7 @@ pub fn eigenvalues(e: &Expr, _assumptions: &crate::assumptions::Assumptions) -> 
             entries[3].clone(),
         );
         let tr = add(vec![a.clone(), d.clone()]);
-        let det = add(vec![
-            mul(vec![a, d]),
-            mul(vec![Expr::int(-1), b, cc]),
-        ]);
+        let det = add(vec![mul(vec![a, d]), mul(vec![Expr::int(-1), b, cc])]);
         let disc = add(vec![
             pow(tr.clone(), Expr::int(2)),
             mul(vec![Expr::int(-4), det]),

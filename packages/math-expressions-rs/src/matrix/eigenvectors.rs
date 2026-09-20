@@ -4,8 +4,8 @@
 use crate::expr::Expr;
 use crate::normalize::canonicalize;
 use crate::polynomials::univariate::{self, UPoly};
-use num_traits::One;
 use num_rational::BigRational;
+use num_traits::One;
 
 use super::eigen::{charpoly_rational, eigen_items};
 use super::elimination::{as_rationals, square_literal};
@@ -42,11 +42,7 @@ fn qinv(x: &[BigRational], f: &UPoly) -> Result<UPoly, UPoly> {
 /// ext-Euclid inverses. `Err(g)` reports a discovered factor of `f`, on which
 /// the caller splits and restarts (bounded). Basis vectors have their first
 /// nonzero component normalized to 1.
-fn quotient_nullspace(
-    a: &[BigRational],
-    n: usize,
-    f: &UPoly,
-) -> Result<Vec<Vec<UPoly>>, UPoly> {
+fn quotient_nullspace(a: &[BigRational], n: usize, f: &UPoly) -> Result<Vec<Vec<UPoly>>, UPoly> {
     // Entries of A − t·I as ring elements.
     let mut m: Vec<UPoly> = Vec::with_capacity(n * n);
     for i in 0..n {
@@ -115,7 +111,10 @@ fn quotient_nullspace(
 /// Eigenvectors: for each eigenvalue, the nullspace of `A − λI` computed over
 /// `ℚ[t]`/(minimal factor), components emerging as polynomials in the abstract
 /// eigenvalue. Rational literal matrices only; `None` = honest refusal.
-pub fn eigenvectors(e: &Expr, _assumptions: &crate::assumptions::Assumptions) -> Option<Vec<EigenPair>> {
+pub fn eigenvectors(
+    e: &Expr,
+    _assumptions: &crate::assumptions::Assumptions,
+) -> Option<Vec<EigenPair>> {
     let c = canonicalize(e);
     let (n, entries) = square_literal(&c)?;
     let rats = as_rationals(entries)?;
@@ -133,7 +132,9 @@ pub fn eigenvectors(e: &Expr, _assumptions: &crate::assumptions::Assumptions) ->
                         .into_iter()
                         .map(|v| {
                             v.into_iter()
-                                .map(|coeffs| crate::polynomials::rootof::upoly_in_root(&coeffs, &item.value))
+                                .map(|coeffs| {
+                                    crate::polynomials::rootof::upoly_in_root(&coeffs, &item.value)
+                                })
                                 .collect::<Vec<Expr>>()
                         })
                         .collect();

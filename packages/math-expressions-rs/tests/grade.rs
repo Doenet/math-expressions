@@ -2,9 +2,8 @@
 //! generic assumptions. Expected values verified against the JS reference.
 
 use math_expressions::{
-    equal_specified_sign_errors, equal_with_sign_errors, equals, evaluate_membership,
-    is_positive, is_real, solve_linear, Assumptions, EqOptions, Expr, RelOp, TextToAst,
-    TextToAstOptions,
+    equal_specified_sign_errors, equal_with_sign_errors, equals, evaluate_membership, is_positive,
+    is_real, solve_linear, Assumptions, EqOptions, Expr, RelOp, TextToAst, TextToAstOptions,
 };
 
 fn parse(s: &str) -> Expr {
@@ -20,15 +19,49 @@ fn o() -> EqOptions {
 #[test]
 fn sign_errors() {
     // JS-oracle verdicts.
-    assert!(equal_specified_sign_errors(&parse("x+y"), &parse("x-y"), &o(), 1));
-    assert!(equal_specified_sign_errors(&parse("x+y"), &parse("-x-y"), &o(), 1)); // root flip
-    assert!(!equal_specified_sign_errors(&parse("x+y+z"), &parse("x-y-z"), &o(), 1));
-    assert!(equal_specified_sign_errors(&parse("x+y+z"), &parse("x-y-z"), &o(), 2));
-    assert!(!equal_specified_sign_errors(&parse("x+y"), &parse("x+y"), &o(), 1)); // exact ≠ 1 error
+    assert!(equal_specified_sign_errors(
+        &parse("x+y"),
+        &parse("x-y"),
+        &o(),
+        1
+    ));
+    assert!(equal_specified_sign_errors(
+        &parse("x+y"),
+        &parse("-x-y"),
+        &o(),
+        1
+    )); // root flip
+    assert!(!equal_specified_sign_errors(
+        &parse("x+y+z"),
+        &parse("x-y-z"),
+        &o(),
+        1
+    ));
+    assert!(equal_specified_sign_errors(
+        &parse("x+y+z"),
+        &parse("x-y-z"),
+        &o(),
+        2
+    ));
+    assert!(!equal_specified_sign_errors(
+        &parse("x+y"),
+        &parse("x+y"),
+        &o(),
+        1
+    )); // exact ≠ 1 error
 
-    assert_eq!(equal_with_sign_errors(&parse("x+y"), &parse("x-y"), &o(), 2), Some(1));
-    assert_eq!(equal_with_sign_errors(&parse("x+y"), &parse("x+y"), &o(), 2), Some(0));
-    assert_eq!(equal_with_sign_errors(&parse("x+y"), &parse("x*y"), &o(), 2), None);
+    assert_eq!(
+        equal_with_sign_errors(&parse("x+y"), &parse("x-y"), &o(), 2),
+        Some(1)
+    );
+    assert_eq!(
+        equal_with_sign_errors(&parse("x+y"), &parse("x+y"), &o(), 2),
+        Some(0)
+    );
+    assert_eq!(
+        equal_with_sign_errors(&parse("x+y"), &parse("x*y"), &o(), 2),
+        None
+    );
 }
 
 #[test]
@@ -42,7 +75,9 @@ fn solve_linear_cases() {
     assert!(equals(&sol, &parse("x = (3-y)/2"), &o()));
     // Inequality with negative coefficient flips: 3-x<5 → x > -2.
     let sol = solve_linear(&parse("3-x<5"), "x", &a).unwrap();
-    let Expr::Relation { ops, .. } = &sol else { panic!() };
+    let Expr::Relation { ops, .. } = &sol else {
+        panic!()
+    };
     assert_eq!(ops, &vec![RelOp::Gt]);
     assert!(equals(&sol, &parse("x > -2"), &o()));
     // Nonlinear → None; symbolic coefficient needs a nonzero assumption.
@@ -57,15 +92,33 @@ fn solve_linear_cases() {
 #[test]
 fn membership() {
     // 3 ∈ {1,2,3} — the DoenetML #1504 case (∋ folds to ∈ in canonical form).
-    assert_eq!(evaluate_membership(&parse("3 elementof {1,2,3}"), &o()), Some(true));
-    assert_eq!(evaluate_membership(&parse("4 elementof {1,2,3}"), &o()), Some(false));
-    assert_eq!(evaluate_membership(&parse("{1,2,3} containselement 3"), &o()), Some(true));
-    assert_eq!(evaluate_membership(&parse("4 notelementof {1,2,3}"), &o()), Some(true));
+    assert_eq!(
+        evaluate_membership(&parse("3 elementof {1,2,3}"), &o()),
+        Some(true)
+    );
+    assert_eq!(
+        evaluate_membership(&parse("4 elementof {1,2,3}"), &o()),
+        Some(false)
+    );
+    assert_eq!(
+        evaluate_membership(&parse("{1,2,3} containselement 3"), &o()),
+        Some(true)
+    );
+    assert_eq!(
+        evaluate_membership(&parse("4 notelementof {1,2,3}"), &o()),
+        Some(true)
+    );
     // Value-level equality, not syntax: 2/2 ∈ {1}.
-    assert_eq!(evaluate_membership(&parse("2/2 elementof {1}"), &o()), Some(true));
+    assert_eq!(
+        evaluate_membership(&parse("2/2 elementof {1}"), &o()),
+        Some(true)
+    );
     // Symbolic non-match is indeterminate; symbolic match is definite.
     assert_eq!(evaluate_membership(&parse("x elementof {1,2}"), &o()), None);
-    assert_eq!(evaluate_membership(&parse("x elementof {x, y}"), &o()), Some(true));
+    assert_eq!(
+        evaluate_membership(&parse("x elementof {x, y}"), &o()),
+        Some(true)
+    );
     // Not a membership relation.
     assert_eq!(evaluate_membership(&parse("x = 2"), &o()), None);
 }

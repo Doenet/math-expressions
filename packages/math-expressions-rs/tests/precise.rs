@@ -114,10 +114,16 @@ fn identity_round_trips_at_60_digits() {
             &evaluate_to_precision(&parse(&format!("exp(ln({x}))")), 60),
             58,
         );
-        let rhs = digits_of(&evaluate_to_precision(&parse(&format!("({x}) + 0.0")), 60), 58);
+        let rhs = digits_of(
+            &evaluate_to_precision(&parse(&format!("({x}) + 0.0")), 60),
+            58,
+        );
         // (x + 0.0 forces the non-exact path for uniform formatting)
         let _ = rhs;
-        let direct = digits_of(&evaluate_to_precision(&parse(&format!("sqrt(({x})^2)")), 60), 58);
+        let direct = digits_of(
+            &evaluate_to_precision(&parse(&format!("sqrt(({x})^2)")), 60),
+            58,
+        );
         assert_eq!(lhs, direct, "exp(ln({x})) vs sqrt(x^2)");
     }
 }
@@ -299,7 +305,10 @@ fn p3_inverse_trig_consistency() {
             &evaluate_to_precision(&parse(&format!("asin(sin({x}))")), 40),
             36,
         );
-        let rhs = digits_of(&evaluate_to_precision(&parse(&format!("sqrt(({x})^2)")), 40), 36);
+        let rhs = digits_of(
+            &evaluate_to_precision(&parse(&format!("sqrt(({x})^2)")), 40),
+            36,
+        );
         assert_eq!(lhs, rhs.trim_start_matches('0'), "asin∘sin({x})");
     }
     // acos(1/2) = π/3.
@@ -341,7 +350,10 @@ fn p4_principal_branches() {
     let s = p.to_decimal_string(40).expect("complex value");
     assert!(s.contains(" i"), "expected complex form, got {s}");
     let (re, im) = p.to_complex_f64().unwrap();
-    assert!(re.abs() < 1e-30 && (im - 2f64.sqrt()).abs() < 1e-12, "{re} {im}");
+    assert!(
+        re.abs() < 1e-30 && (im - 2f64.sqrt()).abs() < 1e-12,
+        "{re} {im}"
+    );
     // ln(-1) = iπ, 40 digits of π in the imaginary part.
     let p = evaluate_to_precision(&parse("ln(-1)"), 40);
     let Precise::Complex { im, .. } = &p else {

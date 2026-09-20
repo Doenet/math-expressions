@@ -76,12 +76,24 @@ pub(crate) fn scale(a: &[BigRational], c: &BigRational) -> UPoly {
     a.iter().map(|x| x * c).collect()
 }
 
-/// Euclidean division over ℚ: `a = q·b + r`, deg r < deg b. `b` nonzero.
+/// Euclidean division over ℚ: `a = q·b + r`, deg r < deg b.
+///
+/// Division by the zero polynomial is undefined; rather than assert, it yields
+/// `(0, a)` — "no division performed". Every caller already refuses a zero
+/// divisor upstream, so that branch is dead today, and it exists only so a
+/// future caller cannot turn a missed guard into an uncatchable wasm abort
+/// (`panic = "abort"`); a benign wrong answer beats a dead worker.
+///
+/// The divisor's degree is taken as its last *nonzero* coefficient rather than
+/// `b.len() - 1`, so a `b` carrying trailing zeros divides by its true leading
+/// coefficient instead of by zero. `rposition` allocates nothing, so the
+/// hot Euclidean loops (`gcd`, Sturm chains) pay nothing for this.
 pub(crate) fn divrem(a: &[BigRational], b: &[BigRational]) -> (UPoly, UPoly) {
-    assert!(!b.is_empty(), "division by the zero polynomial");
     let mut r: UPoly = a.to_vec();
     trim(&mut r);
-    let db = degree(b);
+    let Some(db) = b.iter().rposition(|c| !c.is_zero()) else {
+        return (Vec::new(), r);
+    };
     let lc = &b[db];
     let mut q = vec![BigRational::zero(); r.len().saturating_sub(db)];
     while !r.is_empty() && degree(&r) >= db {
@@ -428,7 +440,9 @@ fn root_bound(p: &[BigRational]) -> BigRational {
         let per = (bits + k as i64 - 1).div_euclid(k as i64).max(0);
         max_bits = max_bits.max(per);
     }
-    let shift = u32::try_from(max_bits + 1).unwrap_or(u32::MAX / 2).min(1 << 20);
+    let shift = u32::try_from(max_bits + 1)
+        .unwrap_or(u32::MAX / 2)
+        .min(1 << 20);
     BigRational::from_integer(BigInt::from(1) << shift)
 }
 
@@ -471,7 +485,11 @@ pub(crate) fn isolate_real_roots(p: &[BigRational]) -> Option<Vec<(BigRational, 
 /// f64 resolution by sign bisection — one exact polynomial evaluation per
 /// step, so wide Cauchy-bound intervals (2048 halvings ≈ 616 decimal orders
 /// of magnitude) stay cheap.
-pub(crate) fn refine_to_f64(p: &[BigRational], mut a: BigRational, mut b: BigRational) -> Option<f64> {
+pub(crate) fn refine_to_f64(
+    p: &[BigRational],
+    mut a: BigRational,
+    mut b: BigRational,
+) -> Option<f64> {
     let two = BigRational::from_integer(BigInt::from(2));
     let sgn = |v: &BigRational| -> i8 {
         if v.is_zero() {

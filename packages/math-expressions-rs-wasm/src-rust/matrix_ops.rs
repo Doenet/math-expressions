@@ -19,7 +19,10 @@ impl Expression {
     /// Matrix inverse (opaque when singular or symbolic without a nonzero-det
     /// proof under the default assumptions).
     pub fn matrix_inverse(&self) -> Expression {
-        self.derive(math_expressions::matrix_inverse(&self.0, &Assumptions::new()))
+        self.derive(math_expressions::matrix_inverse(
+            &self.0,
+            &Assumptions::new(),
+        ))
     }
     /// Reduced row-echelon form.
     pub fn rref(&self) -> Expression {
@@ -37,7 +40,7 @@ impl Expression {
             .iter()
             .map(|v| {
                 let entries = match v {
-                    Expr::Matrix { entries, .. } => entries.clone(),
+                    Expr::Matrix(m) => m.entries().to_vec(),
                     other => vec![other.clone()],
                 };
                 serde_json::Value::Array(
@@ -62,6 +65,10 @@ impl Expression {
     }
     pub fn cross_prod(&self, other: &Expression) -> Expression {
         self.derive(math_expressions::cross_prod(&self.0, &other.0))
+    }
+    /// Scalar × vector: `self` is the scalar, `other` the vector.
+    pub fn scalar_mul(&self, other: &Expression) -> Expression {
+        self.derive(math_expressions::scalar_mul(&self.0, &other.0))
     }
 
     /// Determinant (tiered — MATRIX_PLAN §1b). Always an expression: an

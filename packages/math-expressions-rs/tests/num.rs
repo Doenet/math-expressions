@@ -90,10 +90,10 @@ fn overlong_literal_promotes_to_big_but_exact() {
 
 #[test]
 fn rat_constructor_reduces_and_demotes() {
-    assert_eq!(Number::rat(6, 10), Number::Rat(3, 5));
+    assert_eq!(Number::rat(6, 10), Number::rat(3, 5));
     assert_eq!(Number::rat(4, 2), Number::Int(2)); // demotes to Int
-    assert_eq!(Number::rat(-1, -2), Number::Rat(1, 2)); // sign normalised
-    assert_eq!(Number::rat(1, -2), Number::Rat(-1, 2)); // sign to numerator
+    assert_eq!(Number::rat(-1, -2), Number::rat(1, 2)); // sign normalised
+    assert_eq!(Number::rat(1, -2), Number::rat(-1, 2)); // sign to numerator
     assert_eq!(Number::rat(0, 5), Number::Int(0));
 }
 
@@ -119,6 +119,27 @@ fn f64_projection_matches_parsefloat() {
     // the tree fixtures stay valid. For small literals `n as f64 / d as f64`
     // is exact, which the direct float parse confirms.
     for s in ["0.5", "0.1", "0.0031", "1.2", "3.1", "1E-5", "0.6", "2E-3"] {
+        let via_rat = Number::from_decimal_str(s).to_f64();
+        let via_float: f64 = s.trim().parse().unwrap();
+        assert_eq!(via_rat, via_float, "{s:?}");
+    }
+
+    // Longer literals are where it used to break. Once a part passes 2^53 the
+    // naive `n as f64 / d as f64` rounds twice — converting the part, then
+    // dividing — and the two roundings compound past the nearest f64.
+    // `35203423.02352343201` is `Rat(3520342302352343201, 10^11)`, and the
+    // double rounding landed an ulp low, so DoenetML read
+    // `35203423.02352343` off `.tree` where JS parsing the same literal gives
+    // `35203423.023523435`. These must agree digit-for-digit or a tree
+    // round-trip silently moves the value.
+    for s in [
+        "35203423.02352343201",
+        "0.1234567890123456789",
+        "123456789012345678.9",
+        "-9007199254740993.5",
+        "1.7976931348623157E308",
+        "2.2250738585072014E-308",
+    ] {
         let via_rat = Number::from_decimal_str(s).to_f64();
         let via_float: f64 = s.trim().parse().unwrap();
         assert_eq!(via_rat, via_float, "{s:?}");
@@ -172,7 +193,11 @@ fn division_by_zero_is_none() {
 fn integer_pow_rules() {
     assert_eq!(Number::Int(2).checked_pow_int(10), Some(Number::Int(1024)));
     assert_eq!(Number::Int(5).checked_pow_int(0), Some(Number::Int(1)));
-    assert_eq!(Number::Int(0).checked_pow_int(0), Some(Number::Int(1))); // 0^0 == 1
+    // `0^0` is `1` *here*, at the raw integer power, and that is not the answer
+    // the engine gives for the expression `0^0`: the `pow` constructor rejects
+    // the indeterminate forms before reaching this, so `simplify("0^0")` is
+    // `NaN`. Pinned by `doenet_round7::indeterminate_forms_do_not_fold_to_a_value`.
+    assert_eq!(Number::Int(0).checked_pow_int(0), Some(Number::Int(1)));
     assert_eq!(Number::Int(0).checked_pow_int(-1), None); // 1/0
     assert_eq!(Number::Int(2).checked_pow_int(-2), Some(Number::rat(1, 4)));
     assert_eq!(
@@ -259,7 +284,7 @@ proptest! {
     #[test]
     fn tier_invariants(a in small_rat()) {
         match a {
-            Number::Rat(n, d) => {
+            Number::Rat(n, d, _) => {
                 prop_assert!(d > 1);
                 prop_assert_eq!(gcd(n.unsigned_abs(), d as u64), 1);
             }

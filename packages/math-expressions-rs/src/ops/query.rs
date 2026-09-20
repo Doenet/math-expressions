@@ -1,5 +1,6 @@
 //! Read-only inspection of an expression: the applied function names, operator
-//! heads, and free variables it contains, plus sequence-component access.
+//! heads, and free variables it contains. Component access lives next door in
+//! [`components`](super::components).
 
 use crate::expr::Expr;
 use std::collections::HashSet;
@@ -36,58 +37,54 @@ pub fn functions(e: &Expr) -> Vec<String> {
     out
 }
 
-/// The operator heads used in `e`, first-appearance order, de-duplicated (JS
-/// tree spelling: `+`, `-`, `*`, `/`, `^`, `apply`-less) — the port of
-/// `me.operators` on the faithful tree.
+/// The operator heads used in `e`, first-appearance order, de-duplicated, in
+/// the JS tree's spelling (`+`, `*`, `^`, `tuple`, `interval`, `<`, …) — the
+/// port of `me.operators`.
+///
+/// Every node that is an *array* in the JS tree contributes its head, so the
+/// answer is a whitelist test's input, not a summary: a caller asking "is this
+/// built only from `+ - * / ^`" needs `tuple` and `interval` to come back, or
+/// it accepts trees it means to reject. `apply` is the one head JS drops, and
+/// it drops the application's *head* subtree with it (`sin²(x)` contributes no
+/// `^`), so both are reproduced here.
 pub fn operators(e: &Expr) -> Vec<String> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();
-    fn push(name: &str, out: &mut Vec<String>, seen: &mut HashSet<String>) {
-        if seen.insert(name.to_string()) {
-            out.push(name.to_string());
-        }
-    }
-    fn walk(e: &Expr, out: &mut Vec<String>, seen: &mut HashSet<String>) {
-        match e {
-            Expr::Add(_) => push("+", out, seen),
-            Expr::Neg(_) => push("-", out, seen),
-            Expr::Mul(_) => push("*", out, seen),
-            Expr::Div(..) => push("/", out, seen),
-            Expr::Pow(..) => push("^", out, seen),
-            Expr::And(_) => push("and", out, seen),
-            Expr::Or(_) => push("or", out, seen),
-            Expr::Not(_) => push("not", out, seen),
-            Expr::Union(_) => push("union", out, seen),
-            Expr::Intersect(_) => push("intersect", out, seen),
-            _ => {}
-        }
-        for c in e.children() {
-            walk(c, out, seen);
-        }
-    }
-    walk(e, &mut out, &mut seen);
+    walk_operators(e, &mut out, &mut seen);
     out
 }
 
-/// The `i`-th (0-based) component of a tuple/vector/list, port of
-/// `me.get_component`. `None` for non-sequences or out-of-range.
-pub fn get_component(e: &Expr, i: usize) -> Option<Expr> {
-    match e {
-        Expr::Seq(_, xs) => xs.get(i).cloned(),
-        _ => None,
+fn walk_operators(e: &Expr, out: &mut Vec<String>, seen: &mut HashSet<String>) {
+    let Some(head) = js_head(e) else {
+        return; // a leaf: `Array.isArray(tree)` is false, so JS reports nothing
+    };
+    if head != "apply" && seen.insert(head.clone()) {
+        out.push(head);
+    }
+    // `js_operands` reconstructs the operand list of the JS tree — which is why
+    // an interval's implicit `["tuple", …]` pair and a multi-argument call's
+    // argument tuple show up, as they do in JS. An application's head is the one
+    // operand JS skips (`tree.slice(2)`).
+    let operands = crate::normalize::js_operands(e);
+    let operands = match e {
+        Expr::Apply(..) => &operands[1..],
+        _ => &operands[..],
+    };
+    for c in operands {
+        walk_operators(c, out, seen);
     }
 }
 
-/// Replace the `i`-th component of a sequence, port of
-/// `me.substitute_component`. `None` for non-sequences or out-of-range.
-pub fn substitute_component(e: &Expr, i: usize, value: &Expr) -> Option<Expr> {
+/// The head this node carries in the JS tree, or `None` for a leaf.
+fn js_head(e: &Expr) -> Option<String> {
     match e {
-        Expr::Seq(k, xs) if i < xs.len() => {
-            let mut xs = xs.clone();
-            xs[i] = value.clone();
-            Some(Expr::Seq(*k, xs))
-        }
-        _ => None,
+        Expr::Num(_) | Expr::Sym(_) | Expr::Bool(_) | Expr::Blank => None,
+        // `pi`/`e`/`i` are bare strings; `Inf`/`NaN` are tagged *objects*.
+        // Neither is an array, so neither carries an operator.
+        Expr::Const(_) => None,
+        // No JS spelling of its own — it serializes as a `rootof(…)` call.
+        Expr::RootOf { .. } => Some("apply".to_string()),
+        other => Some(crate::normalize::legacy_operator(other)),
     }
 }
 
@@ -95,6 +92,18 @@ pub fn substitute_component(e: &Expr, i: usize, value: &Expr) -> Option<Expr> {
 /// Matches `me.variables`: the constant symbols `pi`/`e`/`i` ARE included (they
 /// are ordinary symbols here), but a function-application head (`sin` in
 /// `sin(x)`, `f` in `f(x)`) is NOT.
+///
+/// That the constants are listed looks wrong and is not: alpha94's filter reads
+/// `(math.define_e || v !== "e")`, which *keeps* `e` precisely when `define_e`
+/// is on. The listing is not the crate's constant/variable distinction — that
+/// is [`crate::expr::sym::is_constant_symbol`], which every pass that reduces
+/// or sample-evaluates an expression consults, and which
+/// [`crate::constant_policy`] governs. `variables` reports the names a tree
+/// mentions, and it reports them whatever the policy says.
+///
+/// Only the `Const` *spelling* is excluded, since `∞`/`NaN`/`None` have no name
+/// to report and the three that do are unified into symbols by `canonicalize`
+/// long before a caller asks.
 pub fn variables(e: &Expr) -> Vec<String> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();
@@ -110,7 +119,12 @@ fn collect(e: &Expr, out: &mut Vec<String>, seen: &mut HashSet<String>) {
                 out.push(name);
             }
         }
-        Expr::Num(_) | Expr::Const(_) | Expr::RootOf { .. } | Expr::Blank | Expr::Ldots => {}
+        Expr::Num(_)
+        | Expr::Const(_)
+        | Expr::Bool(_)
+        | Expr::RootOf { .. }
+        | Expr::Blank
+        | Expr::Ldots => {}
 
         // An application head is never a variable source — JS drops the head
         // wholesale (`tree.slice(2)` in lib/expression/variables.js), even a
@@ -148,8 +162,8 @@ fn collect(e: &Expr, out: &mut Vec<String>, seen: &mut HashSet<String>) {
                 collect(c, out, seen);
             }
         }
-        Expr::Matrix { entries, .. } => {
-            for c in entries {
+        Expr::Matrix(m) => {
+            for c in m.entries() {
                 collect(c, out, seen);
             }
         }

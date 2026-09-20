@@ -33,12 +33,26 @@ pub fn try_from_js(value: &Value) -> Result<Expr, String> {
                 )))
             }
         }
+        Value::Bool(b) => Ok(Expr::Bool(*b)),
         Value::String(s) => Ok(Expr::sym(s)),
         Value::Object(_) => match value.get("$").and_then(Value::as_str) {
             Some("Inf") => Ok(Expr::Const(MathConst::Inf)),
             Some("-Inf") => Ok(Expr::Const(MathConst::NegInf)),
             Some("NaN") => Ok(Expr::Const(MathConst::NaN)),
-            other => Err(format!("unknown special {other:?}")),
+            Some("None") => Ok(Expr::Const(MathConst::None)),
+            // Report the two failures apart. `{"$":"None"}` is a *valid* tree
+            // (matched above), so an object with no usable `$` must not be
+            // described with the word `None` — that is the `Option::None` of the
+            // lookup leaking into the message, and it read as though a legal
+            // input had been rejected. It cost the DoenetML team a debugging
+            // cycle; the fix is naming what was actually wrong.
+            Some(tag) => Err(format!(
+                "unknown special {tag:?} (expected \"Inf\", \"-Inf\", \"NaN\" or \"None\")"
+            )),
+            None => Err(
+                "object is not a tree node: expected a `$` string tag such as {\"$\":\"NaN\"}"
+                    .into(),
+            ),
         },
         Value::Array(arr) => from_js_array(arr),
         other => Err(format!("unexpected value {other}")),
@@ -159,11 +173,10 @@ fn from_js_array(arr: &[Value]) -> Result<Expr, String> {
                     entries.push(try_from_js(row.get(c + 1).ok_or("matrix entry")?)?);
                 }
             }
-            Expr::Matrix {
-                rows,
-                cols,
-                entries,
-            }
+            // `Mat::new` re-checks the entry count that the loop above just
+            // built, so the shape is validated by the type rather than by this
+            // function getting the loop right.
+            Expr::Matrix(crate::expr::Mat::new(rows, cols, entries).ok_or("matrix shape mismatch")?)
         }
         // everything else (unit, pm, angle, binom, vec, linesegment,
         // derivative_leibniz, forall, arrows, implies, iff, perp, ":", "|", d)
@@ -173,7 +186,9 @@ fn from_js_array(arr: &[Value]) -> Result<Expr, String> {
 
 /// A `["tuple", a, b]`-shaped 3-element array (head + two entries).
 fn tuple3<'a>(v: Option<&'a Value>, what: &str) -> Result<&'a Vec<Value>, String> {
-    let arr = v.and_then(Value::as_array).ok_or_else(|| what.to_string())?;
+    let arr = v
+        .and_then(Value::as_array)
+        .ok_or_else(|| what.to_string())?;
     if arr.len() < 3 {
         return Err(format!("{what}: expected 3 elements"));
     }
@@ -229,14 +244,18 @@ fn to_js_rec(expr: &Expr) -> Value {
         Expr::Num(n) => number_to_js(n),
         // Serialized as its `rootof(p(t), k)` application; deserialization
         // re-canonicalizes that back into the leaf.
-        Expr::RootOf { poly, index } => to_js_rec(&crate::polynomials::rootof::as_apply(poly, *index)),
+        Expr::RootOf { poly, index } => {
+            to_js_rec(&crate::polynomials::rootof::as_apply(poly, *index))
+        }
         Expr::Sym(s) => Value::String(s.name()),
+        Expr::Bool(b) => Value::Bool(*b),
         Expr::Blank => Value::String("\u{ff3f}".to_string()),
         Expr::Ldots => json!(["ldots"]),
         Expr::Const(c) => match c {
             crate::expr::MathConst::Inf => json!({"$": "Inf"}),
             crate::expr::MathConst::NegInf => json!({"$": "-Inf"}),
             crate::expr::MathConst::NaN => json!({"$": "NaN"}),
+            crate::expr::MathConst::None => json!({"$": "None"}),
             crate::expr::MathConst::Pi => Value::String("pi".to_string()),
             crate::expr::MathConst::E => Value::String("e".to_string()),
             crate::expr::MathConst::I => Value::String("i".to_string()),
@@ -277,22 +296,21 @@ fn to_js_rec(expr: &Expr) -> Value {
 
         Expr::Relation { operands, ops } => relation_to_js(operands, ops),
 
-        Expr::Matrix {
-            rows,
-            cols,
-            entries,
-        } => {
+        Expr::Matrix(m) => {
             // ["matrix", ["tuple", rows, cols], ["tuple", <row-tuples>]]
-            let ncols = *cols as usize;
+            // Indexing `entries` is in bounds for every `r < rows`, `c < cols`
+            // by `Mat`'s invariant.
+            let ncols = m.cols() as usize;
+            let entries = m.entries();
             let mut body = vec![Value::String("tuple".to_string())];
-            for r in 0..*rows as usize {
+            for r in 0..m.rows() as usize {
                 let mut row = vec![Value::String("tuple".to_string())];
                 for c in 0..ncols {
                     row.push(to_js_rec(&entries[r * ncols + c]));
                 }
                 body.push(Value::Array(row));
             }
-            json!(["matrix", ["tuple", rows, cols], Value::Array(body)])
+            json!(["matrix", ["tuple", m.rows(), m.cols()], Value::Array(body)])
         }
 
         Expr::OtherOp(name, args) => {
@@ -312,11 +330,60 @@ fn op(name: &str, args: &[Expr]) -> Value {
 fn number_to_js(n: &Number) -> Value {
     match n {
         Number::Int(i) => json!(i),
-        // Exact rationals (§3a) and Big numbers project to the nearest f64 —
-        // what the JS trees actually hold — so the tree fixtures and the
-        // differential harness stay meaningful.
-        Number::Float(_) | Number::Rat(..) | Number::Big(_) => f64_to_js(n.to_f64()),
+        // −0 serializes as plain `0` (JSON has no exact negative zero, and it is
+        // value-equal to `0` anyway).
+        //
+        // This is what keeps the sign *inside* the engine: `round_to_decimals`
+        // returns `−0` for a small negative value, and `1/(−0)` is `−∞`, but a
+        // caller reading `.tree` sees `0` and loses it on the way back in.
+        // Emitting `-0.0` would carry it (`JSON.parse("-0.0")` is JS `−0`) and
+        // is pinned *against* by `tests/signed_zero.rs`, so it is a decision to
+        // revisit deliberately rather than a line to flip.
+        Number::NegZero => json!(0),
+        Number::Float(_) => f64_to_js(n.to_f64()),
+        // Exact rationals split on their recorded `Spelling`.
+        //
+        // A *decimal*-spelled one keeps its positional spelling when the
+        // expansion terminates: user-typed decimals parse to exact rationals,
+        // so `19.9` is `Rat(199, 10)` and emitting `["/", 199, 10]` for it
+        // would be a wrong answer, not a stylistic one.
+        //
+        // A *fraction*-spelled one (`3/6`, `cos(pi/3)`) emits `["/", n, d]`.
+        // Before the spelling was tracked this branch could only ask whether
+        // the expansion terminated, which meant `3/6` crossed as `0.5` and
+        // DoenetML's `ReducedFraction`/`ExactValue` criteria could not see a
+        // fraction that was no longer there.
+        //
+        // Either way, a value the JS side cannot hold exactly falls back to the
+        // f64 projection.
+        Number::Rat(..) | Number::Big(_) => match exact_ratio(n) {
+            Some((num, den)) => json!(["/", num, den]),
+            None => f64_to_js(n.to_f64()),
+        },
     }
+}
+
+/// The largest integer a JS number holds exactly (2^53 − 1). Past it a
+/// `["/", num, den]` pair is no more recoverable on the JS side than the f64
+/// projection is, so there is nothing to gain by emitting it.
+const JS_MAX_SAFE_INT: u64 = 9_007_199_254_740_991;
+
+/// Numerator/denominator for a rational that must *not* be decimalized.
+/// `None` when the value displays as a decimal (see
+/// [`Number::decimal_spelling`]) or when the parts exceed JS's exact-integer
+/// range.
+///
+/// The `Rat` normal form puts the sign on the numerator with `den > 0`, so
+/// negatives come out as `["/", -2, 3]` — the spelling the JS fixtures use.
+fn exact_ratio(n: &Number) -> Option<(i64, i64)> {
+    if n.decimal_spelling().is_some() {
+        return None;
+    }
+    let (num, den) = n.rational_parts()?;
+    let num: i64 = num.parse().ok()?;
+    let den: i64 = den.parse().ok()?;
+    (num.unsigned_abs() <= JS_MAX_SAFE_INT && den.unsigned_abs() <= JS_MAX_SAFE_INT)
+        .then_some((num, den))
 }
 
 /// Serialise an f64 the way a JS `Tree` holds a number: integral values as
@@ -338,23 +405,60 @@ fn f64_to_js(v: f64) -> Value {
 
 fn relation_to_js(operands: &[Expr], ops: &[RelOp]) -> Value {
     if ops.len() == 1 {
-        return json!([ops[0].js_name(), to_js_rec(&operands[0]), to_js_rec(&operands[1])]);
+        return json!([
+            ops[0].js_name(),
+            to_js_rec(&operands[0]),
+            to_js_rec(&operands[1])
+        ]);
     }
-    if ops.iter().all(|o| *o == RelOp::Eq) {
-        // Chained equality: ["=", a, b, c, ...]
-        let mut v = vec![Value::String("=".to_string())];
-        v.extend(operands.iter().map(to_js_rec));
-        return Value::Array(v);
+    // Chained </<= and >/>= use the ["lts"/"gts", ["tuple", ...operands],
+    // ["tuple", ...strict-flags]] encoding, because a run of them can mix
+    // strictness (`a < b <= c`). Checked first, so a uniform `<=` chain still
+    // goes out as `lts` rather than as a flat `["le", …]`.
+    if ops.iter().all(|o| matches!(o, RelOp::Lt | RelOp::Le)) {
+        return chained_inequality_to_js("lts", RelOp::Lt, operands, ops);
     }
-    // Chained inequalities: ["lts"/"gts", ["tuple", ...operands],
-    // ["tuple", ...strict-flags]] where strict means < or > (not <=/>=).
-    let (head, strict_op) = if ops.iter().all(|o| matches!(o, RelOp::Lt | RelOp::Le)) {
-        ("lts", RelOp::Lt)
-    } else if ops.iter().all(|o| matches!(o, RelOp::Gt | RelOp::Ge)) {
-        ("gts", RelOp::Gt)
-    } else {
-        unreachable!("parser nests mixed-direction relation chains");
-    };
+    if ops.iter().all(|o| matches!(o, RelOp::Gt | RelOp::Ge)) {
+        return chained_inequality_to_js("gts", RelOp::Gt, operands, ops);
+    }
+    // Any other *uniform* chain — `a = b = c`, `a ≠ b ≠ c`, `x ∈ A ∈ B`,
+    // `a ⊆ b ⊆ c` — serializes flat as `[op, ...operands]`, the exact inverse
+    // of `rel_op`'s flat `vec![op; n-1]` reconstruction, so it round-trips to
+    // the identical tree. `try_from_js` builds precisely these uniform chains,
+    // so this branch handles every relation an injected tree can carry.
+    if let [first, rest @ ..] = ops {
+        if rest.iter().all(|o| o == first) {
+            let mut v = vec![Value::String(first.js_name().to_string())];
+            v.extend(operands.iter().map(to_js_rec));
+            return Value::Array(v);
+        }
+    }
+    // A genuinely mixed-direction chain reaches here. The parser nests such
+    // chains and `try_from_js` only ever builds uniform ones, so no input
+    // produces this shape — but serialization must never panic (wasm builds are
+    // `panic = "abort"`, so a would-be `unreachable!` is an uncatchable worker
+    // abort on a `to_serialized` round-trip). Lower it to a conjunction of the
+    // adjacent binary relations, which `try_from_js` reads straight back.
+    let mut conj = vec![Value::String("and".to_string())];
+    for (i, op) in ops.iter().enumerate() {
+        conj.push(json!([
+            op.js_name(),
+            to_js_rec(&operands[i]),
+            to_js_rec(&operands[i + 1])
+        ]));
+    }
+    Value::Array(conj)
+}
+
+/// A chained inequality in the JS `["lts"/"gts", ["tuple", ...operands],
+/// ["tuple", ...strict-flags]]` shape, where a `strict` flag marks `<`/`>`
+/// (as opposed to `<=`/`>=`).
+fn chained_inequality_to_js(
+    head: &str,
+    strict_op: RelOp,
+    operands: &[Expr],
+    ops: &[RelOp],
+) -> Value {
     let mut args = vec![Value::String("tuple".to_string())];
     args.extend(operands.iter().map(to_js_rec));
     let mut strict = vec![Value::String("tuple".to_string())];
@@ -365,6 +469,7 @@ fn relation_to_js(operands: &[Expr], ops: &[RelOp]) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::num::Spelling;
 
     // A chained inequality `["gts"/"lts", ["tuple", ...operands],
     // ["tuple", ...strict-flags]]` has one more operand than strict-flag, so
@@ -374,11 +479,7 @@ mod tests {
     #[test]
     fn chained_inequality_from_js_round_trips() {
         for head in ["gts", "lts"] {
-            let tree = json!([
-                head,
-                ["tuple", "x", "y", "z"],
-                ["tuple", true, false]
-            ]);
+            let tree = json!([head, ["tuple", "x", "y", "z"], ["tuple", true, false]]);
             let expr = try_from_js(&tree).expect("chained inequality should parse");
             let Expr::Relation { operands, ops } = &expr else {
                 panic!("expected Relation, got {expr:?}");
@@ -388,5 +489,213 @@ mod tests {
             // to_js is the inverse for this shape.
             assert_eq!(to_js_rec(&expr), tree);
         }
+    }
+
+    /// A matrix whose declared size outruns its body is rejected with an `Err`
+    /// rather than producing a tree that later readers index out of bounds.
+    /// `Mat`'s private fields make that structural: there is no way to build
+    /// the mis-shaped value in the first place, so the check cannot be skipped
+    /// by a future caller that forgets it.
+    #[test]
+    fn a_matrix_body_smaller_than_its_declared_size_is_an_error() {
+        // Declares 2×2, supplies one row of two.
+        let short_body = json!(["matrix", ["tuple", 2, 2], ["tuple", ["tuple", 1, 2]]]);
+        assert!(try_from_js(&short_body).is_err());
+        // Declares 2×2, supplies rows of one.
+        let short_rows = json!([
+            "matrix",
+            ["tuple", 2, 2],
+            ["tuple", ["tuple", 1], ["tuple", 3]]
+        ]);
+        assert!(try_from_js(&short_rows).is_err());
+        // The well-formed one still round-trips, and arrives with the shape
+        // invariant intact.
+        let ok = json!([
+            "matrix",
+            ["tuple", 2, 2],
+            ["tuple", ["tuple", 1, 2], ["tuple", 3, 4]]
+        ]);
+        let expr = try_from_js(&ok).expect("2x2 is well formed");
+        let Expr::Matrix(m) = &expr else {
+            panic!("expected a matrix, got {expr:?}")
+        };
+        assert_eq!(m.entries().len(), (m.rows() * m.cols()) as usize);
+        assert_eq!(to_js_rec(&expr), ok);
+    }
+
+    /// A flat, uniform chain of any *non-order* relation operator must
+    /// serialize without panicking and round-trip to the identical tree. These
+    /// are exactly the shapes `try_from_js` builds from `["ne", a, b, c]`,
+    /// `["in", x, A, B]`, `["subset", …]`, etc. via `rel_op`'s `vec![op; n-1]`.
+    /// Regression: `relation_to_js` used to `unreachable!()` on every one of
+    /// them (only `=`, `lts`, `gts` were handled), so a plain
+    /// `from_ast(["ne", a, b, c]).to_serialized()` — a routine DoenetML state
+    /// save — aborted the whole wasm worker (`panic = "abort"`).
+    #[test]
+    fn uniform_relation_chains_round_trip_flat() {
+        for tree in [
+            json!(["ne", "a", "b", "c"]),
+            json!(["in", "x", "A", "B"]),
+            json!(["ni", "A", "x", "y"]),
+            json!(["subset", "a", "b", "c"]),
+            json!(["superset", "a", "b", "c"]),
+            json!(["subseteq", "a", "b", "c", "d"]),
+            json!(["=", "a", "b", "c"]),
+        ] {
+            let expr = try_from_js(&tree).unwrap_or_else(|e| panic!("{tree}: {e}"));
+            assert_eq!(to_js_rec(&expr), tree, "round trip of {tree}");
+        }
+    }
+
+    /// The order chains keep their dedicated `lts`/`gts` tuple encoding — the
+    /// generalization above must not divert a uniform `<=`/`>=` run into the
+    /// flat form.
+    #[test]
+    fn order_relation_chains_keep_the_tuple_encoding() {
+        for tree in [
+            json!(["lts", ["tuple", "a", "b", "c"], ["tuple", true, false]]),
+            json!(["gts", ["tuple", "a", "b", "c"], ["tuple", false, true]]),
+        ] {
+            let expr = try_from_js(&tree).unwrap_or_else(|e| panic!("{tree}: {e}"));
+            assert_eq!(to_js_rec(&expr), tree, "round trip of {tree}");
+        }
+    }
+
+    /// A rational whose decimal expansion does not terminate crosses to JS as
+    /// `["/", num, den]`, not as a truncated f64. `1/3` used to go out as
+    /// `0.3333333333333333`, which nothing on the JS side can turn back into a
+    /// third — an irreversible loss on every state save/load, not merely a
+    /// display defect.
+    #[test]
+    fn non_terminating_rationals_cross_as_exact_fractions() {
+        for (num, den) in [(1, 3), (5, 6), (-2, 3), (-1, 7), (22, 7)] {
+            let n = Number::rat(num, den);
+            assert_eq!(
+                number_to_js(&n),
+                json!(["/", num, den]),
+                "{num}/{den} must not decimalize"
+            );
+        }
+    }
+
+    /// The other half of the same rule, and the reason the naive "emit every
+    /// `Rat` as a fraction" version is wrong: user-typed decimals parse to
+    /// exact rationals, so `19.9` *is* `Rat(199, 10)`. A rational carrying the
+    /// `Decimal` spelling keeps the positional form the JS trees use, or `19.9`
+    /// would go out as `["/", 199, 10]`.
+    #[test]
+    fn decimal_spelled_rationals_keep_their_positional_form() {
+        for (num, den, expected) in [(1, 2, 0.5), (199, 10, 19.9), (-3, 4, -0.75)] {
+            assert_eq!(
+                number_to_js(&Number::rat_spelled(num, den, Spelling::Decimal)),
+                json!(expected),
+                "{num}/{den} must stay positional"
+            );
+        }
+    }
+
+    /// The same values with the other spelling. This is the pair that could not
+    /// be told apart before `Spelling` existed, and the reason DoenetML's
+    /// structural criteria could not see a fraction in `3/6`.
+    #[test]
+    fn fraction_spelled_rationals_cross_as_fractions_even_when_they_terminate() {
+        for (num, den) in [(1, 2), (199, 10), (-3, 4)] {
+            assert_eq!(
+                number_to_js(&Number::rat(num, den)),
+                json!(["/", num, den]),
+                "{num}/{den} must stay a fraction"
+            );
+        }
+    }
+
+    /// Past JS's exact-integer range a fraction is no more recoverable than the
+    /// f64 projection, so there is nothing to gain by emitting one — and the
+    /// pair must not be silently truncated into a *wrong* fraction.
+    #[test]
+    fn out_of_range_rationals_fall_back_to_the_float_projection() {
+        use num_bigint::BigInt;
+        use num_rational::BigRational;
+        let huge = BigRational::new(BigInt::from(1), BigInt::from(3u8).pow(60));
+        let n = Number::from_bigrational(huge);
+        assert!(
+            number_to_js(&n).is_f64(),
+            "an out-of-range denominator should project to a float"
+        );
+    }
+
+    /// `Tree = number | string | boolean | Tree[]`, so a boolean leaf is a
+    /// legal tree. It used to fall through to `Err("unexpected value …")`,
+    /// making `["and", true, false]` unconstructible — the whole boolean
+    /// algebra existed (`And`/`Or`/`Not`) with no values to put in it.
+    #[test]
+    fn boolean_leaves_round_trip_through_the_js_tree() {
+        for tree in [
+            json!(true),
+            json!(false),
+            json!(["and", true, false]),
+            json!(["not", true]),
+            json!(["or", ["and", true, "x"], false]),
+        ] {
+            let expr = try_from_js(&tree).expect("a boolean leaf is a legal tree");
+            assert_eq!(to_js_rec(&expr), tree, "round trip of {tree}");
+        }
+    }
+
+    /// All four `{"$":…}` specials must round-trip. `None` was the odd one out:
+    /// `try_from_js` accepted `Inf`/`-Inf`/`NaN` and rejected `{"$":"None"}` with
+    /// `unknown special "None"`, so a DoenetML tree carrying a "no value here"
+    /// leaf — an undefined polygon vertex, an empty piecewise branch — could not
+    /// be revived at all, taking the whole expression down with it.
+    #[test]
+    fn the_none_special_round_trips_like_the_other_three() {
+        for tag in ["Inf", "-Inf", "NaN", "None"] {
+            let tree = json!({ "$": tag });
+            let expr = try_from_js(&tree).unwrap_or_else(|e| panic!("{tag}: {e}"));
+            assert_eq!(to_js_rec(&expr), tree, "round trip of {tag}");
+        }
+        assert_eq!(
+            try_from_js(&json!({"$": "None"})).unwrap(),
+            Expr::Const(MathConst::None)
+        );
+        // A `None` inside a container revives with the container intact, which is
+        // the shape DoenetML actually feeds in.
+        let nested = json!(["tuple", {"$": "None"}, 2]);
+        assert_eq!(to_js_rec(&try_from_js(&nested).unwrap()), nested);
+    }
+
+    /// The distinction the whole variant exists for: a boolean must come back
+    /// as a JSON boolean, not as the *string* `"true"`. Mapping booleans onto
+    /// symbols (or onto `MathConst`, whose members all serialize to strings)
+    /// would type-check and still lose the type on every round trip.
+    #[test]
+    fn a_boolean_is_not_the_symbol_of_the_same_name() {
+        assert_eq!(try_from_js(&json!(true)).unwrap(), Expr::Bool(true));
+        assert_ne!(try_from_js(&json!(true)).unwrap(), Expr::sym("true"));
+        assert_eq!(to_js_rec(&Expr::Bool(true)), json!(true));
+        assert_eq!(to_js_rec(&Expr::sym("true")), json!("true"));
+    }
+
+    /// Interval closures and chained-inequality strictness are metadata on
+    /// `Expr::Interval`/`Expr::Relation`, not `Expr::Bool` children. Adding the
+    /// boolean leaf must not divert those flag tuples into it — the flags carry
+    /// more than a bool (`("lts", false)` is `Le`, `("gts", false)` is `Ge`),
+    /// and the metadata is what makes `operands.len() == ops.len() + 1`
+    /// structural rather than a runtime check.
+    #[test]
+    fn flag_tuples_stay_metadata_and_do_not_become_boolean_children() {
+        let interval = try_from_js(&json!([
+            "interval",
+            ["tuple", 0, 1],
+            ["tuple", true, false]
+        ]))
+        .expect("interval should parse");
+        assert!(
+            matches!(&interval, Expr::Interval { closed, .. } if *closed == (true, false)),
+            "closure belongs in the `closed` field, got {interval:?}"
+        );
+        assert!(
+            !interval.any_subexpr(&|e| matches!(e, Expr::Bool(_))),
+            "no boolean child should appear anywhere in {interval:?}"
+        );
     }
 }

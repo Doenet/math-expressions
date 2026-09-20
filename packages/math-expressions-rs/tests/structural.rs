@@ -27,8 +27,8 @@ fn reduced_fraction() {
     assert!(!ok("2/4", &c));
     assert!(!ok("(x^2-1)/(x-1)", &c)); // cancels to x+1
     assert!(!ok("1/sqrt(2)", &c)); // surd in denominator
-    // Regression: a numeric factor common to a symbolic numerator/denominator
-    // is not lowest terms (`canonicalize` folds these, so check the written form).
+                                   // Regression: a numeric factor common to a symbolic numerator/denominator
+                                   // is not lowest terms (`canonicalize` folds these, so check the written form).
     assert!(!ok("2x/2", &c)); // -> x
     assert!(!ok("4x/6", &c)); // -> 2x/3
     assert!(ok("3x/2", &c)); // genuinely reduced
@@ -124,15 +124,15 @@ fn radical_simplified() {
     assert!(ok("sqrt(2)/2", &c));
     assert!(!ok("sqrt(8)", &c)); // 8 = 4*2 not square-free
     assert!(!ok("1/sqrt(2)", &c)); // surd in denominator
-    // Regression: cube roots must be cube-free, not just square-free.
+                                   // Regression: cube roots must be cube-free, not just square-free.
     assert!(!ok("cbrt(16)", &c)); // 16 = 8*2 -> 2 cbrt(2)
     assert!(ok("cbrt(2)", &c)); // cube-free
-    // Regression: nthroot(x, m) radicands are checked by index m.
+                                // Regression: nthroot(x, m) radicands are checked by index m.
     assert!(!ok("nthroot(16,4)", &c)); // 16 = 2^4
     assert!(ok("nthroot(2,3)", &c)); // 3rd-power-free
-    // Regression: fraction-exponent radicals `^(1/m)` (the common written form,
-    // a Div exponent) are checked, and a negative fractional power is a surd in
-    // the denominator.
+                                     // Regression: fraction-exponent radicals `^(1/m)` (the common written form,
+                                     // a Div exponent) are checked, and a negative fractional power is a surd in
+                                     // the denominator.
     assert!(!ok("8^(1/2)", &c)); // = 2 sqrt(2)
     assert!(!ok("16^(1/4)", &c)); // = 2
     assert!(ok("2^(1/3)", &c)); // cube-free radicand
@@ -209,8 +209,18 @@ fn same_structure_is_equals_syntactic() {
             "SameStructure must match equals_syntactic for {a:?} vs {b:?}",
         );
     }
-    assert!(structural_equality(&parse("ln(x)"), &parse("log(x)"), &same, &opts));
-    assert!(!structural_equality(&parse("x+y"), &parse("y+x"), &same, &opts));
+    assert!(structural_equality(
+        &parse("ln(x)"),
+        &parse("log(x)"),
+        &same,
+        &opts
+    ));
+    assert!(!structural_equality(
+        &parse("x+y"),
+        &parse("y+x"),
+        &same,
+        &opts
+    ));
     // As a unary check it is rejected (needs a key).
     assert!(!check_structural_comparison(&parse("x+y"), &same).ok);
 }

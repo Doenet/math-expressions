@@ -100,6 +100,7 @@ fn latex_out(nt: &NumberNotation, e: &Expr) -> String {
         e,
         &LatexOpts {
             notation: nt.clone(),
+            ..Default::default()
         },
     )
 }
@@ -119,7 +120,12 @@ fn conformance_cases() {
         if let Some(t) = &c.input_text {
             let e = parse_text(&nt, t)
                 .unwrap_or_else(|err| panic!("{}: text parse {t:?}: {err:?}", c.name));
-            assert_eq!(expr::serde::to_js(&e), c.expected_ast, "{}: text AST", c.name);
+            assert_eq!(
+                expr::serde::to_js(&e),
+                c.expected_ast,
+                "{}: text AST",
+                c.name
+            );
             if let Some(exp) = &c.expected_text_out {
                 assert_eq!(&text_out(&nt, &e), exp, "{}: text output", c.name);
             }
@@ -127,7 +133,12 @@ fn conformance_cases() {
         if let Some(l) = &c.input_latex {
             let e = parse_latex(&nt, l)
                 .unwrap_or_else(|err| panic!("{}: latex parse {l:?}: {err:?}", c.name));
-            assert_eq!(expr::serde::to_js(&e), c.expected_ast, "{}: latex AST", c.name);
+            assert_eq!(
+                expr::serde::to_js(&e),
+                c.expected_ast,
+                "{}: latex AST",
+                c.name
+            );
             if let Some(exp) = &c.expected_latex_out {
                 assert_eq!(&latex_out(&nt, &e), exp, "{}: latex output", c.name);
             }
@@ -224,7 +235,10 @@ fn a2_defaults_are_period_notation() {
     assert_eq!(NumberNotation::default(), NumberNotation::period());
     let def = NumberNotation::default();
     let e = parse_text(&def, "f(1.5, 2)").unwrap();
-    assert_eq!(expr::serde::to_js(&e), serde_json::json!(["apply", "f", ["tuple", 1.5, 2]]));
+    assert_eq!(
+        expr::serde::to_js(&e),
+        serde_json::json!(["apply", "f", ["tuple", 1.5, 2]])
+    );
     assert_eq!(text_out(&def, &e), "f(1.5, 2)");
 }
 
@@ -239,10 +253,7 @@ fn decimal_pairs_autofill_argument_separator() {
     assert_eq!(NumberNotation::from_decimal(','), NumberNotation::comma());
     // from_decimal produces a coherent (validatable) notation for the pairs.
     assert!(NumberNotation::from_decimal(',').validate().is_ok());
-    assert_eq!(
-        NumberNotation::from_decimal(',').argument_separator,
-        ';'
-    );
+    assert_eq!(NumberNotation::from_decimal(',').argument_separator, ';');
 }
 
 #[test]
@@ -253,7 +264,10 @@ fn validate_rejects_incoherent_notations() {
         decimal_separator: ',',
         ..NumberNotation::default()
     };
-    assert!(collide.validate().is_err(), "decimal == argument must be rejected");
+    assert!(
+        collide.validate().is_err(),
+        "decimal == argument must be rejected"
+    );
 
     // Coherent notations pass, including a valid partial spec (only the
     // argument separator changed; decimal stays the default '.').
@@ -292,7 +306,10 @@ fn validate_rejects_incoherent_notations() {
             argument_separator: bad_arg,
             ..NumberNotation::default()
         };
-        assert!(n.validate().is_err(), "argument {bad_arg:?} must be rejected");
+        assert!(
+            n.validate().is_err(),
+            "argument {bad_arg:?} must be rejected"
+        );
     }
     // decimal '-' would lex `1-2` as the number 1.2.
     let n = NumberNotation {

@@ -15,9 +15,20 @@ path = "src-rust/lib.rs"
 # The size-oriented release profile lives in the WORKSPACE ROOT Cargo.toml
 # (cargo ignores profile sections in member manifests).
 
+# The panic hook itself is unconditional (see `panic_report` in src-rust/lib.rs).
+# This feature adds only `debug_panic_selftest`, which panics on purpose so a
+# harness can be checked; it is off by default so that a call able to kill the
+# worker cannot be made against a shipped build. `build-wasm.sh --debug`.
+[features]
+debug-panics = []
+
 [dependencies]
 math-expressions = { path = "../math-expressions-rs" }
 wasm-bindgen = "=0.2.126"
 js-sys = "0.3"
-serde_json = "1"
+# Same `arbitrary_precision` requirement as the core crate (see its Cargo.toml):
+# this crate parses the incoming AST JSON, so the correctly-rounded read has to
+# hold here too. Cargo would unify the feature anyway; naming it keeps that from
+# being load-bearing and invisible.
+serde_json = { version = "1", features = ["arbitrary_precision"] }
 num-complex = "0.4"

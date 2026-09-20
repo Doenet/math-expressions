@@ -140,7 +140,11 @@ mod integrate_numerically_tests {
     fn returns_the_certified_value() {
         assert_close(quad("x^3", 0.0, 1.0), 0.25, "∫₀¹ x³");
         assert_close(quad("1/x", 1.0, 2.0), std::f64::consts::LN_2, "∫₁² 1/x");
-        assert_close(quad("exp(-x^2)", -1.0, 1.0), 1.493648265624854, "∫₋₁¹ e^-x²");
+        assert_close(
+            quad("exp(-x^2)", -1.0, 1.0),
+            1.493648265624854,
+            "∫₋₁¹ e^-x²",
+        );
         // Reversed limits are the negated integral, not a failure.
         assert_close(quad("x^3", 1.0, 0.0), -0.25, "∫₁⁰ x³");
         // Degenerate interval.

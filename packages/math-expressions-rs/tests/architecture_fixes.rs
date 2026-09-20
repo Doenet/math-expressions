@@ -1,7 +1,7 @@
 //! Regressions for the 2026-07-22 architecture-review point fixes
 //! (active-plans/ARCHITECTURE_REVIEW.md §9 item 1).
 
-use math_expressions::{canonicalize, Expr, MathConst, TextToAst};
+use math_expressions::{canonicalize, Expr, Mat, MathConst, TextToAst};
 
 fn parse(s: &str) -> Expr {
     TextToAst::new(Default::default())
@@ -94,18 +94,11 @@ fn equals_certifies_constant_identities() {
 fn symbolic_zero_entry_is_not_a_pivot() {
     use math_expressions::{rank, Assumptions};
     let zero_entry = parse("sqrt(8) - 2*sqrt(2)");
-    let m = Expr::Matrix {
-        rows: 1,
-        cols: 1,
-        entries: vec![zero_entry],
-    };
+    let m = Expr::Matrix(Mat::new(1, 1, vec![zero_entry]).expect("test matrix shape"));
     assert_eq!(rank(&m, &Assumptions::new()), Some(0));
     // Sanity: a genuinely nonzero surd entry still has rank 1.
-    let m1 = Expr::Matrix {
-        rows: 1,
-        cols: 1,
-        entries: vec![parse("sqrt(8) - sqrt(2)")],
-    };
+    let m1 =
+        Expr::Matrix(Mat::new(1, 1, vec![parse("sqrt(8) - sqrt(2)")]).expect("test matrix shape"));
     assert_eq!(rank(&m1, &Assumptions::new()), Some(1));
 }
 

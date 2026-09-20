@@ -117,10 +117,11 @@ impl MpFix {
     pub fn from_number(n: &Number, scale: i32) -> Option<MpFix> {
         let (p, q): (BigInt, BigInt) = match n {
             Number::Int(i) => (BigInt::from(*i), BigInt::from(1)),
-            Number::Rat(a, b) => (BigInt::from(*a), BigInt::from(*b)),
+            Number::NegZero => (BigInt::from(0), BigInt::from(1)),
+            Number::Rat(a, b, _) => (BigInt::from(*a), BigInt::from(*b)),
             Number::Big(b) => match &**b {
                 BigNumber::Int(i) => (i.clone(), BigInt::from(1)),
-                BigNumber::Rat(r) => (r.numer().clone(), r.denom().clone()),
+                BigNumber::Rat(r, _) => (r.numer().clone(), r.denom().clone()),
             },
             Number::Float(f) => {
                 let v = f.get();
@@ -181,6 +182,13 @@ impl MpFix {
         if self.mant.is_zero() {
             return "0".to_string();
         }
+        // At least one digit, or `kept` below ends up empty for a nonzero value
+        // and the formatters index `kept[0]` — an uncatchable abort under
+        // `panic = "abort"`. (Both paths empty it: `digits[..0]` directly, and
+        // the round-up path's `insert(0, 1)` + `pop()`.) `evaluate_to_precision`
+        // clamps its own caller, but this is `pub`, so the guard belongs here
+        // where the indexing is rather than in one of the callers.
+        let sig_digits = sig_digits.max(1);
         let neg = self.mant.is_negative();
         let guard = 3usize;
         let m10 = sig_digits + guard;
