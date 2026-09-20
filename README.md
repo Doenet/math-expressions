@@ -24,6 +24,7 @@ Deployed to GitHub Pages on every push to `main`:
 Everything lives under `packages/`:
 
 ### `math-expressions-rs/` — the core (Rust)
+
 The pure-Rust library: parsing (`text ↔ ast`, `latex ↔ ast`), equality
 (numeric + finite-field + exact + structural), normalization / simplify / expand,
 differentiation, symbolic + certified integration, matrices / eigenvalues, ODE
@@ -32,8 +33,10 @@ JS-derived differential fixtures live in `tests/`; `scripts/` regenerates the
 fixtures from the legacy JS oracle. No JavaScript — a pure library crate.
 
 ### `math-expressions-rs-wasm/` — the wasm boundary
+
 The single place the core is compiled to WebAssembly and adapted for JS.
 Co-locates two language trees (the Doenet layout):
+
 - `src-rust/` (+ `Cargo.toml`) — the `math-expressions-wasm` `wasm-bindgen`
   crate: a thin adapter over the core's public API.
 - `src-js/` — TypeScript bindings, principally the **AST → math.js bridge** for
@@ -44,16 +47,27 @@ Co-locates two language trees (the Doenet layout):
   build (ESM + `initSync`) and exercises every subsystem.
 
 ### `math-expressions-js-compat/` — the drop-in (published as `math-expressions`)
+
 The directory is `math-expressions-js-compat`, but its `package.json` `name` is
-**`math-expressions`** — this is the npm package (v3, `3.0.0-alpha1`), a drop-in
+**`math-expressions`** — this is the npm package (v3, `3.0.0-alpha.1`), a drop-in
 replacement for the original math-expressions JS API (`me.fromText(...).equals(...)`),
-implemented in TypeScript over the wasm core — no math of its own. `lib/` is the
-compat layer (mirrors the old `lib/**` module paths); `spec/` is the legacy
-Vitest suite converted to TypeScript and run against the drop-in. *(Not all
-legacy behavior is ported yet — see
-[JS_TEST_COVERAGE_AUDIT.md](active-plans/JS_TEST_COVERAGE_AUDIT.md).)*
+implemented in TypeScript over the wasm core — no math of its own.
+
+> **Keep the dot in `-alpha.N`.** The 2.x line spelled it `-alpha94`, without
+> one, and semver reads that whole tail as a single alphanumeric identifier
+> compared _as text_: `2.0.0-alpha10` sorts **before** `2.0.0-alpha9`, so a
+> consumer on `^2.0.0-alpha9` never saw alpha10 or alpha11 at all. Dot-separated,
+> the `N` is a numeric identifier and compares numerically, so `3.0.0-alpha.9`
+> precedes `3.0.0-alpha.10` and `^3.0.0-alpha.1` picks up every later alpha —
+> and the eventual `3.0.0` too.
+
+`lib/` is the compat layer (mirrors the old `lib/**` module paths); `spec/` is
+the legacy Vitest suite converted to TypeScript and run against the drop-in.
+_(Not all legacy behavior is ported yet — see
+[JS_TEST_COVERAGE_AUDIT.md](active-plans/JS_TEST_COVERAGE_AUDIT.md).)_
 
 ### `playground/` — Rust-vs-JS comparison app
+
 A Vite/React app that runs the Rust (wasm) engine side-by-side with the
 **original published** JS library (pulled in via the `math-expressions-canonical`
 npm alias → `math-expressions@2.0.0-alpha94`) so their outputs can be compared.
